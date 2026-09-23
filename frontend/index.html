@@ -4,9 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Sistema de compras e almoxarifado da Porto Inc." />
-    <meta name="theme-color" content="#0F2942" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Porto Inc. | Compras e Almoxarifado</title>
+
+    <!-- O tema guardado entra ANTES de a página desenhar. Sem isto
+         ela pinta clara e só depois vira escura: um flash branco a
+         cada carregamento. Por ser antes do React, fica aqui. -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('portoink:tema') === 'escuro') {
+            document.documentElement.setAttribute('data-tema', 'escuro');
+            document
+              .querySelector('meta[name="theme-color"]')
+              .setAttribute('content', '#07141f');
+          }
+        } catch (e) {
+          /* Janela anônima ou armazenamento bloqueado: abre no claro. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="raiz"></div>

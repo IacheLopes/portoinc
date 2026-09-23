@@ -9,7 +9,7 @@
 //   node auditoria.mjs <pasta> <largura> [conta]
 // ============================================================
 import { spawn } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -22,7 +22,7 @@ const SAIDA = process.argv[2];
 const LARGURA = Number(process.argv[3] ?? 1440);
 const CONTA = process.argv[4] ?? 'admin@portoinc.com.br';
 const ALTURA = 1000;
-const PORTA = 9340 + (LARGURA % 7);
+const PORTA = 9340 + (LARGURA % 7) + (Date.now() % 40) * 10;
 
 const OBRA = '83fbfc58-1d58-46d7-add8-48270ebdf663';
 const SOLICITACAO = 'da72ade4-0c9d-4bec-8348-f911bc04606f';
@@ -71,8 +71,10 @@ mkdirSync(SAIDA, { recursive: true });
 // O perfil do navegador vai para a pasta temporaria do sistema, NAO para
 // dentro do projeto: a pasta do projeto e sincronizada pelo OneDrive, e o
 // Edge nao consegue subir de dentro dela. E lixo de uma execucao so.
-const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA);
-rmSync(PERFIL, { recursive: true, force: true });
+// Perfil NOVO a cada execução, em vez de apagar o anterior.
+// Apagar falha quando o navegador da rodada passada ainda está vivo
+// segurando a pasta, e a régua morre antes de medir qualquer coisa.
+const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA + '-' + Date.now());
 
 const edge = spawn(EDGE, [
   '--headless=new', '--remote-debugging-port=' + PORTA, '--no-first-run',
@@ -122,6 +124,25 @@ const js = async (e) => {
 };
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Fecha o navegador DE VERDADE.
+ *
+ * `edge.kill()` mata só o processo lançado; o Edge se relança num
+ * processo separado e sobrevive. Sem isto, cada execução deixava um
+ * navegador para trás — chegaram a 76 abertos ao mesmo tempo, e a
+ * máquina ficou tão ocupada que a régua passou a medir errado.
+ */
+async function fecharNavegador() {
+  try {
+    await cdp('Browser.close');
+  } catch {
+    /* Já fechou, ou não respondeu: o kill abaixo é a garantia. */
+  }
+
+  try { ws.close(); } catch { /* já fechado */ }
+  edge.kill();
+}
 
 // Espera um elemento APARECER na tela.
 //
@@ -208,7 +229,7 @@ await esperarPor('.menu__lista');
 const entrou = await js('JSON.stringify({ rota: location.pathname, temMenu: !!document.querySelector(".menu__lista") })');
 if (!JSON.parse(entrou).temMenu) {
   console.error('RECUSADO: nao consegui entrar no sistema. Sem sessao, a auditoria mediria a tela de login 33 vezes.');
-  edge.kill();
+  await fecharNavegador();
   process.exit(1);
 }
 
@@ -277,7 +298,7 @@ const MEDIR = `(() => {
       if (el.closest('.apenas-leitor-tela') || el.classList.contains('apenas-leitor-tela')) return false;
       // Checkbox e radio: quem recebe o toque e o rotulo em volta.
       if (el.matches('input[type=checkbox], input[type=radio]')) return false;
-      return r.height > 0 && r.width > 0 && r.height < 44 && !el.closest('.menu__lista');
+      return r.height > 0 && r.width > 0 && r.height < 44 && !el.classList.contains('menu__item');
     })
     .map((el) => nomear(el) + ' h=' + Math.round(el.getBoundingClientRect().height));
 
@@ -420,6 +441,5 @@ for (const [tipo, telas] of [...porTipo].sort((a, b) => b[1].length - a[1].lengt
   console.log(tipo.padEnd(28), telas.length + ' tela(s):', [...new Set(telas)].slice(0, 8).join(', '));
 }
 
-ws.close();
-edge.kill();
+await fecharNavegador();
 process.exit(0);

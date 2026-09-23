@@ -79,9 +79,11 @@
   gap: var(--esp-3);
   height: var(--altura-cabecalho);
   padding: 0 var(--esp-4);
-  background: var(--marinho-800);
-  color: var(--texto-invertido);
-  box-shadow: var(--sombra-1);
+  /* A moldura de navegação — esta barra e o menu lateral — usa os
+     mesmos tokens e troca junto com o tema. */
+  background: var(--menu-fundo);
+  color: var(--menu-texto);
+  border-bottom: 1px solid var(--menu-borda);
   /* Fica sempre visível ao rolar: o usuário nunca perde a referência. */
   position: sticky;
   top: 0;
@@ -93,7 +95,7 @@
   min-width: 44px;
   min-height: 44px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--menu-borda);
   border-radius: var(--raio-md);
   color: inherit;
   font-size: var(--txt-lg);
@@ -101,6 +103,7 @@
 }
 
 .barra__marca {
+  color: var(--menu-marca);
   font-size: var(--txt-lg);
   font-weight: var(--peso-forte);
   letter-spacing: -0.02em;
@@ -174,8 +177,8 @@
   width: 236px;
   flex-shrink: 0;
   padding: var(--esp-3) var(--esp-3) var(--esp-2);
-  background: var(--fundo-elevado);
-  border-right: 1px solid var(--borda);
+  background: var(--menu-fundo);
+  border-right: 1px solid var(--menu-borda);
 
   /* O menu fica parado; quem rola é a página.
 
@@ -214,7 +217,7 @@
 .menu__grupo {
   margin-top: var(--esp-3);
   padding-top: var(--esp-2);
-  border-top: 1px solid var(--borda);
+  border-top: 1px solid var(--menu-borda);
 }
 
 /* O primeiro grupo vem logo depois do "Início": a linha ali
@@ -233,13 +236,25 @@
      com os itens, que são o que a pessoa clica. */
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--texto-secundario);
+  color: var(--menu-texto-secundario);
 }
 
+/* Serve para <a> e para <button>: o botão de tema é botão de
+   verdade, porque não leva a lugar nenhum — ele age. Um link que
+   não navega confunde quem usa leitor de tela. */
 .menu__item {
   display: flex;
   align-items: center;
   gap: var(--esp-3);
+  width: 100%;
+  box-sizing: border-box;
+  /* Zera o que o navegador põe em <button> e que o <a> não tem. */
+  appearance: none;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   /* 40px no computador, onde o alvo é o ponteiro do mouse. A régua
      dos 44px vale para o DEDO, e no celular o menu vira gaveta —
      lá embaixo ele volta a 44. É o que permite os 14 itens e os
@@ -254,17 +269,19 @@
   transition: background var(--transicao);
 }
 
-.menu__item:hover { background: var(--fundo-suave); }
+.menu__item:hover { background: var(--menu-hover); }
 
 /* A barra à esquerda marca onde você está sem depender só da cor. */
 .menu__item--ativo {
-  background: var(--info-leve);
-  color: var(--azul-600);
-  box-shadow: inset 3px 0 0 var(--azul-600);
+  background: var(--menu-ativo-fundo);
+  color: var(--menu-ativo-texto);
+  /* A barra à esquerda marca onde você está SEM depender só da cor:
+     quem não distingue as cores continua vendo a marca. */
+  box-shadow: inset 3px 0 0 var(--menu-ativo-texto);
 }
 
 .menu__item--secundario {
-  color: var(--texto-secundario);
+  color: var(--menu-texto-secundario);
   font-weight: var(--peso-normal);
 }
 
@@ -279,7 +296,7 @@
      embaixo em vez de ficar colado no ultimo item. */
   margin-top: auto;
   padding-top: var(--esp-3);
-  border-top: 1px solid var(--borda);
+  border-top: 1px solid var(--menu-borda);
 }
 
 .menu__versao {
@@ -456,7 +473,11 @@
    ------------------------------------------------------------ */
 .atalho {
   display: flex;
-  align-items: center;
+  /* Alinhado pelo TOPO, não pelo centro.
+     Centralizado, uma descrição de duas linhas empurrava o título
+     para baixo e ele saía da linha dos vizinhos — numa fileira de
+     quatro cartões, quatro alturas de título diferentes. */
+  align-items: flex-start;
   gap: var(--esp-3);
   padding: var(--esp-4);
   background: var(--fundo-elevado);
@@ -478,7 +499,12 @@ a.atalho:hover {
   flex-wrap: wrap;
 }
 
-.atalho__icone { font-size: var(--txt-xl); }
+.atalho__icone {
+  font-size: var(--txt-xl);
+  /* O ícone é mais alto que a letra: sem este empurrão ele fica
+     acima do título em vez de ao lado dele. */
+  line-height: 1.15;
+}
 
 .atalho__texto {
   display: flex;

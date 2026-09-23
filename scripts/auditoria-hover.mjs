@@ -12,7 +12,7 @@
 //   node hover.mjs <pasta> [largura]
 // ============================================================
 import { spawn } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,7 +23,7 @@ const EDGE = [
 
 const SAIDA = process.argv[2];
 const LARGURA = Number(process.argv[3] ?? 1440);
-const PORTA = 9361;
+const PORTA = 9361 + (Date.now() % 40) * 10;
 
 const OBRA = '83fbfc58-1d58-46d7-add8-48270ebdf663';
 const SOLICITACAO = 'da72ade4-0c9d-4bec-8348-f911bc04606f';
@@ -84,8 +84,9 @@ mkdirSync(SAIDA, { recursive: true });
 // O perfil do navegador vai para a pasta temporaria do sistema, NAO para
 // dentro do projeto: a pasta do projeto e sincronizada pelo OneDrive, e o
 // Edge nao consegue subir de dentro dela. E lixo de uma execucao so.
-const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA);
-rmSync(PERFIL, { recursive: true, force: true });
+// Perfil NOVO a cada execucao: apagar o anterior falha quando o
+// navegador da rodada passada ainda esta vivo segurando a pasta.
+const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA + '-' + Date.now());
 
 const edge = spawn(EDGE, [
   '--headless=new', '--remote-debugging-port=' + PORTA, '--no-first-run',
@@ -132,6 +133,25 @@ const js = async (e) => {
 };
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Fecha o navegador DE VERDADE.
+ *
+ * `edge.kill()` mata só o processo lançado; o Edge se relança num
+ * processo separado e sobrevive. Sem isto, cada execução deixava um
+ * navegador para trás — chegaram a 76 abertos ao mesmo tempo, e a
+ * máquina ficou tão ocupada que a régua passou a medir errado.
+ */
+async function fecharNavegador() {
+  try {
+    await cdp('Browser.close');
+  } catch {
+    /* Já fechou, ou não respondeu: o kill abaixo é a garantia. */
+  }
+
+  try { ws.close(); } catch { /* já fechado */ }
+  edge.kill();
+}
 
 // Espera um elemento APARECER na tela.
 //
@@ -218,7 +238,7 @@ await esperarPor('.menu__lista');
 const sessao = await js('!!document.querySelector(".menu__lista")');
 if (!sessao) {
   console.error('RECUSADO: nao entrei no sistema.');
-  edge.kill();
+  await fecharNavegador();
   process.exit(1);
 }
 
@@ -407,6 +427,5 @@ for (const [chave, telas] of [...porTipo].sort((a, b) => b[1].size - a[1].size))
   console.log(String(telas.size).padStart(3), 'tela(s)', chave);
 }
 
-ws.close();
-edge.kill();
+await fecharNavegador();
 process.exit(0);

@@ -61,6 +61,22 @@
   --texto-secundario: var(--neutro-600);
   --texto-invertido:  var(--neutro-0);
 
+  /* ---------- Barra lateral ----------
+     Ela ACOMPANHA o tema. Antes era azul-marinho fixo, e no tema
+     claro ficava um bloco escuro pesado contra a página clara.
+
+     Os tons dela são próprios, e não os mesmos do conteúdo: uma
+     navegação que se confunde com a área de trabalho faz a pessoa
+     perder a referência de onde está. */
+  --menu-fundo:            var(--neutro-0);
+  --menu-borda:            var(--neutro-200);
+  --menu-texto:            var(--neutro-800);
+  --menu-texto-secundario: var(--neutro-600);
+  --menu-hover:            var(--neutro-100);
+  --menu-ativo-fundo:      var(--azul-100);
+  --menu-ativo-texto:      var(--azul-600);
+  --menu-marca:            var(--marinho-900);
+
   /* ---------- Espacamento (escala de 4px) ----------
      Usar a escala e o que cria a PROXIMIDADE correta:
      o que se relaciona fica perto, o que nao se relaciona fica longe. */
@@ -71,6 +87,7 @@
   --esp-5: 1.5rem;   /* 24px */
   --esp-6: 2rem;     /* 32px */
   --esp-7: 3rem;     /* 48px */
+  --esp-8: 4rem;     /* 64px */
 
   /* ---------- Tipografia ----------
      Tamanhos diferentes criam HIERARQUIA: o olho sabe onde olhar primeiro. */
@@ -83,15 +100,33 @@
   --txt-lg: 1.125rem;
   --txt-xl: 1.5rem;
   --txt-2xl: 2rem;
+  /* Para o número grande do KPI. Abaixo disso ele não "pesa" o
+     bastante para ser a primeira coisa que o olho encontra. */
+  --txt-3xl: 2.5rem;
 
   --peso-normal: 400;
   --peso-medio: 500;
   --peso-forte: 600;
 
+  /* ---------- Altura de linha ----------
+     Título junto, texto respirando. Título com entrelinha de texto
+     corrido parece solto; texto com entrelinha de título cansa. */
+  --linha-apertada: 1.25;
+  --linha-normal:   1.55;
+  --linha-solta:    1.7;
+
+  /* Largura máxima de texto de leitura.
+     Linha longa demais faz o olho perder a volta ao trocar de
+     linha. Entre 45 e 75 caracteres é onde se lê melhor. */
+  --largura-leitura: 70ch;
+
   /* ---------- Bordas e sombras ---------- */
   --raio-sm: 4px;
   --raio-md: 8px;
   --raio-lg: 12px;
+  /* Cartão grande. A referência usa canto bem arredondado, e é o
+     que dá o ar mais leve. */
+  --raio-xl: 16px;
   --raio-total: 999px;
 
   --sombra-1: 0 1px 2px rgba(15, 41, 66, 0.06), 0 1px 3px rgba(15, 41, 66, 0.08);
@@ -104,34 +139,17 @@
   --transicao: 160ms ease;
 }
 
-/* ---------- Modo escuro ----------
-   Acompanha a preferencia do sistema operacional do usuario. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema='claro']) {
-    --fundo:            var(--marinho-900);
-    --fundo-elevado:    var(--marinho-800);
-    --fundo-suave:      var(--marinho-700);
-    --borda:            #24405c;
-    --rolagem:          #27455f;
-    --rolagem-forte:    #3a6389;
-    --texto:            #eaf1f8;
-    --texto-secundario: #9db2c7;
+/* ============================================================
+   TEMA ESCURO
 
-    --sucesso-leve: #11301f;
-    --atencao-leve: #33260c;
-    --erro-leve:    #3a1a17;
-    --info-leve:    #14294a;
+   Ele NÃO é mais automático.
 
-    --sucesso-texto: #5cd48b;
-    --atencao-texto: #e8a83a;
-    --erro-texto:    #f28b82;
-    --info-texto:    #7aa7f7;
-
-    --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --sombra-2: 0 4px 12px rgba(0, 0, 0, 0.5);
-  }
-}
-
+   Antes o sistema seguia a preferência do Windows: quem tinha o
+   computador no escuro recebia o sistema escuro sem nunca ter
+   pedido, e sem ter como voltar. O claro é o padrão, e o escuro
+   é escolha — feita no botão da barra lateral e lembrada pelo
+   navegador.
+   ============================================================ */
 :root[data-tema='escuro'] {
   --fundo:            var(--marinho-900);
   --fundo-elevado:    var(--marinho-800);
@@ -141,6 +159,21 @@
   --rolagem-forte:    #3a6389;
   --texto:            #eaf1f8;
   --texto-secundario: #9db2c7;
+
+  /* A barra lateral acompanha: aqui ela é mais escura que o
+     conteúdo, e no tema claro é mais clara. Nos dois casos ela se
+     separa da área de trabalho. */
+  --menu-fundo:            #07141f;
+  --menu-borda:            #1b3348;
+  --menu-texto:            #dce7f2;
+  /* Não é o mesmo cinza do tema claro: sobre fundo quase preto
+     aquele tom vira mancha ilegível. */
+  --menu-texto-secundario: #8ba3ba;
+  --menu-hover:            #12283c;
+  --menu-ativo-fundo:      #14304d;
+  --menu-ativo-texto:      #7aa7f7;
+  --menu-marca:            #ffffff;
+
   --sucesso-leve: #11301f;
   --atencao-leve: #33260c;
   --erro-leve:    #3a1a17;
@@ -150,6 +183,9 @@
   --atencao-texto: #e8a83a;
   --erro-texto:    #f28b82;
   --info-texto:    #7aa7f7;
+
+  --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --sombra-2: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Respeita quem pediu menos animacao no sistema (acessibilidade). */

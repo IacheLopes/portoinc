@@ -6,12 +6,15 @@
   "scripts": {
     "tutorial": "node gerar-pdf.mjs tutorial",
     "guia-testes": "node gerar-pdf.mjs guia-testes",
-    "pdfs": "npm run tutorial && npm run guia-testes",
+    "design": "node gerar-pdf.mjs design",
+    "pdfs": "npm run tutorial && npm run guia-testes && npm run design",
     "auditoria": "node auditoria-ui.mjs ./auditoria 1440",
     "auditoria:celular": "node auditoria-ui.mjs ./auditoria-celular 420",
     "auditoria:hover": "node auditoria-hover.mjs ./auditoria-hover 1440",
     "backup": "node backup.mjs",
-    "restaurar": "node restaurar.mjs"
+    "restaurar": "node restaurar.mjs",
+    "padrao": "node padrao.mjs",
+    "versao": "node versao.mjs"
   },
   "dependencies": {
     "marked": "^15.0.6"

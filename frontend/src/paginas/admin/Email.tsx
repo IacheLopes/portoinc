@@ -7,6 +7,10 @@
 //       a pessoa precisa entender que o e-mail sai de verdade.
 //    2. Depois a lista de quem pode receber.
 //    3. Só então o envio de teste e o histórico.
+//
+//  padrao-ignora: sem-titulo — é conteúdo de aba; o <h1> é do
+//  invólucro (Avisos.tsx), e dois títulos na mesma tela quebram a
+//  hierarquia para quem usa leitor de tela.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';

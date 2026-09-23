@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
 import { menuAgrupado, type Modulo } from '../navegacao';
+import { BotaoTema } from './BotaoTema';
 
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/);
@@ -109,13 +110,15 @@ export function Layout() {
           ))}
 
           <div className="menu__rodape">
+            <BotaoTema />
+
             <NavLink to="/minha-senha" className="menu__item menu__item--secundario">
               <span className="menu__icone" aria-hidden="true">
                 🔒
               </span>
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.17.0</p>
+            <p className="menu__versao">versão 0.18.0</p>
           </div>
         </nav>
 

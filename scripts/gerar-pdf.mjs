@@ -34,6 +34,13 @@ const DOCUMENTOS = {
       'Este manual é atualizado a cada etapa de construção do sistema. ' +
       'Funções marcadas como <strong>em construção</strong> ainda não estão disponíveis.',
   },
+  design: {
+    entrada: join(RAIZ, 'docs', 'design', 'DESIGN.md'),
+    saida: join(RAIZ, 'docs', 'design', 'Design-PortoInc.pdf'),
+    titulo: 'Design do sistema',
+    subtitulo: 'Porto Inc. — Compras e Almoxarifado',
+  },
+
   'guia-testes': {
     entrada: join(RAIZ, 'docs', 'testes', 'GUIA-TESTE-MANUAL.md'),
     saida: join(RAIZ, 'docs', 'testes', 'Guia-Teste-Manual-PortoInc.pdf'),

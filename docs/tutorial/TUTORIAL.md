@@ -1,4 +1,4 @@
-<!-- versao: 0.17.0 -->
+<!-- versao: 0.18.0 -->
 
 # 1. Antes de começar
 
@@ -2308,6 +2308,25 @@ Enquanto o selo estiver **Simulado**:
 - Nenhum fornecedor recebe nada
 
 O sistema registra o que **teria** enviado, para você conferir. Risco zero.
+
+---
+
+# 42.1. Tema claro e tema escuro
+
+O sistema abre no **tema claro**. Se você preferir o escuro, o botão está no **rodapé do
+menu da esquerda**, logo acima de "Trocar minha senha":
+
+- Com a tela clara, ele diz **"🌙 Tema escuro"**
+- Com a tela escura, ele diz **"☀ Tema claro"**
+
+O rótulo diz o que vai **acontecer** se você clicar, não como a tela está agora.
+
+A escolha fica **guardada no seu navegador**. Você troca uma vez e o sistema abre assim
+nas próximas vezes, inclusive depois de fechar tudo.
+
+> A escolha é **sua e só neste navegador**. Se você entrar de outro computador, ou de um
+> celular, ele começa no claro de novo. Isso é de propósito: a preferência é de quem está
+> olhando a tela, não da conta.
 
 ---
 

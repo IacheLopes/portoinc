@@ -1,4 +1,4 @@
-<!-- versao: 0.17.0 -->
+<!-- versao: 0.18.0 -->
 
 # 1. Como usar este guia
 
@@ -3410,6 +3410,32 @@ docker compose exec web npm test
 
 ---
 
+## CT-260 · O tema é escolha sua, e o sistema lembra
+
+1. Entre no sistema
+
+**Esperado:** abre no **tema claro** — mesmo que o seu Windows esteja no modo escuro.
+
+2. No rodapé do menu da esquerda, clique em **🌙 Tema escuro**
+
+**Esperado:** a tela inteira escurece, **inclusive o menu e a barra de cima**. O botão passa a dizer **☀ Tema claro**.
+
+3. Aperte **F5** para recarregar
+
+**Esperado:** continua escuro, e **sem piscar branco** no meio do caminho.
+
+4. Olhe o item do menu onde você está (o destacado)
+
+**Esperado:** dá para ler sem esforço, nos dois temas. Ele também tem uma barrinha à esquerda — quem não distingue as cores se guia por ela.
+
+5. Volte para o tema claro e recarregue
+
+**Esperado:** continua claro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3775,8 +3801,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-257 | Convite e pedido saem pelos dois canais |  |
 | CT-258 | O PDF da nota fiscal |  |
 | CT-259 | Guardar o arquivo que o fornecedor mandou |  |
+| CT-260 | O tema é escolha sua, e o sistema lembra |  |
 
-**Total: 259 casos** · Etapas cobertas: 0 a 12
+**Total: 260 casos** · Etapas cobertas: 0 a 12
 
 ---
 
@@ -3797,7 +3824,7 @@ docker compose exec web npm test    # as telas — cerca de 20 segundos
 |---|---|---|
 | **Unidade** | 355 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
 | **Integração** | 325 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
-| **Telas** | 42 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+| **Telas** | 60 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
 
 > As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
 
