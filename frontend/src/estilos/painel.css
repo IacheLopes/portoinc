@@ -1,0 +1,616 @@
+/* ============================================================
+   Porto Inc. - Telas de trabalho
+   Entrada, moldura do painel, menu, formulários e avisos.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Tela de entrada
+   ------------------------------------------------------------ */
+.entrada {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--esp-4);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(47, 111, 237, 0.14), transparent 55%),
+    var(--fundo);
+}
+
+.entrada__cartao {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--esp-6);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-2);
+}
+
+.entrada__marca {
+  font-size: var(--txt-xl);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.03em;
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+.entrada__ponto { color: var(--azul-600); }
+
+.entrada__titulo {
+  margin-top: var(--esp-5);
+  font-size: var(--txt-lg);
+}
+
+.entrada__sub {
+  margin-bottom: var(--esp-5);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+.entrada__rodape {
+  margin-top: var(--esp-5);
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+  text-align: center;
+}
+
+.tela-cheia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+/* ------------------------------------------------------------
+   Moldura do painel
+   ------------------------------------------------------------ */
+.painel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  height: var(--altura-cabecalho);
+  padding: 0 var(--esp-4);
+  background: var(--marinho-800);
+  color: var(--texto-invertido);
+  box-shadow: var(--sombra-1);
+  /* Fica sempre visível ao rolar: o usuário nunca perde a referência. */
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.barra__menu {
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--raio-md);
+  color: inherit;
+  font-size: var(--txt-lg);
+  cursor: pointer;
+}
+
+.barra__marca {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.barra__ponto { color: var(--azul-500); }
+
+.barra__usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin-left: auto;
+}
+
+.barra__avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--azul-600);
+  color: #fff;
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-forte);
+}
+
+.barra__nome {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-medio);
+}
+
+.barra__nome small {
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-normal);
+  color: #b9cbe0;
+}
+
+.botao--discreto {
+  /* Sem min-height próprio: herda os 44px do .botao.
+     Este seletor tinha 36px e desfazia, em 83 botões espalhados
+     por todas as telas, a regra de alvo de toque que o .botao
+     documenta logo acima. "Discreto" é sobre a COR, não sobre o
+     tamanho do alvo do dedo. */
+  padding: var(--esp-1) var(--esp-3);
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+  font-size: var(--txt-sm);
+  opacity: 0.85;
+}
+.botao--discreto:hover:not(:disabled) { opacity: 1; }
+
+.botao--largo { width: 100%; }
+
+.painel__corpo {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------
+   Menu lateral
+   ------------------------------------------------------------ */
+.menu {
+  display: flex;
+  flex-direction: column;
+  width: 236px;
+  flex-shrink: 0;
+  padding: var(--esp-3) var(--esp-3) var(--esp-2);
+  background: var(--fundo-elevado);
+  border-right: 1px solid var(--borda);
+
+  /* O menu fica parado; quem rola é a página.
+
+     Antes ele era só uma coluna flex e ESTICAVA até a altura do
+     conteúdo: no Financeiro chegava a 2.575px. Ao rolar, sumia
+     junto, e o "Status do sistema" ficava a 1.352px do topo —
+     para clicar nele era preciso rolar a página para baixo.
+
+     Ele cola logo abaixo da barra de cima, que também é fixa. */
+  position: sticky;
+  top: var(--altura-cabecalho);
+  height: calc(100dvh - var(--altura-cabecalho));
+  /* Se um dia o menu crescer mais que a tela, ele rola sozinho —
+     sem arrastar a página junto. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.menu__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ------------------------------------------------------------
+   Grupos do menu
+
+   Catorze itens soltos não deixam o olho agrupar nada. Divididos
+   pelo caminho do trabalho — comprar, receber, pagar, administrar
+   —, nenhum bloco passa de quatro linhas.
+   ------------------------------------------------------------ */
+
+.menu__grupo {
+  margin-top: var(--esp-3);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--borda);
+}
+
+/* O primeiro grupo vem logo depois do "Início": a linha ali
+   separaria o que já está separado. */
+.menu__grupo:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.menu__grupo-titulo {
+  margin: 0 0 var(--esp-1);
+  padding: 0 var(--esp-3);
+  font-size: 0.68rem;
+  font-weight: var(--peso-forte);
+  /* Maiúsculas e espaçamento largo: o rótulo organiza sem competir
+     com os itens, que são o que a pessoa clica. */
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--texto-secundario);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  /* 40px no computador, onde o alvo é o ponteiro do mouse. A régua
+     dos 44px vale para o DEDO, e no celular o menu vira gaveta —
+     lá embaixo ele volta a 44. É o que permite os 14 itens e os
+     quatro rótulos de grupo caberem na tela sem rolar. */
+  min-height: 40px;
+  padding: var(--esp-1) var(--esp-3);
+  border-radius: var(--raio-md);
+  color: var(--texto);
+  text-decoration: none;
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-medio);
+  transition: background var(--transicao);
+}
+
+.menu__item:hover { background: var(--fundo-suave); }
+
+/* A barra à esquerda marca onde você está sem depender só da cor. */
+.menu__item--ativo {
+  background: var(--info-leve);
+  color: var(--azul-600);
+  box-shadow: inset 3px 0 0 var(--azul-600);
+}
+
+.menu__item--secundario {
+  color: var(--texto-secundario);
+  font-weight: var(--peso-normal);
+}
+
+.menu__icone {
+  width: 20px;
+  text-align: center;
+  font-size: var(--txt-md);
+}
+
+.menu__rodape {
+  /* Empurrado para o fim: com o menu de altura fixa, ele encosta
+     embaixo em vez de ficar colado no ultimo item. */
+  margin-top: auto;
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+}
+
+.menu__versao {
+  margin-top: var(--esp-1);
+  padding-left: var(--esp-3);
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.menu__fundo { display: none; }
+
+.painel__conteudo {
+  flex: 1;
+  min-width: 0;
+  padding: var(--esp-6) var(--esp-5) var(--esp-7);
+}
+
+.secao--estreita { max-width: 560px; }
+
+/* ------------------------------------------------------------
+   Campos de formulário
+   ------------------------------------------------------------ */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-4);
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.campo__rotulo {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-medio);
+  color: var(--texto);
+}
+
+.campo__opcional {
+  font-weight: var(--peso-normal);
+  color: var(--texto-secundario);
+}
+
+.campo__entrada {
+  min-height: 44px;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo-elevado);
+  color: var(--texto);
+  font: inherit;
+  font-size: var(--txt-md);
+  transition: border-color var(--transicao);
+  width: 100%;
+}
+
+.campo__entrada:hover:not(:disabled) { border-color: var(--neutro-400); }
+.campo__entrada:disabled { opacity: 0.6; cursor: not-allowed; }
+.campo__entrada[aria-invalid='true'] { border-color: var(--erro); }
+
+.campo__ajuda {
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.campo__erro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-4);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--raio-md);
+  background: var(--erro-leve);
+  color: var(--erro-texto);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-medio);
+}
+
+.campo__erro-lista {
+  margin: 0;
+  padding-left: var(--esp-5);
+  font-weight: var(--peso-normal);
+}
+
+.campo--inline { margin-bottom: 0; flex: 1; min-width: 200px; }
+
+.formulario { margin-top: var(--esp-4); }
+
+.formulario__titulo {
+  font-size: var(--txt-lg);
+  margin-bottom: var(--esp-4);
+}
+
+.formulario__linha {
+  display: grid;
+  gap: var(--esp-4);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.formulario__acoes {
+  display: flex;
+  gap: var(--esp-3);
+  padding-top: var(--esp-2);
+}
+
+.barra-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-4);
+}
+
+/* Campo dentro da barra não leva a margem de baixo dos formulários.
+   O alinhamento do flex considera a MARGEM, não a borda: com a
+   margem, o campo subia 16px e ficava desalinhado dos botões ao
+   lado. Isso valia para todas as telas com barra de ações. */
+.barra-acoes .campo {
+  margin-bottom: 0;
+}
+
+/* Todo mundo da barra com a mesma altura de toque. */
+.barra-acoes .campo__entrada,
+.barra-acoes .botao {
+  min-height: 44px;
+}
+
+.opcoes {
+  display: grid;
+  gap: var(--esp-2);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: var(--esp-1);
+}
+
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: 44px;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  font-size: var(--txt-sm);
+  cursor: pointer;
+}
+
+.opcao:hover { background: var(--fundo-suave); }
+.opcao:has(input:checked) { border-color: var(--azul-600); background: var(--info-leve); }
+.opcao input { width: 18px; height: 18px; accent-color: var(--azul-600); cursor: pointer; }
+
+/* ------------------------------------------------------------
+   Avisos
+   ------------------------------------------------------------ */
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  border-radius: var(--raio-lg);
+  font-size: var(--txt-sm);
+  margin-bottom: var(--esp-4);
+}
+
+.aviso p { margin-top: var(--esp-1); }
+.aviso__icone { font-size: var(--txt-lg); line-height: 1.2; }
+
+.aviso--info    { background: var(--info-leve);    color: var(--info-texto); }
+.aviso--sucesso { background: var(--sucesso-leve); color: var(--sucesso-texto); }
+.aviso--atencao { background: var(--atencao-leve); color: var(--atencao-texto); }
+.aviso--erro    { background: var(--erro-leve);    color: var(--erro-texto); }
+
+/* ------------------------------------------------------------
+   Atalhos do painel inicial
+   ------------------------------------------------------------ */
+.atalho {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
+  color: var(--texto);
+  text-decoration: none;
+  transition: border-color var(--transicao), transform var(--transicao);
+}
+
+a.atalho:hover {
+  border-color: var(--azul-600);
+  transform: translateY(-2px);
+}
+
+.atalho--indisponivel {
+  opacity: 0.72;
+  flex-wrap: wrap;
+}
+
+.atalho__icone { font-size: var(--txt-xl); }
+
+.atalho__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.atalho__texto small {
+  color: var(--texto-secundario);
+  font-size: var(--txt-xs);
+}
+
+/* ------------------------------------------------------------
+   Etiquetas (funções do usuário)
+   ------------------------------------------------------------ */
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.etiqueta {
+  padding: 2px var(--esp-2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+  background: var(--fundo-suave);
+  font-size: var(--txt-xs);
+  white-space: nowrap;
+}
+
+.funcao__descricao {
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   Tela em construção
+   ------------------------------------------------------------ */
+.em-obra__topo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+}
+
+.em-obra__titulo {
+  font-size: var(--txt-md);
+  margin-bottom: var(--esp-3);
+}
+
+.em-obra__lista {
+  margin: 0;
+  padding-left: var(--esp-5);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+.em-obra__lista li { margin-bottom: var(--esp-1); }
+
+.em-obra__nota {
+  margin-top: var(--esp-4);
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   Celular: o menu vira gaveta
+   ------------------------------------------------------------ */
+@media (max-width: 860px) {
+  .barra__menu { display: block; }
+  .barra__nome { display: none; }
+
+  .menu {
+    position: fixed;
+    top: var(--altura-cabecalho);
+    left: 0;
+    bottom: 0;
+    z-index: 25;
+    width: 250px;
+    transform: translateX(-100%);
+    transition: transform var(--transicao);
+    box-shadow: var(--sombra-2);
+  }
+
+  .menu--aberto { transform: translateX(0); }
+
+  /* Na gaveta quem toca é o dedo: o item volta aos 44px. */
+  .menu__item {
+    min-height: 44px;
+    padding: var(--esp-2) var(--esp-3);
+  }
+
+  .menu__fundo {
+    display: block;
+    position: fixed;
+    inset: var(--altura-cabecalho) 0 0 0;
+    z-index: 20;
+    background: rgba(10, 28, 46, 0.5);
+  }
+
+  .painel__conteudo { padding: var(--esp-5) var(--esp-4) var(--esp-6); }
+}
+
+/* Link dentro de um aviso.
+   O azul dos links comuns quase some sobre o fundo colorido do
+   aviso. Aqui o link herda a cor do proprio aviso e o sublinhado
+   continua mostrando que e clicavel - a cor nunca informa sozinha. */
+.aviso a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.aviso a:hover { text-decoration-thickness: 2px; }
+
+/* Campo de busca cresce; seletor fica no tamanho do conteúdo.
+
+   Antes as telas de busca montavam o input na mão com
+   `.campo--inline` só para conseguir esta largura — e acabavam
+   sem rótulo visível. Com a regra aqui, o `<Campo tipo="search">`
+   cresce sozinho em qualquer barra de ações, e a tela não
+   precisa mais escolher entre largura e rótulo. */
+.barra-acoes .campo:has(input[type='search']) {
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+
+/* Seletor: largura do conteúdo, com um piso para caber o rótulo. */
+.barra-acoes .campo:has(select) {
+  flex: 0 1 auto;
+  min-width: 180px;
+}

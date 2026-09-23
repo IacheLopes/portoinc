@@ -1,0 +1,1130 @@
+// ============================================================
+//  Porto Inc. - Modelo de dados
+//  Etapa 1: acesso (usuários, funções e permissões)
+//  Etapa 2: cadastros (obras, materiais, fornecedores, alçadas)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+//  ACESSO
+// ============================================================
+
+/// Pessoa que acessa o sistema.
+model Usuario {
+  id                 String    @id @default(uuid())
+  nome               String
+  email              String    @unique
+  senhaHash          String    @map("senha_hash")
+  telefone           String?
+  ativo              Boolean   @default(true)
+  /// Obriga a criar uma senha nova no primeiro acesso.
+  precisaTrocarSenha Boolean   @default(false) @map("precisa_trocar_senha")
+  ultimoAcesso       DateTime? @map("ultimo_acesso")
+  criadoEm           DateTime  @default(now()) @map("criado_em")
+
+  /// Um usuário pode ter VÁRIAS funções (pedido da reunião).
+  funcoes UsuarioFuncao[]
+  sessoes Sessao[]
+
+  solicitacoes      Solicitacao[]
+  eventosGerados    SolicitacaoEvento[]
+  aprovacoes        Aprovacao[]
+  bids              Bid[]
+  pedidos           Pedido[]
+  recebimentos      Recebimento[]
+  movimentoEstoques MovimentoEstoque[]
+  notaFiscals       NotaFiscal[]
+  contaPagars       ContaPagar[]
+  numeroAutorizados NumeroAutorizado[]
+  mensagemEnviadas  MensagemEnviada[]
+  locacoesContratadas ContratoLocacao[] @relation("LocacaoContratada")
+  locacoesDevolvidas  ContratoLocacao[] @relation("LocacaoDevolvida")
+
+  @@index([ativo])
+  @@map("usuarios")
+}
+
+/// Papel dentro do processo (Solicitante, Comprador, Almoxarife...).
+model Funcao {
+  id        String  @id @default(uuid())
+  codigo    String  @unique
+  nome      String
+  descricao String?
+  /// Funções do BPMN não podem ser apagadas.
+  sistema   Boolean @default(false)
+
+  usuarios   UsuarioFuncao[]
+  permissoes FuncaoPermissao[]
+  alcadas    RegraAlcadaFuncao[]
+  aprovacoes Aprovacao[]
+
+  @@map("funcoes")
+}
+
+/// Ligação entre usuário e função (muitos-para-muitos).
+model UsuarioFuncao {
+  usuarioId String   @map("usuario_id")
+  funcaoId  String   @map("funcao_id")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  funcao  Funcao  @relation(fields: [funcaoId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, funcaoId])
+  @@map("usuarios_funcoes")
+}
+
+/// Uma ação que pode ser liberada ou bloqueada.
+model Permissao {
+  id     String @id @default(uuid())
+  codigo String @unique
+  nome   String
+  grupo  String
+
+  funcoes FuncaoPermissao[]
+
+  @@map("permissoes")
+}
+
+/// O que cada função pode fazer.
+model FuncaoPermissao {
+  funcaoId    String @map("funcao_id")
+  permissaoId String @map("permissao_id")
+
+  funcao    Funcao    @relation(fields: [funcaoId], references: [id], onDelete: Cascade)
+  permissao Permissao @relation(fields: [permissaoId], references: [id], onDelete: Cascade)
+
+  @@id([funcaoId, permissaoId])
+  @@map("funcoes_permissoes")
+}
+
+/// Sessão aberta por um login. Guardamos só o resumo do token.
+model Sessao {
+  id          String    @id @default(uuid())
+  usuarioId   String    @map("usuario_id")
+  tokenHash   String    @unique @map("token_hash")
+  dispositivo String?
+  expiraEm    DateTime  @map("expira_em")
+  revogadaEm  DateTime? @map("revogada_em")
+  criadaEm    DateTime  @default(now()) @map("criada_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEm])
+  @@map("sessoes")
+}
+
+// ============================================================
+//  CADASTROS
+// ============================================================
+
+enum SituacaoObra {
+  PLANEJAMENTO
+  EM_ANDAMENTO
+  PARALISADA
+  CONCLUIDA
+}
+
+/// Cada empreendimento da construtora.
+model Obra {
+  id              String       @id @default(uuid())
+  codigo          String       @unique
+  nome            String
+  cliente         String?
+  endereco        String?
+  cidade          String?
+  uf              String?      @db.Char(2)
+  situacao        SituacaoObra @default(PLANEJAMENTO)
+  dataInicio      DateTime?    @map("data_inicio")
+  dataPrevisaoFim DateTime?    @map("data_previsao_fim")
+  ativa           Boolean      @default(true)
+  criadaEm        DateTime     @default(now()) @map("criada_em")
+
+  linhas        LinhaOrcamento[]
+  almoxarifados Almoxarifado[]
+  solicitacoes  Solicitacao[]
+  locacoes      ContratoLocacao[]
+
+  @@index([ativa])
+  @@map("obras")
+}
+
+/// Linha do orçamento da obra. Toda compra é apontada para uma delas:
+/// é assim que se descobre quanto custou cada parte da obra.
+model LinhaOrcamento {
+  id                    String   @id @default(uuid())
+  obraId                String   @map("obra_id")
+  codigo                String
+  descricao             String
+  unidade               String
+  quantidadePrevista    Decimal  @default(0) @map("quantidade_prevista") @db.Decimal(14, 4)
+  valorUnitarioPrevisto Decimal  @default(0) @map("valor_unitario_previsto") @db.Decimal(14, 2)
+  ordem                 Int      @default(0)
+  criadaEm              DateTime @default(now()) @map("criada_em")
+
+  obra             Obra              @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  itensSolicitacao SolicitacaoItem[]
+
+  @@unique([obraId, codigo])
+  @@index([obraId])
+  @@map("linhas_orcamento")
+}
+
+/// Local de estoque. Decisão D3: o estoque é POR OBRA.
+/// Quando obraId é nulo, trata-se do almoxarifado central da empresa.
+model Almoxarifado {
+  id       String   @id @default(uuid())
+  obraId   String?  @map("obra_id")
+  codigo   String   @unique
+  nome     String
+  central  Boolean  @default(false)
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  obra         Obra?              @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  recebimentos Recebimento[]
+  saldos       SaldoEstoque[]
+  movimentos   MovimentoEstoque[]
+
+  @@index([obraId])
+  @@map("almoxarifados")
+}
+
+/// Agrupamento por tipo (elétrica, hidráulica, concreto...).
+/// Serve para saber QUAIS fornecedores convidar em cada cotação.
+model FamiliaMaterial {
+  id        String   @id @default(uuid())
+  codigo    String   @unique
+  nome      String
+  descricao String?
+  ativa     Boolean  @default(true)
+  criadaEm  DateTime @default(now()) @map("criada_em")
+
+  materiais    Material[]
+  fornecedores FornecedorFamilia[]
+
+  @@map("familias_material")
+}
+
+enum TipoItem {
+  MATERIAL
+  SERVICO
+}
+
+/// Item do catálogo: material ou serviço.
+model Material {
+  id                String   @id @default(uuid())
+  familiaId         String   @map("familia_id")
+  /// O "COD PORTO" que já aparece nas planilhas da empresa.
+  codigoInterno     String   @unique @map("codigo_interno")
+  descricao         String
+  tipo              TipoItem @default(MATERIAL)
+  marca             String?
+  /// Código de barras. Serviço não tem.
+  gtin              String?  @unique
+  /// Norma ABNT que o item deve cumprir. Ex: NBR 7211.
+  normaTecnica      String?  @map("norma_tecnica")
+  unidadeMedida     String   @map("unidade_medida")
+  /// Quantidade mínima: abaixo dela o sistema avisa que é hora de comprar.
+  pontoPedido       Decimal? @map("ponto_pedido") @db.Decimal(14, 4)
+  /// Código da linha de orçamento sugerida. Não aponta para uma obra
+  /// específica porque o mesmo material é usado em várias obras; na
+  /// solicitação o sistema procura essa linha dentro da obra escolhida.
+  codigoLinhaPadrao String?  @map("codigo_linha_padrao")
+  observacoes       String?
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now()) @map("criado_em")
+
+  familia          FamiliaMaterial    @relation(fields: [familiaId], references: [id])
+  itensSolicitacao SolicitacaoItem[]
+  itensBid         BidItem[]
+  saldos           SaldoEstoque[]
+  movimentos       MovimentoEstoque[]
+  locacoes         ContratoLocacao[]
+
+  @@index([familiaId])
+  @@index([ativo])
+  @@map("materiais")
+}
+
+/// Empresa que fornece material ou serviço.
+model Fornecedor {
+  id                String   @id @default(uuid())
+  razaoSocial       String   @map("razao_social")
+  nomeFantasia      String?  @map("nome_fantasia")
+  cnpj              String   @unique
+  inscricaoEstadual String?  @map("inscricao_estadual")
+  email             String?
+  telefone          String?
+  whatsapp          String?
+  cidade            String?
+  uf                String?  @db.Char(2)
+  observacoes       String?
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now()) @map("criado_em")
+
+  familias FornecedorFamilia[]
+  contatos ContatoFornecedor[]
+  convites BidFornecedor[]
+  pedidos  Pedido[]
+
+  notasFiscais NotaFiscal[]
+  titulos      ContaPagar[]
+  locacoes     ContratoLocacao[]
+
+  @@index([ativo])
+  @@map("fornecedores")
+}
+
+/// Quais famílias cada fornecedor atende.
+/// É esta tabela que responde "quem convidar para o BID de elétrica?".
+model FornecedorFamilia {
+  fornecedorId String @map("fornecedor_id")
+  familiaId    String @map("familia_id")
+
+  fornecedor Fornecedor      @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  familia    FamiliaMaterial @relation(fields: [familiaId], references: [id], onDelete: Cascade)
+
+  @@id([fornecedorId, familiaId])
+  @@map("fornecedores_familias")
+}
+
+/// Pessoa de contato dentro do fornecedor.
+model ContatoFornecedor {
+  id           String  @id @default(uuid())
+  fornecedorId String  @map("fornecedor_id")
+  nome         String
+  cargo        String?
+  email        String?
+  telefone     String?
+  whatsapp     String?
+  principal    Boolean @default(false)
+
+  fornecedor Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+
+  @@index([fornecedorId])
+  @@map("contatos_fornecedor")
+}
+
+/// Faixa de valor e quem precisa aprovar dentro dela.
+/// Decisão D1: configurável em tela, nunca fixa no código.
+model RegraAlcada {
+  id          String   @id @default(uuid())
+  descricao   String
+  valorMinimo Decimal  @map("valor_minimo") @db.Decimal(14, 2)
+  /// Nulo = sem teto (a última faixa).
+  valorMaximo Decimal? @map("valor_maximo") @db.Decimal(14, 2)
+  /// true  = TODAS as funções listadas precisam assinar
+  /// false = qualquer uma delas resolve
+  exigeTodas  Boolean  @default(false) @map("exige_todas")
+  ordem       Int      @default(0)
+  ativa       Boolean  @default(true)
+  criadaEm    DateTime @default(now()) @map("criada_em")
+
+  funcoes RegraAlcadaFuncao[]
+
+  @@map("regras_alcada")
+}
+
+/// Quais funções aprovam em cada faixa.
+model RegraAlcadaFuncao {
+  regraId  String @map("regra_id")
+  funcaoId String @map("funcao_id")
+
+  regra  RegraAlcada @relation(fields: [regraId], references: [id], onDelete: Cascade)
+  funcao Funcao      @relation(fields: [funcaoId], references: [id], onDelete: Cascade)
+
+  @@id([regraId, funcaoId])
+  @@map("regras_alcada_funcoes")
+}
+
+// ============================================================
+//  SOLICITAÇÃO DE COMPRA  (Etapa 3)
+// ============================================================
+
+enum SituacaoSolicitacao {
+  /// Ainda sendo montada pelo solicitante. Só ele vê.
+  RASCUNHO
+  /// Enviada, esperando decisão dos aprovadores.
+  AGUARDANDO_APROVACAO
+  /// Devolvida com observações, aguardando correção.
+  EM_REVISAO
+  APROVADA
+  /// Itens já entraram num pacote de cotação.
+  EM_COTACAO
+  REPROVADA
+  CANCELADA
+}
+
+/// Pedido de material ou serviço aberto por qualquer pessoa.
+/// É o ponto de partida de todo o fluxo de compras.
+model Solicitacao {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "SOL-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  obraId        String @map("obra_id")
+  solicitanteId String @map("solicitante_id")
+
+  situacao      SituacaoSolicitacao @default(RASCUNHO)
+  justificativa String?
+  observacoes   String?
+  /// Prazo em que o solicitante precisa do material.
+  dataDesejada  DateTime?           @map("data_desejada")
+
+  criadaEm     DateTime  @default(now()) @map("criada_em")
+  enviadaEm    DateTime? @map("enviada_em")
+  decididaEm   DateTime? @map("decidida_em")
+  atualizadaEm DateTime  @updatedAt @map("atualizada_em")
+
+  obra        Obra    @relation(fields: [obraId], references: [id])
+  solicitante Usuario @relation(fields: [solicitanteId], references: [id])
+
+  /// Fotografia da alçada no momento do envio. Guardamos aqui
+  /// para que uma mudança futura nas faixas não altere o que
+  /// já estava em aprovação.
+  regraAlcadaId   String?  @map("regra_alcada_id")
+  exigeTodas      Boolean  @default(false) @map("exige_todas")
+  funcoesExigidas String[] @default([]) @map("funcoes_exigidas")
+  valorNoEnvio    Decimal? @map("valor_no_envio") @db.Decimal(14, 2)
+
+  itens      SolicitacaoItem[]
+  eventos    SolicitacaoEvento[]
+  aprovacoes Aprovacao[]
+
+  @@index([obraId])
+  @@index([solicitanteId])
+  @@index([situacao])
+  @@map("solicitacoes")
+}
+
+/// Cada linha do pedido.
+model SolicitacaoItem {
+  id               String  @id @default(uuid())
+  solicitacaoId    String  @map("solicitacao_id")
+  materialId       String  @map("material_id")
+  /// Linha do orçamento da obra em que a compra será apontada.
+  linhaOrcamentoId String? @map("linha_orcamento_id")
+
+  quantidade    Decimal @db.Decimal(14, 4)
+  /// Copiada do material no momento do pedido: se o cadastro
+  /// mudar depois, o histórico continua contando a verdade.
+  unidadeMedida String  @map("unidade_medida")
+
+  /// Marca, qualidade e dimensões, quando o código não basta.
+  descricaoComplementar String? @map("descricao_complementar")
+  /// Exigida quando é a primeira vez que a empresa compra o item.
+  especificacaoTecnica  String? @map("especificacao_tecnica")
+  primeiraCompra        Boolean @default(false) @map("primeira_compra")
+
+  /// Preço de referência, usado para calcular a alçada.
+  valorEstimado Decimal? @map("valor_estimado") @db.Decimal(14, 2)
+  ordem         Int      @default(0)
+
+  solicitacao    Solicitacao     @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
+  material       Material        @relation(fields: [materialId], references: [id])
+  linhaOrcamento LinhaOrcamento? @relation(fields: [linhaOrcamentoId], references: [id])
+  itemBid        BidItem?
+
+  @@index([solicitacaoId])
+  @@index([materialId])
+  @@map("solicitacoes_itens")
+}
+
+/// Trilha de auditoria: tudo que aconteceu com a solicitação.
+/// Nunca é apagada — é ela que responde "quem mandou comprar isso?".
+model SolicitacaoEvento {
+  id            String   @id @default(uuid())
+  solicitacaoId String   @map("solicitacao_id")
+  usuarioId     String?  @map("usuario_id")
+  tipo          String
+  descricao     String
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
+  usuario     Usuario?    @relation(fields: [usuarioId], references: [id])
+
+  @@index([solicitacaoId])
+  @@map("solicitacoes_eventos")
+}
+
+// ============================================================
+//  APROVAÇÃO  (Etapa 4)
+// ============================================================
+
+enum DecisaoAprovacao {
+  APROVADA
+  REPROVADA
+  /// Devolvida ao solicitante para corrigir e reenviar.
+  DEVOLVIDA
+}
+
+/// Uma assinatura. Quando a faixa de alçada exige mais de uma
+/// função, haverá vários registros para a mesma solicitação.
+///
+/// Nunca é apagada nem alterada: é a prova de quem decidiu o quê.
+model Aprovacao {
+  id            String           @id @default(uuid())
+  solicitacaoId String           @map("solicitacao_id")
+  usuarioId     String           @map("usuario_id")
+  /// Com qual função a pessoa assinou. Alguém que acumula duas
+  /// funções exigidas precisa assinar uma vez para cada.
+  funcaoId      String           @map("funcao_id")
+  decisao       DecisaoAprovacao
+  observacao    String?
+  criadaEm      DateTime         @default(now()) @map("criada_em")
+
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade)
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  funcao      Funcao      @relation(fields: [funcaoId], references: [id])
+
+  /// Uma assinatura por função em cada solicitação.
+  @@unique([solicitacaoId, funcaoId])
+  @@index([solicitacaoId])
+  @@index([usuarioId])
+  @@map("aprovacoes")
+}
+
+// ============================================================
+//  COTAÇÃO / BID  (Etapa 5)
+// ============================================================
+
+enum SituacaoBid {
+  /// O comprador ainda está montando o pacote.
+  RASCUNHO
+  /// Fornecedores convidados, prazo correndo.
+  ABERTO
+  /// Prazo encerrado. Segue para a equalização.
+  ENCERRADO
+  /// Vencedores escolhidos e pedidos gerados.
+  CONCLUIDO
+  CANCELADO
+}
+
+/// Pacote de cotação. Agrupa itens já aprovados e é enviado a
+/// vários fornecedores de uma vez — exatamente o "BID" que o
+/// fluxo da Porto Inc. descreve.
+model Bid {
+  id     String @id @default(uuid())
+  numero Int    @unique @default(autoincrement())
+
+  titulo        String
+  compradorId   String      @map("comprador_id")
+  situacao      SituacaoBid @default(RASCUNHO)
+  /// Até quando o fornecedor pode responder.
+  prazoResposta DateTime    @map("prazo_resposta")
+  observacoes   String?
+  /// 1 na primeira volta; sobe a cada última chamada.
+  rodada        Int         @default(1)
+
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  abertoEm    DateTime? @map("aberto_em")
+  encerradoEm DateTime? @map("encerrado_em")
+
+  comprador  Usuario         @relation(fields: [compradorId], references: [id])
+  itens      BidItem[]
+  convidados BidFornecedor[]
+  pedidos    Pedido[]
+
+  @@index([situacao])
+  @@map("bids")
+}
+
+/// Item do pacote. Vem sempre de uma solicitação já aprovada.
+model BidItem {
+  id                String @id @default(uuid())
+  bidId             String @map("bid_id")
+  /// Ligação com o item da solicitação. É única: o mesmo item
+  /// nunca entra em dois pacotes de cotação.
+  solicitacaoItemId String @unique @map("solicitacao_item_id")
+  materialId        String @map("material_id")
+
+  quantidade    Decimal @db.Decimal(14, 4)
+  unidadeMedida String  @map("unidade_medida")
+  observacao    String?
+  ordem         Int     @default(0)
+
+  /// Qual cotação venceu este item. Nulo enquanto não escolhido.
+  cotacaoVencedoraId String? @unique @map("cotacao_vencedora_id")
+
+  bid              Bid             @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  solicitacaoItem  SolicitacaoItem @relation(fields: [solicitacaoItemId], references: [id])
+  material         Material        @relation(fields: [materialId], references: [id])
+  cotacoes         CotacaoItem[]
+  cotacaoVencedora CotacaoItem?    @relation("Vencedora", fields: [cotacaoVencedoraId], references: [id])
+  pedidoItem       PedidoItem?
+
+  @@index([bidId])
+  @@map("bid_itens")
+}
+
+/// Convite a um fornecedor, com o link de resposta e as
+/// condições comerciais que ele informar.
+model BidFornecedor {
+  id           String @id @default(uuid())
+  bidId        String @map("bid_id")
+  fornecedorId String @map("fornecedor_id")
+
+  /// Chave do link público. Longa e aleatória: é ela que dá
+  /// acesso ao portal, então funciona como uma senha.
+  token    String   @unique
+  expiraEm DateTime @map("expira_em")
+
+  visualizadoEm DateTime? @map("visualizado_em")
+  respondidoEm  DateTime? @map("respondido_em")
+
+  // --- Condições comerciais (pedidas no fluxo da Porto Inc.) ---
+  valorFrete            Decimal? @map("valor_frete") @db.Decimal(14, 2)
+  outrosCustos          Decimal? @map("outros_custos") @db.Decimal(14, 2)
+  percentualEntrada     Decimal? @map("percentual_entrada") @db.Decimal(5, 2)
+  quantidadeParcelas    Int?     @map("quantidade_parcelas")
+  intervaloParcelasDias Int?     @map("intervalo_parcelas_dias")
+  observacaoFornecedor  String?  @map("observacao_fornecedor")
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  bid        Bid           @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  fornecedor Fornecedor    @relation(fields: [fornecedorId], references: [id])
+  cotacoes   CotacaoItem[]
+
+  @@unique([bidId, fornecedorId])
+  @@index([bidId])
+  @@map("bid_fornecedores")
+}
+
+/// O preço que um fornecedor deu para um item do pacote.
+model CotacaoItem {
+  id              String @id @default(uuid())
+  bidFornecedorId String @map("bid_fornecedor_id")
+  bidItemId       String @map("bid_item_id")
+
+  /// Falso quando o fornecedor diz "não trabalho com este item".
+  disponivel       Boolean  @default(true)
+  valorUnitario    Decimal? @map("valor_unitario") @db.Decimal(14, 4)
+  marca            String?
+  modelo           String?
+  prazoEntregaDias Int?     @map("prazo_entrega_dias")
+  observacao       String?
+
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  bidFornecedor BidFornecedor @relation(fields: [bidFornecedorId], references: [id], onDelete: Cascade)
+  bidItem       BidItem       @relation(fields: [bidItemId], references: [id], onDelete: Cascade)
+  venceuItem    BidItem?      @relation("Vencedora")
+
+  /// Uma resposta por item, por fornecedor.
+  @@unique([bidFornecedorId, bidItemId])
+  @@index([bidItemId])
+  @@map("cotacao_itens")
+}
+
+// ============================================================
+//  PEDIDO DE COMPRA  (Etapa 6)
+// ============================================================
+
+enum SituacaoPedido {
+  RASCUNHO
+  ENVIADO
+  CONFIRMADO
+  /// Parte do material já chegou; ainda falta saldo.
+  RECEBIDO_PARCIAL
+  /// Todo o pedido foi conferido no almoxarifado.
+  RECEBIDO
+  CANCELADO
+}
+
+/// Pedido oficial enviado ao fornecedor vencedor.
+/// Um pacote de cotação pode gerar VÁRIOS pedidos: a escolha é
+/// feita item a item, então cada fornecedor vencedor recebe o seu.
+model Pedido {
+  id     String @id @default(uuid())
+  numero Int    @unique @default(autoincrement())
+
+  bidId        String         @map("bid_id")
+  fornecedorId String         @map("fornecedor_id")
+  compradorId  String         @map("comprador_id")
+  situacao     SituacaoPedido @default(RASCUNHO)
+
+  // Condições copiadas da cotação vencedora, congeladas aqui.
+  valorFrete            Decimal? @map("valor_frete") @db.Decimal(14, 2)
+  outrosCustos          Decimal? @map("outros_custos") @db.Decimal(14, 2)
+  percentualEntrada     Decimal? @map("percentual_entrada") @db.Decimal(5, 2)
+  quantidadeParcelas    Int?     @map("quantidade_parcelas")
+  intervaloParcelasDias Int?     @map("intervalo_parcelas_dias")
+  observacoes           String?
+
+  criadoEm     DateTime  @default(now()) @map("criado_em")
+  enviadoEm    DateTime? @map("enviado_em")
+  confirmadoEm DateTime? @map("confirmado_em")
+
+  bid          Bid           @relation(fields: [bidId], references: [id])
+  fornecedor   Fornecedor    @relation(fields: [fornecedorId], references: [id])
+  comprador    Usuario       @relation(fields: [compradorId], references: [id])
+  itens        PedidoItem[]
+  recebimentos Recebimento[]
+  notasFiscais NotaFiscal[]
+
+  @@index([bidId])
+  @@index([fornecedorId])
+  @@map("pedidos")
+}
+
+/// Item do pedido, com o preço que venceu.
+model PedidoItem {
+  id        String @id @default(uuid())
+  pedidoId  String @map("pedido_id")
+  /// Cada item do pacote vira item de um único pedido.
+  bidItemId String @unique @map("bid_item_id")
+
+  quantidade       Decimal @db.Decimal(14, 4)
+  unidadeMedida    String  @map("unidade_medida")
+  valorUnitario    Decimal @map("valor_unitario") @db.Decimal(14, 4)
+  marca            String?
+  modelo           String?
+  prazoEntregaDias Int?    @map("prazo_entrega_dias")
+  ordem            Int     @default(0)
+
+  pedido       Pedido            @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  bidItem      BidItem           @relation(fields: [bidItemId], references: [id])
+  recebimentos RecebimentoItem[]
+  locacao      ContratoLocacao?
+
+  @@index([pedidoId])
+  @@map("pedido_itens")
+}
+
+// ------------------------------------------------------------
+//  Recebimento no almoxarifado (Etapa 7)
+// ------------------------------------------------------------
+
+enum SituacaoItemRecebido {
+  /// Chegou como foi pedido.
+  CONFORME
+  /// Chegou e foi aceito, mas com um problema anotado.
+  COM_RESSALVA
+  /// Recusado na hora e devolvido ao entregador.
+  DEVOLVIDO
+}
+
+/// Uma entrega conferida no almoxarifado.
+/// Um mesmo pedido pode ter vários recebimentos: é comum o
+/// fornecedor entregar em partes.
+model Recebimento {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "REC-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  pedidoId       String @map("pedido_id")
+  almoxarifeId   String @map("almoxarife_id")
+  /// Para onde o material entrou. Vira saldo de estoque na Etapa 8.
+  almoxarifadoId String @map("almoxarifado_id")
+
+  /// Documento que veio junto com a carga. Serve de ponte para a
+  /// Etapa 9 (nota fiscal e contas a pagar).
+  notaFiscal      String? @map("nota_fiscal")
+  serieNotaFiscal String? @map("serie_nota_fiscal")
+  transportadora  String?
+  observacoes     String?
+
+  recebidoEm DateTime @default(now()) @map("recebido_em")
+
+  /// Preenchido quando a nota daquela entrega é lançada no fiscal.
+  notaFiscalId String? @map("nota_fiscal_id")
+
+  pedido            Pedido            @relation(fields: [pedidoId], references: [id])
+  almoxarife        Usuario           @relation(fields: [almoxarifeId], references: [id])
+  notaFiscalLancada NotaFiscal?       @relation(fields: [notaFiscalId], references: [id])
+  almoxarifado      Almoxarifado      @relation(fields: [almoxarifadoId], references: [id])
+  itens             RecebimentoItem[]
+
+  @@index([pedidoId])
+  @@index([almoxarifadoId])
+  @@map("recebimentos")
+}
+
+/// O que foi conferido, item a item.
+model RecebimentoItem {
+  id            String @id @default(uuid())
+  recebimentoId String @map("recebimento_id")
+  pedidoItemId  String @map("pedido_item_id")
+
+  /// Quanto entrou de fato no almoxarifado.
+  quantidadeRecebida  Decimal              @map("quantidade_recebida") @db.Decimal(14, 4)
+  /// Quanto voltou no caminhão.
+  quantidadeDevolvida Decimal              @default(0) @map("quantidade_devolvida") @db.Decimal(14, 4)
+  situacao            SituacaoItemRecebido @default(CONFORME)
+  /// Obrigatório quando há ressalva ou devolução.
+  motivo              String?
+
+  recebimento Recebimento        @relation(fields: [recebimentoId], references: [id], onDelete: Cascade)
+  pedidoItem  PedidoItem         @relation(fields: [pedidoItemId], references: [id])
+  movimentos  MovimentoEstoque[]
+
+  @@index([recebimentoId])
+  @@index([pedidoItemId])
+  @@map("recebimento_itens")
+}
+
+// ------------------------------------------------------------
+//  Estoque (Etapa 8)
+// ------------------------------------------------------------
+
+enum TipoMovimento {
+  /// Material entrando, quase sempre vindo de um recebimento.
+  ENTRADA
+  /// Retirada para a frente de serviço.
+  SAIDA
+  /// Correção depois de contagem física (inventário).
+  AJUSTE
+  /// Saiu de um almoxarifado para outro.
+  TRANSFERENCIA_SAIDA
+  /// Chegou vindo de outro almoxarifado.
+  TRANSFERENCIA_ENTRADA
+}
+
+/// Quanto existe de cada material em cada almoxarifado.
+/// É uma "fotografia" mantida junto com os movimentos: o extrato
+/// conta a história, esta tabela responde rápido "tem ou não tem".
+model SaldoEstoque {
+  id             String @id @default(uuid())
+  almoxarifadoId String @map("almoxarifado_id")
+  materialId     String @map("material_id")
+
+  quantidade Decimal  @default(0) @db.Decimal(14, 4)
+  /// Custo médio ponderado: o que o material custa, em média, no
+  /// estoque de hoje. É o número que vale para apontar o consumo
+  /// da obra — não o preço da última nota.
+  custoMedio Decimal? @map("custo_medio") @db.Decimal(14, 4)
+
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  almoxarifado Almoxarifado @relation(fields: [almoxarifadoId], references: [id], onDelete: Cascade)
+  material     Material     @relation(fields: [materialId], references: [id])
+
+  @@unique([almoxarifadoId, materialId])
+  @@index([materialId])
+  @@map("saldos_estoque")
+}
+
+/// Cada entrada, saída ou ajuste. Nunca é apagado nem alterado:
+/// errou, faz um movimento contrário. É o que permite explicar
+/// qualquer saldo meses depois.
+model MovimentoEstoque {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "MOV-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  almoxarifadoId String        @map("almoxarifado_id")
+  materialId     String        @map("material_id")
+  usuarioId      String        @map("usuario_id")
+  tipo           TipoMovimento
+
+  /// Positiva. O tipo diz se soma ou subtrai do saldo.
+  /// Única exceção: no AJUSTE ela é a diferença encontrada na
+  /// contagem e pode ser negativa (contou menos do que havia).
+  quantidade    Decimal  @db.Decimal(14, 4)
+  /// Saldo daquele material logo depois deste movimento.
+  saldoDepois   Decimal  @map("saldo_depois") @db.Decimal(14, 4)
+  valorUnitario Decimal? @map("valor_unitario") @db.Decimal(14, 4)
+
+  /// De onde veio a entrada, quando nasceu de um recebimento.
+  recebimentoItemId String? @map("recebimento_item_id")
+  /// Para quem foi o material, na saída. Texto livre de propósito:
+  /// nem toda frente de serviço tem cadastro.
+  destino           String?
+  observacao        String?
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  almoxarifado    Almoxarifado     @relation(fields: [almoxarifadoId], references: [id])
+  material        Material         @relation(fields: [materialId], references: [id])
+  usuario         Usuario          @relation(fields: [usuarioId], references: [id])
+  recebimentoItem RecebimentoItem? @relation(fields: [recebimentoItemId], references: [id])
+
+  @@index([almoxarifadoId, materialId])
+  @@index([criadoEm])
+  @@map("movimentos_estoque")
+}
+
+// ------------------------------------------------------------
+//  Fiscal e contas a pagar (Etapa 9)
+// ------------------------------------------------------------
+
+enum SituacaoNotaFiscal {
+  /// Lançada, ainda não conferida contra o pedido.
+  LANCADA
+  /// Bateu com o pedido: pode gerar o título a pagar.
+  CONFERIDA
+  /// Valor ou itens não batem. Precisa de decisão de gente.
+  COM_DIVERGENCIA
+  CANCELADA
+}
+
+/// A nota fiscal que o fornecedor emitiu contra a Porto Inc.
+///
+/// Enquanto a SEFAZ não estiver ligada, ela é digitada ou vem do
+/// XML que o fornecedor manda por e-mail. O que muda com a SEFAZ
+/// é só a origem dos dados — o resto do fluxo é o mesmo.
+model NotaFiscal {
+  id String @id @default(uuid())
+
+  /// Número da nota no talão do FORNECEDOR (não é sequencial nosso).
+  numero      String
+  serie       String  @default("1")
+  /// Os 44 dígitos. Opcional: nota antiga de papel não tem.
+  chaveAcesso String? @map("chave_acesso")
+
+  fornecedorId String  @map("fornecedor_id")
+  pedidoId     String? @map("pedido_id")
+  lancadaPorId String  @map("lancada_por_id")
+
+  emitidaEm     DateTime @map("emitida_em")
+  valorTotal    Decimal  @map("valor_total") @db.Decimal(14, 2)
+  valorProdutos Decimal? @map("valor_produtos") @db.Decimal(14, 2)
+  valorFrete    Decimal? @map("valor_frete") @db.Decimal(14, 2)
+
+  situacao     SituacaoNotaFiscal @default(LANCADA)
+  /// O que não bateu com o pedido, em português.
+  divergencias String[]           @default([])
+  observacoes  String?
+  /// Verdadeiro quando os dados vieram do arquivo XML.
+  doXml        Boolean            @default(false) @map("do_xml")
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  fornecedor   Fornecedor       @relation(fields: [fornecedorId], references: [id])
+  pedido       Pedido?          @relation(fields: [pedidoId], references: [id])
+  lancadaPor   Usuario          @relation(fields: [lancadaPorId], references: [id])
+  itens        NotaFiscalItem[]
+  titulos      ContaPagar[]
+  recebimentos Recebimento[]
+
+  /// O mesmo fornecedor não emite duas notas com o mesmo número e série.
+  @@unique([fornecedorId, numero, serie])
+  @@index([pedidoId])
+  @@map("notas_fiscais")
+}
+
+/// Item da nota, como veio do fornecedor.
+model NotaFiscalItem {
+  id           String @id @default(uuid())
+  notaFiscalId String @map("nota_fiscal_id")
+
+  ordem         Int     @default(0)
+  codigo        String?
+  descricao     String
+  gtin          String?
+  unidade       String?
+  quantidade    Decimal @db.Decimal(14, 4)
+  valorUnitario Decimal @map("valor_unitario") @db.Decimal(14, 4)
+  valorTotal    Decimal @map("valor_total") @db.Decimal(14, 2)
+
+  /// Quando o sistema conseguiu casar com o item do pedido.
+  pedidoItemId String? @map("pedido_item_id")
+
+  notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+
+  @@index([notaFiscalId])
+  @@map("notas_fiscais_itens")
+}
+
+enum SituacaoConta {
+  ABERTA
+  PAGA
+  CANCELADA
+}
+
+/// Uma parcela a pagar. As condições vêm da cotação vencedora:
+/// entrada de X% mais N parcelas a cada M dias.
+model ContaPagar {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "CP-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  notaFiscalId String @map("nota_fiscal_id")
+  fornecedorId String @map("fornecedor_id")
+
+  parcela       Int
+  totalParcelas Int           @map("total_parcelas")
+  valor         Decimal       @db.Decimal(14, 2)
+  vencimento    DateTime
+  situacao      SituacaoConta @default(ABERTA)
+
+  pagoEm         DateTime? @map("pago_em")
+  valorPago      Decimal?  @map("valor_pago") @db.Decimal(14, 2)
+  formaPagamento String?   @map("forma_pagamento")
+  pagoPorId      String?   @map("pago_por_id")
+  observacoes    String?
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  notaFiscal NotaFiscal @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+  fornecedor Fornecedor @relation(fields: [fornecedorId], references: [id])
+  pagoPor    Usuario?   @relation(fields: [pagoPorId], references: [id])
+
+  @@index([vencimento])
+  @@index([situacao])
+  @@map("contas_pagar")
+}
+
+// ------------------------------------------------------------
+//  WhatsApp (Etapa 10)
+// ------------------------------------------------------------
+
+/// Numero liberado para receber mensagem enquanto o MODO DE TESTE
+/// estiver ligado (WHATSAPP_MODO_TESTE=true no .env).
+///
+/// Existe por um motivo simples: os fornecedores de demonstracao
+/// tem telefones ficticios. Com o WhatsApp conectado de verdade,
+/// um clique em "enviar" cairia no celular de um desconhecido que
+/// por acaso tenha aquele numero.
+model NumeroAutorizado {
+  id         String  @id @default(uuid())
+  /// So digitos, com DDI e DDD.
+  numero     String  @unique
+  nome       String
+  observacao String?
+
+  criadoPorId String   @map("criado_por_id")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id])
+
+  @@map("numeros_autorizados")
+}
+
+enum SituacaoMensagem {
+  ENVIADA
+  FALHOU
+  /// Barrada pela lista de autorizados, antes de sair.
+  BLOQUEADA
+}
+
+/// Tudo que o sistema tentou enviar pelo WhatsApp.
+///
+/// Guarda ate o que foi BLOQUEADO: se alguem tentou mandar para um
+/// numero fora da lista, isso precisa aparecer.
+model MensagemEnviada {
+  id String @id @default(uuid())
+
+  numero   String
+  destino  String?
+  texto    String
+  temAnexo Boolean @default(false) @map("tem_anexo")
+
+  situacao   SituacaoMensagem
+  idMensagem String?          @map("id_mensagem")
+  erro       String?
+  adaptador  String
+
+  /// De onde partiu: "cotacao", "pedido", "teste".
+  contexto   String?
+  /// O documento de origem: "BID-00002", "PC-00001".
+  referencia String?
+
+  enviadoPorId String?  @map("enviado_por_id")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  enviadoPor Usuario? @relation(fields: [enviadoPorId], references: [id])
+
+  @@index([criadoEm])
+  @@index([situacao])
+  @@map("mensagens_whatsapp")
+}
+
+// ============================================================
+//  LOCAÇÃO DE EQUIPAMENTOS  (Etapa 12)
+//
+//  Locação não é compra: o equipamento não é consumido, então
+//  não vira saldo de estoque. Ele fica EM ALGUM LUGAR e tem um
+//  RELÓGIO CORRENDO. É isso que este módulo controla.
+//
+//  A contratação em si passa pelo fluxo normal — solicitação,
+//  aprovação, cotação e pedido —, porque o item de locação já
+//  existe no catálogo como serviço da família LOC. O que começa
+//  aqui é o que vem DEPOIS do pedido: onde o equipamento está,
+//  quanto já custou e quando precisa voltar.
+// ============================================================
+
+enum PeriodoLocacao {
+  DIARIA
+  SEMANAL
+  MENSAL
+}
+
+enum SituacaoLocacao {
+  /// Equipamento na obra, relógio correndo.
+  ATIVA
+  /// Voltou para o fornecedor.
+  DEVOLVIDA
+  /// Contrato desfeito antes de começar.
+  CANCELADA
+}
+
+/// Um equipamento alugado, com data para voltar.
+model ContratoLocacao {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "LOC-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  fornecedorId String @map("fornecedor_id")
+  obraId       String @map("obra_id")
+  /// O item do catálogo, quando existe. Locação avulsa pode não ter.
+  materialId   String? @map("material_id")
+
+  /// Ligação com a compra que originou a locação. Nulo quando o
+  /// contrato foi lançado direto, sem passar por cotação.
+  pedidoItemId String? @unique @map("pedido_item_id")
+
+  /// O que foi alugado, em português. Copiado do catálogo quando
+  /// veio de lá: se o cadastro mudar depois, o contrato continua
+  /// dizendo o que foi de fato alugado.
+  descricao String
+  /// Placa, número de série ou patrimônio do equipamento.
+  identificacao String?
+  quantidade    Decimal @default(1) @db.Decimal(14, 4)
+  unidadeMedida String  @map("unidade_medida")
+
+  periodicidade PeriodoLocacao @default(DIARIA)
+  valorPeriodo  Decimal        @map("valor_periodo") @db.Decimal(14, 2)
+
+  inicioEm          DateTime  @map("inicio_em")
+  /// Quando o equipamento deveria voltar. É a base do alerta:
+  /// sem esta data não há como avisar nada.
+  previsaoDevolucao DateTime  @map("previsao_devolucao")
+  devolvidoEm       DateTime? @map("devolvido_em")
+
+  situacao    SituacaoLocacao @default(ATIVA)
+  observacoes String?
+  /// Por que foi devolvido ou cancelado.
+  motivo      String?
+
+  /// Quem contratou e quem registrou a volta.
+  responsavelId  String  @map("responsavel_id")
+  devolvidoPorId String? @map("devolvido_por_id")
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  fornecedor   Fornecedor  @relation(fields: [fornecedorId], references: [id])
+  obra         Obra        @relation(fields: [obraId], references: [id])
+  material     Material?   @relation(fields: [materialId], references: [id])
+  pedidoItem   PedidoItem? @relation(fields: [pedidoItemId], references: [id])
+  responsavel  Usuario     @relation("LocacaoContratada", fields: [responsavelId], references: [id])
+  devolvidoPor Usuario?    @relation("LocacaoDevolvida", fields: [devolvidoPorId], references: [id])
+
+  @@index([obraId])
+  @@index([fornecedorId])
+  @@index([situacao])
+  @@index([previsaoDevolucao])
+  @@map("contratos_locacao")
+}

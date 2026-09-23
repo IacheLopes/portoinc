@@ -1,0 +1,391 @@
+/* ============================================================
+   Estilos globais - Porto Inc.
+   ============================================================ */
+
+@import './tokens.css';
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--fonte);
+  font-size: var(--txt-md);
+  line-height: 1.55;
+  color: var(--texto);
+  background: var(--fundo);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  line-height: 1.25;
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: var(--txt-2xl); }
+h2 { font-size: var(--txt-xl); }
+h3 { font-size: var(--txt-lg); }
+
+p { margin: 0; }
+
+/* ------------------------------------------------------------
+   ACESSIBILIDADE: foco sempre visivel.
+   Quem navega por teclado precisa enxergar onde esta.
+   Nunca remover o outline sem colocar algo no lugar.
+   ------------------------------------------------------------ */
+:focus-visible {
+  outline: 3px solid var(--azul-600);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+/* Link para pular direto ao conteudo (leitores de tela e teclado). */
+.pular-para-conteudo {
+  position: absolute;
+  left: -9999px;
+  top: var(--esp-2);
+  z-index: 100;
+  padding: var(--esp-2) var(--esp-4);
+  background: var(--azul-600);
+  color: var(--texto-invertido);
+  border-radius: var(--raio-md);
+  font-weight: var(--peso-medio);
+}
+.pular-para-conteudo:focus {
+  left: var(--esp-4);
+}
+
+/* Texto visivel apenas para leitores de tela. */
+.apenas-leitor-tela {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------
+   Estrutura da pagina
+   ------------------------------------------------------------ */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.conteudo {
+  flex: 1;
+  width: 100%;
+  max-width: var(--largura-maxima);
+  margin: 0 auto;
+  /* Respiro lateral fixo: no celular o conteudo nunca encosta na borda. */
+  padding: var(--esp-6) var(--esp-4) var(--esp-7);
+}
+
+/* ------------------------------------------------------------
+   Titulo de secao
+   ------------------------------------------------------------ */
+.secao { margin-bottom: var(--esp-6); }
+
+/* Titulo e descricao ficam juntos: PROXIMIDADE. */
+.secao__cabecalho {
+  margin-bottom: var(--esp-4);
+}
+
+.secao__descricao {
+  margin-top: var(--esp-1);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+/* ------------------------------------------------------------
+   Grade de cartoes - ALINHAMENTO
+   ------------------------------------------------------------ */
+.grade {
+  display: grid;
+  gap: var(--esp-4);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+/* ------------------------------------------------------------
+   Cartao
+   ------------------------------------------------------------ */
+.cartao {
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  padding: var(--esp-5);
+  box-shadow: var(--sombra-1);
+}
+
+/* Cartao que envolve uma tabela: a tabela encosta na borda. */
+.cartao--tabela {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cartao__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+  margin-bottom: var(--esp-3);
+}
+
+.cartao__valor {
+  font-size: var(--txt-2xl);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.02em;
+  /* Numeros com a mesma largura: as colunas nao dancam ao atualizar. */
+  font-variant-numeric: tabular-nums;
+}
+
+.cartao__rodape {
+  margin-top: var(--esp-2);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   Selo de situacao
+   Cor + icone + texto: nunca apenas a cor.
+   ------------------------------------------------------------ */
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-1) var(--esp-3);
+  border-radius: var(--raio-total);
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-forte);
+  white-space: nowrap;
+}
+
+.selo--sucesso  { background: var(--sucesso-leve); color: var(--sucesso-texto); }
+.selo--atencao  { background: var(--atencao-leve); color: var(--atencao-texto); }
+.selo--erro     { background: var(--erro-leve);    color: var(--erro-texto); }
+.selo--info     { background: var(--info-leve);    color: var(--info-texto); }
+
+/* ------------------------------------------------------------
+   Tabela
+   ------------------------------------------------------------ */
+.tabela-area { overflow-x: auto; }
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--txt-sm);
+}
+
+.tabela th, .tabela td {
+  padding: var(--esp-3) var(--esp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--borda);
+}
+
+/* Só o cabeçalho da tabela fica em maiúsculas. */
+.tabela thead th {
+  font-size: var(--txt-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+  background: var(--fundo-suave);
+}
+
+/* A primeira célula da linha também é um <th>, por acessibilidade:
+   o leitor de tela anuncia "Gilson, E-mail, gilson@..." em vez de
+   ler a célula solta. Mas visualmente ela é texto normal, em negrito. */
+.tabela tbody th {
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
+.tabela tbody tr:last-child td,
+.tabela tbody tr:last-child th { border-bottom: none; }
+
+/* ------------------------------------------------------------
+   Botao
+   ------------------------------------------------------------ */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  /* 44px de altura: tamanho minimo confortavel para o dedo no celular. */
+  min-height: 44px;
+  padding: var(--esp-2) var(--esp-5);
+  border: 1px solid transparent;
+  border-radius: var(--raio-md);
+  font: inherit;
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+  transition: background var(--transicao), border-color var(--transicao);
+  /* Link com cara de botao nao leva sublinhado: a forma do botao
+     ja diz que e clicavel. */
+  text-decoration: none;
+}
+
+.botao--principal {
+  background: var(--azul-600);
+  color: var(--texto-invertido);
+}
+.botao--principal:hover:not(:disabled) { background: var(--azul-500); }
+
+.botao--secundario {
+  background: var(--fundo-elevado);
+  color: var(--texto);
+  border-color: var(--borda);
+}
+.botao--secundario:hover:not(:disabled) { background: var(--fundo-suave); }
+
+.botao:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------
+   Estados: carregando, erro e vazio
+   Toda lista do sistema precisa dos tres. Isso e FEEDBACK.
+   ------------------------------------------------------------ */
+.estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-7) var(--esp-4);
+  text-align: center;
+  color: var(--texto-secundario);
+}
+
+.estado__icone { font-size: var(--txt-2xl); }
+
+.estado--erro {
+  color: var(--erro-texto);
+  background: var(--erro-leve);
+  border-radius: var(--raio-lg);
+}
+
+.girando {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--borda);
+  border-top-color: var(--azul-600);
+  border-radius: 50%;
+  animation: girar 800ms linear infinite;
+}
+
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------
+   Rodape
+   ------------------------------------------------------------ */
+.rodape {
+  padding: var(--esp-4);
+  border-top: 1px solid var(--borda);
+  text-align: center;
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.mono { font-family: var(--fonte-mono); }
+
+/* ------------------------------------------------------------
+   Celular
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .conteudo { padding: var(--esp-5) var(--esp-4) var(--esp-6); }
+  h1 { font-size: var(--txt-xl); }
+}
+
+/* ============================================================
+   Barra de rolagem de dentro do sistema
+
+   A barra nativa do Windows é larga, cinza e tem setas nas
+   pontas: encostada no menu escuro, parecia um pedaço de outro
+   programa colado na tela.
+
+   Vale só para o que rola DENTRO da página — o menu lateral, as
+   tabelas largas e o bloco de exemplo da importação. A barra da janela continua sendo a do
+   navegador: ela é do sistema operacional, e trocá-la só
+   confundiria quem já sabe usá-la.
+   ============================================================ */
+
+/* Dois caminhos, e só UM pode valer de cada vez.
+
+   O Chromium IGNORA as regras `::-webkit-scrollbar` quando o
+   `scrollbar-width` padrão também está declarado — e aí desenha a
+   barra dele, com as setinhas que não queremos. Então o padrão
+   fica reservado a quem não entende as `::-webkit-` (o Firefox), e
+   no Chromium/Edge mandam as regras detalhadas abaixo. */
+@supports not selector(::-webkit-scrollbar) {
+  .menu,
+  .tabela-area,
+  .modelo {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rolagem) transparent;
+  }
+}
+
+/* Detalhe fino para os navegadores que usam o prefixo (é o caso
+   do Edge e do Chrome). Os três lugares que rolam por dentro da
+   página recebem o mesmo tratamento. */
+.menu::-webkit-scrollbar,
+.tabela-area::-webkit-scrollbar,
+.modelo::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.menu::-webkit-scrollbar-track,
+.tabela-area::-webkit-scrollbar-track,
+.modelo::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu::-webkit-scrollbar-thumb,
+.tabela-area::-webkit-scrollbar-thumb,
+.modelo::-webkit-scrollbar-thumb {
+  background: var(--rolagem);
+  border-radius: 999px;
+  /* A borda transparente afina a alça sem afinar a área de
+     arraste: continua fácil de pegar com o mouse. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.menu::-webkit-scrollbar-thumb:hover,
+.tabela-area::-webkit-scrollbar-thumb:hover,
+.modelo::-webkit-scrollbar-thumb:hover {
+  background: var(--rolagem-forte);
+  background-clip: content-box;
+}
+
+/* As setinhas das pontas não servem para nada aqui e ocupam
+   espaço que a alça poderia usar.
+
+   Só `display: none` não bastou: o Chromium continuava reservando
+   o quadradinho e desenhando a seta. Zerar a medida junto é o que
+   faz a alça ir de ponta a ponta. */
+.menu::-webkit-scrollbar-button,
+.tabela-area::-webkit-scrollbar-button,
+.modelo::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.menu::-webkit-scrollbar-corner,
+.tabela-area::-webkit-scrollbar-corner,
+.modelo::-webkit-scrollbar-corner {
+  background: transparent;
+}

@@ -1,0 +1,533 @@
+// ============================================================
+//  Detalhe do pacote de cotação
+//
+//  Duas fases bem diferentes na mesma tela:
+//   - RASCUNHO: escolher fornecedores e abrir
+//   - ABERTO:   acompanhar quem viu e quem já respondeu
+// ============================================================
+
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import {
+  buscarCotacao, fornecedoresSugeridos, convidarFornecedores, removerConvite,
+  abrirCotacao, encerrarCotacao,
+  ROTULO_SITUACAO_BID, COR_SITUACAO_BID,
+  type Cotacao, type FornecedorSugerido,
+} from '../../servicos/cotacoes';
+import { dataBr, dataHoraBr } from '../../servicos/solicitacoes';
+import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { enviarConvites } from '../../servicos/whatsapp';
+import { ErroApi } from '../../servicos/api';
+import { Cartao } from '../../componentes/Cartao';
+import { Selo } from '../../componentes/Selo';
+import { Carregando, Erro } from '../../componentes/Estado';
+
+export function DetalheCotacao() {
+  const { id = '' } = useParams();
+
+  const [dados, setDados] = useState<Cotacao | null>(null);
+  const [sugeridos, setSugeridos] = useState<FornecedorSugerido[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [impedimentos, setImpedimentos] = useState<string[]>([]);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [marcados, setMarcados] = useState<string[]>([]);
+  const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const r = await buscarCotacao(id);
+      setDados(r.cotacao);
+
+      if (r.cotacao.situacao === 'RASCUNHO') {
+        const s = await fornecedoresSugeridos(id);
+        setSugeridos(s.fornecedores);
+        // Já vêm pré-marcados os que ainda não foram convidados:
+        // o caminho comum é convidar todos da família.
+        setMarcados(s.fornecedores.filter((f) => !f.jaConvidado).map((f) => f.id));
+      }
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+    } finally {
+      setCarregando(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  async function convidar() {
+    setOcupado(true);
+    setErro(null);
+    try {
+      const r = await convidarFornecedores(id, marcados);
+      setAviso(r.convidados + ' fornecedor(es) adicionado(s) ao pacote.');
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao convidar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function remover(conviteId: string) {
+    setOcupado(true);
+    try {
+      await removerConvite(id, conviteId);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao remover.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function abrir() {
+    setOcupado(true);
+    setErro(null);
+    setImpedimentos([]);
+    try {
+      const r = await abrirCotacao(id);
+      setAviso(r.mensagem);
+      await carregar();
+    } catch (e) {
+      if (e instanceof ErroApi) {
+        setErro(e.message);
+        setImpedimentos((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
+      } else {
+        setErro('Falha ao abrir o pacote.');
+      }
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function encerrar() {
+    setOcupado(true);
+    try {
+      const r = await encerrarCotacao(id);
+      setAviso(r.mensagem);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao encerrar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function copiarLink(token: string) {
+    const url = window.location.origin + '/portal/' + token;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopiado(token);
+      setTimeout(() => setLinkCopiado(null), 2500);
+    } catch {
+      setErro('Não foi possível copiar. Copie o link manualmente: ' + url);
+    }
+  }
+
+  /** Manda o link do portal para cada fornecedor convidado. */
+  async function mandarConvites() {
+    setOcupado(true);
+    setErro(null);
+
+    try {
+      const r = await enviarConvites(id);
+      setAviso(r.mensagem);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível enviar os convites.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  if (carregando && !dados) return <Carregando mensagem="Carregando pacote..." />;
+  if (erro && !dados) return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
+  if (!dados) return null;
+
+  const ehRascunho = dados.situacao === 'RASCUNHO';
+  const aberto = dados.situacao === 'ABERTO';
+
+  return (
+    <>
+      <section className="secao">
+        <nav className="migalhas" aria-label="Você está em">
+          <Link to="/cotacoes">Cotações</Link>
+          <span aria-hidden="true">›</span>
+          <span aria-current="page">{dados.numeroFormatado}</span>
+        </nav>
+
+        <div className="secao__cabecalho">
+          <div className="em-obra__topo">
+            <h1>{dados.numeroFormatado}</h1>
+            <Selo tipo={COR_SITUACAO_BID[dados.situacao]}>
+              {ROTULO_SITUACAO_BID[dados.situacao]}
+            </Selo>
+          </div>
+          <p className="secao__descricao">
+            {dados.titulo} · comprador {dados.comprador.nome}
+          </p>
+        </div>
+
+        {aviso && (
+          <p className="aviso aviso--sucesso" role="status">
+            <span aria-hidden="true">✓</span> {aviso}
+          </p>
+        )}
+
+        {erro && (
+          <div className="aviso aviso--erro" role="alert">
+            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <div>
+              <strong>{erro}</strong>
+              {impedimentos.length > 0 && (
+                <ul className="campo__erro-lista">
+                  {impedimentos.map((i) => (
+                    <li key={i}>{i}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="grade">
+          <Cartao titulo="Itens" valor={String(dados.itens.length)} detalhe="No pacote" />
+          <Cartao
+            titulo="Prazo de resposta"
+            valor={dataBr(dados.prazoResposta)}
+            detalhe={aberto ? 'Links ativos até esta data' : 'Ainda não enviado'}
+          />
+          <Cartao
+            titulo="Respostas"
+            valor={dados.respostasRecebidas + ' de ' + dados.convidados.length}
+            detalhe="Fornecedores que já cotaram"
+          />
+        </div>
+
+        <div className="barra-acoes" style={{ marginTop: 'var(--esp-4)' }}>
+          {ehRascunho && (
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => void abrir()}
+              disabled={ocupado}
+            >
+              {ocupado ? 'Abrindo...' : '📨 Abrir cotação e convidar'}
+            </button>
+          )}
+
+          {aberto && (
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => void encerrar()}
+              disabled={ocupado}
+            >
+              Encerrar cotação
+            </button>
+          )}
+
+          {dados.respostasRecebidas > 0 && (
+            <Link
+              to={'/cotacoes/' + id + '/equalizacao'}
+              className={
+                'botao botao--link-cheio ' +
+                (dados.situacao === 'ENCERRADO' ? 'botao--principal' : 'botao--secundario')
+              }
+            >
+              📊 Equalizar e escolher
+            </Link>
+          )}
+
+          {aberto && (
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => void mandarConvites()}
+              disabled={ocupado}
+            >
+              💬 Enviar convites pelo WhatsApp
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="botao botao--discreto"
+            onClick={() => void carregar()}
+            disabled={ocupado}
+          >
+            Atualizar
+          </button>
+        </div>
+      </section>
+
+      {/* ---------------- Escolha de fornecedores (rascunho) ---------------- */}
+      {ehRascunho && (
+        <section className="secao">
+          <div className="secao__cabecalho">
+            <h2>Fornecedores sugeridos</h2>
+            <p className="secao__descricao">
+              O sistema listou quem atende as <strong>famílias dos itens</strong> deste
+              pacote. É exatamente o que o fluxo da Porto Inc. pede: um BID de elétrica
+              só vai para quem vende elétrica.
+            </p>
+          </div>
+
+          {sugeridos.length === 0 ? (
+            <div className="aviso aviso--atencao">
+              <span className="aviso__icone" aria-hidden="true">⚠</span>
+              <div>
+                <strong>Nenhum fornecedor atende as famílias deste pacote.</strong>
+                <p>
+                  Vá em <Link to="/cadastros/fornecedores">Cadastros → Fornecedores</Link> e
+                  marque as famílias que cada um atende.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="cartao cartao--tabela">
+                <div className="tabela-area">
+                  <table className="tabela">
+                    <caption className="apenas-leitor-tela">
+                      Fornecedores que atendem as famílias do pacote
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">
+                          <span className="apenas-leitor-tela">Convidar</span>
+                        </th>
+                        <th scope="col">Fornecedor</th>
+                        <th scope="col">Atende</th>
+                        <th scope="col">WhatsApp</th>
+                        <th scope="col">Situação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sugeridos.map((f) => (
+                        <tr key={f.id} className={marcados.includes(f.id) ? 'linha--marcada' : ''}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="caixa"
+                              checked={marcados.includes(f.id) || f.jaConvidado}
+                              disabled={f.jaConvidado}
+                              onChange={() =>
+                                setMarcados((a) =>
+                                  a.includes(f.id) ? a.filter((x) => x !== f.id) : [...a, f.id],
+                                )
+                              }
+                              aria-label={'Convidar ' + f.razaoSocial}
+                            />
+                          </td>
+                          <th scope="row">
+                            {f.nomeFantasia ?? f.razaoSocial}
+                            <small className="linha-extra">{f.razaoSocial}</small>
+                          </th>
+                          <td>
+                            <span className="etiquetas">
+                              {f.familias.map((x) => (
+                                <span key={x.id} className="etiqueta">
+                                  {x.codigo}
+                                </span>
+                              ))}
+                            </span>
+                          </td>
+                          <td className="mono">
+                            {f.whatsapp ?? <span className="texto-fraco">—</span>}
+                          </td>
+                          <td>
+                            {f.jaConvidado ? (
+                              <Selo tipo="sucesso">Já convidado</Selo>
+                            ) : (
+                              <Selo tipo="info">Disponível</Selo>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="barra-acoes" style={{ marginTop: 'var(--esp-3)' }}>
+                <button
+                  type="button"
+                  className="botao botao--secundario"
+                  onClick={() => void convidar()}
+                  disabled={ocupado || marcados.length === 0}
+                >
+                  Adicionar {marcados.length} ao pacote
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {/* ---------------- Convidados ---------------- */}
+      {dados.convidados.length > 0 && (
+        <section className="secao">
+          <div className="secao__cabecalho">
+            <h2>Convidados</h2>
+            <p className="secao__descricao">
+              {aberto
+                ? 'Cada um recebeu um link próprio, que vence junto com o prazo.'
+                : 'Os links só passam a valer quando você abrir a cotação.'}
+            </p>
+          </div>
+
+          <div className="cartao cartao--tabela">
+            <div className="tabela-area">
+              <table className="tabela">
+                <caption className="apenas-leitor-tela">Fornecedores convidados</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Fornecedor</th>
+                    <th scope="col">Abriu o link</th>
+                    <th scope="col">Respondeu</th>
+                    <th scope="col" className="numero">Total cotado</th>
+                    <th scope="col">Pagamento</th>
+                    <th scope="col">
+                      <span className="apenas-leitor-tela">Ações</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dados.convidados.map((c) => (
+                    <tr key={c.id}>
+                      <th scope="row">
+                        {c.fornecedor.nomeFantasia ?? c.fornecedor.razaoSocial}
+                        <small className="linha-extra mono">{c.fornecedor.cnpj}</small>
+                      </th>
+                      <td>
+                        {c.visualizadoEm ? (
+                          dataHoraBr(c.visualizadoEm)
+                        ) : (
+                          <span className="texto-fraco">Ainda não</span>
+                        )}
+                      </td>
+                      <td>
+                        {c.respondeu ? (
+                          <Selo tipo="sucesso">{dataHoraBr(c.respondidoEm!)}</Selo>
+                        ) : (
+                          <Selo tipo="atencao">Aguardando</Selo>
+                        )}
+                      </td>
+                      <td className="numero">
+                        {c.totais && c.respondeu ? (
+                          <>
+                            {dinheiro(c.totais.total)}
+                            {c.totais.itensIndisponiveis > 0 && (
+                              <small className="linha-extra">
+                                {c.totais.itensIndisponiveis} sem estoque
+                              </small>
+                            )}
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>{c.respondeu ? c.pagamento : '—'}</td>
+                      <td>
+                        {aberto && c.token && (
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => void copiarLink(c.token!)}
+                          >
+                            {linkCopiado === c.token ? '✓ Copiado' : '🔗 Copiar link'}
+                          </button>
+                        )}
+                        {ehRascunho && (
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => void remover(c.id)}
+                            disabled={ocupado}
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {aberto && (
+            <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-3)' }}>
+              <span className="aviso__icone" aria-hidden="true">🔒</span>
+              <div>
+                <strong>Sobre os links.</strong>
+                <p>
+                  Cada link é único, entra sem senha e vence em{' '}
+                  {dataBr(dados.prazoResposta)}. O fornecedor enxerga apenas o próprio
+                  pacote — <strong>nunca</strong> o preço ou o nome dos concorrentes.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ---------------- Itens ---------------- */}
+      <section className="secao">
+        <div className="secao__cabecalho">
+          <h2>Itens do pacote</h2>
+        </div>
+
+        <div className="cartao cartao--tabela">
+          <div className="tabela-area">
+            <table className="tabela">
+              <caption className="apenas-leitor-tela">Itens a cotar</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Código</th>
+                  <th scope="col">Item</th>
+                  <th scope="col">Un.</th>
+                  <th scope="col" className="numero">Qtd.</th>
+                  <th scope="col">Origem</th>
+                  <th scope="col" className="numero">Respostas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dados.itens.map((i) => (
+                  <tr key={i.id}>
+                    <th scope="row" className="mono">
+                      {i.material.codigoInterno}
+                    </th>
+                    <td>
+                      {i.material.descricao}
+                      {i.descricaoComplementar && (
+                        <small className="linha-extra">{i.descricaoComplementar}</small>
+                      )}
+                      {i.material.normaTecnica && (
+                        <small className="linha-extra">Norma: {i.material.normaTecnica}</small>
+                      )}
+                    </td>
+                    <td className="mono">{i.unidadeMedida}</td>
+                    <td className="numero">{qtdBr(i.quantidade)}</td>
+                    <td>
+                      <span className="mono">{i.origem.solicitacao}</span>
+                      <small className="linha-extra">{i.origem.obra.codigo}</small>
+                    </td>
+                    <td className="numero">{i.respostas}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

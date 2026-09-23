@@ -1,0 +1,163 @@
+/* ============================================================
+   SISTEMA DE DESIGN - Porto Inc.
+
+   Estes sao os "ingredientes" visuais do sistema.
+   Nenhuma tela usa cor ou espacamento solto: todas usam estas
+   variaveis. E isso que garante a REPETICAO (consistencia) --
+   um dos principios basicos de UI.
+   ============================================================ */
+
+:root {
+  /* ---------- Cores da marca ---------- */
+  --marinho-900: #0a1c2e;
+  --marinho-800: #0f2942;
+  --marinho-700: #1a3a5a;
+  --azul-600:    #2f6fed;
+  --azul-500:    #4a83f0;
+  --azul-100:    #e3edfd;
+
+  /* ---------- Neutros ---------- */
+  --neutro-0:   #ffffff;
+  --neutro-50:  #f7f9fb;
+  --neutro-100: #eef2f6;
+  --neutro-200: #dde4ec;
+  --neutro-400: #94a3b3;
+  --neutro-600: #5a6b7d;
+  --neutro-800: #2b3a48;
+  --neutro-900: #16202b;
+
+  /* ---------- Cores de significado ---------- */
+  /* Nunca usar SO a cor para informar algo: sempre com icone ou texto.
+     Isso atende daltonicos (acessibilidade). */
+  --sucesso:      #1f8a4c;
+  --sucesso-leve: #e6f4ec;
+  --atencao:      #b87503;
+  --atencao-leve: #fdf3e2;
+  --erro:         #c0392b;
+  --erro-leve:    #fbeceb;
+  --info:         #2f6fed;
+  --info-leve:    #e3edfd;
+
+  /* Versão da cor para TEXTO em cima do fundo "leve".
+     A cor cheia serve para botão e borda; para texto pequeno ela
+     precisa ser mais escura (tema claro) ou mais clara (tema
+     escuro) para alcançar o contraste mínimo de 4,5:1 da WCAG AA.
+     Sem isso o aviso vira uma mancha difícil de ler. */
+  --sucesso-texto: #16703d;
+  --atencao-texto: #8a5800;
+  --erro-texto:    #b32d1f;
+  --info-texto:    #1b4fc0;
+
+  /* ---------- Papeis (trocam no modo escuro) ---------- */
+  --fundo:            var(--neutro-50);
+  --fundo-elevado:    var(--neutro-0);
+  --fundo-suave:      var(--neutro-100);
+  --borda:            var(--neutro-200);
+  /* Barra de rolagem de DENTRO do sistema. A barra da janela
+     continua a do navegador: ela e do sistema operacional. */
+  --rolagem:          #c7d2de;
+  --rolagem-forte:    var(--neutro-400);
+  --texto:            var(--neutro-900);
+  --texto-secundario: var(--neutro-600);
+  --texto-invertido:  var(--neutro-0);
+
+  /* ---------- Espacamento (escala de 4px) ----------
+     Usar a escala e o que cria a PROXIMIDADE correta:
+     o que se relaciona fica perto, o que nao se relaciona fica longe. */
+  --esp-1: 0.25rem;  /*  4px */
+  --esp-2: 0.5rem;   /*  8px */
+  --esp-3: 0.75rem;  /* 12px */
+  --esp-4: 1rem;     /* 16px */
+  --esp-5: 1.5rem;   /* 24px */
+  --esp-6: 2rem;     /* 32px */
+  --esp-7: 3rem;     /* 48px */
+
+  /* ---------- Tipografia ----------
+     Tamanhos diferentes criam HIERARQUIA: o olho sabe onde olhar primeiro. */
+  --fonte: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --fonte-mono: 'Cascadia Code', 'Consolas', monospace;
+
+  --txt-xs: 0.75rem;
+  --txt-sm: 0.875rem;
+  --txt-md: 1rem;
+  --txt-lg: 1.125rem;
+  --txt-xl: 1.5rem;
+  --txt-2xl: 2rem;
+
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-forte: 600;
+
+  /* ---------- Bordas e sombras ---------- */
+  --raio-sm: 4px;
+  --raio-md: 8px;
+  --raio-lg: 12px;
+  --raio-total: 999px;
+
+  --sombra-1: 0 1px 2px rgba(15, 41, 66, 0.06), 0 1px 3px rgba(15, 41, 66, 0.08);
+  --sombra-2: 0 4px 12px rgba(15, 41, 66, 0.10);
+
+  /* ---------- Layout ---------- */
+  --largura-maxima: 1180px;
+  --altura-cabecalho: 64px;
+
+  --transicao: 160ms ease;
+}
+
+/* ---------- Modo escuro ----------
+   Acompanha a preferencia do sistema operacional do usuario. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) {
+    --fundo:            var(--marinho-900);
+    --fundo-elevado:    var(--marinho-800);
+    --fundo-suave:      var(--marinho-700);
+    --borda:            #24405c;
+    --rolagem:          #27455f;
+    --rolagem-forte:    #3a6389;
+    --texto:            #eaf1f8;
+    --texto-secundario: #9db2c7;
+
+    --sucesso-leve: #11301f;
+    --atencao-leve: #33260c;
+    --erro-leve:    #3a1a17;
+    --info-leve:    #14294a;
+
+    --sucesso-texto: #5cd48b;
+    --atencao-texto: #e8a83a;
+    --erro-texto:    #f28b82;
+    --info-texto:    #7aa7f7;
+
+    --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --sombra-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-tema='escuro'] {
+  --fundo:            var(--marinho-900);
+  --fundo-elevado:    var(--marinho-800);
+  --fundo-suave:      var(--marinho-700);
+  --borda:            #24405c;
+  --rolagem:          #27455f;
+  --rolagem-forte:    #3a6389;
+  --texto:            #eaf1f8;
+  --texto-secundario: #9db2c7;
+  --sucesso-leve: #11301f;
+  --atencao-leve: #33260c;
+  --erro-leve:    #3a1a17;
+  --info-leve:    #14294a;
+
+  --sucesso-texto: #5cd48b;
+  --atencao-texto: #e8a83a;
+  --erro-texto:    #f28b82;
+  --info-texto:    #7aa7f7;
+}
+
+/* Respeita quem pediu menos animacao no sistema (acessibilidade). */
+@media (prefers-reduced-motion: reduce) {
+  :root { --transicao: 0ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

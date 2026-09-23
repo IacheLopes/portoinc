@@ -1,0 +1,151 @@
+# ============================================================
+#  Porto Inc. - Sistema de Compras e Almoxarifado
+#  Ambiente de DESENVOLVIMENTO
+#
+#  Cada container esta limitado a 1 GB de RAM e 1 nucleo de CPU
+#  para simular exatamente o servidor real.
+# ============================================================
+
+services:
+
+  # ---------- BANCO DE DADOS ----------
+  db:
+    image: postgres:17-alpine
+    container_name: portoink-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Evita recriar o banco a cada subida
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      # --- Ajuste fino para caber em 1 GB ---
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=30
+      - -c
+      - random_page_cost=1.1
+    volumes:
+      - portoink_dados:/var/lib/postgresql/data
+    ports:
+      # Exposto para voce conseguir abrir no DBeaver/pgAdmin
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    networks: [portoink]
+
+  # ---------- BACKEND (API) ----------
+  api:
+    build:
+      context: ./backend
+      target: dev
+    container_name: portoink-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      # O V8 nao enxerga o limite do container: precisamos avisar
+      NODE_OPTIONS: --max-old-space-size=640
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public&connection_limit=10
+      DATABASE_URL_TESTE: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/portoink_test?schema=public
+      # Banco descartavel usado pelo Prisma ao gerar migracoes.
+      # Separado do de testes: usar o mesmo sujava o banco de testes.
+      SHADOW_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/portoink_sombra?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      # --- Adaptadores de integracao (trocar aqui liga a integracao real) ---
+      WHATSAPP_ADAPTER: ${WHATSAPP_ADAPTER}
+      WHATSAPP_SESSAO_DIR: /app/sessao-whatsapp
+      # Trava de seguranca: com "true", so sai mensagem para numero que
+      # estiver na lista de autorizados.
+      WHATSAPP_MODO_TESTE: ${WHATSAPP_MODO_TESTE:-true}
+      FISCAL_ADAPTER: ${FISCAL_ADAPTER}
+      GTIN_ADAPTER: ${GTIN_ADAPTER}
+      PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}
+      # Necessario no Windows para o hot-reload enxergar as alteracoes
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/testes:/app/testes
+      - portoink_arquivos:/app/arquivos
+      # Sessao do WhatsApp (Baileys). Volume proprio para o reinicio do
+      # container NAO pedir o QR de novo. Contem credenciais: nunca vai
+      # para o git e nunca aparece em log.
+      - portoink_whatsapp:/app/sessao-whatsapp
+      # Volume anonimo: impede que o bind-mount apague o node_modules do container
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    networks: [portoink]
+
+  # ---------- FRONTEND (React) ----------
+  web:
+    build:
+      context: ./frontend
+      target: dev
+    container_name: portoink-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      # O ajuste dos testes de tela tambem vale sem reconstruir a imagem.
+      - ./frontend/vitest.config.ts:/app/vitest.config.ts
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    networks: [portoink]
+
+volumes:
+  portoink_whatsapp:
+    name: portoink_whatsapp
+  portoink_dados:
+    name: portoink_dados
+  portoink_arquivos:
+    name: portoink_arquivos
+
+networks:
+  portoink:
+    name: portoink

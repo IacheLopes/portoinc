@@ -1,0 +1,49 @@
+# Dependencias
+node_modules/
+.pnp/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Ambiente (NUNCA versionar senhas)
+.env
+.env.local
+.env.*.local
+
+# Arquivos enviados pelos usuarios
+arquivos/
+uploads/
+
+# Sessao do WhatsApp (contem credenciais!)
+backend/sessoes-whatsapp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# PDFs - arquivos intermediarios
+docs/**/*.html
+
+# Sessao do WhatsApp (Baileys): sao CREDENCIAIS do numero conectado.
+sessao-whatsapp/
+backend/sessao-whatsapp/
+
+# Copias de seguranca do banco: ficam na maquina, nunca no repositorio.
+backups/
+
+# Saida das auditorias de tela (prints e relatorios).
+scripts/auditoria/
+scripts/auditoria-celular/
+scripts/auditoria-hover/

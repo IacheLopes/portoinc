@@ -1,0 +1,346 @@
+/* ============================================================
+   Relatórios
+
+   Três peças novas:
+     .abas     navegação entre os cinco relatórios
+     .medida   barra de porcentagem dentro da célula da tabela
+     .etapas   o caminho da compra, etapa por etapa
+
+   Tudo o mais (grade, cartões, gráficos) reaproveita o que já
+   existe em graficos.css e painel.css.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Abas
+   ------------------------------------------------------------ */
+
+.abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: var(--esp-4);
+}
+
+.aba {
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto-secundario);
+  padding: var(--esp-3) var(--esp-4);
+  /* Reserva a borda desde já: sem isso o rótulo pula 2px ao ativar. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  min-height: 44px;
+  border-radius: var(--raio-md) var(--raio-md) 0 0;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.aba:hover {
+  color: var(--texto);
+  background: var(--fundo-suave);
+}
+
+.aba:focus-visible {
+  outline: 2px solid var(--azul-600);
+  outline-offset: -2px;
+}
+
+.aba--ativa {
+  color: var(--azul-600);
+  border-bottom-color: var(--azul-600);
+}
+
+.aba--ativa:hover {
+  color: var(--azul-600);
+}
+
+.aba__pergunta {
+  margin: 0 0 var(--esp-4);
+  color: var(--texto-secundario);
+  font-size: var(--txt-md);
+}
+
+/* ------------------------------------------------------------
+   Barra de medida dentro da tabela
+
+   Número e barra na mesma linha: a barra dá a noção imediata,
+   o número dá a precisão. Largura mínima na coluna para que
+   barras de linhas diferentes possam ser comparadas a olho.
+   ------------------------------------------------------------ */
+
+.medida {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-width: 8.5rem;
+}
+
+.medida__trilho {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--fundo-suave);
+  overflow: hidden;
+}
+
+.medida__preenchimento {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--info);
+  transition: width 400ms ease;
+}
+
+.medida__preenchimento--sucesso { background: var(--sucesso); }
+.medida__preenchimento--atencao { background: var(--atencao); }
+.medida__preenchimento--erro    { background: var(--erro); }
+.medida__preenchimento--info    { background: var(--info); }
+.medida__preenchimento--neutro  { background: var(--neutro-400); }
+
+.medida__numero {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medida__preenchimento { transition: none; }
+}
+
+/* ------------------------------------------------------------
+   Etapas do processo
+   ------------------------------------------------------------ */
+
+.etapas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.etapa__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-2);
+}
+
+.etapa__nome {
+  font-weight: 600;
+}
+
+.etapa__dias {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--texto-secundario);
+}
+
+.etapa__trilho {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--fundo-suave);
+  overflow: hidden;
+}
+
+.etapa__barra {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--info);
+  transition: width 400ms ease;
+  /* Uma etapa medida nunca some: sem isto, 0,1 dia vira invisível
+     e a lista parece ter uma linha faltando. */
+  min-width: 3px;
+}
+
+/* A etapa que mais demora é a que interessa: recebe a cor de
+   atenção para ser achada sem ler a lista inteira. */
+.etapa__barra--pior {
+  background: var(--atencao);
+}
+
+.etapa__descricao {
+  margin: var(--esp-2) 0 0;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .etapa__barra { transition: none; }
+}
+
+/* ------------------------------------------------------------
+   Apoio
+   ------------------------------------------------------------ */
+
+/* Nota à esquerda da barra de ações, no lugar de um filtro. */
+.barra-acoes__nota {
+  margin: 0;
+  flex: 1;
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+  /* Alinha com a altura do botão ao lado. */
+  align-self: center;
+}
+
+.secao__subtitulo {
+  font-size: var(--txt-xl);
+  margin: var(--esp-5) 0 var(--esp-3);
+}
+
+/* Código em cima, descrição embaixo.
+
+   `.celula-extra` nasceu para ficar ao lado do valor, dentro do
+   botão da equalização, então é inline por padrão. Dentro de uma
+   CÉLULA de tabela ela é outra coisa: a segunda linha. Sem isto,
+   "00119" e "Cimento Portland" saem grudados.
+
+   O escopo é a célula, não a tela: na equalização a `.celula-extra`
+   fica dentro de `.celula-botao`, então continua inline lá. */
+.celula-texto > .celula-extra,
+td.celula-valor > .celula-extra,
+th.celula-texto > .celula-extra {
+  display: block;
+  white-space: normal;
+}
+
+/* Título do cartão de etapas: o padrão do `.gr__titulo` serve a
+   uma figura, e aqui vem uma lista logo abaixo. */
+.aba__conteudo .cartao > .gr__titulo {
+  margin: 0 0 var(--esp-4);
+}
+
+/* Cotação que fechou ACIMA do estimado.
+
+   O sinal de menos sozinho passa batido numa coluna de números
+   parecidos; a cor faz o prejuízo saltar sem esconder o valor.
+   A cor não carrega a informação sozinha: o "-" continua lá. */
+.valor-negativo,
+.valor-negativo .celula-extra {
+  color: var(--erro-texto);
+}
+
+/* ------------------------------------------------------------
+   Botão de baixar, com escolha do formato
+
+   O menu é posicionado pela direita porque o botão quase sempre
+   está encostado na borda direita da barra de ações; abrindo
+   pela esquerda ele escaparia da tela.
+   ------------------------------------------------------------ */
+
+.baixar {
+  position: relative;
+  display: inline-block;
+}
+
+.baixar__seta {
+  margin-left: var(--esp-1);
+  font-size: 0.7em;
+}
+
+.baixar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 17rem;
+  padding: var(--esp-1);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2);
+}
+
+.baixar__opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  width: 100%;
+  padding: var(--esp-3);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  font: inherit;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+  /* Alvo de toque confortável no celular. */
+  min-height: 44px;
+}
+
+.baixar__opcao:hover {
+  background: var(--fundo-suave);
+}
+
+.baixar__opcao:focus-visible {
+  outline: 2px solid var(--azul-600);
+  outline-offset: -2px;
+}
+
+.baixar__icone {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.baixar__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.baixar__texto small {
+  color: var(--texto-secundario);
+  font-size: var(--txt-xs);
+}
+
+/* No celular o menu ocupa a largura toda do botão para dentro,
+   em vez de sair da tela pela direita. */
+@media (max-width: 480px) {
+  .baixar,
+  .baixar > .botao {
+    width: 100%;
+  }
+
+  .baixar__menu {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------
+   Locação: os dois botões da coluna de ações
+
+   Lado a lado no computador, um sobre o outro no celular —
+   onde a tabela rola na horizontal e dois botões na mesma
+   linha empurrariam a coluna para fora da tela.
+   ------------------------------------------------------------ */
+
+.acoes-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.acoes-linha .botao {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .acoes-linha {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Número de documento não quebra no meio: "LOC-" numa linha e
+   "00006" na outra vira duas coisas em vez de uma. */
+.celula-texto > .mono {
+  white-space: nowrap;
+}

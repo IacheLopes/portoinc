@@ -1,0 +1,644 @@
+/* ============================================================
+   Gráficos e indicadores
+
+   Regras que valem para a tela inteira:
+
+   - Uma grade só. Cartões e indicadores usam a MESMA medida de
+     coluna, então as bordas se alinham de cima a baixo.
+   - Altura previsível. O rótulo tem altura fixa de duas linhas,
+     para o número ficar sempre na mesma altura em todos os
+     cartões — mesmo quando um rótulo é curto e outro é longo.
+   - A animação é só de entrada. Nada fica piscando enquanto a
+     pessoa tenta ler um número.
+   - Quem pediu ao sistema para reduzir movimento vê tudo pronto
+     (bloco no fim do arquivo).
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Grade do painel
+   ------------------------------------------------------------ */
+/* Grade de painel, usada pelo Financeiro e pelos Relatórios.
+
+   Quatro colunas fixas, não "auto-fit".
+   Com auto-fit o número de colunas muda conforme a largura, e um
+   cartão que ocupa 2 de 4 passa a ocupar 2 de 5 — a fileira deixa
+   de fechar e sobra aquele buraco escuro do lado. Com número fixo,
+   toda fileira fecha: 4 + 4 KPIs, 4 do fluxo, 2+2, 2+2. */
+.painel-financeiro,
+.painel-relatorio {
+  display: grid;
+  gap: var(--esp-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--esp-5);
+}
+
+@media (max-width: 1180px) {
+  .painel-financeiro,
+  .painel-relatorio { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .painel-financeiro,
+  .painel-relatorio { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Cartão que ocupa a fileira inteira (fluxo de caixa). */
+.painel-financeiro .col-cheia,
+.painel-relatorio .col-cheia {
+  grid-column: 1 / -1;
+}
+
+/* Meia fileira: dois desses fecham a linha. */
+.painel-financeiro .col-meia,
+.painel-relatorio .col-meia {
+  grid-column: span 2;
+}
+
+@media (max-width: 620px) {
+  .painel-financeiro .col-meia,
+  .painel-relatorio .col-meia { grid-column: 1 / -1; }
+}
+
+/* Os cartões de gráfico esticam juntos e o conteúdo se distribui:
+   sem isso, um cartão baixo ao lado de um alto deixa buraco. */
+.painel-financeiro > .cartao,
+.painel-relatorio > .cartao {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-financeiro > .cartao > .gr,
+.painel-relatorio > .cartao > .gr {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ------------------------------------------------------------
+   Cartão de indicador
+   ------------------------------------------------------------ */
+.indicador-area {
+  position: relative;
+  display: flex;
+}
+
+.indicador {
+  /* É um botão só para poder receber foco e mostrar a dica;
+     visualmente continua sendo um cartão. */
+  appearance: none;
+  border: 1px solid var(--borda);
+  background: var(--fundo-elevado);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
+  padding: var(--esp-4);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: help;
+  width: 100%;
+  display: grid;
+  /* Rótulo com altura de duas linhas + valor + detalhe.
+     É o que mantém todos os números na mesma altura. */
+  grid-template-rows: 2.4em auto 2.4em;
+  gap: var(--esp-1);
+  transition: border-color var(--transicao), transform var(--transicao);
+}
+
+.indicador:hover,
+.indicador:focus-visible {
+  border-color: var(--azul-600);
+  transform: translateY(-2px);
+}
+
+.indicador__rotulo {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+  line-height: 1.2;
+}
+
+.indicador__valor {
+  font-size: var(--txt-2xl);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  align-self: center;
+}
+
+.indicador__detalhe {
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  line-height: 1.2;
+}
+
+/* Um fio de cor na lateral quando o número merece atenção. */
+.indicador--erro    { border-left: 3px solid var(--erro-texto); }
+.indicador--atencao { border-left: 3px solid var(--atencao-texto); }
+.indicador--sucesso { border-left: 3px solid var(--sucesso-texto); }
+.indicador--info    { border-left: 3px solid var(--info-texto); }
+
+@media (max-width: 520px) {
+  /* No celular o rótulo pode ocupar o espaço que precisar. */
+  .indicador { grid-template-rows: auto auto auto; }
+}
+
+/* ------------------------------------------------------------
+   Comum aos gráficos
+   ------------------------------------------------------------ */
+.gr { margin: 0; }
+
+/* As listas dos graficos nao levam marcador: o quadradinho
+   colorido ja e o marcador. */
+.fluxo__colunas,
+.rosca__lista,
+.ranking__linhas,
+.dica__linhas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.gr__titulo {
+  font-size: var(--txt-base);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+  margin-bottom: var(--esp-2);
+}
+
+.gr__legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-3);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+.gr__chave {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.gr__chave i,
+.rosca__item i,
+.dica__linhas i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------
+   A dica que aparece ao apontar
+   ------------------------------------------------------------ */
+.dica {
+  position: absolute;
+  /* Acima do ponteiro, sem cobrir o que foi apontado. */
+  transform: translate(-50%, calc(-100% - 12px));
+  background: var(--fundo-elevado);
+  border: 1px solid var(--azul-600);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2);
+  padding: var(--esp-3);
+  min-width: 190px;
+  max-width: 280px;
+  z-index: 20;
+  /* Não rouba o ponteiro: senão o mouse "entra" na dica, sai do
+     elemento e ela pisca sem parar. */
+  pointer-events: none;
+  animation: dica-surgir 140ms ease-out;
+}
+
+@keyframes dica-surgir {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 4px)); }
+}
+
+.dica__titulo {
+  display: block;
+  font-size: var(--txt-sm);
+  margin-bottom: var(--esp-2);
+  color: var(--texto);
+}
+
+.dica__linhas {
+  display: grid;
+  gap: var(--esp-1);
+  font-size: var(--txt-sm);
+}
+
+.dica__linhas li {
+  display: grid;
+  grid-template-columns: 11px 1fr auto;
+  align-items: center;
+  gap: var(--esp-2);
+  color: var(--texto-secundario);
+}
+
+/* Linha sem cor: o texto começa na coluna do meio. */
+.dica__linhas li > span:first-child {
+  grid-column: 2;
+}
+
+.dica__linhas strong {
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.dica__rodape {
+  display: block;
+  margin-top: var(--esp-2);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------------
+   Fluxo de caixa
+
+   As barras são HTML, não SVG: um SVG esticado nunca alinha com
+   um rótulo em HTML embaixo. Aqui a mesma coluna da grade vale
+   para a barra e para o mês.
+   ------------------------------------------------------------ */
+.fluxo {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.fluxo__guias {
+  position: absolute;
+  inset: 0 0 3.4rem 0;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  pointer-events: none;
+}
+
+.fluxo__guias span {
+  border-top: 1px dashed var(--borda);
+}
+
+.fluxo__colunas {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: stretch;
+  min-height: 240px;
+}
+
+.fluxo__mes { display: flex; }
+
+.fluxo__alvo {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  display: grid;
+  grid-template-rows: 1fr 3.4rem;
+  border-radius: var(--raio-sm);
+  transition: background var(--transicao);
+}
+
+.fluxo__alvo:hover,
+.fluxo__alvo:focus-visible {
+  background: var(--fundo-suave);
+}
+
+/* O mês atual fica marcado o tempo todo. */
+.fluxo__mes--hoje .fluxo__alvo {
+  background: var(--info-leve);
+}
+
+/* ...e por isso mesmo precisa do seu próprio hover: a regra do
+   mês atual vem depois e cobria a do hover, deixando justamente
+   a barra em que todo mundo aponta primeiro sem reagir. */
+.fluxo__mes--hoje .fluxo__alvo:hover,
+.fluxo__mes--hoje .fluxo__alvo:focus-visible {
+  background: var(--fundo-suave);
+}
+
+.fluxo__pilha {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 18%;
+  transform-origin: bottom;
+  animation: fluxo-crescer 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--atraso, 0ms);
+}
+
+@keyframes fluxo-crescer {
+  from { transform: scaleY(0); opacity: 0.4; }
+}
+
+.fluxo__pedaco {
+  border-radius: 2px;
+  min-height: 2px;
+}
+
+.fluxo__rotulo {
+  display: grid;
+  gap: 1px;
+  align-content: start;
+  padding-top: var(--esp-2);
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.fluxo__rotulo small {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  opacity: 0.85;
+}
+
+.fluxo__mes--hoje .fluxo__rotulo {
+  color: var(--info-texto);
+  font-weight: var(--peso-forte);
+}
+
+/* ------------------------------------------------------------
+   Rosca
+   ------------------------------------------------------------ */
+.rosca-area {
+  position: relative;
+  display: flex;
+  gap: var(--esp-5);
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.rosca {
+  width: 195px;
+  height: 195px;
+  flex-shrink: 0;
+  /* Começa às 12 horas, como todo mundo espera. */
+  transform: rotate(-90deg);
+}
+
+.rosca__trilho {
+  fill: none;
+  stroke: var(--fundo-suave);
+  stroke-width: 11;
+}
+
+.rosca__fatia {
+  fill: none;
+  stroke-width: 11;
+  cursor: pointer;
+  transition: stroke-width var(--transicao);
+  animation: rosca-girar 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--atraso, 0ms);
+}
+
+.rosca__fatia:hover { stroke-width: 15; }
+
+@keyframes rosca-girar {
+  from { stroke-dasharray: 0 var(--volta); }
+}
+
+/* Os textos do meio precisam desgirar, senão saem deitados. */
+.rosca__valor,
+.rosca__rotulo {
+  text-anchor: middle;
+  transform: rotate(90deg);
+  transform-origin: 60px 60px;
+}
+
+.rosca__valor {
+  fill: var(--texto);
+  font-weight: 700;
+  /* O tamanho vem do componente: depende de quantos dígitos o
+     número tem. */
+}
+
+.rosca__rotulo {
+  fill: var(--texto-secundario);
+  font-size: 7px;
+}
+
+.rosca__lista {
+  display: grid;
+  gap: var(--esp-1);
+  flex: 1 1 200px;
+}
+
+.rosca__item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  /* Cada linha da legenda é um botão: mostra os números da fatia
+     ao apontar ou tocar. Como é alvo de dedo, vale a mesma régua
+     dos 44px. */
+  min-height: 44px;
+  padding: var(--esp-2);
+  border-radius: var(--raio-sm);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 11px 1fr auto auto;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--txt-sm);
+  text-align: left;
+}
+
+.rosca__item:hover,
+.rosca__item:focus-visible {
+  background: var(--fundo-suave);
+}
+
+.rosca__item strong { font-variant-numeric: tabular-nums; }
+
+.rosca__item small {
+  color: var(--texto-secundario);
+  min-width: 2.6rem;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------
+   Ranking
+   ------------------------------------------------------------ */
+.ranking {
+  position: relative;
+  flex: 1;
+  /* Com poucos itens, as barras ficam no meio do cartao em vez de
+     grudadas no topo deixando um vazio embaixo. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ranking__linhas {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.ranking__alvo {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  padding: var(--esp-2);
+  border-radius: var(--raio-sm);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  /* Nome e valor na mesma linha; a barra ocupa a linha inteira
+     embaixo. Numa coluna estreita, barra ao lado de texto vira
+     um fiapo que não dá para comparar. */
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--esp-1) var(--esp-3);
+  text-align: left;
+}
+
+.ranking__alvo:hover,
+.ranking__alvo:focus-visible {
+  background: var(--fundo-suave);
+}
+
+.ranking__nome {
+  font-size: var(--txt-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking__valor {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ranking__trilho {
+  grid-column: 1 / -1;
+  display: flex;
+  height: 14px;
+  background: var(--fundo-suave);
+  border-radius: var(--raio-sm);
+  overflow: hidden;
+}
+
+.ranking__barra {
+  display: block;
+  animation: ranking-esticar 650ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--atraso, 0ms);
+}
+
+@keyframes ranking-esticar {
+  from { width: 0 !important; }
+}
+
+/* ------------------------------------------------------------
+   Medidor
+   ------------------------------------------------------------ */
+.medidor {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.medidor__alvo {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: var(--esp-2);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  width: 100%;
+  max-width: 280px;
+}
+
+.medidor__alvo:hover,
+.medidor__alvo:focus-visible {
+  background: var(--fundo-suave);
+}
+
+.medidor__desenho {
+  width: 100%;
+  display: block;
+}
+
+.medidor__trilho {
+  fill: none;
+  stroke: var(--fundo-suave);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.medidor__valor {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  animation: medidor-encher 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes medidor-encher {
+  from { stroke-dasharray: 0 var(--volta); }
+}
+
+.medidor__numero {
+  text-anchor: middle;
+  fill: var(--texto);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.medidor__detalhe {
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  text-align: center;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------
+   Movimento reduzido: quem pediu, recebe tudo parado
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .fluxo__pilha,
+  .rosca__fatia,
+  .ranking__barra,
+  .medidor__valor,
+  .dica {
+    animation: none;
+  }
+
+  .indicador:hover,
+  .indicador:focus-visible {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .fluxo__colunas { min-height: 190px; }
+  .fluxo__rotulo { font-size: 0.6rem; }
+  .fluxo__rotulo small { display: none; }
+  .rosca { width: 160px; height: 160px; margin: 0 auto; }
+  .dica { min-width: 160px; }
+}

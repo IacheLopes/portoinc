@@ -1,0 +1,3743 @@
+<!-- versao: 0.16.0 -->
+
+# 1. Como usar este guia
+
+## Para que serve
+
+Este roteiro serve para conferir **na tela** se o sistema faz o que promete.
+
+O sistema também tem **testes automatizados** — 634 deles, rodando em cerca de 2 minutos. Eles conferem as regras por dentro. Mas há coisas que só uma pessoa percebe:
+
+| O teste automatizado confere | Só o teste manual percebe |
+|---|---|
+| Se a API recusa um CNPJ inválido | Se a mensagem de erro é compreensível |
+| Se a permissão bloqueia a rota | Se o menu ficou confuso sem aquele item |
+| Se o total do orçamento está certo | Se o número está difícil de ler na tela |
+| Se o cadastro salvou | Se o formulário é cansativo de preencher |
+
+> **Regra de ouro:** se você travou, hesitou ou precisou adivinhar em algum passo, **isso é uma falha**, mesmo que o sistema tenha funcionado. Anote.
+
+## Como marcar
+
+Cada caso tem uma linha de resultado. Marque assim:
+
+| Marca | Quando usar |
+|---|---|
+| **OK** | Aconteceu exatamente o que estava escrito |
+| **FALHOU** | Aconteceu outra coisa |
+| **DÚVIDA** | Funcionou, mas ficou confuso ou estranho |
+
+## Como relatar um problema
+
+Anote estas quatro coisas. Sem elas fica difícil consertar:
+
+1. **Qual caso** (ex.: CT-14)
+2. **Com qual conta** você estava (ex.: Gilson)
+3. **O que você esperava** que acontecesse
+4. **O que aconteceu** de verdade
+
+Se der, tire um print da tela.
+
+---
+
+# 2. Antes de começar
+
+## Preparando o ambiente
+
+| Passo | Comando |
+|---|---|
+| 1. Abrir o Docker Desktop | — |
+| 2. Ligar o sistema | `docker compose up -d` |
+| 3. Conferir se subiu | `docker compose ps` — as três caixas devem estar **Up** |
+| 4. Abrir no navegador | http://localhost:5173 |
+
+## Contas de teste
+
+Todas usam a senha **Porto@2026**
+
+| Pessoa | E-mail | Funções |
+|---|---|---|
+| Administrador | admin@portoinc.com.br | Administrador |
+| Washington | washington@portoinc.com.br | Fundador |
+| Andre | andre@portoinc.com.br | Comprador |
+| Bras | bras@portoinc.com.br | Gestor de obra + Solicitante |
+| Gilson | gilson@portoinc.com.br | Almoxarife |
+| Neilma | neilma@portoinc.com.br | Comprador + Solicitante |
+| Engenheiro | engenheiro@portoinc.com.br | Engenheiro |
+
+## Voltando o sistema ao estado inicial
+
+Se você bagunçar os dados durante os testes e quiser recomeçar do zero:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+> **Atenção:** isso apaga tudo que foi cadastrado. Espere uns 2 minutos até o sistema recriar os dados de demonstração.
+
+---
+
+# 3. Etapa 1 — Acesso ao sistema
+
+## CT-01 · Entrar com dados corretos
+
+**Conta:** admin@portoinc.com.br
+
+1. Abra http://localhost:5173
+2. Digite o e-mail e a senha
+3. Clique em **Entrar**
+
+**Esperado:** entra no sistema e cai na tela de Início, com "Bom dia/Boa tarde" e o seu nome.
+
+**Confira também:** o cursor já estava no campo de e-mail quando a tela abriu? Você conseguiu usar **Tab** e **Enter** sem tocar no mouse?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-02 · Senha errada
+
+1. Saia do sistema
+2. Digite o e-mail certo e uma senha errada
+
+**Esperado:** mensagem *"E-mail ou senha incorretos."* aparecendo **perto do botão**, não no topo da página.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-03 · E-mail que não existe
+
+1. Digite `naoexiste@portoinc.com.br` com qualquer senha
+
+**Esperado:** **exatamente a mesma mensagem** do caso CT-02.
+
+> **Por que isso importa:** se o sistema dissesse "este e-mail não existe", um invasor descobriria a lista de quem trabalha na empresa testando endereços.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-04 · Bloqueio por tentativas repetidas
+
+1. Erre a senha **11 vezes seguidas**
+
+**Esperado:** a partir da 11ª, aparece uma mensagem diferente dizendo para aguardar.
+
+> Depois deste teste, espere 5 minutos antes de continuar, ou use outra conta.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-05 · Continuar conectado
+
+1. Entre no sistema
+2. Feche a aba do navegador
+3. Abra http://localhost:5173 de novo
+4. Navegue até uma tela de dentro (ex.: **Cotações**) e aperte **F5**
+5. Abra o sistema numa **segunda aba**, com a primeira ainda aberta
+
+**Esperado:** em todos os casos entra direto, sem pedir a senha, e continua na mesma tela.
+
+> **Por que o passo 4 e o 5 existem.** O crachá da sessão é de uso único: cada renovação troca ele por outro. Se duas telas pedissem renovação ao mesmo tempo, a segunda chegaria com o crachá já trocado e derrubaria a sessão sem motivo. Este teste é o que pega essa falha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-06 · O menu muda conforme a pessoa
+
+1. Entre como **Gilson** e anote os itens do menu
+2. Saia
+3. Entre como **Administrador** e anote de novo
+
+**Esperado:**
+
+| Gilson (almoxarife) | Administrador |
+|---|---|
+| Início, Solicitações, Recebimento, Estoque, Cadastros | Todos os itens, incluindo Usuários e Status do sistema |
+
+Gilson **não** pode ver: Aprovações, Cotações, Financeiro, Usuários, Status do sistema.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-07 · Bloqueio ao forçar o endereço
+
+**Conta:** gilson@portoinc.com.br
+
+1. Entre como Gilson
+2. Na barra de endereço do navegador, digite `http://localhost:5173/admin/usuarios`
+
+**Esperado:** uma tela dizendo que ele não tem acesso, e orientando a falar com o administrador. **Não pode** aparecer a lista de usuários.
+
+> Esconder o item do menu é conforto visual. Este caso testa a trava de verdade.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-08 · Uma pessoa com duas funções
+
+**Conta:** neilma@portoinc.com.br
+
+1. Entre como Neilma
+2. Olhe a frase abaixo do "Boa tarde"
+
+**Esperado:** diz que ela é **comprador e solicitante**, com o total de permissões somadas. O menu mostra tanto Cotações (de comprador) quanto Solicitações (de solicitante).
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-09 · Cadastrar um usuário novo
+
+**Conta:** admin@portoinc.com.br
+
+1. Vá em **Usuários** → **+ Novo usuário**
+2. Preencha: nome "Teste Manual", e-mail `teste.manual@portoinc.com.br`, senha `Teste12345`
+3. Marque **duas** funções
+4. Clique em **Cadastrar usuário**
+
+**Esperado:** mensagem verde de sucesso e a pessoa aparece na lista com **duas etiquetas de função** e "Nunca entrou".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-10 · Senha fraca é recusada
+
+1. Tente cadastrar outro usuário com a senha `12345678`
+
+**Esperado:** o sistema recusa e explica que falta uma letra.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-11 · E-mail repetido é recusado
+
+1. Tente cadastrar alguém com o e-mail `gilson@portoinc.com.br`
+
+**Esperado:** o sistema avisa que já existe usuário com esse e-mail.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-12 · Desativar alguém derruba a sessão
+
+**Precisa de dois navegadores** (ou uma janela anônima).
+
+1. Na **janela A**, entre como Gilson
+2. Na **janela B**, entre como Administrador e desative o Gilson
+3. Volte à janela A e clique em qualquer item do menu
+
+**Esperado:** a janela A é levada de volta à tela de entrada.
+
+> Depois do teste, reative o Gilson.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-13 · Administrador não se desativa
+
+**Conta:** admin@portoinc.com.br
+
+1. Em **Usuários**, tente desativar a própria conta de Administrador
+
+**Esperado:** o sistema recusa, dizendo que você não pode desativar a si mesmo.
+
+> Sem essa trava, seria possível ficar sem nenhum administrador e travar o sistema inteiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-14 · Trocar a própria senha
+
+**Conta:** teste.manual@portoinc.com.br (criada no CT-09)
+
+1. Entre com essa conta
+2. Clique em **Trocar minha senha** no rodapé do menu
+3. Digite a senha atual e uma nova **diferente nas duas caixas**
+
+**Esperado:** o sistema avisa na hora que as senhas não conferem, **antes** de você clicar no botão.
+
+4. Agora digite iguais e confirme
+
+**Esperado:** mensagem de sucesso e você volta à tela de entrada. A senha nova funciona; a antiga não.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 4. Etapa 2 — Cadastros
+
+## CT-15 · A ordem dos cadastros está clara
+
+**Conta:** admin@portoinc.com.br
+
+1. Vá em **Cadastros**
+
+**Esperado:** cinco cartões **numerados de 1 a 5**, cada um com a contagem do que já existe, e um aviso explicando por que essa ordem.
+
+**Confira também:** lendo só essa tela, você entenderia por onde começar se nunca tivesse visto o sistema?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-16 · Cadastrar uma família
+
+1. **Cadastros → Famílias → + Nova família**
+2. Código `TST`, nome "Família de teste"
+
+**Esperado:** o código aparece em **maiúsculas** mesmo se você digitou minúsculo. O cartão mostra "0 itens · 0 fornecedor(es)".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-17 · Código de barras errado é recusado
+
+1. **Cadastros → Materiais e serviços → + Novo item**
+2. Preencha os campos obrigatórios
+3. No código de barras, digite `7899888400576` (o último dígito está trocado de propósito)
+4. Clique fora do campo
+
+**Esperado:** o sistema avisa que o dígito verificador não confere.
+
+> Um código errado no cadastro vira material bipado que "não existe" na hora do recebimento, com o caminhão parado no portão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-18 · Código de barras já usado
+
+1. Cadastre um item com o código de barras `7899888400575`
+
+**Esperado:** o sistema avisa que esse código já está no "Cimento Portland CP-II-Z-32".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-19 · Serviço não tem código de barras
+
+1. **+ Novo item** → em **Tipo**, escolha **Serviço**
+
+**Esperado:** os campos de código de barras e ponto de pedido **somem da tela**, e aparece um aviso explicando que serviço não entra no estoque.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-20 · Os três códigos do material
+
+1. Abra a lista de **Materiais e serviços**
+2. Olhe as colunas
+
+**Esperado:** três colunas diferentes e independentes:
+
+| Coluna | Exemplo |
+|---|---|
+| Cód. Porto | `00119` |
+| Cód. de barras | `7899888400575` |
+| Norma | `NBR 16697` |
+
+**Confira também:** os números do "Ponto de pedido" estão **alinhados à direita**?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-21 · Filtrar o catálogo
+
+1. Em **Materiais e serviços**, escolha **Só serviço** no filtro de tipo e clique em **Filtrar**
+
+**Esperado:** só aparecem itens com a etiqueta **Serviço**, todos sem código de barras.
+
+2. Volte para "Material e serviço" e filtre pela família **Material elétrico**
+
+**Esperado:** só itens da família ELE.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-22 · CNPJ inválido é recusado
+
+1. **Cadastros → Fornecedores → + Novo fornecedor**
+2. Razão social qualquer, CNPJ `11.111.111/1111-11`
+
+**Esperado:** o sistema recusa dizendo que o dígito verificador não confere.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-23 · Fornecedor sem família é sinalizado
+
+1. Cadastre um fornecedor com CNPJ válido (`47.960.950/0001-21`) e **não marque nenhuma família**
+
+**Esperado:** o cartão dele mostra um aviso amarelo: *"Nenhuma família — não será convidado a cotar"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-24 · Filtrar fornecedor por família
+
+1. Em **Fornecedores**, escolha **Atende Material elétrico** e clique em **Filtrar**
+
+**Esperado:** aparece apenas a **Eletrosul**.
+
+> Este é o teste mais importante da tela: é exatamente essa lista que o sistema vai usar na Etapa 5 para decidir quem convidar para cada cotação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-25 · Criar obra cria o almoxarifado junto
+
+1. **Cadastros → Obras → + Nova obra**
+2. Código `OB-TESTE`, nome "Obra de Teste"
+3. Salve e clique em **Abrir**
+
+**Esperado:** o cartão **Almoxarifados** mostra **1**, com o nome "Almoxarifado Obra de Teste". Ninguém precisou criar à mão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-26 · Orçamento e total
+
+1. Abra a obra **Residencial Porto Belo**
+
+**Esperado:**
+
+- Cartão **Orçamento previsto**: R$ 596.650,00
+- 20 linhas na tabela
+- O **total no rodapé** da tabela bate com o cartão
+- Os valores estão alinhados à direita e com `R$`
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-27 · Importar planilha de orçamento
+
+1. Crie um arquivo `teste.csv` no Bloco de Notas com este conteúdo:
+
+```
+codigo;descricao;unidade;quantidade;valor_unitario
+90.01.001;Serviço de teste;M2;100;25,50
+90.01.002;Outro item;UN;10;1.500,00
+```
+
+2. Abra a obra **Obra de Teste** → **📥 Importar planilha**
+3. Escolha o arquivo e clique em **Importar**
+
+**Esperado:** mensagem "2 linha(s) importada(s)" e as linhas aparecem na tabela. O valor `1.500,00` virou **R$ 1.500,00** (e não R$ 1,50).
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-28 · Importar planilha com defeito
+
+1. Acrescente estas linhas ao arquivo e importe de novo:
+
+```
+;Linha sem codigo;M2;10;10
+90.01.003;Valor errado;M2;abc;xyz
+```
+
+**Esperado:** o sistema **não desiste do arquivo inteiro**. Ele importa o que está certo e lista os problemas com o **número da linha**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-29 · Reimportar não duplica
+
+1. Importe **o mesmo arquivo** mais uma vez
+
+**Esperado:** "0 importadas, 2 já existiam e foram ignoradas". A tabela **não** ganha linhas repetidas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-30 · Simulador de alçada
+
+**Conta:** admin@portoinc.com.br
+
+1. **Cadastros → Limites de alçada**
+2. Teste estes valores no simulador:
+
+| Valor | Resposta esperada |
+|---|---|
+| 800 | Basta uma: **Gestor de obra** |
+| 7.500 | **TODAS**: Gestor de obra **e** Engenheiro |
+| 42.000 | Basta uma: **Fundador** |
+
+3. Teste também os botões de atalho R$ 500 / R$ 5.000 / R$ 50.000
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-31 · Aviso de furo nas faixas
+
+1. **+ Nova faixa**: descrição "Faixa com furo", mínimo `50000`, máximo `60000`, marque uma função
+2. Salve e recarregue a tela
+
+**Esperado:** aparece um aviso amarelo no topo apontando **sobreposição** com a faixa "Acima de R$ 15.000,01".
+
+> O sistema avisa mas **não impede** de salvar — a empresa pode ter um motivo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-32 · Quem só consulta não vê botões de editar
+
+**Conta:** bras@portoinc.com.br
+
+1. Entre como Bras
+2. Vá em **Cadastros → Obras** e abra uma obra
+
+**Esperado:** ele vê a obra e o orçamento, mas **não** aparecem os botões **+ Nova linha**, **Importar planilha** nem **Remover**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 5. Etapa 3 — Solicitação de compra
+
+## CT-40 · Abrir uma solicitação
+
+**Conta:** bras@portoinc.com.br
+
+1. **Solicitações → + Nova solicitação**
+2. Obra: **Residencial Porto Belo**
+3. Precisa até: uma data daqui a 30 dias
+4. Justificativa: *"Concretagem da laje do 3º pavimento"*
+5. Item: **Cimento Portland**, quantidade **120**, valor estimado **34**
+6. **+ Adicionar item à solicitação** e depois **Salvar como rascunho**
+
+**Esperado:** vai para a tela da solicitação, com número no formato **SOL-00001** e situação **Rascunho**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-41 · A unidade vem preenchida sozinha
+
+1. Numa nova solicitação, escolha **Cimento Portland** no catálogo
+
+**Esperado:** o rótulo do campo de quantidade muda para **"Quantidade em SC"**. Você não digita a unidade.
+
+2. Troque para **Areia média lavada**
+
+**Esperado:** o rótulo passa a **"Quantidade em M3"**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-42 · A linha de orçamento vem sugerida
+
+1. Escolha a obra **Residencial Porto Belo**
+2. Escolha **Cimento Portland** no catálogo
+
+**Esperado:** o campo **Linha do orçamento** já vem com `03.01.001 — Cimento Portland` preenchido, e o texto de ajuda diz de onde veio a sugestão.
+
+3. Troque a linha manualmente
+
+**Esperado:** aceita a troca sem reclamar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-43 · O total soma corretamente
+
+1. Adicione **Cimento**: 120 × R$ 34,00
+2. Adicione **Areia**: 10 × R$ 130,00
+
+**Esperado:** a tabela mostra R$ 4.080,00 e R$ 1.300,00, e o rodapé mostra **R$ 5.380,00**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-44 · Sem item não salva
+
+1. Preencha só a obra, sem adicionar nenhum item
+
+**Esperado:** aparece um aviso amarelo *"Adicione pelo menos um item"* e o botão **Salvar como rascunho** fica desabilitado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-45 · Primeira compra exige especificação
+
+1. Cadastre um material novo em **Cadastros → Materiais** (ex.: *"Aditivo plastificante"*, unidade LT)
+2. Abra uma solicitação pedindo esse item, **sem** preencher a especificação técnica
+3. Salve e clique em **Enviar para aprovação**
+
+**Esperado:** o envio é **bloqueado**, com a mensagem explicando que o item nunca foi comprado e que é preciso descrever a especificação técnica.
+
+**Confira também:** a etiqueta **Primeira compra** aparece na linha do item?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-46 · "Quem aprova" aparece antes de enviar
+
+1. Abra uma solicitação com total em torno de **R$ 800**
+2. Olhe o cartão **Quem aprova**
+
+**Esperado:** *"Basta a assinatura de uma destas funções: Gestor de obra."*
+
+3. Abra outra com total em torno de **R$ 7.500**
+
+**Esperado:** *"Precisa da assinatura de TODAS estas funções: Gestor de obra, Engenheiro."*
+
+4. E outra acima de **R$ 15.000**
+
+**Esperado:** aparece o **Fundador**.
+
+> Isso bate exatamente com o simulador do caso CT-30. Se divergir, uma das duas telas está errada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-47 · Depois de enviada não muda mais
+
+1. Envie uma solicitação para aprovação
+2. Olhe a tela dela
+
+**Esperado:** a situação vira **Aguardando aprovação** e o botão **Enviar para aprovação** some.
+
+3. Tente enviar de novo pelo botão de voltar do navegador
+
+**Esperado:** o sistema recusa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-48 · Cada um vê o que solicitou
+
+1. Como **Bras**, abra uma solicitação e **anote o número**
+2. Saia e entre como **Gilson**
+3. Vá em **Solicitações**
+
+**Esperado:** a solicitação do Bras **não aparece** na lista do Gilson. No alto da tela, a frase diz que ele vê apenas as próprias.
+
+4. Saia e entre como **Neilma** (compradora)
+
+**Esperado:** ela **vê** a solicitação do Bras, e a frase no alto diz que ela enxerga as de toda a empresa. Aparece também a caixa **Só as minhas**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-49 · PDF da solicitação
+
+1. Abra uma solicitação e clique em **📄 Baixar PDF**
+
+**Esperado:** baixa um arquivo chamado **SOL-00001.pdf** (ou o número correspondente).
+
+2. Abra o arquivo e confira:
+
+| Deve conter |
+|---|
+| Marca **Porto Inc.** e o número da solicitação |
+| Obra, solicitante e datas |
+| Tabela de itens com código, descrição, unidade e quantidade |
+| Norma técnica e linha de orçamento embaixo de cada item |
+| Total estimado |
+| Especificações técnicas, se houver |
+| Espaço para assinatura do **solicitante** e do **aprovador** |
+
+**Confira também:** os acentos saíram corretos? Cabe em uma página para uma solicitação pequena?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-50 · O histórico registra tudo
+
+1. Abra uma solicitação que você já enviou
+2. Role até **Histórico**
+
+**Esperado:** pelo menos dois registros, do mais recente para o mais antigo:
+
+- *"Enviada para aprovação. Basta a assinatura de..."* — com seu nome e a hora
+- *"Solicitação aberta como rascunho."* — com seu nome e a hora
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-51 · Cancelar solicitação
+
+1. Abra um rascunho e clique em **Cancelar solicitação**
+
+**Esperado:** volta para a lista. A solicitação continua lá, com a situação **Cancelada**.
+
+2. Abra a solicitação cancelada
+
+**Esperado:** o histórico está preservado e o botão de cancelar já não aparece.
+
+> Preferimos cancelar a apagar: apagar levaria junto o rastro de quem pediu o quê.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 6. Etapa 4 — Aprovação
+
+> **Preparação:** entre como **Gilson** e abra três solicitações, enviando todas:
+> uma com total em torno de **R$ 1.000**, outra de **R$ 7.000** e outra acima de **R$ 20.000**.
+> O Gilson é almoxarife, então ele pode pedir mas não aprova — é justamente o que
+> queremos para testar.
+
+## CT-52 · A fila mostra só o que é seu
+
+**Conta:** bras@portoinc.com.br (gestor de obra)
+
+1. Entre como Bras e vá em **Aprovações**
+
+**Esperado:** aparecem as solicitações de **R$ 1.000** e **R$ 7.000**. A de **R$ 20.000 não aparece** — aquela faixa é do Fundador.
+
+2. Saia e entre como **Washington** (fundador)
+
+**Esperado:** o inverso. Ele vê só a de R$ 20.000.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-53 · Os três números do topo
+
+1. Na tela de Aprovações do Bras, olhe os cartões
+
+**Esperado:**
+
+| Cartão | Confira |
+|---|---|
+| **Esperando você** | Bate com a quantidade de linhas da tabela |
+| **Valor acumulado** | É a soma dos valores da coluna |
+| **Prazo apertado** | Conta as que vencem em até 7 dias |
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-54 · Aviso de prazo
+
+1. Abra uma solicitação como Gilson e coloque **Precisa até** para **daqui a 3 dias**
+2. Envie e volte à fila do Bras
+
+**Esperado:** a coluna **Precisa até** mostra uma etiqueta amarela **"Faltam 3 dia(s)"**, em vez da data simples.
+
+3. Repita com uma data **no passado**
+
+**Esperado:** etiqueta vermelha **"Atrasada há X dia(s)"**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-55 · Aprovação com uma assinatura
+
+**Conta:** bras@portoinc.com.br
+
+1. Clique em **Analisar** na solicitação de ~R$ 1.000
+2. No painel **Sua decisão**, escolha **Aprovar**
+3. Confirme
+
+**Esperado:** mensagem verde dizendo que a solicitação foi **aprovada e liberada para cotação**. A etiqueta no topo vira **Aprovada**.
+
+4. Volte para **Aprovações**
+
+**Esperado:** ela **sumiu da fila**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-56 · Aprovação com DUAS assinaturas
+
+**Contas:** bras (gestor) e engenheiro@portoinc.com.br
+
+1. Como **Bras**, analise a solicitação de ~R$ 7.000
+2. Repare no painel: diz **"0 de 2 assinaturas"**
+3. Aprove
+
+**Esperado:** a situação **continua Aguardando aprovação**, e a mensagem diz *"1 de 2 assinaturas. Falta: Engenheiro."*
+
+4. Volte à fila do Bras
+
+**Esperado:** ela **sumiu** da fila dele — já assinou.
+
+5. Saia e entre como **Engenheiro**, vá em **Aprovações**
+
+**Esperado:** a mesma solicitação **está lá**, mostrando **1 de 2**.
+
+6. Aprove
+
+**Esperado:** agora sim vira **Aprovada**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-57 · Ninguém aprova o próprio pedido
+
+**Conta:** bras@portoinc.com.br
+
+1. Como Bras, abra uma solicitação de ~R$ 1.000 e envie
+2. Vá em **Aprovações**
+
+**Esperado:** a solicitação que **ele mesmo** abriu **não aparece** na fila.
+
+3. Abra a solicitação por **Solicitações → Abrir**
+
+**Esperado:** o painel **Sua decisão** **não aparece**, mesmo ele sendo gestor de obra.
+
+> Esta é a trava mais importante da etapa: é o controle contra alguém comprar para si mesmo sem ninguém olhar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-58 · Devolver exige explicar o motivo
+
+1. Analise qualquer solicitação da sua fila
+2. Escolha **Devolver para revisão**
+3. Deixe a observação **em branco** e tente confirmar
+
+**Esperado:** o botão fica desabilitado e aparece a mensagem *"Sem explicar o motivo, o solicitante não sabe o que corrigir."*
+
+4. Escreva um motivo e confirme
+
+**Esperado:** a situação vira **Em revisão**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-59 · O solicitante corrige e reenvia
+
+1. Entre como **Gilson** (autor da solicitação devolvida)
+2. Abra a solicitação
+
+**Esperado:** a situação é **Em revisão** e o botão **Enviar para aprovação** voltou a aparecer. O histórico mostra a observação do aprovador.
+
+3. Clique em **Enviar para aprovação**
+
+**Esperado:** volta para **Aguardando aprovação** e reaparece na fila do aprovador.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-60 · Reenviar zera as assinaturas antigas
+
+1. Abra uma solicitação de ~R$ 7.000 (das que exigem duas assinaturas)
+2. Como **Bras**, aprove (fica 1 de 2)
+3. Como **Engenheiro**, **devolva** com um motivo
+4. Como **Gilson**, reenvie
+5. Olhe a tabela **Assinaturas**
+
+**Esperado:** ela está **vazia**. A aprovação anterior do Bras não vale mais.
+
+> **Por quê:** ele aprovou um conteúdo que pode ter mudado na correção.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-61 · O aviso ao reprovar
+
+1. Analise uma solicitação e escolha **Reprovar**
+
+**Esperado:** aparece um aviso vermelho dizendo que reprovar **encerra o pedido definitivamente** e sugerindo devolver, se o problema for corrigível. O botão de confirmar fica vermelho.
+
+2. Confirme
+
+**Esperado:** a situação vira **Reprovada** e não há mais nenhuma ação disponível.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-62 · Uma reprovação derruba a aprovação existente
+
+1. Abra uma solicitação de ~R$ 7.000 e envie
+2. Como **Bras**, aprove (fica 1 de 2)
+3. Como **Engenheiro**, **reprove**
+
+**Esperado:** a solicitação fica **Reprovada**, mesmo já tendo uma aprovação registrada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-63 · As assinaturas ficam registradas
+
+1. Abra uma solicitação já decidida
+2. Role até a tabela **Assinaturas**
+
+**Esperado:** uma linha por decisão, com **quem**, **qual função**, **qual decisão**, **a observação** e **quando**.
+
+3. Role até **Histórico**
+
+**Esperado:** o mesmo aparece na linha do tempo, com um texto explicativo — por exemplo *"Aprovada por Gestor de obra. 1 de 2 assinaturas. Falta: Engenheiro."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-64 · Nomes de função legíveis
+
+1. Olhe as mensagens do painel de decisão e da fila
+
+**Esperado:** aparece **"Gestor de obra"**, e nunca `GESTOR_OBRA` com sublinhado.
+
+> Código interno não deve vazar para a tela do usuário.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-65 · Quem não aprova não vê a tela
+
+**Conta:** gilson@portoinc.com.br
+
+1. Entre como Gilson
+2. Procure **Aprovações** no menu
+
+**Esperado:** o item **não existe** para ele.
+
+3. Digite `http://localhost:5173/aprovacoes` na barra de endereço
+
+**Esperado:** tela de acesso negado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 7. Etapa 5 — Cotação e portal do fornecedor
+
+> **Preparação:** garanta que existam solicitações **aprovadas**. Se não houver,
+> refaça os casos CT-55 e CT-56 aprovando o que estiver na fila.
+
+## CT-66 · Só entra o que foi aprovado
+
+**Conta:** neilma@portoinc.com.br (compradora)
+
+1. **Cotações → + Novo pacote de cotação**
+2. Olhe a lista de itens
+
+**Esperado:** aparecem **só** itens de solicitações aprovadas. Um item de solicitação em rascunho ou aguardando aprovação **não** aparece.
+
+3. Confira a coluna **Origem**
+
+**Esperado:** mostra o número da solicitação (SOL-000xx) e o código da obra.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-67 · Filtrar por família
+
+1. Use o seletor **Todas as famílias**
+
+**Esperado:** cada opção mostra quantos itens tem, e ao escolher uma a lista reduz.
+
+2. Clique em **Marcar/desmarcar visíveis**
+
+**Esperado:** marca todos os que estão na tela. Clicando de novo, desmarca.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-68 · Aviso ao misturar famílias
+
+1. Marque itens de **três famílias diferentes**
+2. Olhe o quadro **Resumo do pacote**
+
+**Esperado:** aparece um aviso amarelo explicando que alguns fornecedores vão receber itens que não atendem, e sugerindo um pacote por família.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-69 · Criar o pacote
+
+1. Preencha título e prazo, marque alguns itens
+2. Clique em **Criar pacote e escolher fornecedores**
+
+**Esperado:** vai para a tela do pacote, com número **BID-000xx** e situação **Rascunho**.
+
+**Confira também:** antes de criar, o selo ao lado do botão dizia *"Nada é enviado a fornecedor ainda"*?
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-70 · O mesmo item não entra em dois pacotes
+
+1. Crie um pacote com um item
+2. Crie outro pacote e procure o mesmo item na lista
+
+**Esperado:** ele **não aparece mais**. Já está no primeiro pacote.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-71 · Fornecedores sugeridos pela família
+
+1. Na tela do pacote em rascunho, olhe **Fornecedores sugeridos**
+
+**Esperado:** aparecem só os fornecedores que atendem as **famílias dos itens** do pacote. Cada linha mostra as famílias dele e o WhatsApp.
+
+2. Monte um pacote **só de material elétrico** e repita
+
+**Esperado:** aparece apenas a **Eletrosul**.
+
+> Este é o coração da Etapa 2: é por isso que marcar as famílias no cadastro do fornecedor importava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-72 · Bloqueio ao abrir sem fornecedor
+
+1. Num pacote em rascunho **sem nenhum convidado**, clique em **📨 Abrir cotação e convidar**
+
+**Esperado:** o sistema recusa e explica que é preciso convidar pelo menos um fornecedor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-73 · Abrir a cotação
+
+1. Convide os fornecedores sugeridos
+2. Clique em **📨 Abrir cotação e convidar**
+
+**Esperado:**
+
+- A situação vira **Aberto para cotação**
+- Aparece a tabela **Convidados**, com um botão **🔗 Copiar link** por fornecedor
+- Aparece o aviso explicando que o link vence e não expõe concorrentes
+
+3. Vá em **Solicitações** e filtre por **Em cotação**
+
+**Esperado:** as solicitações de origem mudaram para essa situação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-74 · Não dá para mexer depois de aberto
+
+1. No pacote já aberto, procure os fornecedores sugeridos e o botão de remover
+
+**Esperado:** **sumiram**. Só restam "Encerrar cotação" e "Atualizar".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-75 · O portal do fornecedor
+
+1. Clique em **🔗 Copiar link** de um fornecedor
+2. Abra uma **janela anônima** do navegador e cole o link
+
+**Esperado:** abre a cotação **sem pedir login**, com:
+
+| Deve aparecer |
+|---|
+| Marca Porto Inc. e o número BID-000xx |
+| O nome **do fornecedor destinatário** |
+| Quantos dias faltam, em destaque |
+| Cada item com código, quantidade, norma e especificação |
+| Campos de preço, marca, modelo e prazo |
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-76 · O fornecedor NÃO vê os concorrentes
+
+1. Na janela anônima com o portal aberto, aperte **Ctrl+F**
+2. Procure pelo nome de **outro** fornecedor convidado
+
+**Esperado:** **não encontra nada**. Não há lista de convidados, nem preço de ninguém, nem contagem de quantos estão cotando.
+
+> Este é o caso mais importante da etapa. Se aqui falhar, a cotação inteira perde a credibilidade com o mercado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-77 · Responder a cotação
+
+1. Preencha preço, marca e prazo de cada item
+
+**Esperado:** o **Total deste item** aparece embaixo de cada um, e o **Total da proposta** atualiza no fim.
+
+2. Preencha frete, entrada e parcelas
+3. Clique em **Enviar cotação**
+
+**Esperado:** tela verde de confirmação com o total enviado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-78 · "Não tenho este item"
+
+1. Reabra o link e marque **Não tenho este item** num dos itens
+
+**Esperado:** os campos de preço **somem** e o item fica visualmente apagado.
+
+2. Envie
+
+**Esperado:** aceita, e o resumo conta o item como indisponível.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-79 · Item sem preço é bloqueado
+
+1. Deixe um item marcado como disponível, mas **sem preço**
+
+**Esperado:** aparece um aviso amarelo dizendo quantos itens estão sem preço, e o botão **Enviar** fica desabilitado. O aviso sugere marcar "Não tenho este item".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-80 · Revisar a resposta
+
+1. Depois de enviar, clique em **Revisar minha resposta**
+
+**Esperado:** o formulário volta **com os valores preenchidos** e uma faixa azul avisando que você já respondeu e que vale a última resposta.
+
+2. Mude um preço e envie de novo
+
+**Esperado:** aceita, e o total muda.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-81 · Link inválido
+
+1. Na barra de endereço, troque alguns caracteres do link e recarregue
+
+**Esperado:** mensagem clara dizendo que o link não é válido e orientando a falar com o comprador. **Nenhum erro técnico na tela.**
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-82 · O comprador acompanha
+
+**Conta:** neilma@portoinc.com.br
+
+1. Volte ao pacote e clique em **Atualizar**
+
+**Esperado:** a tabela **Convidados** mostra agora:
+
+- **Abriu o link** com data e hora
+- **Respondeu** com selo verde
+- **Total cotado** de cada um
+- **Pagamento** proposto
+
+2. Olhe o cartão **Respostas** no topo
+
+**Esperado:** mostra, por exemplo, **2 de 3**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-83 · Encerrar derruba os links
+
+1. Clique em **Encerrar cotação**
+2. Volte à janela anônima e recarregue o portal
+
+**Esperado:** mensagem dizendo que a cotação não está mais aberta para respostas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-84 · O portal no celular
+
+1. Abra o link do portal no celular (ou com **F12** em modo celular)
+
+**Esperado:** os campos ficam um abaixo do outro, tudo legível, nada rola para os lados. O fornecedor consegue responder do telefone.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 8. Etapa 6 — Equalização e pedido de compra
+
+> **Antes de começar:** você precisa de uma cotação **aberta** com pelo menos **dois fornecedores que já responderam** (CT-77). Se não tiver, faça primeiro os casos CT-73 a CT-77.
+
+Entre como **Comprador** (`neilma@portoinc.com.br`).
+
+## CT-85 · Chegar na equalização
+
+1. Menu **Cotações** → abra a cotação
+2. Clique em **📊 Equalizar e escolher**
+
+**Esperado:** abre a tela **Equalização** com o número da cotação, o título e *"X de Y fornecedores responderam"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-86 · O mapa comparativo
+
+1. Olhe a tabela do meio da tela
+
+**Esperado:**
+- Uma linha por item, uma coluna por fornecedor
+- O **melhor preço** de cada linha vem destacado, com a etiqueta *melhor preço*
+- Os outros mostram quanto estão acima (ex.: **+100%**)
+- O cabeçalho de cada coluna diz quantos itens aquele fornecedor está vencendo
+- No pé da tabela vêm **frete e outros custos** e o **total fechando tudo com um só**
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-87 · O frete entra na conta da mistura
+
+1. Olhe o cartão **Escolhendo item a item**
+2. Olhe o texto pequeno embaixo do valor
+
+**Esperado:** aparece *"N fornecedor(es) · frete somado R$ X"*. O valor do cartão **inclui** o frete de cada fornecedor vencedor.
+
+> É o ponto mais fácil de errar numa planilha: dividir a compra entre três fornecedores significa pagar três fretes. Se o cartão mostrasse só a soma dos itens, a comparação seria injusta.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-88 · Escolher item a item
+
+1. Clique na célula de um fornecedor, num item
+2. Clique na célula de **outro** fornecedor, em outro item
+3. Olhe o rodapé da tela
+
+**Esperado:** as células ficam marcadas e o rodapé mostra o total escolhido, o frete da combinação e quantos itens ainda faltam. Clicar de novo na mesma célula **desmarca**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-89 · Aceitar todos os melhores preços
+
+1. Clique em **Aceitar todos os melhores preços**
+
+**Esperado:** todas as linhas ficam marcadas no vencedor, e o rodapé mostra *"0 itens faltando"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-90 · As escolhas ficam salvas
+
+1. Clique em **Salvar escolhas**
+2. Saia da tela (menu **Cotações**) e volte pela equalização
+
+**Esperado:** as mesmas células continuam marcadas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-91 · Última chamada NÃO revela preço do concorrente
+
+**Este é o caso mais importante desta etapa.**
+
+1. Clique em **📣 Última chamada**
+2. Informe um novo prazo e confirme
+3. Leia com atenção a mensagem que o sistema mostra
+
+**Esperado:** a mensagem lista **só os códigos e nomes dos itens** em que o fornecedor não está ganhando. Ela **não** traz:
+
+- ❌ o preço do concorrente
+- ❌ o nome do concorrente
+- ❌ quanto ele precisa baixar
+
+> Se qualquer valor de concorrente aparecer, **pare e avise**. Isso ensina o mercado a alinhar preço e vira problema de lei de concorrência.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-92 · A última chamada reabre a cotação
+
+1. Depois do CT-91, olhe o topo da tela
+
+**Esperado:** a situação volta para **Aberto**, aparece a etiqueta **Rodada 2** e o novo prazo. O link que o fornecedor já tinha continua funcionando (confira reabrindo o link do CT-75).
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-93 · Bloqueio com item sem escolha
+
+1. Desmarque a escolha de um item (clique na célula marcada)
+2. Clique em **✅ Gerar pedidos de compra**
+
+**Esperado:** o sistema **recusa** e lista exatamente qual item está sem vencedor. Nenhum pedido é criado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-94 · Gerar os pedidos
+
+1. Marque de novo todos os vencedores e salve
+2. Clique em **✅ Gerar pedidos de compra**
+
+**Esperado:** aparece um aviso verde com os números gerados (ex.: **PC-00001 (Marquilip)**). A cotação passa para **Pedidos gerados**.
+
+> Se você dividiu entre dois fornecedores, devem sair **dois** pedidos — um para cada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-95 · Não gera duas vezes
+
+1. Na mesma tela, tente gerar de novo
+
+**Esperado:** o sistema recusa dizendo que a cotação já foi concluída. Não existe pedido repetido.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-96 · A tela de Pedidos e o PDF
+
+1. Menu **Pedidos**
+2. Confira número, fornecedor, origem, itens, total, pagamento e situação
+3. Clique em **📄 PDF**
+
+**Esperado:** o arquivo baixa com o nome do pedido. Dentro dele:
+
+- Dados da Porto Inc. e do fornecedor
+- Itens com preço, marca e prazo
+- Totais com frete
+- Condição de pagamento e local de entrega
+- Em destaque: **"IMPORTANTE: informe o número PC-xxxxx na nota fiscal e na entrega"**
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-97 · Quem não é comprador não entra
+
+1. Saia e entre como **Almoxarife** (`gilson@portoinc.com.br`)
+2. Olhe o menu da esquerda
+3. Tente abrir `/cotacoes`, `/pedidos` e a equalização digitando no endereço
+
+**Esperado:** o menu dele não mostra **Cotações** nem **Pedidos**, e digitar o endereço na mão dá *"Você não tem acesso a esta tela"*.
+
+> Hoje só **Comprador** e **Administrador** enxergam pedido de compra. Na Etapa 7 o almoxarife vai precisar ver o pedido para conferir o recebimento — ele ganhará acesso **de leitura** por ali, pela tela de recebimento, e não a esta tela de gestão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 9. Etapa 7 — Recebimento no almoxarifado
+
+> **Antes de começar:** você precisa de pelo menos um **pedido de compra** gerado (CT-94). Entre como **Almoxarife** (`gilson@portoinc.com.br`), menos onde estiver indicado outra conta.
+
+## CT-98 · O almoxarife vê a tela certa
+
+1. Entre como Almoxarife
+2. Olhe o menu da esquerda
+
+**Esperado:** aparece **Recebimento**. **Não** aparecem Cotações nem Pedidos.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-99 · Achar o pedido digitando só o número
+
+1. Menu **Recebimento**
+2. No campo grande, digite apenas `1`
+3. Clique em **Abrir conferência**
+
+**Esperado:** abre a conferência de **PC-00001**. Repita com `PC-00001` e `00001` — os três têm que funcionar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-100 · Número que não existe
+
+1. Digite `PC-99999` e confirme
+
+**Esperado:** mensagem clara — *"Não existe pedido com o número PC-99999"*. Nada de tela branca ou erro técnico.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-101 · Texto que não é número
+
+1. Digite `abacaxi` e confirme
+
+**Esperado:** *"Não entendi esse número. Use o formato PC-00001, como está no pedido."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-102 · A lista de pedidos esperando entrega
+
+1. Volte para **Recebimento**
+2. Olhe a tabela **Esperando entrega**
+
+**Esperado:** cada linha mostra pedido, fornecedor, obra, quantos itens ainda faltam chegar e a situação. O botão **Conferir** abre a mesma tela do CT-99.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-103 · Bipar o material
+
+1. Abra a conferência de um pedido
+2. Copie o código que aparece em negrito na primeira linha (ex.: `00068`)
+3. Cole no campo **Bipar ou digitar o código do material** e confirme
+
+**Esperado:** a linha daquele item fica **destacada** e a quantidade **Recebido agora** vem preenchida com o saldo.
+
+> Se você tiver um leitor de código de barras USB, teste com ele: o leitor digita e dá Enter sozinho.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-104 · Bipar material de outro pedido
+
+1. No mesmo campo, digite um código qualquer que não esteja na tabela
+
+**Esperado:** *"Esse código não está neste pedido."* Nada é preenchido.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-105 · Não recebe mais do que o saldo
+
+1. Numa linha com saldo 40, escreva **45** em **Recebido agora**
+2. Clique em **Registrar recebimento**
+
+**Esperado:** recusa dizendo *"o saldo é de 40 ..., e você informou 45"*. Nada é gravado.
+
+> Receber a mais significa pagar mais do que foi aprovado. Quem resolve isso é o comprador.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-106 · Ressalva sem motivo é recusada
+
+1. Numa linha, escreva uma quantidade
+2. Em **Como chegou**, escolha **Aceito com ressalva**
+3. Deixe o motivo em branco e registre
+
+**Esperado:** recusa pedindo o motivo. Preencha o motivo e registre de novo: agora vai.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-107 · Entrega parcial
+
+1. Numa linha com saldo 40, escreva **10**
+2. Deixe as outras linhas em branco
+3. Registre
+
+**Esperado:**
+- Aviso verde com o número **REC-xxxxx** e uma frase do tipo *"1 item conforme. Ainda faltam chegar N itens."*
+- A situação do pedido passa para **Recebido em parte**
+- Ao reabrir, **Já recebido** = 10 e **Saldo** = 30
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-108 · Devolução não baixa o saldo
+
+**Este é o caso mais importante da etapa.**
+
+1. Numa linha com saldo 30, escreva **Recebido agora = 7** e **Devolvido = 3**
+2. Marque **Aceito com ressalva** e escreva o motivo
+3. Registre e reabra o pedido
+
+**Esperado:** **Já recebido** subiu 7 (não 10) e o **Saldo** caiu só 7.
+
+> Os 3 devolvidos continuam sendo dívida do fornecedor. Se o saldo tivesse caído 10, o almoxarifado ficaria com 3 unidades a menos e ninguém perceberia.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-109 · Recebi tudo que falta
+
+1. Abra um pedido com saldo em vários itens
+2. Clique em **Recebi tudo que falta**
+
+**Esperado:** todas as linhas com saldo ficam preenchidas de uma vez. **Limpar** desfaz.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-110 · O pedido fecha quando tudo chega
+
+1. Termine de receber todo o saldo de um pedido
+2. Registre
+
+**Esperado:**
+- Frase *"Pedido recebido por inteiro."*
+- Situação **Recebido**
+- Ao reabrir: *"Este pedido já foi recebido por inteiro"*, com os campos desligados e o formulário da entrega escondido
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-111 · Nada marcado
+
+1. Abra um pedido e clique em **Registrar recebimento** sem preencher nada
+
+**Esperado:** *"Informe o que chegou em pelo menos um item."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-112 · Histórico da entrega
+
+1. Volte para **Recebimento**
+2. Olhe **Últimas entregas conferidas**
+
+**Esperado:** a entrega do CT-108 aparece com o número REC, o pedido, a nota fiscal, quem conferiu, o almoxarifado e o selo **Com ressalva**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-113 · Marcar o pedido como enviado
+
+**Conta:** neilma@portoinc.com.br (compradora)
+
+1. Menu **Pedidos**
+2. Num pedido em **Rascunho**, clique em **Marcar como enviado**
+
+**Esperado:** aviso verde e a situação muda para **Enviado**. O botão some. Clicar de novo não é possível.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-114 · Pedido em rascunho não trava a entrega
+
+1. Como Almoxarife, abra um pedido que ainda esteja em **Rascunho**
+2. Receba normalmente
+
+**Esperado:** recebe sem reclamar.
+
+> Travar a entrega porque o comprador esqueceu de clicar um botão faria o caminhão esperar no portão — e o almoxarife não tem como resolver isso.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-115 · A conferência no celular
+
+1. Abra a conferência com **F12** em modo celular (ou no telefone de verdade)
+
+**Esperado:** a tabela rola para o lado sem quebrar a página, os campos de quantidade continuam clicáveis e o botão **Registrar recebimento** fica alcançável.
+
+> É a tela com maior chance de ser usada no celular, em pé, no portão da obra.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 10. Etapa 8 — Estoque
+
+> **Antes de começar:** você precisa de pelo menos uma entrega conferida (CT-107 ou CT-110). Entre como **Almoxarife** (`gilson@portoinc.com.br`), menos onde estiver indicada outra conta.
+
+## CT-116 · O recebimento virou saldo sozinho
+
+1. Menu **Estoque**
+2. Escolha o almoxarifado da obra onde você recebeu material
+
+**Esperado:** o material conferido aparece com saldo igual ao que você recebeu, e o **custo médio** é o preço que estava no pedido de compra. Ninguém precisou lançar nada à mão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-117 · O que foi devolvido não entrou
+
+1. Olhe um material que você devolveu no CT-108
+2. Compare o saldo com o que foi **aceito** (não com o que chegou no caminhão)
+
+**Esperado:** só o que foi aceito virou saldo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-118 · Os quatro cartões
+
+1. Olhe o alto da tela
+
+**Esperado:** itens em estoque, valor parado (pelo custo médio), abaixo do mínimo e zerados. Os números batem com a tabela abaixo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-119 · Retirar material
+
+1. Numa linha com saldo, clique em **Retirar**
+2. Quantidade: metade do saldo
+3. Para quem: `Equipe da laje do 3º pavimento`
+4. **Registrar**
+
+**Esperado:** aviso verde com o número **MOV-xxxxx** e a frase *"Saíram N ... Saldo agora: M"*. A tabela atualiza sozinha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-120 · Retirada sem destino é recusada
+
+1. Repita o CT-119 deixando o destino em branco
+
+**Esperado:** *"Informe para quem ou para qual frente de serviço o material está saindo."*
+
+> Material que sai sem dono vira buraco no estoque.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-121 · Não dá para tirar o que não existe
+
+1. Tente retirar uma quantidade maior que o saldo
+
+**Esperado:** *"o almoxarifado tem N e você pediu M"*. Nada é gravado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-122 · A retirada não mexe no custo médio
+
+1. Anote o custo médio antes da retirada do CT-119
+2. Compare depois
+
+**Esperado:** o mesmo valor. Sai material, não muda o preço do que ficou.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-123 · Contagem de inventário
+
+1. Numa linha, clique em **Contar**
+2. Escreva **o que você contou** (ex.: saldo menos 2)
+3. Explique: `Contagem do mês: dois itens danificados, descartados`
+4. **Registrar**
+
+**Esperado:** mensagem *"Ajuste de 2 ... a menos. Saldo agora: N"*, e o saldo vira exatamente o que você contou.
+
+> Você informa a contagem, não a diferença. A conta é do sistema.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-124 · Ajuste sem explicação é recusado
+
+1. Repita o CT-123 sem escrever o motivo
+
+**Esperado:** *"Explique o que a contagem encontrou. Ajuste sem motivo não se sustenta."*
+
+> É o único lugar em que o saldo muda sem material entrar ou sair. Sem motivo escrito, vira porta dos fundos.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-125 · Contagem que bate não vira movimento
+
+1. Em **Contar**, escreva exatamente o saldo atual e registre
+
+**Esperado:** *"A contagem bateu com o saldo: não há ajuste a fazer."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-126 · Transferir entre almoxarifados
+
+1. Clique em **Retirar** e mude a opção para **Transferir para outro almoxarifado**
+2. Escolha o destino e uma quantidade
+3. **Registrar**
+4. Troque o filtro **Almoxarifado** para o de destino
+
+**Esperado:** a quantidade saiu de um e entrou no outro, **com o mesmo custo médio**.
+
+> Mudar de prateleira não deixa o material mais caro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-127 · Aviso de ponto de pedido
+
+1. Retire material até o saldo ficar abaixo do mínimo do cadastro
+2. Volte para o **Estoque**
+
+**Esperado:** quadro amarelo no alto — *"1 material chegou no ponto de pedido"* — com a frase *"Restam N ..., mínimo é M"*. A linha da tabela ganha o selo **Repor**.
+
+> Se o material não tiver ponto de pedido cadastrado, ele nunca alerta. Cadastre em **Cadastros → Materiais**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-128 · Montar a reposição
+
+1. Clique em **Montar reposição**
+
+**Esperado:** tabela com *tem / mínimo / comprar*. A quantidade sugerida repõe até o **dobro do mínimo**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-129 · Abrir a solicitação de reposição
+
+1. Clique em **Abrir solicitação com N itens**
+
+**Esperado:** o sistema cria a solicitação já preenchida, na obra daquele almoxarifado, e abre a tela dela. A justificativa menciona o ponto de pedido.
+
+> A partir daqui é o caminho de sempre: enviar → aprovar → cotar → pedido → recebimento → de volta para o estoque.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-130 · O extrato conta a história
+
+1. Clique em **Ver extrato**
+
+**Esperado:** todos os movimentos do mais recente para o mais antigo, cada um com número **MOV-xxxxx**, sinal (**+** ou **−**), **saldo depois** e quem fez. As entradas antigas aparecem como *"Saldo inicial"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-131 · Nada é apagado
+
+1. Procure no sistema um botão para apagar ou editar um movimento
+
+**Esperado:** **não existe**. O conserto de um erro é sempre um movimento novo.
+
+> É isso que permite explicar qualquer saldo meses depois.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-132 · Quem vê e quem mexe
+
+1. Entre como **Engenheiro** (`engenheiro@portoinc.com.br`) e abra o **Estoque**
+2. Olhe as linhas da tabela
+
+**Esperado:** ele **vê** o saldo, mas **não aparecem** os botões *Retirar* e *Contar*.
+
+3. Entre como **Comprador** (`neilma@portoinc.com.br`) e abra o **Estoque**
+
+**Esperado:** também vê — precisa saber o que já existe antes de comprar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-133 · O estoque no celular
+
+1. Abra a tela de estoque em modo celular (**F12** → ícone de celular)
+
+**Esperado:** a tabela rola para o lado sem quebrar a página; o painel de retirada fica utilizável.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 11. Etapa 9 — Fiscal e contas a pagar
+
+> **Antes de começar:** você precisa de pelo menos um **pedido de compra** (CT-94). Entre como **Compradora** (`neilma@portoinc.com.br`), menos onde estiver indicada outra conta.
+
+## CT-134 · A tela de notas fiscais
+
+1. Menu **Financeiro** → **Notas fiscais**
+
+**Esperado:** aparecem os botões **Lançar nota**, **Importar XML** e **Ver contas a pagar**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-135 · Lançar uma nota que bate com o pedido
+
+1. **Lançar nota**
+2. Escolha um pedido na lista — repare que ela mostra *"falta R$ x"*
+3. Número: `1001` · Série: `1` · Emitida em: hoje
+4. Valor total: **exatamente o valor que falta no pedido**
+5. **Lançar nota**
+
+**Esperado:** *"Nota conferida: bate com o pedido. Já pode gerar as parcelas."* e o selo **Conferida**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-136 · Nota acima do pedido vira pendência
+
+1. Repita o CT-135 com número `1002` e valor **R$ 500 acima** do que falta
+
+**Esperado:** selo **Com pendência** e a frase *"A nota está R$ 500,00 acima do que falta no pedido PC-xxxxx"*.
+
+> O sistema não impede de lançar — às vezes a diferença tem explicação. Ele só não deixa passar despercebido.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-137 · Nota abaixo é entrega parcial
+
+1. Lance uma nota com valor bem menor que o pedido
+
+**Esperado:** *"A nota está R$ x abaixo do pedido. É entrega parcial? Se for, está certo."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-138 · A mesma nota não entra duas vezes
+
+1. Tente lançar de novo o mesmo número e série do CT-135, no mesmo fornecedor
+
+**Esperado:** *"Este fornecedor já tem a nota 1001 série 1 lançada."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-139 · A chave de acesso se confere sozinha
+
+1. Lance uma nota informando uma **chave de 44 dígitos inventada** (ex.: 44 vezes o dígito 1)
+
+**Esperado:** pendência *"A chave de acesso não passa na conferência dos 44 dígitos"*.
+
+> A chave tem um dígito verificador no fim. O sistema recalcula e compara — sem consultar a SEFAZ.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-140 · Importar o XML da nota
+
+**Este é o caso mais importante da etapa.**
+
+1. Peça ao fornecedor (ou gere) um arquivo **XML de NF-e**
+2. Clique em **Importar XML** e escolha o arquivo
+
+**Esperado:**
+- O formulário abre preenchido: número, série, data, valor, frete e **chave de 44 dígitos**
+- Os **itens da nota** aparecem numa tabela abaixo
+- A lista de pedidos mostra **só os do fornecedor daquela nota**
+- Aviso: *"XML lido: confira os dados e escolha o pedido antes de lançar."*
+
+> O XML **não grava nada sozinho**. Ele preenche; quem lança é você.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-141 · Arquivo que não é nota
+
+1. **Importar XML** escolhendo qualquer arquivo que não seja NF-e
+
+**Esperado:** *"Este arquivo não parece ser o XML de uma nota fiscal."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-142 · Gerar as parcelas
+
+1. Na linha de uma nota, clique em **Gerar parcelas**
+
+**Esperado:** mensagem com a condição vinda da cotação, ex.: *"4 parcelas geradas: 30% de entrada + 3x a cada 30 dias."* A coluna **Parcelas** passa a mostrar `4x`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-143 · A soma das parcelas bate com a nota
+
+1. Vá em **Contas a pagar** e some os valores das parcelas daquela nota
+
+**Esperado:** a soma dá **exatamente** o valor da nota. A última parcela costuma ter um centavo de diferença das outras — é ela que fecha a conta.
+
+> Sem isso sobra ou falta centavo, e é sempre o financeiro que descobre.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-144 · Não gera parcelas duas vezes
+
+1. Clique em **Gerar parcelas** de novo na mesma nota
+
+**Esperado:** *"As parcelas desta nota já foram geradas."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-145 · Os quatro cartões do financeiro
+
+1. Menu **Financeiro**
+
+**Esperado:** Vencidas, Vencem em 7 dias, Total em aberto e Pago no mês. Os valores batem com a tabela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-146 · Cada parcela diz em que pé está
+
+1. Olhe a coluna **Vencimento**
+
+**Esperado:** abaixo da data, uma frase em português: *vence hoje*, *vence em 30 dias*, *venceu há 3 dias*. A entrada vence **no dia da nota**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-147 · Dar baixa
+
+1. Clique em **Dar baixa** numa parcela
+2. Confirme a data, o valor e a forma de pagamento (ex.: PIX)
+
+**Esperado:** aviso *"CP-xxxxx baixada: R$ x"*, selo **Paga** e o cartão **Pago no mês** sobe.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-148 · Não paga duas vezes
+
+1. Tente dar baixa de novo na mesma parcela
+
+**Esperado:** o botão **Dar baixa** nem aparece mais para parcelas pagas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-149 · Filtros
+
+1. Troque **Mostrar** para **Vencidas** e depois para **Vencem em 7 dias**
+2. Troque **Situação** para **Pagas**
+
+**Esperado:** a tabela responde a cada filtro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-150 · Baixar as contas em PDF e em Word
+
+1. Clique em **↓ Baixar contas**
+2. Escolha **PDF** e abra o arquivo
+3. Clique de novo e escolha **Word (.docx)**; abra no Word
+
+**Esperado:** nos dois, a tabela traz título, fornecedor, CNPJ, nota, pedido, parcela, valor, vencimento, situação e pagamento. Os acentos aparecem certos e os valores vêm como `R$ 1.234,56`. No alto, o total em aberto.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-151 · Cancelar nota com parcela paga
+
+1. Numa nota que já teve parcela paga, clique em **Cancelar**
+
+**Esperado:** *"Esta nota tem parcela já paga. Cancelar apagaria um pagamento real."*
+
+> Se o pagamento foi errado, o conserto é no banco, não no sistema.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-152 · Cancelar nota sem pagamento
+
+1. Numa nota com parcelas **todas em aberto**, clique em **Cancelar**
+
+**Esperado:** *"Nota cancelada e parcelas em aberto canceladas junto."* A nota fica com o selo **Cancelada**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-153 · Quem entra no financeiro
+
+1. Entre como **Almoxarife** (`gilson@portoinc.com.br`) e tente abrir `/financeiro`
+2. Entre como **Fundador** (`washington@portoinc.com.br`) e abra o **Financeiro**
+
+**Esperado:** o almoxarife é barrado; o fundador **vê** as contas, mas **não tem** os botões de lançar nota nem de dar baixa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-154 · O financeiro no celular
+
+1. Abra as duas telas em modo celular
+
+**Esperado:** as tabelas rolam para o lado sem quebrar a página; os botões continuam alcançáveis.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 12. Painel financeiro — indicadores e gráficos
+
+> **Entre como Administrador** (`admin@portoinc.com.br`) ou outra pessoa com acesso ao Financeiro.
+
+## CT-172 · Os quatro indicadores de gestão
+
+1. Menu **Financeiro**
+2. Olhe a linha abaixo dos quatro cartões grandes
+
+**Esperado:** prazo médio negociado (em dias), maior parcela em aberto, parcela média e notas lançadas no mês.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-173 · A frase do próximo vencimento
+
+1. Olhe embaixo do cartão **Vencem em 7 dias**
+
+**Esperado:** uma frase em português, conforme o caso: *A próxima vence hoje*, *A próxima vence amanhã*, *A próxima vence em N dias* ou *A mais antiga venceu há N dias*.
+
+> Nunca deve aparecer número negativo, como "vence em -15 dias".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-174 · O gráfico de fluxo de caixa
+
+1. Olhe o gráfico **Fluxo de caixa**
+
+**Esperado:**
+- 12 colunas: 3 meses para trás e 8 para frente
+- O mês atual aparece destacado
+- As colunas empilham verde (pago), vermelho (vencido) e amarelo (a vencer)
+- Abaixo de cada mês, o total abreviado (R$ 1,4k)
+- As colunas **crescem de baixo para cima** ao abrir a tela
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-175 · O pago conta no mês em que saiu
+
+1. Dê baixa numa parcela informando uma data de **mês passado**
+2. Volte ao painel
+
+**Esperado:** o valor aparece na coluna do **mês do pagamento**, não na do vencimento.
+
+> É isso que faz o gráfico ser fluxo de caixa e não agenda de vencimentos.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-176 · A rosca da carteira
+
+1. Olhe **Composição da carteira**
+
+**Esperado:** rosca dividida em vencidas, vencem em 7 dias, a vencer depois e já pagas. Ao lado, a lista com valor e percentual de cada faixa. Os percentuais somam 100%.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-177 · O medidor de pontualidade
+
+1. Olhe **Pontualidade**
+
+**Esperado:** meia-lua preenchida com o percentual no meio. Verde acima de 90%, amarelo entre 70% e 89%, vermelho abaixo de 70%.
+
+2. Dê baixa numa parcela com data **depois** do vencimento e volte
+
+**Esperado:** o percentual cai.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-178 · Os rankings
+
+1. Olhe **Para quem a Porto Inc. mais deve** e **Custo por obra**
+
+**Esperado:** nome em cima, barra embaixo com duas cores (em aberto e já pago) e o total à direita. Ordenado do maior para o menor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-179 · Os filtros não mexem nos gráficos
+
+1. Mude **Mostrar** para **Vencidas**
+
+**Esperado:** a tabela de parcelas filtra, mas os gráficos continuam mostrando o quadro completo.
+
+> Filtro é para procurar uma parcela. Gráfico é para entender o todo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-183 · Dados ao passar o mouse (PC)
+
+1. No computador, passe o mouse por uma **coluna do fluxo de caixa**
+
+**Esperado:** aparece uma caixinha acima do ponteiro com o mês, o valor **pago**, o **vencido**, o **a vencer** e o total — cada um com o quadradinho da sua cor.
+
+2. Repita nos **indicadores**, nas **fatias da rosca**, nas **barras dos rankings** e no **medidor**
+
+**Esperado:** todos mostram os números por trás. Nos indicadores, a caixinha traz também a explicação do que o número significa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-184 · A dica some ao tirar o mouse
+
+1. Passe o mouse por um gráfico e tire
+
+**Esperado:** a caixinha some na hora. Ela **não** deve piscar nem ficar presa na tela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-185 · Dados ao tocar (celular)
+
+1. No celular (ou com **F12** em modo celular), **toque** numa barra do fluxo
+
+**Esperado:** a caixinha aparece com os mesmos números do computador.
+
+2. Toque em qualquer outro lugar da tela
+
+**Esperado:** a caixinha some.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-186 · Dados pelo teclado
+
+1. Aperte **Tab** até chegar num gráfico
+
+**Esperado:** a caixinha aparece sozinha ao elemento receber o foco, e some ao sair.
+
+> Quem não usa mouse também precisa dos números.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-187 · Tudo alinhado
+
+1. Olhe os oito cartões do alto da tela
+
+**Esperado:** todos com a **mesma altura**, e os valores (R$ 798,00, 45 dias...) na **mesma linha**, mesmo quando um rótulo ocupa duas linhas e outro só uma.
+
+2. Olhe o gráfico de fluxo: cada barra tem que ficar **exatamente em cima** do seu mês.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-180 · Movimento reduzido
+
+1. No Windows: **Configurações → Acessibilidade → Efeitos visuais → Efeitos de animação: Desativado**
+2. Recarregue o painel
+
+**Esperado:** os gráficos aparecem **prontos**, sem animação nenhuma.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-181 · Os gráficos no leitor de tela
+
+1. Com o leitor de tela ligado (Narrador: **Ctrl+Win+Enter**), navegue pelo painel
+
+**Esperado:** cada gráfico é lido como uma **tabela** com os mesmos números — mês a mês, faixa a faixa, fornecedor a fornecedor.
+
+> Gráfico bonito que exclui gente não serve.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-182 · O painel sem dado nenhum
+
+1. Num sistema recém-instalado, sem notas lançadas, abra o **Financeiro**
+
+**Esperado:** em vez de gráficos vazios, a mensagem *"Ainda não há parcelas para analisar"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 13. Etapa 10 — WhatsApp
+
+> **Entre como Administrador** (`admin@portoinc.com.br`). Só ele tem acesso a esta tela.
+
+## CT-155 · A trava aparece antes de tudo
+
+1. Menu **WhatsApp**
+
+**Esperado:** o primeiro bloco da tela é o aviso amarelo — *"Modo de teste ligado: só sai mensagem para número autorizado"* — **acima** dos botões de conectar.
+
+> A ordem é proposital: entender a trava vem antes de poder usar o botão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-156 · Bloqueio de número fora da lista
+
+**Este é o caso mais importante da etapa.**
+
+1. Clique em **Conectar** (no modo simulado conecta na hora)
+2. Em **Enviar uma mensagem de teste**, use um número **que não esteja na lista**
+3. **Enviar teste**
+
+**Esperado:** recusa com *"O número 55••••••••21 não está na lista de autorizados"*. **Nada sai.**
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-157 · O bloqueio fica registrado
+
+1. Role até **Histórico de envios**
+
+**Esperado:** a tentativa do CT-156 aparece com o selo **Bloqueada** e o número mascarado.
+
+> Se alguém tentou mandar para fora da lista, isso precisa ficar registrado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-158 · Liberar o seu número
+
+1. Em **Números autorizados**, informe **o seu celular** (com DDI e DDD) e um nome
+2. **Liberar número**
+
+**Esperado:** aparece na tabela com o número **mascarado**. O cartão **Autorizados** sobe para 1.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-159 · Agora o envio passa
+
+1. Repita o CT-156 com o número que você acabou de liberar
+
+**Esperado:** *"Mensagem enviada para 55••••••••21."* e o selo **Enviada** no histórico.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-160 · Tirar da lista bloqueia de novo
+
+1. **Tirar da lista** no número
+2. Tente enviar outra vez
+
+**Esperado:** volta a ser bloqueado imediatamente.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-161 · O número nunca aparece inteiro
+
+1. Olhe a tabela de autorizados e o histórico
+
+**Esperado:** sempre mascarado (`5511•••••••21`). Em nenhum lugar da tela aparece o número completo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-162 · Número repetido e número inválido
+
+1. Tente liberar o mesmo número duas vezes
+2. Tente liberar `123`
+
+**Esperado:** *"Este número já está na lista."* e *"Número com 3 dígitos não parece válido."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-163 · Só o administrador entra
+
+1. Entre como **Compradora** (`neilma@portoinc.com.br`)
+2. Olhe o menu e tente abrir `/admin/whatsapp`
+
+**Esperado:** o menu não mostra **WhatsApp** e o endereço dá *"Você não tem acesso a esta tela"*.
+
+> Ela **pode** enviar convite e pedido pelas telas de Cotação e Pedidos — o que ela não pode é mexer na conexão e na lista.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-164 · Convites de cotação
+
+**Conta:** neilma@portoinc.com.br
+
+1. Abra uma cotação **aberta**
+2. Clique em **💬 Enviar convites pelo WhatsApp**
+
+**Esperado:** mensagem do tipo *"2 de 2 convite(s) enviado(s)"*, ou o aviso de quantos foram bloqueados. No histórico (visto pelo administrador) cada envio aparece com o contexto **cotacao** e a referência **BID-xxxxx**.
+
+> Com os fornecedores de demonstração, o esperado é **bloqueado** — os telefones deles são fictícios e não estão na lista.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-165 · Pedido de compra com PDF
+
+1. Menu **Pedidos** → botão **💬 WhatsApp** num pedido
+
+**Esperado:** o histórico registra o envio com o selo **anexo** e a referência **PC-xxxxx**. Se o envio der certo e o pedido estiver em rascunho, ele passa para **Enviado** sozinho.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-166 · Conexão de verdade (com o Baileys)
+
+> **Precisa de um celular e de um chip de testes.** Não use o número da empresa.
+
+1. No arquivo `.env`, mude para `WHATSAPP_ADAPTER=baileys`
+2. `docker compose up -d api` e espere subir
+3. Menu **WhatsApp** → **Conectar**
+4. Espere o **QR Code** aparecer (alguns segundos)
+5. No celular: **WhatsApp › Aparelhos conectados › Conectar um aparelho** e escaneie
+
+**Esperado:** a situação passa por *QR Code pronto* → *Autenticando* → **Conectado**, e o número aparece mascarado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-167 · Mensagem de verdade no seu celular
+
+1. Com o WhatsApp conectado, libere **o seu número** na lista
+2. Envie uma mensagem de teste para ele
+
+**Esperado:** a mensagem chega no seu celular.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-168 · Reiniciar não pede QR de novo
+
+1. Com o WhatsApp conectado: `docker compose restart api`
+2. Espere e abra a tela de novo
+
+**Esperado:** volta **Conectado** sozinho, **sem** pedir QR. A sessão ficou guardada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-169 · Desconectar apaga a sessão
+
+1. Clique em **Desconectar**
+2. Clique em **Conectar** de novo
+
+**Esperado:** aparece um **QR Code novo** — a sessão anterior foi apagada de propósito.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-170 · O QR nunca aparece no log
+
+1. Com o QR na tela, rode `docker compose logs api | grep -i qr`
+
+**Esperado:** **nada**. O QR é credencial e fica só na memória.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-171 · Voltar para o modo simulado
+
+1. No `.env`, volte para `WHATSAPP_ADAPTER=mock`
+2. `docker compose up -d api`
+
+**Esperado:** a tela volta a mostrar **Simulado** e nada mais sai para fora.
+
+> Faça isso ao terminar os testes. É a regra combinada: o sistema fica em modo simulado por padrão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 14. Etapa 11 — Relatórios
+
+> **Entre como Administrador** (`admin@portoinc.com.br`), **Comprador** (`andre@portoinc.com.br`) ou **Gestor de obra** (`bras@portoinc.com.br`). O **Almoxarife** (`gilson@`) **não** deve ver esta tela.
+
+> **Antes de começar:** o relatório só mostra alguma coisa se houver histórico. Se o sistema estiver recém-instalado, rode `docker compose exec api npx tsx prisma/seed-historico.ts` para criar 13 compras espalhadas nos últimos 10 meses.
+
+## CT-188 · Quem pode entrar
+
+1. Entre como **Almoxarife** (`gilson@portoinc.com.br`)
+2. Olhe o menu da esquerda
+3. Digite `/relatorios` direto na barra de endereço
+
+**Esperado:** **Relatórios** não aparece no menu, e forçar o endereço mostra a tela de "sem permissão" — não os números.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-189 · As cinco abas
+
+1. Entre como **Administrador** e abra **Relatórios**
+2. Clique em cada aba
+
+**Esperado:** cinco abas — Orçamento, Economia, Fornecedores, Tempos, Consumo. Cada uma mostra, logo abaixo, **a pergunta que responde**. A aba ativa fica com o texto e o traço azuis.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-190 · A aba fica no endereço
+
+1. Abra a aba **Fornecedores**
+2. Olhe a barra de endereço
+3. Copie o endereço, abra uma aba nova do navegador e cole
+
+**Esperado:** o endereço vira `/relatorios?ver=fornecedores`, e colar em outra aba abre **direto em Fornecedores** — não no Orçamento.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-191 · O orçamento bate com a obra escolhida
+
+1. Aba **Orçamento**
+2. Troque a obra no seletor de cima
+
+**Esperado:** os quatro números e a tabela mudam junto. O nome da obra escolhida é o que está no seletor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-192 · Previsto, comprado e saldo fecham
+
+1. Aba **Orçamento**, obra **OB-001**
+2. Pegue uma linha da tabela e faça a conta na calculadora: `previsto − comprado`
+
+**Esperado:** o resultado é exatamente o **saldo** mostrado. E `consumo` é `comprado ÷ previsto`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-193 · O alerta começa em 80%, não no estouro
+
+1. Aba **Orçamento**
+2. Procure uma linha com consumo entre **80% e 100%**
+
+**Esperado:** ela aparece como **⚠ Atenção**, com fundo amarelado — **antes** de estourar. Linha acima de 100% aparece como **✕ Estourou**, em vermelho, e o saldo fica negativo.
+
+> Se todas as linhas estiverem folgadas, a obra OB-001 do histórico de demonstração tem uma linha estourada (Arame recozido) e uma em atenção (Cal hidratada).
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-194 · Compra sem apontamento aparece, não some
+
+1. Aba **Orçamento**, obra **OB-001**
+2. Olhe o aviso amarelo acima da tabela e a **última linha** da tabela
+
+**Esperado:** o aviso diz quanto foi comprado **sem apontamento no orçamento**, e a última linha — `(sem linha)` — repete esse valor. Somando a coluna "Comprado" da tabela inteira, dá o mesmo que o cartão **Já comprado**.
+
+> Se o aviso não aparecer, é porque toda compra dessa obra foi apontada. É o cenário desejado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-195 · Economia e ganho na disputa são coisas diferentes
+
+1. Aba **Economia**
+2. Compare os cartões **Economia** e **Ganho na disputa**
+
+**Esperado:** são números diferentes. Economia compara com o **estimado** pelo solicitante; ganho na disputa compara com a **proposta mais cara** da mesma cotação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-196 · Cotação que fechou acima do estimado
+
+1. Aba **Economia**
+2. Procure uma linha com economia negativa (o histórico de demonstração tem algumas)
+
+**Esperado:** o valor aparece com **sinal de menos e em vermelho**. A porcentagem abaixo dele também é negativa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-197 · Quem não respondeu derruba a taxa
+
+1. Aba **Economia**
+2. Olhe a coluna **Respostas** de cada cotação
+
+**Esperado:** mostra "X de Y" e a porcentagem embaixo. Cotação com 1 resposta de 2 convidados aparece como 50%.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-198 · O fornecedor é medido pelo prazo que ELE prometeu
+
+1. Aba **Fornecedores**
+2. Ache um fornecedor com pontualidade abaixo de 100% (no histórico de demonstração, a Hidromax)
+3. Vá em **Pedidos**, abra um pedido dele e veja o prazo de entrega combinado
+4. Vá em **Recebimento** e veja a data em que a carga foi conferida
+
+**Esperado:** a diferença entre a saída do pedido e o recebimento é maior que o prazo prometido — e é por isso que a pontualidade caiu.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-199 · Com poucas entregas não há veredito
+
+1. Aba **Fornecedores**
+2. Ache um fornecedor com **1 ou 2** entregas
+3. Leia a coluna **Leitura**
+
+**Esperado:** a frase é *"Só N entrega(s) até agora — pouco para concluir"* — **não** um elogio nem uma acusação. As colunas de pontualidade e qualidade continuam mostrando os números.
+
+> Esse é o ponto do teste: uma ressalva isolada não pode virar *"chega com problema com frequência"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-200 · Fornecedor convidado que nunca entregou
+
+1. Aba **Fornecedores**
+2. Ache um fornecedor com pedidos = 0
+
+**Esperado:** pontualidade e qualidade aparecem como **—** (traço), não como 100%. A leitura diz *"Convidado, mas ainda não entregou nada"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-201 · O gargalo é apontado
+
+1. Aba **Tempos**
+2. Olhe o cartão **Etapa mais demorada** e a lista abaixo
+
+**Esperado:** a etapa nomeada no cartão é a mesma que aparece com a **barra laranja** na lista — a mais comprida.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-202 · Só conta quem já passou
+
+1. Aba **Tempos**
+2. Compare a amostra de cada etapa (o texto "média de N solicitações")
+
+**Esperado:** as etapas do começo têm amostra **maior ou igual** às do fim. Entrega tem a menor amostra, porque nem toda compra já chegou.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-203 · Filtrar por obra muda os tempos
+
+1. Aba **Tempos**
+2. Troque de "Todas as obras" para uma obra específica
+
+**Esperado:** o número de solicitações no período cai, e as médias podem mudar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-204 · A rosca fecha 100%
+
+1. Aba **Consumo**
+2. Some as porcentagens da lista ao lado do anel
+
+**Esperado:** dá 100% (ou 99,9/100,1 por arredondamento). Quando há mais de quatro famílias, a última fatia é **"Outros (N)"**, em **cinza** — cor diferente de todas as outras.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-205 · Preço médio confere
+
+1. Aba **Consumo**, tabela **Os itens mais comprados**
+2. Pegue uma linha e divida `valor ÷ quantidade`
+
+**Esperado:** o resultado é o **preço médio** mostrado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-206 · O mesmo material comprado duas vezes é uma linha só
+
+1. Aba **Consumo**
+2. Procure um material que aparece em mais de uma compra (no histórico, o Cimento Portland)
+
+**Esperado:** aparece **uma vez só**, com a quantidade somada das compras.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-207 · O menu pergunta o formato
+
+1. Em qualquer aba, clique em **↓ Baixar**
+2. Olhe o que aparece
+
+**Esperado:** um menu com **duas** opções — **PDF** e **Word (.docx)** — e, embaixo de cada uma, uma frase dizendo para que serve. O menu fecha ao clicar fora, ao apertar **Esc** e depois de escolher.
+
+> O sistema **não** baixa em CSV. Se algum botão baixar um `.csv`, é defeito.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-208 · Cada aba baixa o seu arquivo
+
+1. Baixe em **PDF** nas cinco abas
+
+**Esperado:** cinco arquivos com nomes diferentes (`orcado-x-realizado`, `economia-nas-cotacoes`, `desempenho-dos-fornecedores`, `tempo-do-processo`, `consumo-de-materiais`), cada um com o conteúdo da sua aba.
+
+Abra um deles e confira: cabeçalho da Porto Inc., título, o contexto (obra e período), a tabela com os valores formatados, a nota no pé e "Gerado pelo sistema em..." com o número da página.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-209 · O arquivo respeita o filtro
+
+1. Aba **Consumo**, escolha uma obra específica
+2. Baixe em PDF
+
+**Esperado:** o arquivo traz **só** os itens daquela obra — os mesmos da tela. O nome da obra aparece no cabeçalho do arquivo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-210 · Ver os números por trás (PC)
+
+1. Passe o mouse sobre um cartão, sobre uma barra do ranking e sobre uma fatia da rosca
+
+**Esperado:** aparece uma caixinha com os números e uma frase explicando de onde saiu aquele valor. Ela some ao tirar o mouse.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-211 · Ver os números por trás (celular)
+
+1. Abra no celular (ou aperte F12 e escolha um aparelho)
+2. **Toque** num cartão e numa barra
+
+**Esperado:** a mesma caixinha aparece. Tocar fora fecha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-212 · As abas pelo teclado
+
+1. Sem usar o mouse, use **Tab** até chegar nas abas
+2. Ande entre elas com Tab e abra com **Enter** ou **Espaço**
+
+**Esperado:** cada aba recebe um contorno de foco visível e abre ao apertar Enter.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-213 · A tela no celular
+
+1. Abra **Relatórios** no celular, em todas as cinco abas
+
+**Esperado:** as abas quebram em duas linhas sem cortar; os cartões ficam um embaixo do outro; as tabelas largas **rolam para o lado** sem esticar a página inteira; nada fica escondido atrás da borda.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-214 · A cor não informa sozinha
+
+1. Aba **Orçamento**, coluna **Situação**
+
+**Esperado:** cada situação tem **ícone e texto** além da cor: ✓ Folgado, ⚠ Atenção, ✕ Estourou. Dá para entender a tabela impressa em preto e branco.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-215 · Relatório sem dado nenhum
+
+1. Num sistema recém-instalado, sem nenhuma compra, abra **Relatórios**
+
+**Esperado:** em vez de tabelas vazias e gráficos em branco, uma mensagem dizendo o que fazer para os números aparecerem.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-216 · O relatório não inventa gargalo
+
+1. Faça uma compra inteira **hoje**, do começo ao fim, num sistema limpo
+2. Abra a aba **Tempos**
+
+**Esperado:** todas as etapas mostram 0 dias e o cartão **Etapa mais demorada** mostra **—**, não o nome de uma etapa.
+
+> Apontar uma etapa quando nada demorou mandaria alguém arrumar o que não está quebrado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-217 · Os números batem com as outras telas
+
+1. Aba **Consumo**, anote o **total**
+2. Vá em **Pedidos** e some o valor dos pedidos não cancelados do mesmo período
+
+**Esperado:** os dois valores são iguais. O relatório não tem números próprios: ele lê o que o resto do sistema gravou.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 15. Etapa 12 — Locação de equipamentos
+
+> **Entre como Administrador** (`admin@portoinc.com.br`) ou **Comprador** (`andre@portoinc.com.br`) para contratar e devolver. O **Gestor de obra** (`bras@`) e o **Almoxarife** (`gilson@`) só veem.
+
+> **Antes de começar:** se não houver locação nenhuma, rode `docker compose exec api npx tsx prisma/seed-historico.ts`. Ele cria 4 contratos, sendo um já atrasado — que é o caso que a tela existe para mostrar.
+
+## CT-218 · Quem entra e quem contrata
+
+1. Entre como **Almoxarife** (`gilson@`) e abra **Locação**
+2. Olhe se existe o botão **+ Nova locação**
+3. Repita como **Gestor de obra** (`bras@`)
+4. Repita como **Comprador** (`andre@`)
+
+**Esperado:** almoxarife e gestor **veem** a tela, mas **não** têm o botão de nova locação. O comprador tem. Quem não tem acesso nenhum (um solicitante puro) recebe a tela de "sem permissão".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-219 · O alerta aparece em cima de tudo
+
+1. Entre como Administrador e abra **Locação**
+
+**Esperado:** havendo equipamento atrasado, um aviso **vermelho** no alto diz quantos são e **quanto o atraso já custou**, antes de qualquer tabela. Não havendo, o aviso não aparece.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-220 · Os quatro cartões
+
+1. Olhe a linha de cartões
+
+**Esperado:** Atrasadas, Custo do atraso, Vencendo e Em andamento. O **Custo do atraso** fica vermelho quando é maior que zero, e verde quando é zero. Passe o mouse em cada um: aparece a explicação do que aquele número significa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-221 · A conta da diária confere
+
+1. Na tabela, pegue um contrato cobrado **por dia**
+2. Conte os dias entre o início e hoje (ou a devolução), **incluindo o primeiro dia**
+3. Multiplique pelo valor da diária e pela quantidade
+
+**Esperado:** o resultado é o que está na coluna **Já custou**.
+
+> O primeiro dia conta de propósito: pegar de manhã e devolver à tarde é uma diária, não zero.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-222 · Período começado é período cobrado
+
+1. Pegue um contrato cobrado **por semana** ou **por mês**
+2. Veja a coluna **Já custou** e o "N período(s)" embaixo
+
+**Esperado:** 8 dias num contrato semanal contam **2 semanas**, não 1,14. O sistema arredonda para cima, que é como o fornecedor cobra.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-223 · O custo do atraso é só a diferença
+
+1. Pegue um contrato **atrasado**
+2. Some: quantos dias além da data prevista × o valor do período × a quantidade
+
+**Esperado:** bate com a coluna **Atraso**. Esse valor é **menor** que o "Já custou" — ele é só a parte que se pagou a mais, não o total.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-224 · O aviso vem antes de vencer
+
+1. Registre uma locação que vence **em 2 dias**
+2. Registre outra que vence **em 30 dias**
+
+**Esperado:** a de 2 dias aparece como **⚠ Vence em breve**; a de 30 como **✓ Em dia**. O aviso começa a 3 dias do vencimento.
+
+> Avisar só no dia não ajuda: entre pedir a retirada e o fornecedor aparecer passam dias, e cada um é mais uma diária.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-225 · "O que fazer agora" só lista o que precisa de ação
+
+1. Desça até o fim da tela
+
+**Esperado:** a lista traz **só** os contratos atrasados, vencendo hoje ou vencendo em breve — em frases de português, com o valor do prejuízo. Contrato em dia e devolvido **não** aparecem ali.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-226 · Registrar uma locação avulsa
+
+1. **+ Nova locação**
+2. Deixe "Veio de um pedido?" em **Não — locação avulsa**
+3. Preencha fornecedor, obra, equipamento, quantidade, cobrança, valor, início e devolução prevista
+4. **Registrar locação**
+
+**Esperado:** a locação aparece na tabela com número **LOC-000XX**, situação de acordo com as datas, e o custo já calculado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-227 · Locação vinda de um pedido preenche sozinha
+
+1. Compre um item de locação pelo fluxo normal (solicitação → aprovação → cotação → pedido) usando um item da família **LOC**
+2. Vá em **Locação → + Nova locação**
+3. Escolha o pedido no campo **"Veio de um pedido?"**
+
+**Esperado:** fornecedor, obra, equipamento, quantidade, unidade e valor vêm preenchidos. Você só informa a data prevista de devolução.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-228 · Um pedido vira um contrato só
+
+1. Registre a locação vinda de um pedido (CT-227)
+2. Tente **+ Nova locação** de novo e procure o mesmo pedido na lista
+
+**Esperado:** ele **não aparece mais** na lista de itens disponíveis.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-229 · Devolução antes do início é recusada
+
+1. **+ Nova locação**
+2. Ponha a **devolução prevista antes** da data de início
+3. Tente registrar
+
+**Esperado:** o sistema recusa com *"A devolução não pode ser antes do início da locação."* — não grava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-230 · Devolver para o relógio
+
+1. Numa locação ativa, clique em **Devolver**
+2. Informe a data em que o equipamento voltou
+3. Confirme
+
+**Esperado:** a mensagem diz se foi **no prazo** ou com **quantos dias de atraso**. A situação vira **Devolvida**, e o valor de "Já custou" **para de subir** — confira voltando à tela no dia seguinte.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-231 · Não devolve duas vezes
+
+1. Numa locação já devolvida, procure o botão **Devolver**
+
+**Esperado:** os botões de ação **somem** para contratos devolvidos e cancelados. A coluna mostra apenas um traço.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-232 · O que já aconteceu não se cancela
+
+1. Numa locação **ativa**, clique em **Cancelar**, escreva o motivo e confirme
+2. Verifique que o custo dela foi a **zero** e que ela saiu do "Em andamento"
+3. Agora pegue uma locação **já devolvida** e tente cancelá-la
+
+**Esperado:** o contrato ativo é cancelado e passa a custar **R$ 0,00**. A locação já devolvida **não** pode ser cancelada — apagar um custo que existiu faria o relatório mentir.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-233 · Cancelar exige motivo
+
+1. Clique em **Cancelar** numa locação ativa e deixe o motivo em branco
+
+**Esperado:** o botão de confirmar fica **desabilitado**. Sem motivo não cancela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-234 · Os filtros
+
+1. Troque o filtro de **Obra**
+2. Troque o filtro de **Situação** para "Atrasadas"
+
+**Esperado:** a tabela reduz de acordo. Os **cartões do topo continuam mostrando o total da obra escolhida** — eles respondem "como está a obra", não "o que sobrou no filtro".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-235 · Baixar em PDF e em Word
+
+1. **↓ Baixar** → **PDF**
+2. **↓ Baixar** → **Word (.docx)**
+
+**Esperado:** os dois trazem o resumo no cabeçalho (ativas, atrasadas, custo do atraso) e a tabela com equipamento, obra, fornecedor, cobrança, devolução, quanto custou e o atraso. O arquivo **respeita os filtros** que estavam na tela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-236 · A tela no celular
+
+1. Abra **Locação** no celular
+
+**Esperado:** os cartões ficam um embaixo do outro, a tabela rola para o lado sem esticar a página, e os botões **Devolver** e **Cancelar** ficam um sobre o outro em vez de empurrar a coluna para fora.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-237 · A cor não informa sozinha
+
+1. Olhe a coluna **Situação**
+
+**Esperado:** cada situação tem **ícone e texto** além da cor: ✓ Em dia, ⚠ Vence em breve, ✕ Atrasada, ℹ Devolvida. Dá para entender impresso em preto e branco.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-238 · Locação sem nada registrado
+
+1. Num sistema recém-instalado, abra **Locação**
+
+**Esperado:** em vez de tabela vazia, uma mensagem dizendo o que fazer — e, para quem pode contratar, apontando o botão de nova locação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 16. Testes de aparência e usabilidade
+
+Estes valem para **todas** as telas. Faça uma vez por etapa.
+
+## CT-239 · A tela de Início acompanha o sistema
+
+1. Entre como **Administrador** e olhe a tela de **Início**
+2. Compare os cartões de "O que você pode fazer" com os itens do **menu da esquerda**
+3. Entre como **Gilson** (almoxarife) e repita
+
+**Esperado:** os cartões são **exatamente** os mesmos itens do menu, sem faltar nem sobrar (o item "Início" não vira cartão). O Gilson vê menos cartões que o administrador, e nenhum deles é de Relatórios.
+
+O aviso do topo diz **"Módulo 1 completo — 12 etapas entregues"**, cita relatórios e locação entre o que já existe, e avisa que as integrações rodam em modo de teste.
+
+> Os dois saem da mesma lista dentro do sistema. Se algum dia um módulo aparecer no menu e não na tela de Início, é defeito.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-240 · A barra de filtros é igual em toda tela
+
+1. Abra, uma depois da outra: **Solicitações**, **Cotações**, **Materiais**, **Fornecedores**, **Obras**, **Usuários**, **Estoque**, **Locação**, **Relatórios**
+2. Olhe a barra no alto de cada uma
+
+**Esperado:** o mesmo desenho em todas — **rótulo acima** de cada filtro (Buscar, Situação, Família, Obra...), filtros à esquerda, botões à direita, tudo com a mesma altura e a mesma base.
+
+> Nenhum filtro pode ter **só** o texto de dentro (placeholder) no lugar do rótulo: esse texto some quando a pessoa começa a digitar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-241 · Enter busca
+
+1. Em **Materiais**, clique no campo **Buscar**, digite `cimento` e aperte **Enter** (sem clicar no botão)
+2. Repita em **Fornecedores**, **Obras** e **Usuários**
+
+**Esperado:** a lista filtra nas quatro telas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-242 · Todo botão cabe no dedo
+
+1. Abra qualquer tela no celular
+2. Toque nos botões discretos — **Cancelar**, **Sair**, **Ver extrato**, **Editar**
+
+**Esperado:** todos têm pelo menos **44 pixels** de altura. Nenhum exige mira.
+
+> Esta é a régua que o sistema usa inteiro. Para conferir sem olhar tela por tela: `cd scripts && npm run auditoria:celular`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-246 · Excesso de requisição não vira "erro do servidor"
+
+1. Atualize a mesma tela muitas vezes seguidas, bem rápido (umas 200 vezes)
+
+**Esperado:** em algum momento aparece **"Muitas requisições em pouco tempo. Aguarde um instante."** — e não "Erro interno do servidor". Esperar um minuto resolve.
+
+> Este caso existe porque o defeito estava lá: o sistema respondia como se tivesse quebrado quando na verdade era só excesso de pedido. E não aparecia nos testes porque o limitador fica desligado neles.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-243 · Tudo que é clicável reage ao mouse
+
+1. Numa tela cheia, como **Financeiro** ou **Locação**, passe o mouse devagar por cima de: cada botão, os links dentro dos avisos, as abas dos Relatórios, as linhas da legenda da rosca, as fatias da rosca e as barras do fluxo de caixa
+2. Inclua o botão **Cancelar** da tela de Locação e a barra do **mês atual** no fluxo de caixa
+
+**Esperado:** **todos** mudam de aparência — fundo, cor, sublinhado mais grosso ou traço mais espesso. Nenhum fica parado.
+
+> Os dois últimos são de propósito na lista: eram justamente os que não reagiam.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-244 · O cursor diz o que a coisa faz
+
+1. Passe o mouse sobre um **botão** e sobre um **cartão de indicador** (os números grandes do Financeiro, Relatórios e Locação)
+
+**Esperado:** no botão o cursor vira **mão**; no cartão de indicador vira **interrogação**. É proposital: o cartão explica um número, não leva a outra tela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-245 · O teclado enxerga onde está
+
+1. Sem usar o mouse, aperte **Tab** repetidamente numa tela cheia
+
+**Esperado:** cada parada mostra um **contorno azul** bem visível. Nenhum item recebe o foco sem aparecer.
+
+> Para conferir as três coisas sem olhar item por item: `cd scripts && npm run auditoria:hover`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-247 · O menu fica parado ao rolar
+
+1. Abra o **Financeiro**, que é uma tela comprida
+2. Role a página até o fim
+
+**Esperado:** o menu da esquerda **não se move**. Ele fica colado logo abaixo da barra de cima, e o item "Status do sistema" continua clicável sem precisar rolar.
+
+> Antes o menu esticava até a altura da página (2.575 px no Financeiro) e sumia junto ao rolar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-248 · O menu está dividido em blocos
+
+1. Entre como **Administrador** e olhe o menu
+
+**Esperado:** quatro títulos pequenos e cinzas — **COMPRAS**, **ALMOXARIFADO**, **GESTÃO**, **ADMINISTRAÇÃO** — com uma linha fina separando cada bloco. O **Início** fica solto no alto, antes de todos.
+
+Tudo cabe na tela: nenhum item exige rolar o menu.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-249 · Bloco vazio some junto com o título
+
+1. Entre como **Gilson** (`gilson@portoinc.com.br`) e olhe o menu
+
+**Esperado:** ele vê **Compras** (só Solicitações), **Almoxarifado** (três itens) e **Administração** (só Cadastros). O título **GESTÃO não aparece** — ele não tem nenhum item ali dentro.
+
+> Um rótulo sozinho, sem nada embaixo, seria pior que a lista solta.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-250 · No celular o menu continua confortável para o dedo
+
+1. Abra no celular e toque em **☰**
+2. Toque nos itens do menu
+
+**Esperado:** a gaveta abre com os mesmos quatro blocos, e cada item tem **44 px** de altura — maior que no computador, porque ali quem toca é o dedo, não o ponteiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+## CT-251 · A barra de rolagem do menu combina com o sistema
+
+1. Diminua a **altura** da janela do navegador até o menu não caber (uma janela de uns 800 px de altura basta)
+2. Olhe a barra de rolagem que aparece dentro do menu
+
+**Esperado:** uma barrinha **fina e arredondada, no azul do tema**, sem as setinhas cinzas nas pontas. Não pode parecer a barra cinza do Windows colada ali.
+
+3. Volte a janela para a altura normal
+
+**Esperado:** o menu cabe inteiro e a barra some.
+
+> Numa janela de 900 px de altura tudo cabe. A barra só aparece abaixo disso.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-252 · Instalação nova deixa alguém entrar
+
+> Este caso mexe em um banco **separado**. Não toca no que você está usando.
+
+1. Crie um banco vazio e aplique as migrations:
+
+```bash
+docker compose exec db psql -U portoink -d postgres -c "CREATE DATABASE portoink_ensaio;"
+docker compose exec -e DATABASE_URL="postgresql://portoink:SUA_SENHA@db:5432/portoink_ensaio?schema=public" api npx prisma migrate deploy
+```
+
+2. Crie o primeiro administrador:
+
+```bash
+docker compose exec -e DATABASE_URL="postgresql://portoink:SUA_SENHA@db:5432/portoink_ensaio?schema=public" api npm run criar-admin -- --nome "Maria Souza" --email maria@teste.com.br
+```
+
+**Esperado:** o comando mostra nome, e-mail e uma **senha sorteada**, avisando que ela não aparece de novo.
+
+3. Rode o mesmo comando outra vez, com outro e-mail
+
+**Esperado:** ele **recusa**, dizendo que o sistema já tem administrador e mandando usar a tela de Administração.
+
+4. Apague o banco de ensaio:
+
+```bash
+docker compose exec db psql -U portoink -d postgres -c "DROP DATABASE portoink_ensaio;"
+```
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-253 · A cópia de segurança volta inteira
+
+1. Faça uma cópia:
+
+```bash
+cd scripts
+npm run backup
+```
+
+**Esperado:** aparece o caminho do arquivo e o tamanho. Arquivo menor que 1 KB é recusado pelo próprio comando.
+
+2. Tente restaurar **sem** `--confirmo`:
+
+```bash
+npm run restaurar -- --arquivo backups/ARQUIVO.dump --banco portoink_conferencia
+```
+
+**Esperado:** ele **recusa** e avisa que apagaria o banco, explicando como conferir sem risco.
+
+3. Restaure num banco separado, agora com `--confirmo`:
+
+```bash
+npm run restaurar -- --arquivo backups/ARQUIVO.dump --banco portoink_conferencia --confirmo
+```
+
+**Esperado:** termina dizendo quantas tabelas ficaram no banco (37, hoje).
+
+4. Compare uma contagem qualquer entre os dois bancos:
+
+```bash
+docker compose exec db psql -U portoink -d portoink -tAc "SELECT count(*) FROM solicitacoes;"
+docker compose exec db psql -U portoink -d portoink_conferencia -tAc "SELECT count(*) FROM solicitacoes;"
+```
+
+**Esperado:** o mesmo número nos dois.
+
+5. Apague o banco de conferência
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-254 · As telas têm prova automática
+
+```bash
+docker compose exec web npm test
+```
+
+**Esperado:** 35 provas, todas verdes, em menos de meio minuto.
+
+> Elas conferem **comportamento**, não aparência: quem vê o quê no menu, solicitação que não duplica com clique duplo, a alçada na tela de aprovação, o custo do atraso na locação e a escolha entre PDF e Word. Alinhamento e espaçamento continuam sendo medidos por `npm run auditoria`, dentro de `scripts`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-33 · Funciona no celular
+
+1. Aperte **F12** para abrir as ferramentas do navegador
+2. Clique no ícone de celular (ou **Ctrl+Shift+M**)
+3. Escolha um aparelho, como iPhone ou Galaxy
+4. Navegue por 4 ou 5 telas
+
+**Esperado:**
+
+- O menu vira uma gaveta, aberta pelo botão **☰**
+- Tocar fora da gaveta fecha ela
+- **Nenhuma** tela rola para os lados
+- Os botões são grandes o suficiente para o dedo
+- As tabelas rolam na horizontal dentro do quadro, sem quebrar a página
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-34 · Modo claro e modo escuro
+
+1. No Windows: **Configurações → Personalização → Cores**
+2. Alterne entre claro e escuro
+3. Recarregue o sistema
+
+**Esperado:** o sistema acompanha. Nos **dois** modos, todo texto continua legível — nada de cinza claro sobre branco ou azul escuro sobre preto.
+
+Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenção, vermelho de erro, azul de informação) e as **etiquetas de situação**: nos dois modos o texto deles tem que se destacar bem do fundo colorido.
+
+> A régua é a **WCAG AA**: 4,5:1 de contraste para texto normal. Todas as combinações do sistema estão hoje entre **5,4:1 e 7,7:1**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-35 · Navegação só pelo teclado
+
+1. Recarregue a página e **não toque no mouse**
+2. Use só **Tab**, **Shift+Tab**, **Enter** e **Espaço**
+
+**Esperado:**
+
+- O primeiro **Tab** revela o atalho "Pular para o conteúdo"
+- Você **sempre enxerga** onde está — um contorno azul marca o item em foco
+- Dá para abrir o menu, entrar numa tela e preencher um formulário inteiro
+
+> Se você perdeu de vista onde estava em algum momento, isso é uma falha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-36 · A cor nunca informa sozinha
+
+1. Olhe as etiquetas de situação pelo sistema: **Ativo**, **Simulado**, **Em andamento**, **Todas assinam**
+
+**Esperado:** toda etiqueta colorida tem **um ícone e um texto** junto. Uma pessoa que não distingue cores consegue usar o sistema normalmente.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-37 · O sistema avisa que está trabalhando
+
+1. Entre em várias telas seguidas, prestando atenção ao momento em que os dados chegam
+
+**Esperado:** aparece um indicador girando com "Carregando...". **Nunca** uma tela em branco sem explicação.
+
+2. Clique num botão de salvar
+
+**Esperado:** o botão muda para "Salvando..." e fica desabilitado, impedindo clique duplo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-38 · Lista vazia explica o que fazer
+
+1. Em **Materiais e serviços**, busque por `zzzzzz`
+
+**Esperado:** não é uma tela em branco. Aparece "Nenhum item encontrado" com uma orientação do que fazer.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-39 · Quando a API cai
+
+1. No terminal: `docker compose stop api`
+2. No sistema, clique em qualquer tela
+
+**Esperado:** mensagem clara de que não foi possível falar com o servidor, com um botão **Tentar novamente** — e não uma tela quebrada ou um erro técnico.
+
+3. Religue: `docker compose start api`
+4. Espere uns 20 segundos e clique em **Tentar novamente**
+
+**Esperado:** volta a funcionar sem precisar recarregar a página.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+# 17. Folha de resultados
+
+| Caso | O que testa | Resultado |
+|---|---|---|
+| CT-01 | Entrar com dados corretos | |
+| CT-02 | Senha errada | |
+| CT-03 | E-mail inexistente | |
+| CT-04 | Bloqueio por tentativas | |
+| CT-05 | Continuar conectado | |
+| CT-06 | Menu muda por pessoa | |
+| CT-07 | Bloqueio ao forçar endereço | |
+| CT-08 | Pessoa com duas funções | |
+| CT-09 | Cadastrar usuário | |
+| CT-10 | Senha fraca recusada | |
+| CT-11 | E-mail repetido recusado | |
+| CT-12 | Desativar derruba sessão | |
+| CT-13 | Admin não se desativa | |
+| CT-14 | Trocar própria senha | |
+| CT-15 | Ordem dos cadastros | |
+| CT-16 | Cadastrar família | |
+| CT-17 | Código de barras errado | |
+| CT-18 | Código de barras repetido | |
+| CT-19 | Serviço sem código de barras | |
+| CT-20 | Os três códigos do material | |
+| CT-21 | Filtrar catálogo | |
+| CT-22 | CNPJ inválido | |
+| CT-23 | Fornecedor sem família | |
+| CT-24 | Filtrar fornecedor por família | |
+| CT-25 | Obra cria almoxarifado | |
+| CT-26 | Orçamento e total | |
+| CT-27 | Importar planilha | |
+| CT-28 | Planilha com defeito | |
+| CT-29 | Reimportar não duplica | |
+| CT-30 | Simulador de alçada | |
+| CT-31 | Aviso de furo nas faixas | |
+| CT-32 | Só consulta, sem editar | |
+| CT-33 | Funciona no celular | |
+| CT-34 | Modo claro e escuro | |
+| CT-35 | Navegação por teclado | |
+| CT-36 | Cor não informa sozinha | |
+| CT-37 | Aviso de carregamento | |
+| CT-38 | Lista vazia explicada | |
+| CT-39 | Quando a API cai | |
+| CT-40 | Abrir solicitação | |
+| CT-41 | Unidade vem preenchida | |
+| CT-42 | Linha de orçamento sugerida | |
+| CT-43 | Total estimado soma | |
+| CT-44 | Sem item não salva | |
+| CT-45 | Primeira compra exige especificação | |
+| CT-46 | Quem aprova aparece antes | |
+| CT-47 | Enviada não pode mudar | |
+| CT-48 | Cada um vê o que solicitou | |
+| CT-49 | PDF da solicitação | |
+| CT-50 | Histórico registra tudo | |
+| CT-51 | Cancelar solicitação | |
+| CT-52 | Fila mostra só o que é seu |  |
+| CT-53 | Os três números do topo |  |
+| CT-54 | Aviso de prazo |  |
+| CT-55 | Aprovação com uma assinatura |  |
+| CT-56 | Aprovação com duas assinaturas |  |
+| CT-57 | Ninguém aprova o próprio pedido |  |
+| CT-58 | Devolver exige motivo |  |
+| CT-59 | Solicitante corrige e reenvia |  |
+| CT-60 | Reenvio zera assinaturas |  |
+| CT-61 | Aviso ao reprovar |  |
+| CT-62 | Reprovação derruba aprovação |  |
+| CT-63 | Assinaturas registradas |  |
+| CT-64 | Nomes de função legíveis |  |
+| CT-65 | Quem não aprova não vê a tela |  |
+| CT-66 | Só entra o que foi aprovado |  |
+| CT-67 | Filtrar por família |  |
+| CT-68 | Aviso ao misturar famílias |  |
+| CT-69 | Criar o pacote |  |
+| CT-70 | Item não entra em dois pacotes |  |
+| CT-71 | Fornecedores sugeridos |  |
+| CT-72 | Bloqueio ao abrir sem fornecedor |  |
+| CT-73 | Abrir a cotação |  |
+| CT-74 | Não mexe depois de aberto |  |
+| CT-75 | O portal do fornecedor |  |
+| CT-76 | Fornecedor não vê concorrentes |  |
+| CT-77 | Responder a cotação |  |
+| CT-78 | "Não tenho este item" |  |
+| CT-79 | Item sem preço é bloqueado |  |
+| CT-80 | Revisar a resposta |  |
+| CT-81 | Link inválido |  |
+| CT-82 | O comprador acompanha |  |
+| CT-83 | Encerrar derruba os links |  |
+| CT-84 | O portal no celular |  |
+| CT-85 | Chegar na equalização |  |
+| CT-86 | O mapa comparativo |  |
+| CT-87 | O frete entra na conta da mistura |  |
+| CT-88 | Escolher item a item |  |
+| CT-89 | Aceitar todos os melhores preços |  |
+| CT-90 | As escolhas ficam salvas |  |
+| CT-91 | Última chamada não revela preço |  |
+| CT-92 | A última chamada reabre a cotação |  |
+| CT-93 | Bloqueio com item sem escolha |  |
+| CT-94 | Gerar os pedidos |  |
+| CT-95 | Não gera duas vezes |  |
+| CT-96 | A tela de Pedidos e o PDF |  |
+| CT-97 | Quem não é comprador não entra |  |
+| CT-98 | O almoxarife vê a tela certa |  |
+| CT-99 | Achar o pedido digitando só o número |  |
+| CT-100 | Número que não existe |  |
+| CT-101 | Texto que não é número |  |
+| CT-102 | Lista de pedidos esperando entrega |  |
+| CT-103 | Bipar o material |  |
+| CT-104 | Bipar material de outro pedido |  |
+| CT-105 | Não recebe mais do que o saldo |  |
+| CT-106 | Ressalva sem motivo é recusada |  |
+| CT-107 | Entrega parcial |  |
+| CT-108 | Devolução não baixa o saldo |  |
+| CT-109 | Recebi tudo que falta |  |
+| CT-110 | O pedido fecha quando tudo chega |  |
+| CT-111 | Nada marcado |  |
+| CT-112 | Histórico da entrega |  |
+| CT-113 | Marcar o pedido como enviado |  |
+| CT-114 | Rascunho não trava a entrega |  |
+| CT-115 | A conferência no celular |  |
+| CT-116 | O recebimento virou saldo sozinho |  |
+| CT-117 | O que foi devolvido não entrou |  |
+| CT-118 | Os quatro cartões |  |
+| CT-119 | Retirar material |  |
+| CT-120 | Retirada sem destino é recusada |  |
+| CT-121 | Não dá para tirar o que não existe |  |
+| CT-122 | A retirada não mexe no custo médio |  |
+| CT-123 | Contagem de inventário |  |
+| CT-124 | Ajuste sem explicação é recusado |  |
+| CT-125 | Contagem que bate não vira movimento |  |
+| CT-126 | Transferir entre almoxarifados |  |
+| CT-127 | Aviso de ponto de pedido |  |
+| CT-128 | Montar a reposição |  |
+| CT-129 | Abrir a solicitação de reposição |  |
+| CT-130 | O extrato conta a história |  |
+| CT-131 | Nada é apagado |  |
+| CT-132 | Quem vê e quem mexe |  |
+| CT-133 | O estoque no celular |  |
+| CT-134 | A tela de notas fiscais |  |
+| CT-135 | Lançar nota que bate com o pedido |  |
+| CT-136 | Nota acima do pedido vira pendência |  |
+| CT-137 | Nota abaixo é entrega parcial |  |
+| CT-138 | A mesma nota não entra duas vezes |  |
+| CT-139 | A chave de acesso se confere sozinha |  |
+| CT-140 | Importar o XML da nota |  |
+| CT-141 | Arquivo que não é nota |  |
+| CT-142 | Gerar as parcelas |  |
+| CT-143 | A soma das parcelas bate com a nota |  |
+| CT-144 | Não gera parcelas duas vezes |  |
+| CT-145 | Os quatro cartões do financeiro |  |
+| CT-146 | Cada parcela diz em que pé está |  |
+| CT-147 | Dar baixa |  |
+| CT-148 | Não paga duas vezes |  |
+| CT-149 | Filtros |  |
+| CT-150 | Exportar para o Excel |  |
+| CT-151 | Cancelar nota com parcela paga |  |
+| CT-152 | Cancelar nota sem pagamento |  |
+| CT-153 | Quem entra no financeiro |  |
+| CT-154 | O financeiro no celular |  |
+| CT-155 | A trava aparece antes de tudo |  |
+| CT-156 | Bloqueio de número fora da lista |  |
+| CT-157 | O bloqueio fica registrado |  |
+| CT-158 | Liberar o seu número |  |
+| CT-159 | Agora o envio passa |  |
+| CT-160 | Tirar da lista bloqueia de novo |  |
+| CT-161 | O número nunca aparece inteiro |  |
+| CT-162 | Número repetido e inválido |  |
+| CT-163 | Só o administrador entra |  |
+| CT-164 | Convites de cotação |  |
+| CT-165 | Pedido de compra com PDF |  |
+| CT-166 | Conexão de verdade (Baileys) |  |
+| CT-167 | Mensagem de verdade no celular |  |
+| CT-168 | Reiniciar não pede QR de novo |  |
+| CT-169 | Desconectar apaga a sessão |  |
+| CT-170 | O QR nunca aparece no log |  |
+| CT-171 | Voltar para o modo simulado |  |
+| CT-172 | Os quatro indicadores de gestão |  |
+| CT-173 | A frase do próximo vencimento |  |
+| CT-174 | O gráfico de fluxo de caixa |  |
+| CT-175 | O pago conta no mês em que saiu |  |
+| CT-176 | A rosca da carteira |  |
+| CT-177 | O medidor de pontualidade |  |
+| CT-178 | Os rankings |  |
+| CT-179 | Os filtros não mexem nos gráficos |  |
+| CT-180 | Movimento reduzido |  |
+| CT-181 | Os gráficos no leitor de tela |  |
+| CT-182 | O painel sem dado nenhum |  |
+| CT-183 | Dados ao passar o mouse (PC) |  |
+| CT-184 | A dica some ao tirar o mouse |  |
+| CT-185 | Dados ao tocar (celular) |  |
+| CT-186 | Dados pelo teclado |  |
+| CT-187 | Tudo alinhado |  |
+| CT-188 | Quem pode entrar |  |
+| CT-189 | As cinco abas |  |
+| CT-190 | A aba fica no endereço |  |
+| CT-191 | O orçamento bate com a obra escolhida |  |
+| CT-192 | Previsto, comprado e saldo fecham |  |
+| CT-193 | O alerta começa em 80%, não no estouro |  |
+| CT-194 | Compra sem apontamento aparece, não some |  |
+| CT-195 | Economia e ganho na disputa são coisas diferentes |  |
+| CT-196 | Cotação que fechou acima do estimado |  |
+| CT-197 | Quem não respondeu derruba a taxa |  |
+| CT-198 | O fornecedor é medido pelo prazo que ELE prometeu |  |
+| CT-199 | Com poucas entregas não há veredito |  |
+| CT-200 | Fornecedor convidado que nunca entregou |  |
+| CT-201 | O gargalo é apontado |  |
+| CT-202 | Só conta quem já passou |  |
+| CT-203 | Filtrar por obra muda os tempos |  |
+| CT-204 | A rosca fecha 100% |  |
+| CT-205 | Preço médio confere |  |
+| CT-206 | O mesmo material comprado duas vezes é uma linha só |  |
+| CT-207 | A planilha abre certo no Excel |  |
+| CT-208 | Cada aba baixa a sua planilha |  |
+| CT-209 | A planilha respeita o filtro |  |
+| CT-210 | Ver os números por trás (PC) |  |
+| CT-211 | Ver os números por trás (celular) |  |
+| CT-212 | As abas pelo teclado |  |
+| CT-213 | A tela no celular |  |
+| CT-214 | A cor não informa sozinha |  |
+| CT-215 | Relatório sem dado nenhum |  |
+| CT-216 | O relatório não inventa gargalo |  |
+| CT-217 | Os números batem com as outras telas |  |
+| CT-218 | Quem entra e quem contrata |  |
+| CT-219 | O alerta aparece em cima de tudo |  |
+| CT-220 | Os quatro cartões |  |
+| CT-221 | A conta da diária confere |  |
+| CT-222 | Período começado é período cobrado |  |
+| CT-223 | O custo do atraso é só a diferença |  |
+| CT-224 | O aviso vem antes de vencer |  |
+| CT-225 | "O que fazer agora" só lista o que precisa de ação |  |
+| CT-226 | Registrar uma locação avulsa |  |
+| CT-227 | Locação vinda de um pedido preenche sozinha |  |
+| CT-228 | Um pedido vira um contrato só |  |
+| CT-229 | Devolução antes do início é recusada |  |
+| CT-230 | Devolver para o relógio |  |
+| CT-231 | Não devolve duas vezes |  |
+| CT-232 | O que já aconteceu não se cancela |  |
+| CT-233 | Cancelar exige motivo |  |
+| CT-234 | Os filtros |  |
+| CT-235 | Baixar em PDF e em Word |  |
+| CT-236 | A tela no celular |  |
+| CT-237 | A cor não informa sozinha |  |
+| CT-238 | Locação sem nada registrado |  |
+| CT-239 | A tela de Início acompanha o sistema |  |
+| CT-240 | A barra de filtros é igual em toda tela |  |
+| CT-241 | Enter busca |  |
+| CT-242 | Todo botão cabe no dedo |  |
+| CT-243 | Tudo que é clicável reage ao mouse |  |
+| CT-244 | O cursor diz o que a coisa faz |  |
+| CT-245 | O teclado enxerga onde está |  |
+| CT-246 | Excesso de requisição não vira "erro do servidor" |  |
+| CT-247 | O menu fica parado ao rolar |  |
+| CT-248 | O menu está dividido em blocos |  |
+| CT-249 | Bloco vazio some junto com o título |  |
+| CT-250 | No celular o menu continua confortável para o dedo |  |
+| CT-251 | A barra de rolagem do menu combina com o sistema |  |
+| CT-252 | Instalação nova deixa alguém entrar |  |
+| CT-253 | A cópia de segurança volta inteira |  |
+| CT-254 | As telas têm prova automática |  |
+
+**Total: 254 casos** · Etapas cobertas: 0 a 12
+
+---
+
+# 18. Testes automatizados
+
+Estes rodam sozinhos e conferem o que está por baixo da tela.
+
+## Rodando
+
+```bash
+docker compose exec api npm test    # as regras — cerca de 85 segundos
+docker compose exec web npm test    # as telas — cerca de 20 segundos
+```
+
+## O que eles cobrem
+
+| Grupo | Quantidade | O que confere |
+|---|---|---|
+| **Unidade** | 341 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
+| **Integração** | 296 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
+| **Telas** | 35 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+
+> As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
+
+Os testes de integração rodam num **banco separado** (`portoink_test`). Eles nunca tocam nos dados de desenvolvimento.
+
+## Rodando só uma parte
+
+```bash
+docker compose exec api npm run test:unidade      # rápido, sem banco
+docker compose exec api npm run test:integracao   # com banco
+```
+
+## Sempre pelo npm — nunca o arquivo solto
+
+> **Os testes de integração APAGAM todos os dados antes de rodar.** É por isso que eles usam um banco separado (`portoink_test`).
+>
+> Quem aponta para esse banco é o `npm`. Rodar um arquivo direto, assim:
+>
+> ```bash
+> docker compose exec api npx tsx --test testes/recebimento.test.ts   # NÃO faça isso
+> ```
+>
+> deixa o alvo no banco de **desenvolvimento** — e leva embora as obras, solicitações e pedidos que você estava usando para testar.
+>
+> Desde a versão 0.8.0 existe uma trava: antes de apagar qualquer coisa, o sistema confere o nome do banco e recusa se ele não terminar em `_test`. A mensagem é:
+>
+> ```
+> RECUSADO: os testes apagam dados e este banco nao e de teste (portoink).
+> Rode com "npm test", que aponta para o portoink_test.
+> ```
+
+## Se você perder os dados de desenvolvimento
+
+```bash
+docker compose exec api npm run seed
+```
+
+Isso recria as contas, o catálogo, os fornecedores e as obras. As solicitações e cotações de teste você refaz pela tela — é justamente o que este guia ensina.
+
+## Quando algum falhar
+
+A saída mostra o nome do teste e o que era esperado. Exemplo:
+
+```
+✖ recusa CNPJ inválido
+  Expected: 400
+  Actual:   201
+```
+
+Isso significa: o sistema **aceitou** um CNPJ que deveria ter recusado.
+
+> Um teste que falha é sempre informação útil — ou o sistema quebrou, ou a regra mudou e o teste precisa ser atualizado.

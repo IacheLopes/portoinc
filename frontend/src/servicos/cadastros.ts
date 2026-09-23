@@ -1,0 +1,254 @@
+// ============================================================
+//  Chamadas das telas de Cadastros
+// ============================================================
+
+import { chamar } from './api';
+
+// ------------------------------------------------------------
+//  Tipos
+// ------------------------------------------------------------
+export type SituacaoObra = 'PLANEJAMENTO' | 'EM_ANDAMENTO' | 'PARALISADA' | 'CONCLUIDA';
+export type TipoItem = 'MATERIAL' | 'SERVICO';
+
+export interface Obra {
+  id: string;
+  codigo: string;
+  nome: string;
+  cliente: string | null;
+  endereco: string | null;
+  cidade: string | null;
+  uf: string | null;
+  situacao: SituacaoObra;
+  dataInicio: string | null;
+  dataPrevisaoFim: string | null;
+  ativa: boolean;
+  linhas: number;
+  almoxarifados: number;
+}
+
+export interface LinhaOrcamento {
+  id: string;
+  codigo: string;
+  descricao: string;
+  unidade: string;
+  quantidadePrevista: number;
+  valorUnitarioPrevisto: number;
+  valorTotalPrevisto: number;
+  ordem: number;
+}
+
+export interface ObraDetalhe extends Omit<Obra, 'linhas' | 'almoxarifados'> {
+  linhas: LinhaOrcamento[];
+  almoxarifados: Array<{ id: string; codigo: string; nome: string; central: boolean }>;
+  orcamentoTotal: number;
+}
+
+export interface Familia {
+  id: string;
+  codigo: string;
+  nome: string;
+  descricao: string | null;
+  ativa: boolean;
+  materiais: number;
+  fornecedores: number;
+}
+
+export interface Material {
+  id: string;
+  codigoInterno: string;
+  descricao: string;
+  tipo: TipoItem;
+  marca: string | null;
+  gtin: string | null;
+  normaTecnica: string | null;
+  unidadeMedida: string;
+  pontoPedido: number | null;
+  codigoLinhaPadrao: string | null;
+  ativo: boolean;
+  familia: { id: string; codigo: string; nome: string };
+}
+
+export interface Fornecedor {
+  id: string;
+  razaoSocial: string;
+  nomeFantasia: string | null;
+  cnpj: string;
+  cnpjFormatado: string;
+  email: string | null;
+  telefone: string | null;
+  whatsapp: string | null;
+  cidade: string | null;
+  uf: string | null;
+  ativo: boolean;
+  familias: Array<{ id: string; codigo: string; nome: string }>;
+  contatos: Array<{
+    id: string;
+    nome: string;
+    cargo: string | null;
+    email: string | null;
+    whatsapp: string | null;
+    principal: boolean;
+  }>;
+}
+
+export interface RegraAlcada {
+  id: string;
+  descricao: string;
+  valorMinimo: number;
+  valorMaximo: number | null;
+  exigeTodas: boolean;
+  ordem: number;
+  ativa: boolean;
+  funcoes: Array<{ id: string; codigo: string; nome: string }>;
+}
+
+// ------------------------------------------------------------
+//  Obras
+// ------------------------------------------------------------
+export function listarObras(busca?: string) {
+  const q = busca ? '?busca=' + encodeURIComponent(busca) : '';
+  return chamar<{ obras: Obra[] }>('/api/obras' + q);
+}
+
+export function buscarObra(id: string) {
+  return chamar<{ obra: ObraDetalhe }>('/api/obras/' + id);
+}
+
+export function criarObra(dados: Record<string, unknown>) {
+  return chamar<{ obra: Obra }>('/api/obras', { metodo: 'POST', corpo: dados });
+}
+
+export function criarLinha(obraId: string, dados: Record<string, unknown>) {
+  return chamar<{ linha: LinhaOrcamento }>('/api/obras/' + obraId + '/linhas', {
+    metodo: 'POST',
+    corpo: dados,
+  });
+}
+
+export function apagarLinha(obraId: string, linhaId: string) {
+  return chamar<{ ok: boolean }>('/api/obras/' + obraId + '/linhas/' + linhaId, {
+    metodo: 'DELETE',
+  });
+}
+
+export function importarOrcamento(obraId: string, csv: string) {
+  return chamar<{
+    importadas: number;
+    ignoradas: number;
+    problemas: string[];
+    totalDeProblemas: number;
+  }>('/api/obras/' + obraId + '/linhas/importar', { metodo: 'POST', corpo: { csv } });
+}
+
+// ------------------------------------------------------------
+//  Famílias
+// ------------------------------------------------------------
+export function listarFamilias() {
+  return chamar<{ familias: Familia[] }>('/api/familias');
+}
+
+export function criarFamilia(dados: Record<string, unknown>) {
+  return chamar<{ familia: Familia }>('/api/familias', { metodo: 'POST', corpo: dados });
+}
+
+// ------------------------------------------------------------
+//  Materiais
+// ------------------------------------------------------------
+export function listarMateriais(filtros: {
+  busca?: string;
+  familiaId?: string;
+  tipo?: TipoItem;
+} = {}) {
+  const partes = Object.entries(filtros)
+    .filter(([, v]) => v)
+    .map(([k, v]) => k + '=' + encodeURIComponent(String(v)));
+
+  return chamar<{ materiais: Material[] }>(
+    '/api/materiais' + (partes.length ? '?' + partes.join('&') : ''),
+  );
+}
+
+export function criarMaterial(dados: Record<string, unknown>) {
+  return chamar<{ material: Material }>('/api/materiais', { metodo: 'POST', corpo: dados });
+}
+
+export function biparCodigo(gtin: string) {
+  return chamar<{ encontrado: boolean; material: Material }>('/api/materiais/gtin/' + gtin);
+}
+
+// ------------------------------------------------------------
+//  Fornecedores
+// ------------------------------------------------------------
+export function listarFornecedores(filtros: { busca?: string; familiaId?: string } = {}) {
+  const partes = Object.entries(filtros)
+    .filter(([, v]) => v)
+    .map(([k, v]) => k + '=' + encodeURIComponent(String(v)));
+
+  return chamar<{ fornecedores: Fornecedor[] }>(
+    '/api/fornecedores' + (partes.length ? '?' + partes.join('&') : ''),
+  );
+}
+
+export function criarFornecedor(dados: Record<string, unknown>) {
+  return chamar<{ fornecedor: Fornecedor }>('/api/fornecedores', {
+    metodo: 'POST',
+    corpo: dados,
+  });
+}
+
+// ------------------------------------------------------------
+//  Alçadas
+// ------------------------------------------------------------
+export function listarAlcadas() {
+  return chamar<{ regras: RegraAlcada[]; avisos: string[] }>('/api/alcadas');
+}
+
+export function simularAlcada(valor: number) {
+  return chamar<{
+    valor: number;
+    encontrada: boolean;
+    explicacao?: string;
+    mensagem?: string;
+    regra?: RegraAlcada;
+  }>('/api/alcadas/simular?valor=' + valor);
+}
+
+export function criarAlcada(dados: Record<string, unknown>) {
+  return chamar<{ regra: RegraAlcada }>('/api/alcadas', { metodo: 'POST', corpo: dados });
+}
+
+// ------------------------------------------------------------
+//  Formatação
+// ------------------------------------------------------------
+export function dinheiro(valor: number): string {
+  return valor.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 2,
+  });
+}
+
+export function quantidade(valor: number): string {
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+}
+
+export const ROTULO_SITUACAO: Record<SituacaoObra, string> = {
+  PLANEJAMENTO: 'Planejamento',
+  EM_ANDAMENTO: 'Em andamento',
+  PARALISADA: 'Paralisada',
+  CONCLUIDA: 'Concluída',
+};
+
+export const UNIDADES = [
+  'UN', 'PC', 'CX', 'SC', 'FD', 'PAR', 'JG', 'RL', 'GL', 'LT', 'BD',
+  'KG', 'TON', 'G',
+  'M', 'M2', 'M3', 'CM', 'KM',
+  'L', 'ML',
+  'H', 'DIA', 'MES', 'VB',
+];
+
+export const UFS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+  'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+  'SP', 'SE', 'TO',
+];
