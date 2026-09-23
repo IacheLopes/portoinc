@@ -286,112 +286,113 @@ function FormularioMaterial({
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h2 className="formulario__titulo">Novo item de catálogo</h2>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Novo item de catálogo" nivel={2}>
 
-      <div className="formulario__linha">
-        <Selecao
-          rotulo="Tipo"
-          valor={tipo}
-          aoMudar={(v) => setTipo(v as TipoItem)}
-          opcoes={[
-            { valor: 'MATERIAL', rotulo: 'Material' },
-            { valor: 'SERVICO', rotulo: 'Serviço' },
-          ]}
-          ajuda={ehServico ? 'Serviço não tem código de barras nem estoque.' : undefined}
-          obrigatorio
-        />
-        <Selecao
-          rotulo="Família"
-          valor={familiaId}
-          aoMudar={setFamiliaId}
-          opcoes={familias.map((f) => ({ valor: f.id, rotulo: f.codigo + ' — ' + f.nome }))}
-          vazio="Escolha a família..."
-          ajuda="Define quais fornecedores serão convidados para cotar."
-          obrigatorio
-        />
-      </div>
-
-      <div className="formulario__linha">
-        <Campo
-          rotulo="Código Porto"
-          valor={codigoInterno}
-          aoMudar={setCodigoInterno}
-          exemplo="00119"
-          ajuda="O mesmo código usado nas planilhas da empresa."
-          obrigatorio
-        />
-        <Selecao
-          rotulo="Unidade de medida"
-          valor={unidadeMedida}
-          aoMudar={setUnidadeMedida}
-          opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
-          obrigatorio
-        />
-      </div>
-
-      <Campo
-        rotulo="Descrição"
-        valor={descricao}
-        aoMudar={setDescricao}
-        exemplo="Cimento Portland CP-II-Z-32 saco 50kg"
-        ajuda="Quanto mais específica, menos erro na cotação e no recebimento."
-        obrigatorio
-      />
-
-      <div className="formulario__linha">
-        <Campo rotulo="Marca" valor={marca} aoMudar={setMarca} exemplo="Votoran" />
-        <Campo
-          rotulo="Norma técnica (NBR)"
-          valor={normaTecnica}
-          aoMudar={setNormaTecnica}
-          exemplo="NBR 16697"
-          ajuda="Norma ABNT que o item precisa cumprir."
-        />
-      </div>
-
-      {!ehServico && (
         <div className="formulario__linha">
-          <div onBlur={() => void conferirGtin()}>
-            <Campo
-              rotulo="Código de barras (GTIN)"
-              valor={gtin}
-              aoMudar={setGtin}
-              exemplo="7899888400575"
-              erro={avisoGtin ?? undefined}
-              ajuda="O sistema confere o dígito verificador ao salvar."
-            />
-          </div>
-          <Campo
-            rotulo="Ponto de pedido"
-            valor={pontoPedido}
-            aoMudar={setPontoPedido}
-            tipo="number"
-            exemplo="50"
-            ajuda="Abaixo desta quantidade o sistema avisa que é hora de comprar."
+          <Selecao
+            rotulo="Tipo"
+            valor={tipo}
+            aoMudar={(v) => setTipo(v as TipoItem)}
+            opcoes={[
+              { valor: 'MATERIAL', rotulo: 'Material' },
+              { valor: 'SERVICO', rotulo: 'Serviço' },
+            ]}
+            ajuda={ehServico ? 'Serviço não tem código de barras nem estoque.' : undefined}
+            obrigatorio
+          />
+          <Selecao
+            rotulo="Família"
+            valor={familiaId}
+            aoMudar={setFamiliaId}
+            opcoes={familias.map((f) => ({ valor: f.id, rotulo: f.codigo + ' — ' + f.nome }))}
+            vazio="Escolha a família..."
+            ajuda="Define quais fornecedores serão convidados para cotar."
+            obrigatorio
           />
         </div>
-      )}
 
-      <Campo
-        rotulo="Linha de orçamento sugerida"
-        valor={codigoLinhaPadrao}
-        aoMudar={setCodigoLinhaPadrao}
-        exemplo="03.01.001"
-        ajuda="Vem preenchida na solicitação, e pode ser trocada lá. Como o mesmo item é usado em várias obras, guardamos só o código da linha."
-      />
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Código Porto"
+            valor={codigoInterno}
+            aoMudar={setCodigoInterno}
+            exemplo="00119"
+            ajuda="O mesmo código usado nas planilhas da empresa."
+            obrigatorio
+          />
+          <Selecao
+            rotulo="Unidade de medida"
+            valor={unidadeMedida}
+            aoMudar={setUnidadeMedida}
+            opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+            obrigatorio
+          />
+        </div>
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        <Campo
+          rotulo="Descrição"
+          valor={descricao}
+          aoMudar={setDescricao}
+          exemplo="Cimento Portland CP-II-Z-32 saco 50kg"
+          ajuda="Quanto mais específica, menos erro na cotação e no recebimento."
+          obrigatorio
+        />
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !familiaId || !codigoInterno || !descricao}
-        >
-          {enviando ? 'Salvando...' : 'Cadastrar item'}
-        </button>
-      </div>
+        <div className="formulario__linha">
+          <Campo rotulo="Marca" valor={marca} aoMudar={setMarca} exemplo="Votoran" />
+          <Campo
+            rotulo="Norma técnica (NBR)"
+            valor={normaTecnica}
+            aoMudar={setNormaTecnica}
+            exemplo="NBR 16697"
+            ajuda="Norma ABNT que o item precisa cumprir."
+          />
+        </div>
+
+        {!ehServico && (
+          <div className="formulario__linha">
+            <div onBlur={() => void conferirGtin()}>
+              <Campo
+                rotulo="Código de barras (GTIN)"
+                valor={gtin}
+                aoMudar={setGtin}
+                exemplo="7899888400575"
+                erro={avisoGtin ?? undefined}
+                ajuda="O sistema confere o dígito verificador ao salvar."
+              />
+            </div>
+            <Campo
+              rotulo="Ponto de pedido"
+              valor={pontoPedido}
+              aoMudar={setPontoPedido}
+              tipo="number"
+              exemplo="50"
+              ajuda="Abaixo desta quantidade o sistema avisa que é hora de comprar."
+            />
+          </div>
+        )}
+
+        <Campo
+          rotulo="Linha de orçamento sugerida"
+          valor={codigoLinhaPadrao}
+          aoMudar={setCodigoLinhaPadrao}
+          exemplo="03.01.001"
+          ajuda="Vem preenchida na solicitação, e pode ser trocada lá. Como o mesmo item é usado em várias obras, guardamos só o código da linha."
+        />
+
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !familiaId || !codigoInterno || !descricao}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar item'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

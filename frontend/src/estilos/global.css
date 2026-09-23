@@ -131,17 +131,13 @@ p { margin: 0; }
   border: 1px solid var(--borda);
   border-radius: var(--raio-xl);
   box-shadow: var(--sombra-1);
-  /* O espaçamento ainda vive aqui porque 29 arquivos desenham
-     cartão à mão e contam com ele. Quando essa dívida zerar, ele sai
-     daqui e fica só no corpo — e a classe `--peca` abaixo some
-     junto. */
-  padding: var(--esp-5);
-}
+  /* O espaçamento vive no CORPO, e não na caixa: senão cabeçalho e
+     corpo ganhariam moldura dupla.
 
-/* O cartão feito pelo COMPONENTE: o espaçamento é do corpo, não da
-   caixa, senão cabeçalho e corpo ganhariam moldura dupla. */
-.cartao--peca {
-  padding: 0;
+     Ele morou aqui enquanto 29 arquivos desenhavam cartão à mão e
+     contavam com isso. No Design 6 essa dívida chegou a zero, e a
+     classe `--peca`, que existia só para desfazer este padding nos
+     cartões do componente, saiu junto. */
   /* O conteúdo não vaza pelo canto arredondado. */
   overflow: hidden;
 }
@@ -198,6 +194,39 @@ p { margin: 0; }
    Espaçamento em atributo inline é como uma tela passa a
    respirar diferente da outra sem ninguém decidir isso. */
 .respiro-acima { margin-top: var(--esp-4); }
+
+/* A linha de contagem no pé de um cartão de lista: "12 itens · 3
+   fornecedores". Usava `.cartao__rodape`, que é peça INTERNA do
+   componente — tela que usa o avesso de outra coisa quebra
+   quando aquela coisa muda por dentro. */
+/* Num cartao de lista, a linha de resumo gruda no PE.
+
+   Sem isto ela segue o texto acima, e numa fileira de quatro
+   cartoes com descricoes de tamanhos diferentes o tracinho aparece
+   em quatro alturas. Os cartoes ja tinham a mesma altura; o que
+   faltava era o conteudo interno conversar entre eles.
+
+   O :has() limita isto aos cartoes que TEM a linha: os outros
+   continuam simples. */
+.cartao:has(> .cartao__corpo > .linha-de-resumo) {
+  display: flex;
+  flex-direction: column;
+}
+
+.cartao__corpo:has(> .linha-de-resumo) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.linha-de-resumo { margin-top: auto; }
+
+.linha-de-resumo {
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
 
 /* ------------------------------------------------------------
    Link

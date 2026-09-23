@@ -1,4 +1,5 @@
 import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
+import { Cartao } from '../componentes/Cartao';
 // ============================================================
 //  Aviso de tela ainda não construída
 //
@@ -26,7 +27,7 @@ export function EmConstrucao({ titulo, etapa, descricao, itens }: Props) {
           }
         />
 
-      <div className="cartao">
+      <Cartao>
         <h2 className="em-obra__titulo">O que esta tela vai fazer</h2>
         <ul className="em-obra__lista">
           {itens.map((item) => (
@@ -36,7 +37,7 @@ export function EmConstrucao({ titulo, etapa, descricao, itens }: Props) {
         <p className="em-obra__nota">
           Esta função entra na <strong>Etapa {etapa}</strong> do plano de desenvolvimento.
         </p>
-      </div>
+      </Cartao>
     </section>
   );
 }

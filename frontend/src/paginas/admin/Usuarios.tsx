@@ -19,6 +19,7 @@ import { Selo } from '../../componentes/Selo';
 import { Campo } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { dataHoraBr } from '../../servicos/solicitacoes';
 import { Cartao } from '../../componentes/Cartao';
 
 interface FuncaoItem {
@@ -32,7 +33,7 @@ interface FuncaoItem {
 
 function formatarData(iso: string | null): string {
   if (!iso) return 'Nunca entrou';
-  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  return dataHoraBr(iso);
 }
 
 export function Usuarios() {
@@ -221,14 +222,13 @@ export function Usuarios() {
 
         <div className="grade">
           {funcoes.map((f) => (
-            <article key={f.id} className="cartao">
-              <h3 className="cartao__titulo">{f.nome}</h3>
+            <Cartao key={f.id} titulo={f.nome}>
               <p className="funcao__descricao">{f.descricao}</p>
-              <p className="cartao__rodape">
+              <p className="linha-de-resumo">
                 <strong>{f.permissoes.length}</strong> permissões ·{' '}
                 <strong>{f.usuarios}</strong> usuário(s)
               </p>
-            </article>
+            </Cartao>
           ))}
         </div>
       </section>
@@ -290,111 +290,112 @@ function FormularioUsuario({
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h2 className="formulario__titulo">Novo usuário</h2>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Novo usuário" nivel={2}>
 
-      <div className="formulario__linha">
-        <div className="campo">
-          <label className="campo__rotulo" htmlFor="novo-nome">
-            Nome completo
-          </label>
-          <input
-            id="novo-nome"
-            className="campo__entrada"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="campo">
-          <label className="campo__rotulo" htmlFor="novo-email">
-            E-mail
-          </label>
-          <input
-            id="novo-email"
-            type="email"
-            className="campo__entrada"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="off"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="formulario__linha">
-        <div className="campo">
-          <label className="campo__rotulo" htmlFor="novo-telefone">
-            Telefone <span className="campo__opcional">(opcional)</span>
-          </label>
-          <input
-            id="novo-telefone"
-            className="campo__entrada"
-            placeholder="5511999998888"
-            value={telefone}
-            onChange={(e) => setTelefone(e.target.value)}
-          />
-          <p className="campo__ajuda">Usado para os avisos por WhatsApp na Etapa 10.</p>
-        </div>
-
-        <div className="campo">
-          <label className="campo__rotulo" htmlFor="nova-senha">
-            Senha provisória
-          </label>
-          <input
-            id="nova-senha"
-            type="text"
-            className="campo__entrada"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-          <p className="campo__ajuda">
-            Mínimo 8 caracteres, com letra e número. A pessoa troca no primeiro acesso.
-          </p>
-        </div>
-      </div>
-
-      <fieldset className="campo">
-        <legend className="campo__rotulo">Funções (pode marcar mais de uma)</legend>
-        <div className="opcoes">
-          {funcoes.map((f) => (
-            <label key={f.id} className="opcao">
-              <input
-                type="checkbox"
-                checked={selecionadas.includes(f.id)}
-                onChange={() => alternarFuncao(f.id)}
-              />
-              <span>{f.nome}</span>
+        <div className="formulario__linha">
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="novo-nome">
+              Nome completo
             </label>
-          ))}
-        </div>
-      </fieldset>
+            <input
+              id="novo-nome"
+              className="campo__entrada"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
+          </div>
 
-      {erro && (
-        <div className="campo__erro" role="alert">
-          <span aria-hidden="true">⚠</span> {erro}
-          {detalhes.length > 0 && (
-            <ul className="campo__erro-lista">
-              {detalhes.map((d) => (
-                <li key={d}>{d}</li>
-              ))}
-            </ul>
-          )}
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="novo-email">
+              E-mail
+            </label>
+            <input
+              id="novo-email"
+              type="email"
+              className="campo__entrada"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="off"
+              required
+            />
+          </div>
         </div>
-      )}
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || selecionadas.length === 0}
-        >
-          {enviando ? 'Salvando...' : 'Cadastrar usuário'}
-        </button>
-      </div>
+        <div className="formulario__linha">
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="novo-telefone">
+              Telefone <span className="campo__opcional">(opcional)</span>
+            </label>
+            <input
+              id="novo-telefone"
+              className="campo__entrada"
+              placeholder="5511999998888"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+            />
+            <p className="campo__ajuda">Usado para os avisos por WhatsApp na Etapa 10.</p>
+          </div>
+
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="nova-senha">
+              Senha provisória
+            </label>
+            <input
+              id="nova-senha"
+              type="text"
+              className="campo__entrada"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
+            <p className="campo__ajuda">
+              Mínimo 8 caracteres, com letra e número. A pessoa troca no primeiro acesso.
+            </p>
+          </div>
+        </div>
+
+        <fieldset className="campo">
+          <legend className="campo__rotulo">Funções (pode marcar mais de uma)</legend>
+          <div className="opcoes">
+            {funcoes.map((f) => (
+              <label key={f.id} className="opcao">
+                <input
+                  type="checkbox"
+                  checked={selecionadas.includes(f.id)}
+                  onChange={() => alternarFuncao(f.id)}
+                />
+                <span>{f.nome}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {erro && (
+          <div className="campo__erro" role="alert">
+            <span aria-hidden="true">⚠</span> {erro}
+            {detalhes.length > 0 && (
+              <ul className="campo__erro-lista">
+                {detalhes.map((d) => (
+                  <li key={d}>{d}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || selecionadas.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar usuário'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

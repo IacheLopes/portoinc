@@ -1,4 +1,4 @@
-<!-- versao: 0.23.0 -->
+<!-- versao: 0.24.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -894,6 +894,79 @@ Quem ler depois vê a decisão, e não o silêncio.
 | Espaçamento fora da escala | 4 | **0** |
 | Vários botões principais | 13 (no código) | **1** (medido na tela) |
 
+## Design 6 — Cadastros e Administração
+
+A etapa em que a dívida chegou a zero.
+
+### D6 — dois botões principais (resolvido)
+
+Em Alçadas, "+ Nova faixa" e "Simular" eram os dois azuis cheios. "Simular" é ferramenta;
+a ação da tela é criar faixa. Virou secundário.
+
+Vale lembrar de onde veio este item: a régua de código acusava **13 telas**, e ela não tinha
+como acertar. Medindo na tela, no Design 4, sobrou **uma**. Ela agora está limpa.
+
+### A dívida do padrão, zerada
+
+| Regra | No começo do design | Agora |
+|---|---|---|
+| Cartões escritos à mão | **84** | **0** |
+| Formatação fora das funções oficiais | 13 | **0** |
+| Telas sem título | 34 | **0** |
+| Telas sem o cabeçalho padrão | 25 | **0** |
+| Listas sem os três estados | 5 | **0** |
+| Cor escrita direto no CSS | 6 | **0** |
+| Espaçamento fora da escala | 4 | **0** |
+
+### O que a chegada a zero destravou
+
+O CSS do cartão dizia, desde o Design 0:
+
+> *"O espaçamento ainda vive aqui porque 29 arquivos desenham cartão à mão e contam com ele.
+> Quando essa dívida zerar, ele sai daqui e fica só no corpo — e a classe `--peca` some
+> junto."*
+
+Zerou. O espaçamento foi para o corpo, e `--peca` — que existia só para desfazer, nos
+cartões do componente, um padding que a caixa carregava por causa dos cartões à mão — saiu.
+Medido depois: caixa com `0px`, corpo com `24px`, nas 34 telas.
+
+### O nível do título virou escolha
+
+O componente fixava `h3`, com a razão certa: o `h1` é da tela e o `h2` é da seção. Mas em
+Famílias o cartão **é** a seção — "Nova família" é irmão dos nomes das famílias, não filho.
+Ali ele é `h2`.
+
+Fixar o nível obrigava a escolher entre usar o componente e manter a estrutura certa para
+leitor de tela. Virou a prop `nivel`, com 3 de padrão. Medido: `h2` nos itens de Famílias,
+`h3` nos cartões de função de Usuários — cada um no lugar certo do sumário da página.
+
+### Alinhamento que a régua não mede
+
+Os cartões da mesma fileira já tinham a mesma altura — isso a régua confere. Mas a linha de
+contagem no pé ("2 itens · 1 fornecedor") seguia o texto acima, e numa fileira com
+descrições de tamanhos diferentes o tracinho aparecia em quatro alturas.
+
+Ela passou a grudar no pé. Medido nas três fileiras de Famílias: mesma altura em todas.
+
+### Duas cores que não são de tema
+
+Sobraram quatro `#fff` de texto em cima de cor sólida — avatar azul, botão de perigo, chip do
+portal. Ali o branco **não deve** trocar com o tema, que é o que um token de papel faria.
+Ganharam token próprio: `--texto-sobre-cor`, fixo nos dois temas, com o porquê escrito.
+
+E o fundo branco do QR do WhatsApp ficou como está, com a dispensa declarada: **um QR em
+cima de fundo escuro não é lido pela câmera.** Não é cor de tema, é requisito de
+funcionamento.
+
+### E o conferidor estava acusando o próprio comentário
+
+A regra de cor solta varria o arquivo inteiro, comentários inclusive. Em `painel.css` havia
+escrito *"este `#b9cbe0` era de quando a barra era azul-marinho"* — o comentário que EXPLICA
+a correção do Design 3. Ele contava como violação.
+
+> Regra que pune quem documenta a correção ensina a não documentar. Agora ela tira os
+> comentários antes de olhar, e respeita a dispensa declarada, como as outras.
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -907,7 +980,7 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 | ~~D2~~ | ✅ **RESOLVIDO no Design 2**, com o menu "⋮". Grupo de botões de ação com larguras irregulares. Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
 | ~~D3~~ | ✅ **RESOLVIDO no Design 4.** A dica flutuante cobria o cartão vizinho. No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
 | ~~D4~~ | ✅ **RESOLVIDO no Design 5.** Campo de busca largo demais. No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
-| D6 | **Dois botões principais na mesma tela.** Em Alçadas, "Simular" e "+ Nova faixa" disputam: quando dois competem, nenhum é o próximo passo | Alçadas | **Design 6** — cadastros |
+| ~~D6~~ | ✅ **RESOLVIDO no Design 6.** Dois botões principais na mesma tela. Em Alçadas, "Simular" e "+ Nova faixa" disputam: quando dois competem, nenhum é o próximo passo | Alçadas | **Design 6** — cadastros |
 | D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
 
 ## O que já foi medido e está certo

@@ -61,6 +61,16 @@
   --texto-secundario: var(--neutro-600);
   --texto-invertido:  var(--neutro-0);
 
+  /* Texto em cima de uma cor SÓLIDA — o avatar azul, o botão de
+     perigo, o chip do portal.
+
+     Ele NÃO troca com o tema, e é por isso que existe separado de
+     `--texto-invertido`: o fundo ali é a cor da marca ou do erro, a
+     mesma nos dois temas, então o texto por cima também é. Trocar
+     junto com o tema deixaria letra escura sobre vermelho. */
+  --texto-sobre-cor:    #ffffff;
+  --texto-sobre-escuro: #eaf1f8;
+
   /* ---------- Barra lateral ----------
      Ela ACOMPANHA o tema. Antes era azul-marinho fixo, e no tema
      claro ficava um bloco escuro pesado contra a página clara.

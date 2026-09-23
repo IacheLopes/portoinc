@@ -174,7 +174,7 @@ export function ConfiguracaoEmail() {
           </p>
         </div>
 
-        <div className="cartao">
+        <Cartao>
           <div className="formulario__linha">
             <Campo
               rotulo="E-mail"
@@ -205,7 +205,7 @@ export function ConfiguracaoEmail() {
               Liberar e-mail
             </button>
           </div>
-        </div>
+        </Cartao>
 
         {autorizados.length === 0 ? (
           <Vazio
@@ -268,7 +268,7 @@ export function ConfiguracaoEmail() {
           </p>
         </div>
 
-        <div className="cartao">
+        <Cartao>
           <div className="formulario__linha">
             <Campo
               rotulo="Para"
@@ -298,7 +298,7 @@ export function ConfiguracaoEmail() {
               {ocupado ? 'Enviando...' : 'Enviar teste'}
             </button>
           </div>
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------- Histórico ---------- */}

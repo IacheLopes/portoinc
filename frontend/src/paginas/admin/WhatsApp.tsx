@@ -267,7 +267,7 @@ export function ConfiguracaoWhatsApp() {
 
       {mostrandoQr && (
         <section className="secao">
-          <div className="cartao painel-movimento qr-area">
+          <Cartao className="painel-movimento qr-area">
             <div>
               <h2>Leia o QR Code</h2>
               <ol className="lista-passos">
@@ -286,7 +286,7 @@ export function ConfiguracaoWhatsApp() {
             </div>
 
             <img src={qr} alt="QR Code para conectar o WhatsApp" width={280} height={280} />
-          </div>
+          </Cartao>
         </section>
       )}
 
@@ -299,7 +299,7 @@ export function ConfiguracaoWhatsApp() {
           </p>
         </div>
 
-        <div className="cartao">
+        <Cartao>
           <div className="formulario__linha">
             <Campo
               rotulo="Número"
@@ -329,7 +329,7 @@ export function ConfiguracaoWhatsApp() {
               Liberar número
             </button>
           </div>
-        </div>
+        </Cartao>
 
         {autorizados.length === 0 ? (
           <Vazio
@@ -394,7 +394,7 @@ export function ConfiguracaoWhatsApp() {
           <h2>Enviar uma mensagem de teste</h2>
         </div>
 
-        <div className="cartao">
+        <Cartao>
           <div className="formulario__linha">
             <Campo
               rotulo="Para o número"
@@ -420,7 +420,7 @@ export function ConfiguracaoWhatsApp() {
           {!conectado && (
             <p className="texto-fraco">Conecte primeiro para poder enviar.</p>
           )}
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------- Histórico ---------- */}

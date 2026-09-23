@@ -57,10 +57,20 @@ export function Campo({
   const id = useId();
   const idAjuda = id + '-ajuda';
 
-  // Data e número já vêm curtos sem ninguém pedir: "dd/mm/aaaa" e
-  // "120" têm tamanho conhecido, e deixar que cada tela lembre de
-  // declarar isso é garantir que metade vai esquecer.
-  const tamanho = largura ?? (tipo === 'date' || tipo === 'number' ? 'curta' : 'cheia');
+  // O tipo já diz o tamanho, e deixar cada tela lembrar de declarar
+  // isso é garantir que metade vai esquecer:
+  //
+  //   data e número  -> curta   "dd/mm/aaaa", "120"
+  //   busca, e-mail, telefone -> média
+  //   texto livre    -> cheia
+  //
+  // Medido antes: a busca dos Cadastros de obras tinha 893px, e a de
+  // usuários 871px. Ninguém digita 120 caracteres para achar uma obra.
+  const tamanho = largura ?? (
+    tipo === 'date' || tipo === 'number' ? 'curta'
+      : tipo === 'search' || tipo === 'email' || tipo === 'tel' ? 'media'
+        : 'cheia'
+  );
 
   return (
     <div className="campo">

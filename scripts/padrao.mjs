@@ -104,7 +104,14 @@ regra(
 );
 
 // --- Formatação ---
-const FORMATADORES_OFICIAIS = ['servicos/cadastros.ts', 'servicos/solicitacoes.ts'];
+const FORMATADORES_OFICIAIS = [
+  'servicos/cadastros.ts',
+  'servicos/solicitacoes.ts',
+  // Casa oficial desde o Design 4: porcento, dias e dinheiroCurto
+  // moram aqui. Acusar a função original é o conferidor mordendo a
+  // própria cauda.
+  'servicos/texto.ts',
+];
 
 regra(
   'formato-na-mao',
@@ -175,8 +182,16 @@ regra(
   () =>
     estilos
       .filter((c) => !c.endsWith('tokens.css'))
+      .filter((c) => !dispensado(c, 'cor-solta'))
       .map((c) => {
-        const s = readFileSync(c, 'utf8');
+        // Comentário fora primeiro.
+        //
+        // O conferidor acusava o próprio comentário que EXPLICA uma
+        // correção: em painel.css estava escrito "este #b9cbe0 era de
+        // quando a barra era azul-marinho", e ele contava isso como
+        // cor solta. Uma regra que pune quem documenta a correção
+        // ensina a não documentar.
+        const s = readFileSync(c, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
         const n = (s.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
         return { c, n };
       })

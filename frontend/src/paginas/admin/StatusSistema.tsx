@@ -6,6 +6,10 @@
 //  quais integrações estão ligadas de verdade.
 // ============================================================
 
+// padrao-ignora: sem-estados — a tabela lista as verificacoes que o
+// sistema FAZ, e essa lista e fixa no codigo. Ela nunca vem vazia;
+// um <Vazio> ali seria um aviso sobre algo impossivel.
+
 import { useCallback, useEffect, useState } from 'react';
 import { buscarStatus, ErroApi, type StatusSistema as DadosStatus } from '../../servicos/api';
 import { Indicador } from '../../componentes/Indicador';

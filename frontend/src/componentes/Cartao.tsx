@@ -39,6 +39,17 @@ interface Props {
   semEspaco?: boolean;
   /** Classes extras da tela. Para caso raro, não para o comum. */
   className?: string;
+  /**
+   * O nível do título.
+   *
+   * O padrão é 3, porque o h1 é da tela e o h2 é da seção. Mas há
+   * telas em que o cartão É a seção — em Famílias, "Nova família" é
+   * irmão dos nomes das famílias, não filho deles. Ali ele é h2.
+   *
+   * Fixar o nível no componente deixava a escolha entre usar o
+   * componente e manter a estrutura certa para leitor de tela.
+   */
+  nivel?: 2 | 3;
   children: ReactNode;
 }
 
@@ -48,15 +59,16 @@ export function Cartao({
   acoes,
   semEspaco,
   className,
+  nivel = 3,
   children,
 }: Props) {
-  // `--peca` marca o cartão feito pelo componente: nele o
-  // espaçamento é do corpo, não da caixa. A classe existe só
-  // enquanto houver cartão escrito à mão contando com o
-  // espaçamento na caixa — quando a dívida zerar, ela sai.
+  const Titulo = nivel === 2 ? 'h2' : 'h3';
+  // A classe `--peca` saiu no Design 6, quando a dívida de cartões
+  // escritos à mão chegou a zero: ela existia só para desfazer, nos
+  // cartões do componente, um espaçamento que a caixa carregava por
+  // causa deles. Agora o espaçamento já nasce no corpo.
   const classes = [
     'cartao',
-    'cartao--peca',
     semEspaco ? 'cartao--sem-espaco' : '',
     className ?? '',
   ]
@@ -68,10 +80,11 @@ export function Cartao({
       {(titulo || acoes) && (
         <header className="cartao__cabecalho">
           <div className="cartao__texto">
-            {/* h3 e não h2: o h1 é da tela e o h2 é da seção. Pular
-                nível deixa buraco na estrutura para quem usa leitor
-                de tela. */}
-            {titulo && <h3 className="cartao__titulo">{titulo}</h3>}
+            {/* h3 por padrão: o h1 é da tela e o h2 é da seção.
+                Pular nível deixa buraco na estrutura para quem usa
+                leitor de tela — por isso o nível é escolha de quem
+                usa, e não uma regra fixa daqui. */}
+            {titulo && <Titulo className="cartao__titulo">{titulo}</Titulo>}
             {descricao && <p className="cartao__descricao">{descricao}</p>}
           </div>
 

@@ -16,6 +16,7 @@ import {
   type CotacaoDoPortal, type ItemDoPortal,
 } from '../servicos/cotacoes';
 import { dinheiro, quantidade as qtdBr } from '../servicos/cadastros';
+import { dataBr } from '../servicos/solicitacoes';
 import { Carregando } from '../componentes/Estado';
 import { Selo } from '../componentes/Selo';
 
@@ -188,7 +189,7 @@ export function Portal() {
             </p>
             <p className="portal__nota">
               O comprador da Porto Inc. vai analisar e entrar em contato. Você pode
-              revisar sua resposta até <strong>{new Date(cotacao.prazoResposta).toLocaleDateString('pt-BR')}</strong>{' '}
+              revisar sua resposta até <strong>{dataBr(cotacao.prazoResposta)}</strong>{' '}
               reabrindo este mesmo link.
             </p>
             <button
@@ -234,7 +235,7 @@ export function Portal() {
                   : 'Faltam ' + diasRestantes + ' dias'}
             </Selo>
             <p className="portal__nota">
-              Responder até {prazoData.toLocaleDateString('pt-BR')}
+              Responder até {dataBr(prazoData.toISOString())}
             </p>
           </div>
         </header>
@@ -536,7 +537,7 @@ export function Portal() {
 
         <p className="portal__rodape">
           Porto Inc. · Este link é pessoal e vence em{' '}
-          {prazoData.toLocaleDateString('pt-BR')}. Não compartilhe.
+          {dataBr(prazoData.toISOString())}. Não compartilhe.
         </p>
       </form>
     </div>

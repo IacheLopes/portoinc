@@ -16,6 +16,7 @@ import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -140,17 +141,22 @@ export function Fornecedores() {
         ) : (
           <div className="grade grade--larga">
             {fornecedores.map((f) => (
-              <article key={f.id} className="cartao">
-                <h2 className="fornecedor__nome">
-                  {f.nomeFantasia ?? f.razaoSocial}
-                  {!f.ativo && (
-                    <>
-                      {' '}
-                      <Selo tipo="erro">Inativo</Selo>
-                    </>
-                  )}
-                </h2>
-                <p className="fornecedor__razao">{f.razaoSocial}</p>
+              <Cartao
+                key={f.id}
+                nivel={2}
+                titulo={
+                  <>
+                    {f.nomeFantasia ?? f.razaoSocial}
+                    {!f.ativo && (
+                      <>
+                        {' '}
+                        <Selo tipo="erro">Inativo</Selo>
+                      </>
+                    )}
+                  </>
+                }
+                descricao={f.razaoSocial}
+              >
 
                 <dl className="dados">
                   <div>
@@ -180,7 +186,7 @@ export function Fornecedores() {
                   )}
                 </dl>
 
-                <p className="cartao__rodape">Atende:</p>
+                <p className="linha-de-resumo">Atende:</p>
                 <div className="etiquetas">
                   {f.familias.length === 0 ? (
                     <Selo tipo="atencao">Nenhuma família — não será convidado a cotar</Selo>
@@ -192,7 +198,7 @@ export function Fornecedores() {
                     ))
                   )}
                 </div>
-              </article>
+              </Cartao>
             ))}
           </div>
         )}
@@ -260,87 +266,88 @@ function FormularioFornecedor({
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h2 className="formulario__titulo">Novo fornecedor</h2>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Novo fornecedor" nivel={2}>
 
-      <div className="formulario__linha">
-        <Campo
-          rotulo="Razão social"
-          valor={razaoSocial}
-          aoMudar={setRazaoSocial}
-          exemplo="Marquilip Comércio e Representação Ltda"
-          obrigatorio
-        />
-        <Campo
-          rotulo="Nome fantasia"
-          valor={nomeFantasia}
-          aoMudar={setNomeFantasia}
-          exemplo="Marquilip"
-        />
-      </div>
-
-      <div className="formulario__linha">
-        <Campo
-          rotulo="CNPJ"
-          valor={cnpj}
-          aoMudar={setCnpj}
-          exemplo="19.131.243/0001-97"
-          ajuda="O sistema confere o dígito verificador. CNPJ errado só apareceria quando a nota fiscal não batesse."
-          obrigatorio
-        />
-        <Campo rotulo="E-mail" valor={email} aoMudar={setEmail} tipo="email" exemplo="vendas@empresa.com.br" />
-      </div>
-
-      <div className="formulario__linha">
-        <Campo
-          rotulo="WhatsApp"
-          valor={whatsapp}
-          aoMudar={setWhatsapp}
-          tipo="tel"
-          exemplo="5511988887777"
-          ajuda="Com DDI e DDD. Usado para mandar a cotação na Etapa 10."
-        />
-        <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
-      </div>
-
-      <Selecao
-        rotulo="UF"
-        valor={uf}
-        aoMudar={setUf}
-        opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
-        vazio="Escolha..."
-      />
-
-      <fieldset className="campo">
-        <legend className="campo__rotulo">Famílias que este fornecedor atende</legend>
-        <p className="campo__ajuda">
-          Sem marcar pelo menos uma, ele nunca será convidado para uma cotação.
-        </p>
-        <div className="opcoes">
-          {familias.map((f) => (
-            <label key={f.id} className="opcao">
-              <input
-                type="checkbox"
-                checked={selecionadas.includes(f.id)}
-                onChange={() => alternar(f.id)}
-              />
-              <span>{f.nome}</span>
-            </label>
-          ))}
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Razão social"
+            valor={razaoSocial}
+            aoMudar={setRazaoSocial}
+            exemplo="Marquilip Comércio e Representação Ltda"
+            obrigatorio
+          />
+          <Campo
+            rotulo="Nome fantasia"
+            valor={nomeFantasia}
+            aoMudar={setNomeFantasia}
+            exemplo="Marquilip"
+          />
         </div>
-      </fieldset>
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        <div className="formulario__linha">
+          <Campo
+            rotulo="CNPJ"
+            valor={cnpj}
+            aoMudar={setCnpj}
+            exemplo="19.131.243/0001-97"
+            ajuda="O sistema confere o dígito verificador. CNPJ errado só apareceria quando a nota fiscal não batesse."
+            obrigatorio
+          />
+          <Campo rotulo="E-mail" valor={email} aoMudar={setEmail} tipo="email" exemplo="vendas@empresa.com.br" />
+        </div>
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !razaoSocial || !cnpj}
-        >
-          {enviando ? 'Salvando...' : 'Cadastrar fornecedor'}
-        </button>
-      </div>
+        <div className="formulario__linha">
+          <Campo
+            rotulo="WhatsApp"
+            valor={whatsapp}
+            aoMudar={setWhatsapp}
+            tipo="tel"
+            exemplo="5511988887777"
+            ajuda="Com DDI e DDD. Usado para mandar a cotação na Etapa 10."
+          />
+          <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
+        </div>
+
+        <Selecao
+          rotulo="UF"
+          valor={uf}
+          aoMudar={setUf}
+          opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
+          vazio="Escolha..."
+        />
+
+        <fieldset className="campo">
+          <legend className="campo__rotulo">Famílias que este fornecedor atende</legend>
+          <p className="campo__ajuda">
+            Sem marcar pelo menos uma, ele nunca será convidado para uma cotação.
+          </p>
+          <div className="opcoes">
+            {familias.map((f) => (
+              <label key={f.id} className="opcao">
+                <input
+                  type="checkbox"
+                  checked={selecionadas.includes(f.id)}
+                  onChange={() => alternar(f.id)}
+                />
+                <span>{f.nome}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !razaoSocial || !cnpj}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar fornecedor'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

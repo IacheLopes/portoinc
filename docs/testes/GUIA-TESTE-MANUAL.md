@@ -1,4 +1,4 @@
-<!-- versao: 0.23.0 -->
+<!-- versao: 0.24.0 -->
 
 # 1. Como usar este guia
 
@@ -3750,6 +3750,41 @@ O botão **Abrir conferência** fica ao lado dele, e não no outro canto da tela
 
 ---
 
+## CT-274 · Alçadas sem faixa configurada
+
+1. Entre como **Administrador** e abra **Cadastros → Alçadas**
+
+**Esperado:** com faixas cadastradas, a tabela aparece normalmente.
+
+2. Olhe os botões da tela
+
+**Esperado:** só **um** botão azul cheio — **"+ Nova faixa"**. O **Simular** é de contorno.
+Quando dois botões competem pela mesma atenção, nenhum é o próximo passo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-275 · Os cartões de lista estão alinhados por dentro
+
+1. Abra **Cadastros → Famílias**
+
+**Esperado:** os cartões da mesma fileira têm a mesma altura **e** a linha de contagem
+("2 itens · 1 fornecedor") fica na mesma altura em todos, mesmo quando uma descrição ocupa
+duas linhas e a outra uma.
+
+2. Confira os números no pé de cada cartão
+
+**Esperado:** "1 item" e não "1 item(s)"; "1 fornecedor" e não "1 fornecedor(es)".
+
+3. Abra **Usuários** e olhe os cartões de função
+
+**Esperado:** o mesmo desenho — título, descrição e a linha de baixo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4129,8 +4164,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-271 | Os números concordam com o substantivo |  |
 | CT-272 | A dica dos gráficos não fica cortada |  |
 | CT-273 | O campo tem o tamanho do que recebe |  |
+| CT-274 | Alçadas sem faixa configurada |  |
+| CT-275 | Os cartões de lista estão alinhados por dentro |  |
 
-**Total: 273 casos** · Etapas cobertas: 0 a 12
+**Total: 275 casos** · Etapas cobertas: 0 a 12
 
 ---
 

@@ -218,75 +218,76 @@ function FormularioObra({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h2 className="formulario__titulo">Nova obra</h2>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Nova obra" nivel={2}>
 
-      <div className="formulario__linha">
-        <Campo
-          rotulo="Código"
-          valor={codigo}
-          aoMudar={setCodigo}
-          exemplo="OB-004"
-          ajuda="Identificação curta e única."
-          obrigatorio
-        />
-        <Campo
-          rotulo="Nome da obra"
-          valor={nome}
-          aoMudar={setNome}
-          exemplo="Residencial Porto Belo"
-          obrigatorio
-        />
-      </div>
-
-      <div className="formulario__linha">
-        <Campo rotulo="Cliente" valor={cliente} aoMudar={setCliente} exemplo="Porto Inc. Incorporações" />
-        <Selecao
-          rotulo="Situação"
-          valor={situacao}
-          aoMudar={(v) => setSituacao(v as SituacaoObra)}
-          opcoes={Object.entries(ROTULO_SITUACAO).map(([valor, rotulo]) => ({ valor, rotulo }))}
-          obrigatorio
-        />
-      </div>
-
-      <div className="formulario__linha">
-        <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
-        <Selecao
-          rotulo="UF"
-          valor={uf}
-          aoMudar={setUf}
-          opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
-          vazio="Escolha..."
-        />
-      </div>
-
-      <Campo rotulo="Data de início" valor={dataInicio} aoMudar={setDataInicio} tipo="date" />
-
-      <div className="aviso aviso--info">
-        <span className="aviso__icone" aria-hidden="true">
-          💡
-        </span>
-        <div>
-          <strong>O almoxarifado é criado junto.</strong>
-          <p>
-            Toda obra nasce com o próprio local de estoque. Assim o material de uma obra
-            nunca se mistura com o de outra.
-          </p>
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Código"
+            valor={codigo}
+            aoMudar={setCodigo}
+            exemplo="OB-004"
+            ajuda="Identificação curta e única."
+            obrigatorio
+          />
+          <Campo
+            rotulo="Nome da obra"
+            valor={nome}
+            aoMudar={setNome}
+            exemplo="Residencial Porto Belo"
+            obrigatorio
+          />
         </div>
-      </div>
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        <div className="formulario__linha">
+          <Campo rotulo="Cliente" valor={cliente} aoMudar={setCliente} exemplo="Porto Inc. Incorporações" />
+          <Selecao
+            rotulo="Situação"
+            valor={situacao}
+            aoMudar={(v) => setSituacao(v as SituacaoObra)}
+            opcoes={Object.entries(ROTULO_SITUACAO).map(([valor, rotulo]) => ({ valor, rotulo }))}
+            obrigatorio
+          />
+        </div>
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !codigo || !nome}
-        >
-          {enviando ? 'Salvando...' : 'Criar obra'}
-        </button>
-      </div>
+        <div className="formulario__linha">
+          <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
+          <Selecao
+            rotulo="UF"
+            valor={uf}
+            aoMudar={setUf}
+            opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
+            vazio="Escolha..."
+          />
+        </div>
+
+        <Campo rotulo="Data de início" valor={dataInicio} aoMudar={setDataInicio} tipo="date" />
+
+        <div className="aviso aviso--info">
+          <span className="aviso__icone" aria-hidden="true">
+            💡
+          </span>
+          <div>
+            <strong>O almoxarifado é criado junto.</strong>
+            <p>
+              Toda obra nasce com o próprio local de estoque. Assim o material de uma obra
+              nunca se mistura com o de outra.
+            </p>
+          </div>
+        </div>
+
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !codigo || !nome}
+          >
+            {enviando ? 'Salvando...' : 'Criar obra'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

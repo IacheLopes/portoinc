@@ -19,7 +19,7 @@ import { listarFuncoes, ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
-import { Carregando, Erro } from '../../componentes/Estado';
+import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 
@@ -140,8 +140,14 @@ export function Alcadas() {
         )}
 
         <Cartao semEspaco>
-          <div className="tabela-area">
-            <table className="tabela">
+          {regras.length === 0 ? (
+            <Vazio
+              titulo="Nenhuma faixa de alçada configurada"
+              descricao="Sem faixa, nenhuma solicitação sabe quem precisa assinar. Use “+ Nova faixa” para criar a primeira."
+            />
+          ) : (
+            <div className="tabela-area">
+              <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Faixas de valor e quem aprova cada uma
               </caption>
@@ -184,9 +190,10 @@ export function Alcadas() {
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+          )}
         </Cartao>
       </section>
     </>
@@ -227,57 +234,61 @@ function Simulador() {
   }
 
   return (
-    <form className="cartao simulador" onSubmit={aoEnviar}>
-      <h2 className="formulario__titulo">Simulador: quem aprova?</h2>
-      <p className="campo__ajuda">
-        Digite um valor de compra e veja na hora quem precisará assinar.
-      </p>
-
-      <div className="barra-acoes">
-        <div className="campo campo--inline campo--curto">
-          <label className="apenas-leitor-tela" htmlFor="valor-simulacao">
-            Valor da compra em reais
-          </label>
-          <input
-            id="valor-simulacao"
-            type="number"
-            min="0"
-            step="0.01"
-            className="campo__entrada"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
-        </div>
-
-        <button type="submit" className="botao botao--principal" disabled={consultando}>
-          {consultando ? 'Consultando...' : 'Simular'}
-        </button>
-
-        <div className="atalhos-valor">
-          {[500, 5000, 50000].map((v) => (
-            <button
-              key={v}
-              type="button"
-              className="botao botao--discreto"
-              onClick={() => {
-                setValor(String(v));
-                void consultar(v);
-              }}
-            >
-              {dinheiro(v)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {resposta && (
-        <p className={'aviso ' + (encontrada ? 'aviso--sucesso' : 'aviso--atencao')} role="status">
-          <span className="aviso__icone" aria-hidden="true">
-            {encontrada ? '✓' : '⚠'}
-          </span>
-          <span>{resposta}</span>
+    <form onSubmit={aoEnviar}>
+      <Cartao className="simulador" nivel={2} titulo="Simulador: quem aprova?">
+        <p className="campo__ajuda">
+          Digite um valor de compra e veja na hora quem precisará assinar.
         </p>
-      )}
+
+        <div className="barra-acoes">
+          <div className="campo campo--inline campo--curto">
+            <label className="apenas-leitor-tela" htmlFor="valor-simulacao">
+              Valor da compra em reais
+            </label>
+            <input
+              id="valor-simulacao"
+              type="number"
+              min="0"
+              step="0.01"
+              className="campo__entrada"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+            />
+          </div>
+
+          {/* Secundário, e não principal: a ação da TELA é "+ Nova
+              faixa". Quando dois botões competem pela mesma atenção,
+              nenhum dos dois é o próximo passo. */}
+          <button type="submit" className="botao botao--secundario" disabled={consultando}>
+            {consultando ? 'Consultando...' : 'Simular'}
+          </button>
+
+          <div className="atalhos-valor">
+            {[500, 5000, 50000].map((v) => (
+              <button
+                key={v}
+                type="button"
+                className="botao botao--discreto"
+                onClick={() => {
+                  setValor(String(v));
+                  void consultar(v);
+                }}
+              >
+                {dinheiro(v)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {resposta && (
+          <p className={'aviso ' + (encontrada ? 'aviso--sucesso' : 'aviso--atencao')} role="status">
+            <span className="aviso__icone" aria-hidden="true">
+              {encontrada ? '✓' : '⚠'}
+            </span>
+            <span>{resposta}</span>
+          </p>
+        )}
+      </Cartao>
     </form>
   );
 }
@@ -335,81 +346,82 @@ function FormularioFaixa({
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h3 className="formulario__titulo">Nova faixa de alçada</h3>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Nova faixa de alçada">
 
-      <Campo
-        rotulo="Descrição"
-        valor={descricao}
-        aoMudar={setDescricao}
-        exemplo="Compras de valor médio"
-        obrigatorio
-      />
-
-      <div className="formulario__linha">
         <Campo
-          rotulo="Valor mínimo (R$)"
-          valor={valorMinimo}
-          aoMudar={setValorMinimo}
-          tipo="number"
-          exemplo="2000"
+          rotulo="Descrição"
+          valor={descricao}
+          aoMudar={setDescricao}
+          exemplo="Compras de valor médio"
           obrigatorio
         />
-        <Campo
-          rotulo="Valor máximo (R$)"
-          valor={semTeto ? '' : valorMaximo}
-          aoMudar={setValorMaximo}
-          tipo="number"
-          exemplo="15000"
-          desabilitado={semTeto}
-          ajuda="A última faixa deve ficar sem teto."
-        />
-      </div>
 
-      <label className="opcao">
-        <input type="checkbox" checked={semTeto} onChange={(e) => setSemTeto(e.target.checked)} />
-        <span>Esta é a faixa mais alta (sem valor máximo)</span>
-      </label>
-
-      <fieldset className="campo">
-        <legend className="campo__rotulo">Quem aprova nesta faixa</legend>
-        <div className="opcoes">
-          {funcoes.map((f) => (
-            <label key={f.id} className="opcao">
-              <input
-                type="checkbox"
-                checked={selecionadas.includes(f.id)}
-                onChange={() => alternar(f.id)}
-              />
-              <span>{f.nome}</span>
-            </label>
-          ))}
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Valor mínimo (R$)"
+            valor={valorMinimo}
+            aoMudar={setValorMinimo}
+            tipo="number"
+            exemplo="2000"
+            obrigatorio
+          />
+          <Campo
+            rotulo="Valor máximo (R$)"
+            valor={semTeto ? '' : valorMaximo}
+            aoMudar={setValorMaximo}
+            tipo="number"
+            exemplo="15000"
+            desabilitado={semTeto}
+            ajuda="A última faixa deve ficar sem teto."
+          />
         </div>
-      </fieldset>
 
-      <label className="opcao">
-        <input
-          type="checkbox"
-          checked={exigeTodas}
-          onChange={(e) => setExigeTodas(e.target.checked)}
-        />
-        <span>
-          Exigir a assinatura de <strong>todas</strong> as funções marcadas
-          {!exigeTodas && ' (hoje: basta uma delas)'}
-        </span>
-      </label>
+        <label className="opcao">
+          <input type="checkbox" checked={semTeto} onChange={(e) => setSemTeto(e.target.checked)} />
+          <span>Esta é a faixa mais alta (sem valor máximo)</span>
+        </label>
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        <fieldset className="campo">
+          <legend className="campo__rotulo">Quem aprova nesta faixa</legend>
+          <div className="opcoes">
+            {funcoes.map((f) => (
+              <label key={f.id} className="opcao">
+                <input
+                  type="checkbox"
+                  checked={selecionadas.includes(f.id)}
+                  onChange={() => alternar(f.id)}
+                />
+                <span>{f.nome}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !descricao || selecionadas.length === 0}
-        >
-          {enviando ? 'Salvando...' : 'Criar faixa'}
-        </button>
-      </div>
+        <label className="opcao">
+          <input
+            type="checkbox"
+            checked={exigeTodas}
+            onChange={(e) => setExigeTodas(e.target.checked)}
+          />
+          <span>
+            Exigir a assinatura de <strong>todas</strong> as funções marcadas
+            {!exigeTodas && ' (hoje: basta uma delas)'}
+          </span>
+        </label>
+
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !descricao || selecionadas.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Criar faixa'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

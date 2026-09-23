@@ -9,6 +9,8 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { plural } from '../../servicos/texto';
+import { Cartao } from '../../componentes/Cartao';
 
 export function Familias() {
   const { pode } = useAutenticacao();
@@ -94,16 +96,21 @@ export function Familias() {
         ) : (
           <div className="grade">
             {familias.map((f) => (
-              <article key={f.id} className="cartao">
-                <h2 className="cartao__titulo">
-                  <span className="etiqueta">{f.codigo}</span> {f.nome}
-                </h2>
-                {f.descricao && <p className="funcao__descricao">{f.descricao}</p>}
-                <p className="cartao__rodape">
-                  <strong>{f.materiais}</strong> itens ·{' '}
-                  <strong>{f.fornecedores}</strong> fornecedor(es)
+              <Cartao
+                key={f.id}
+                nivel={2}
+                titulo={
+                  <>
+                    <span className="etiqueta">{f.codigo}</span> {f.nome}
+                  </>
+                }
+                descricao={f.descricao}
+              >
+                <p className="linha-de-resumo">
+                  <strong>{plural(f.materiais, 'item', 'itens')}</strong> ·{' '}
+                  <strong>{plural(f.fornecedores, 'fornecedor', 'fornecedores')}</strong>
                 </p>
-              </article>
+              </Cartao>
             ))}
           </div>
         )}
@@ -141,47 +148,48 @@ function FormularioFamilia({ aoSalvar }: { aoSalvar: (nome: string) => Promise<v
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h2 className="formulario__titulo">Nova família</h2>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Nova família" nivel={2}>
 
-      <div className="formulario__linha">
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Código"
+            valor={codigo}
+            aoMudar={setCodigo}
+            exemplo="ELE"
+            ajuda="Sigla curta. Vira maiúscula automaticamente."
+            obrigatorio
+            maximo={10}
+          />
+          <Campo
+            rotulo="Nome"
+            valor={nome}
+            aoMudar={setNome}
+            exemplo="Material elétrico"
+            obrigatorio
+          />
+        </div>
+
         <Campo
-          rotulo="Código"
-          valor={codigo}
-          aoMudar={setCodigo}
-          exemplo="ELE"
-          ajuda="Sigla curta. Vira maiúscula automaticamente."
-          obrigatorio
-          maximo={10}
+          rotulo="Descrição"
+          valor={descricao}
+          aoMudar={setDescricao}
+          exemplo="Fios, cabos, eletrodutos, quadros e disjuntores."
+          ajuda="Ajuda quem for cadastrar material a escolher a família certa."
         />
-        <Campo
-          rotulo="Nome"
-          valor={nome}
-          aoMudar={setNome}
-          exemplo="Material elétrico"
-          obrigatorio
-        />
-      </div>
 
-      <Campo
-        rotulo="Descrição"
-        valor={descricao}
-        aoMudar={setDescricao}
-        exemplo="Fios, cabos, eletrodutos, quadros e disjuntores."
-        ajuda="Ajuda quem for cadastrar material a escolher a família certa."
-      />
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
-
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !codigo || !nome}
-        >
-          {enviando ? 'Salvando...' : 'Cadastrar família'}
-        </button>
-      </div>
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !codigo || !nome}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar família'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

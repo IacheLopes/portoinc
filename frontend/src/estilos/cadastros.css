@@ -37,7 +37,7 @@
   height: 24px;
   border-radius: 50%;
   background: var(--azul-600);
-  color: #fff;
+  color: var(--texto-sobre-cor);
   font-size: var(--txt-xs);
   font-weight: var(--peso-forte);
 }
@@ -210,7 +210,7 @@ input[type='file'].campo__entrada {
   padding: var(--esp-3);
   border-radius: var(--raio-md);
   background: var(--marinho-900);
-  color: #eaf1f8;
+  color: var(--texto-sobre-escuro);
   font-family: var(--fonte-mono);
   font-size: var(--txt-xs);
   line-height: 1.6;
@@ -439,7 +439,7 @@ input[type='file'].campo__entrada {
 
 .botao--perigo {
   background: var(--erro);
-  color: #fff;
+  color: var(--texto-sobre-cor);
 }
 .botao--perigo:hover:not(:disabled) { filter: brightness(1.1); }
 
@@ -951,6 +951,10 @@ input[type='file'].campo__entrada {
 /* Fundo branco: o leitor do celular precisa do contraste do QR,
    e no tema escuro ele sumiria. */
 .qr-area img {
+  /* padrao-ignora: cor-solta — branco de verdade, e não cor de tema:
+     um QR em cima de fundo escuro não é lido pela câmera. Trocar isto
+     por um token que acompanha o tema quebraria a conexão do
+     WhatsApp no tema escuro. */
   background: #fff;
   border-radius: var(--raio-md);
   padding: var(--esp-3);

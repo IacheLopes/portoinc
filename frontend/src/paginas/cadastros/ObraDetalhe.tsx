@@ -284,52 +284,53 @@ function FormularioLinha({
   }
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h3 className="formulario__titulo">Nova linha de orçamento</h3>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Nova linha de orçamento">
 
-      <div className="formulario__linha">
-        <Campo rotulo="Código" valor={codigo} aoMudar={setCodigo} exemplo="03.01.001" obrigatorio />
-        <Campo
-          rotulo="Descrição"
-          valor={descricao}
-          aoMudar={setDescricao}
-          exemplo="Cimento Portland"
-          obrigatorio
-        />
-      </div>
+        <div className="formulario__linha">
+          <Campo rotulo="Código" valor={codigo} aoMudar={setCodigo} exemplo="03.01.001" obrigatorio />
+          <Campo
+            rotulo="Descrição"
+            valor={descricao}
+            aoMudar={setDescricao}
+            exemplo="Cimento Portland"
+            obrigatorio
+          />
+        </div>
 
-      <div className="formulario__linha">
-        <Selecao
-          rotulo="Unidade"
-          valor={unidade}
-          aoMudar={setUnidade}
-          opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
-          obrigatorio
-        />
-        <Campo rotulo="Quantidade prevista" valor={qtd} aoMudar={setQtd} tipo="number" exemplo="1200" />
-        <Campo rotulo="Valor unitário (R$)" valor={valor} aoMudar={setValor} tipo="number" exemplo="34.00" />
-      </div>
+        <div className="formulario__linha">
+          <Selecao
+            rotulo="Unidade"
+            valor={unidade}
+            aoMudar={setUnidade}
+            opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+            obrigatorio
+          />
+          <Campo rotulo="Quantidade prevista" valor={qtd} aoMudar={setQtd} tipo="number" exemplo="1200" />
+          <Campo rotulo="Valor unitário (R$)" valor={valor} aoMudar={setValor} tipo="number" exemplo="34.00" />
+        </div>
 
-      {total > 0 && (
-        <p className="aviso aviso--info">
-          <span aria-hidden="true">=</span>
-          <span>
-            Total previsto desta linha: <strong>{dinheiro(total)}</strong>
-          </span>
-        </p>
-      )}
+        {total > 0 && (
+          <p className="aviso aviso--info">
+            <span aria-hidden="true">=</span>
+            <span>
+              Total previsto desta linha: <strong>{dinheiro(total)}</strong>
+            </span>
+          </p>
+        )}
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-      <div className="formulario__acoes">
-        <button
-          type="submit"
-          className="botao botao--principal"
-          disabled={enviando || !codigo || !descricao}
-        >
-          {enviando ? 'Salvando...' : 'Adicionar linha'}
-        </button>
-      </div>
+        <div className="formulario__acoes">
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || !codigo || !descricao}
+          >
+            {enviando ? 'Salvando...' : 'Adicionar linha'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }
@@ -393,71 +394,72 @@ function FormularioImportacao({
   const linhasDetectadas = csv.split(/\r?\n/).filter((l) => l.trim()).length;
 
   return (
-    <form className="cartao formulario" onSubmit={enviar} noValidate>
-      <h3 className="formulario__titulo">Importar orçamento de planilha</h3>
+    <form onSubmit={enviar} noValidate>
+      <Cartao className="formulario" titulo="Importar orçamento de planilha">
 
-      <div className="aviso aviso--info">
-        <span className="aviso__icone" aria-hidden="true">
-          📋
-        </span>
-        <div>
-          <strong>Como preparar o arquivo</strong>
-          <p>
-            No Excel, use <em>Salvar como → CSV</em>. A primeira linha deve ser o
-            cabeçalho, e as colunas nesta ordem:
-          </p>
-          <pre className="modelo">{MODELO_CSV}</pre>
-          <p>
-            Aceita vírgula ou ponto e vírgula como separador, e valores no formato
-            brasileiro (1.234,56). Linhas já existentes são ignoradas, então reimportar
-            não duplica nada.
+        <div className="aviso aviso--info">
+          <span className="aviso__icone" aria-hidden="true">
+            📋
+          </span>
+          <div>
+            <strong>Como preparar o arquivo</strong>
+            <p>
+              No Excel, use <em>Salvar como → CSV</em>. A primeira linha deve ser o
+              cabeçalho, e as colunas nesta ordem:
+            </p>
+            <pre className="modelo">{MODELO_CSV}</pre>
+            <p>
+              Aceita vírgula ou ponto e vírgula como separador, e valores no formato
+              brasileiro (1.234,56). Linhas já existentes são ignoradas, então reimportar
+              não duplica nada.
+            </p>
+          </div>
+        </div>
+
+        <div className="campo">
+          <label className="campo__rotulo" htmlFor="arquivo-csv">
+            Arquivo CSV
+          </label>
+          <input
+            ref={arquivo}
+            id="arquivo-csv"
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            className="campo__entrada"
+            onChange={(e) => void aoEscolherArquivo(e)}
+          />
+          <p className="campo__ajuda">
+            Ou cole o conteúdo abaixo, se preferir.
           </p>
         </div>
-      </div>
 
-      <div className="campo">
-        <label className="campo__rotulo" htmlFor="arquivo-csv">
-          Arquivo CSV
-        </label>
-        <input
-          ref={arquivo}
-          id="arquivo-csv"
-          type="file"
-          accept=".csv,text/csv,text/plain"
-          className="campo__entrada"
-          onChange={(e) => void aoEscolherArquivo(e)}
-        />
-        <p className="campo__ajuda">
-          Ou cole o conteúdo abaixo, se preferir.
-        </p>
-      </div>
+        <div className="campo">
+          <label className="campo__rotulo" htmlFor="conteudo-csv">
+            Conteúdo
+          </label>
+          <textarea
+            id="conteudo-csv"
+            className="campo__entrada campo__area"
+            rows={8}
+            value={csv}
+            onChange={(e) => setCsv(e.target.value)}
+            placeholder={MODELO_CSV}
+          />
+          {linhasDetectadas > 1 && (
+            <p className="campo__ajuda">
+              {linhasDetectadas - 1} linha(s) de dados detectada(s), além do cabeçalho.
+            </p>
+          )}
+        </div>
 
-      <div className="campo">
-        <label className="campo__rotulo" htmlFor="conteudo-csv">
-          Conteúdo
-        </label>
-        <textarea
-          id="conteudo-csv"
-          className="campo__entrada campo__area"
-          rows={8}
-          value={csv}
-          onChange={(e) => setCsv(e.target.value)}
-          placeholder={MODELO_CSV}
-        />
-        {linhasDetectadas > 1 && (
-          <p className="campo__ajuda">
-            {linhasDetectadas - 1} linha(s) de dados detectada(s), além do cabeçalho.
-          </p>
-        )}
-      </div>
+        {erro && <ErroFormulario mensagem={erro} detalhes={problemas} />}
 
-      {erro && <ErroFormulario mensagem={erro} detalhes={problemas} />}
-
-      <div className="formulario__acoes">
-        <button type="submit" className="botao botao--principal" disabled={enviando || !csv.trim()}>
-          {enviando ? 'Importando...' : 'Importar'}
-        </button>
-      </div>
+        <div className="formulario__acoes">
+          <button type="submit" className="botao botao--principal" disabled={enviando || !csv.trim()}>
+            {enviando ? 'Importando...' : 'Importar'}
+          </button>
+        </div>
+      </Cartao>
     </form>
   );
 }

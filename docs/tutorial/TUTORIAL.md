@@ -1,4 +1,4 @@
-<!-- versao: 0.23.0 -->
+<!-- versao: 0.24.0 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,19 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## Alçadas: quando não há faixa nenhuma
+
+Se ninguém configurou faixa de alçada ainda, a tela **diz isso** em vez de mostrar uma
+tabela vazia — e explica o que acontece sem faixa: nenhuma solicitação sabe quem precisa
+assinar.
+
+## As buscas ficaram do tamanho certo
+
+Os campos **Buscar** de Materiais, Fornecedores, Obras e Usuários eram enormes. Agora têm o
+tamanho de uma busca. O que você digita e o resultado não mudaram.
+
+---
 
 ## Os campos passaram a ter o tamanho do que recebem
 
