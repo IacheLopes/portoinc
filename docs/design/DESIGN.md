@@ -1,4 +1,4 @@
-<!-- versao: 0.19.0 -->
+<!-- versao: 0.20.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -334,6 +334,113 @@ Os três passaram pela compilação; dois só apareceram ao olhar a tela e o avi
 - Alinhamento sem achados em 1440px e 420px
 - Conferidor aprovado, com a regra do cabeçalho em ok
 
+## Design 2 — As peças
+
+### A seta do campo de escolha (D1 da lista)
+
+Estava com `appearance: auto`: quem desenhava era o navegador, e ele a punha onde queria
+— medido, 34px para dentro da borda direita num campo de 212px. E ela não trocava de cor
+com o tema.
+
+Agora é desenho nosso, embutido no CSS, a 12px da borda e na cor do texto secundário, com
+versão própria para o tema escuro. Conferido nos dois, ampliado.
+
+### Cartão e indicador, dois nomes para duas coisas
+
+O que se chamava `Cartao` era um **indicador**: rótulo, número e uma linha de contexto,
+usado em 36 lugares. O nome passou a ser `Indicador`.
+
+`Cartao` ficou sendo a **caixa** que embrulha qualquer conteúdo, com anatomia única:
+cabeçalho com título e ações em cima, corpo embaixo. Um número solto dentro de uma caixa
+não é a mesma coisa que a caixa, e chamar os dois de cartão obrigava a decidir, em cada
+tela, de qual dos dois se estava falando.
+
+O canto ficou mais arredondado (`--raio-xl`), que é o que dá o ar mais leve da referência.
+
+### Modal
+
+É um `<dialog>` de verdade. O navegador já dá o foco preso, o bloqueio do que está atrás,
+o Esc e o fundo escurecido — reimplementar isso à mão é de onde vem a maioria dos modais
+quebrados.
+
+O que o navegador não faz, e está no componente: devolver o foco ao botão que abriu,
+travar a rolagem de trás, e perguntar antes de descartar o que foi preenchido.
+
+**Primeiro uso:** cancelar nota fiscal, que até então executava **na hora, sem perguntar**.
+
+**Sobre as provas.** O navegador de mentira dos testes (jsdom) não implementa `<dialog>`.
+Há um substituto mínimo no preparo dos testes, e está escrito lá o que ele prova (a lógica
+do componente) e o que não prova (o que é do navegador). As partes do navegador foram
+conferidas num navegador de verdade: 9 de 9.
+
+### O menu "⋮" — e por que ele mudou de status
+
+Na Parte 1 está escrito que o menu "⋮" das telas de referência **não** seria copiado:
+na maioria dos cartões ele não faria nada, e menu vazio é ruído. Isso continua valendo.
+
+Só que aqui ele ganhou trabalho de verdade, e a necessidade **apareceu medindo**:
+
+1. A linha da tabela de Pedidos tinha até quatro botões
+2. Com o texto podendo quebrar, a coluna ficava serrilhada — foi o **D2** da lista
+3. Impedindo a quebra, os últimos botões saíam da tela — troquei um defeito por outro
+4. A saída não era espremer, era **escolher**: a ação que faz o pedido andar fica à vista,
+   e o apoio entra no menu
+
+Resultado medido: a tabela passou a caber inteira, e as colunas de texto ganharam espaço
+— "Origem" saiu de quatro linhas para duas.
+
+### A dívida caiu
+
+| Regra | Antes | Agora |
+|---|---|---|
+| Cartões escritos à mão | 29 arquivos | **21** |
+| Telas sem cabeçalho padrão | 25 | **0** |
+
+### Duplicação achada no caminho
+
+`.migalhas` estava definida em **dois** arquivos de estilo — a nova em `painel.css` e a
+antiga em `cadastros.css`, que carrega depois e vencia em silêncio. É exatamente o que o
+conferidor de padrão existe para evitar. A antiga saiu.
+
+### A régua estava cega no celular
+
+Ao juntar as duas medições numa volta só, pus uma conferência boba: *pedi 420px, a página
+mediu 420px?* Ela acusou **18 telas**. Zero achados vira um resultado bonito, e é também
+exatamente o que sai quando o redimensionamento não pega — a conferência existe para
+separar os dois casos.
+
+Medido em `/pedidos`, com emulação de celular ligada e a janela pedida em 420px:
+
+| | caixa de layout | janela | conteúdo |
+|---|---|---|---|
+| celular ligado | 420px | **830px** | 830px |
+| celular desligado | 420px | 420px | 829px |
+
+A janela **cresce até engolir o transbordo**. Isso não é defeito do navegador: é o "afasta
+o zoom para caber" de um telefone de verdade. Só que a regra de rolagem horizontal compara
+*conteúdo* com *janela* — e se a janela cresce junto, a conta nunca acusa nada.
+
+A régua passava em todas as telas de celular porque era **incapaz de reprovar**. Agora ela
+compara com a caixa de layout, que fica parada em 420px.
+
+O que apareceu quando ela passou a enxergar: **18 das 34 telas transbordam no celular**. A
+tabela de Pedidos mede 1068px dentro de uma caixa de 420px. Isso é o **D5** da lista, e é o
+trabalho do Design 6 — não do Design 2.
+
+> É a terceira vez nesta obra que o "defeito" era a medição. Vale a regra: quando o número
+> vier bonito, desconfie dele antes de comemorar.
+
+### A volta ficou uma só
+
+Eram duas execuções — uma de computador, outra de celular — cada uma abrindo navegador,
+fazendo login e percorrendo as 34 telas do zero. Agora é uma volta: chega na tela, mede em
+1440px, encolhe, mede em 420px, e segue. Medido: **96s → 74s**, e cada achado passou a
+dizer em qual largura apareceu.
+
+O print de página inteira mudou de lugar junto. Ele ficava depois do laço, quando a janela
+já estava na última largura — toda foto sairia de celular. Foi para dentro, e agora cada
+largura tira a sua.
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -343,10 +450,11 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 
 | # | O que está errado | Onde aparece | Conserta em |
 |---|---|---|---|
-| D1 | **A seta do campo de escolha é do navegador, não nossa.** O `appearance` está em `auto`, então o Chromium desenha a seta onde quer — medido: 34px para dentro da borda direita, num campo de 212px. Parece solta no meio do campo | Toda tela com filtro | **Design 2** — controles de formulário viram peça |
-| D2 | **Grupo de botões de ação com larguras irregulares.** Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
+| ~~D1~~ | ✅ **RESOLVIDO no Design 2.** A seta do campo de escolha era do navegador, não nossa. O `appearance` está em `auto`, então o Chromium desenha a seta onde quer — medido: 34px para dentro da borda direita, num campo de 212px. Parece solta no meio do campo | Toda tela com filtro | **Design 2** — controles de formulário viram peça |
+| ~~D2~~ | ✅ **RESOLVIDO no Design 2**, com o menu "⋮". Grupo de botões de ação com larguras irregulares. Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
 | D3 | **A dica flutuante cobre o cartão vizinho.** No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
 | D4 | **Campo de busca largo demais.** No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
+| D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 6** — celular |
 
 ## O que já foi medido e está certo
 
@@ -362,6 +470,8 @@ Vale registrar para não "consertar" o que não está quebrado:
 Ela mede rolagem lateral, alvo pequeno, texto estourando a caixa, cartões de alturas
 diferentes e base de controles na mesma linha. Ela **não** media:
 
+- rolagem lateral no celular: ela media, mas comparava com a janela esticada, e a conta se
+  anulava sozinha. Corrigido no Design 2 — passou a comparar com a caixa de layout
 - seta de campo de escolha fora de lugar — é desenho do navegador, não do nosso CSS
 - grupo de botões com larguras irregulares
 - dica flutuante cobrindo conteúdo

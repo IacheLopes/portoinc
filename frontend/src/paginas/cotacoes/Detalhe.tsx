@@ -19,10 +19,11 @@ import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { enviarConvites } from '../../servicos/whatsapp';
 import { convidarPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -200,13 +201,13 @@ export function DetalheCotacao() {
         )}
 
         <div className="grade">
-          <Cartao titulo="Itens" valor={String(dados.itens.length)} detalhe="No pacote" />
-          <Cartao
+          <Indicador titulo="Itens" valor={String(dados.itens.length)} detalhe="No pacote" />
+          <Indicador
             titulo="Prazo de resposta"
             valor={dataBr(dados.prazoResposta)}
             detalhe={aberto ? 'Links ativos até esta data' : 'Ainda não enviado'}
           />
-          <Cartao
+          <Indicador
             titulo="Respostas"
             valor={dados.respostasRecebidas + ' de ' + dados.convidados.length}
             detalhe="Fornecedores que já cotaram"
@@ -306,7 +307,7 @@ export function DetalheCotacao() {
             </div>
           ) : (
             <>
-              <div className="cartao cartao--tabela">
+              <Cartao semEspaco>
                 <div className="tabela-area">
                   <table className="tabela">
                     <caption className="apenas-leitor-tela">
@@ -368,7 +369,7 @@ export function DetalheCotacao() {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Cartao>
 
               <div className="barra-acoes" style={{ marginTop: 'var(--esp-3)' }}>
                 <button
@@ -397,7 +398,7 @@ export function DetalheCotacao() {
             </p>
           </div>
 
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Fornecedores convidados</caption>
@@ -475,7 +476,7 @@ export function DetalheCotacao() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
 
           {aberto && (
             <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-3)' }}>
@@ -499,7 +500,7 @@ export function DetalheCotacao() {
           <h2>Itens do pacote</h2>
         </div>
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela">
               <caption className="apenas-leitor-tela">Itens a cotar</caption>
@@ -540,7 +541,7 @@ export function DetalheCotacao() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Cartao>
       </section>
     </>
   );

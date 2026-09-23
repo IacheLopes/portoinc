@@ -19,6 +19,7 @@ import { Selo } from '../../componentes/Selo';
 import { Campo } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 interface FuncaoItem {
   id: string;
@@ -152,7 +153,7 @@ export function Usuarios() {
             descricao="Tente outro termo de busca ou cadastre um novo usuário."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -206,7 +207,7 @@ export function Usuarios() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 

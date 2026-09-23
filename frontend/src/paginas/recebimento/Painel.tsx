@@ -18,10 +18,11 @@ import {
 } from '../../servicos/recebimentos';
 import { dataBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function PainelRecebimento() {
   const navegar = useNavigate();
@@ -120,17 +121,17 @@ export function PainelRecebimento() {
 
       <section className="secao">
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Pedidos a receber"
             valor={String(pedidos.length)}
             detalhe="Aguardando entrega"
           />
-          <Cartao
+          <Indicador
             titulo="Itens pendentes"
             valor={String(itensPendentes)}
             detalhe="Somando todos os pedidos"
           />
-          <Cartao
+          <Indicador
             titulo="Entregas registradas"
             valor={String(recebimentos.length)}
             detalhe="Últimas conferências"
@@ -149,7 +150,7 @@ export function PainelRecebimento() {
             descricao="Quando o comprador gerar um pedido de compra, ele aparece aqui."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pedidos aguardando entrega</caption>
@@ -195,7 +196,7 @@ export function PainelRecebimento() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 
@@ -210,7 +211,7 @@ export function PainelRecebimento() {
             descricao="O histórico aparece aqui depois da primeira conferência."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Entregas já conferidas</caption>
@@ -250,7 +251,7 @@ export function PainelRecebimento() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

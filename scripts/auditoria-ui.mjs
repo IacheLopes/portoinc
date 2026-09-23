@@ -244,7 +244,21 @@ if (!JSON.parse(entrou).temMenu) {
 // ------------------------------------------------------------
 const MEDIR = `(() => {
   const achados = [];
-  const larguraTela = window.innerWidth;
+  // A largura da CAIXA DE LAYOUT, nao a da janela.
+  //
+  // Medido com emulacao de celular ligada, em /pedidos a 420px:
+  //
+  //    clientWidth   420    <- a caixa onde a pagina se desenha
+  //    innerWidth    830    <- a janela, ESTICADA ate caber o transbordo
+  //    scrollWidth   830
+  //
+  // Esse esticamento e o "afasta o zoom para caber" do telefone de
+  // verdade. So que a regra de rolagem horizontal compara conteudo
+  // com janela — e se a janela cresce junto com o conteudo, a conta
+  // nunca acusa nada. A regua passou meses dizendo "celular: sem
+  // achados" porque era incapaz de achar. Com clientWidth ela para
+  // de se anular.
+  const larguraTela = document.documentElement.clientWidth;
   const nomear = (el) => {
     const classe = (el.className || '').toString().split(' ').filter(Boolean).slice(0, 2).join('.');
     const texto = (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 40);
@@ -397,6 +411,7 @@ const MEDIR = `(() => {
 
   return JSON.stringify({
     achados,
+    larguraMedida: larguraTela,
     estado: {
       vazio: !!document.querySelector('.estado'),
       linhas: document.querySelectorAll('tbody tr').length,
@@ -407,8 +422,28 @@ const MEDIR = `(() => {
 
 const relatorio = [];
 
+/**
+ * As larguras medidas nesta volta.
+ *
+ * Antes eram DUAS execuções: uma de computador e outra de celular,
+ * cada uma abrindo navegador, fazendo login e percorrendo as 34
+ * telas do zero. Duas voltas fazendo o mesmo caminho.
+ *
+ * Agora é uma volta só: chega na tela, mede na largura grande,
+ * encolhe a janela, mede na pequena, e passa para a próxima. O
+ * login e o carregamento de cada tela acontecem uma vez em vez de
+ * duas.
+ */
+const LARGURAS = process.argv.includes('--so-uma')
+  ? [LARGURA]
+  : [1440, 420];
+
 for (const [caminho, nome] of TELAS) {
   try {
+    await cdp('Emulation.setDeviceMetricsOverride', {
+      width: LARGURAS[0], height: ALTURA, deviceScaleFactor: 1, mobile: false,
+    });
+
     await js(
       'history.pushState({}, "", ' + JSON.stringify(caminho) + ');' +
       ' window.dispatchEvent(new PopStateEvent("popstate"));',
@@ -416,25 +451,58 @@ for (const [caminho, nome] of TELAS) {
     await dormir(500);
     await esperarAcalmar();
 
-    const bruto = await js(MEDIR);
-    const { achados, estado } = JSON.parse(bruto);
+    const achados = [];
+    let estado = null;
 
-    // O print de página inteira é a parte cara da medição: numa tela
-    // com 18 linhas de tabela ele sozinho leva mais que a medição.
-    // Com `--sem-print` a régua mede e não fotografa — é o que basta
-    // para fechar uma etapa. O print serve para eu OLHAR, e aí vale
-    // rodar sem a opção.
-    if (!SEM_PRINT) {
-      const { data } = await cdp('Page.captureScreenshot', {
-        format: 'png',
-        captureBeyondViewport: true,
+    for (const largura of LARGURAS) {
+      await cdp('Emulation.setDeviceMetricsOverride', {
+        width: largura, height: ALTURA, deviceScaleFactor: 1, mobile: largura < 700,
       });
-      writeFileSync(SAIDA + '/' + nome + '.png', Buffer.from(data, 'base64'));
+      // A troca de largura refaz o layout: medir antes disso terminar
+      // devolveria as caixas da largura anterior.
+      await dormir(400);
+
+      const bruto = await js(MEDIR);
+      const medido = JSON.parse(bruto);
+
+      estado = estado ?? medido.estado;
+
+      if (medido.larguraMedida !== largura) {
+        achados.push({
+          tipo: 'REGUA_NAO_REDIMENSIONOU',
+          detalhe: 'pedi ' + largura + 'px e a pagina mediu ' + medido.larguraMedida + 'px',
+          culpados: [],
+          largura,
+        });
+      }
+
+      // O achado carrega em qual largura apareceu: "alvo pequeno" no
+      // celular e no computador são conversas diferentes.
+      for (const a of medido.achados) achados.push({ ...a, largura });
+
+      // O print de pagina inteira e a parte cara da medicao: numa tela
+      // com 18 linhas de tabela ele sozinho leva mais que a medicao.
+      // Com `--sem-print` a regua mede e nao fotografa — e o que basta
+      // para fechar uma etapa. O print serve para eu OLHAR, e ai vale
+      // rodar sem a opcao.
+      //
+      // Ele fica AQUI DENTRO, e nao depois do laco: fora, a janela ja
+      // estava na ultima largura e toda foto saia de celular.
+      if (!SEM_PRINT) {
+        const { data } = await cdp('Page.captureScreenshot', {
+          format: 'png',
+          captureBeyondViewport: true,
+        });
+        const sufixo = largura === LARGURAS[0] ? '' : '-' + largura;
+        writeFileSync(SAIDA + '/' + nome + sufixo + '.png', Buffer.from(data, 'base64'));
+      }
     }
 
     relatorio.push({ tela: nome, caminho, estado, achados });
 
-    const resumo = achados.length === 0 ? 'ok' : achados.map((a) => a.tipo).join(', ');
+    const resumo = achados.length === 0
+      ? 'ok'
+      : achados.map((a) => a.tipo + '@' + a.largura).join(', ');
     console.log(nome.padEnd(28), resumo);
   } catch (e) {
     relatorio.push({ tela: nome, caminho, erro: String(e.message).slice(0, 160) });
@@ -444,17 +512,25 @@ for (const [caminho, nome] of TELAS) {
 
 writeFileSync(SAIDA + '/achados.json', JSON.stringify(relatorio, null, 2));
 
-const porTipo = new Map();
-for (const t of relatorio) {
-  for (const a of t.achados ?? []) {
-    if (!porTipo.has(a.tipo)) porTipo.set(a.tipo, []);
-    porTipo.get(a.tipo).push(t.tela);
-  }
-}
+console.log('\n==== RESUMO (' + LARGURAS.join('px, ') + 'px) ====');
 
-console.log('\n==== RESUMO (' + LARGURA + 'px) ====');
-for (const [tipo, telas] of [...porTipo].sort((a, b) => b[1].length - a[1].length)) {
-  console.log(tipo.padEnd(28), telas.length + ' tela(s):', [...new Set(telas)].slice(0, 8).join(', '));
+for (const largura of LARGURAS) {
+  const porTipo = new Map();
+
+  for (const t of relatorio) {
+    for (const a of (t.achados ?? []).filter((x) => x.largura === largura)) {
+      if (!porTipo.has(a.tipo)) porTipo.set(a.tipo, []);
+      porTipo.get(a.tipo).push(t.tela);
+    }
+  }
+
+  for (const [tipo, telas] of [...porTipo].sort((a, b) => b[1].length - a[1].length)) {
+    console.log(
+      (tipo + '@' + largura).padEnd(32),
+      telas.length + ' tela(s):',
+      [...new Set(telas)].slice(0, 8).join(', '),
+    );
+  }
 }
 
 await fecharNavegador();

@@ -16,10 +16,11 @@ import {
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -89,17 +90,17 @@ export function ObraDetalhe() {
         />
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Orçamento previsto"
             valor={dinheiro(obra.orcamentoTotal)}
             detalhe={obra.linhas.length + ' linha(s) cadastrada(s)'}
           />
-          <Cartao
+          <Indicador
             titulo="Almoxarifados"
             valor={String(obra.almoxarifados.length)}
             detalhe={obra.almoxarifados.map((a) => a.nome).join(', ')}
           />
-          <Cartao
+          <Indicador
             titulo="Realizado"
             valor="—"
             detalhe="Aparece quando as compras começarem (Etapa 9)"
@@ -171,7 +172,7 @@ export function ObraDetalhe() {
             descricao="Adicione linha a linha ou importe a planilha que a empresa já usa."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -228,7 +229,7 @@ export function ObraDetalhe() {
                 </tfoot>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

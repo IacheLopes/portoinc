@@ -33,6 +33,7 @@ import {
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -447,7 +448,7 @@ export function PainelFinanceiro() {
             descricao="Mude o filtro ou gere as parcelas de uma nota fiscal."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Parcelas a pagar</caption>
@@ -517,7 +518,7 @@ export function PainelFinanceiro() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

@@ -1,4 +1,4 @@
-<!-- versao: 0.19.0 -->
+<!-- versao: 0.20.0 -->
 
 # 1. Antes de começar
 
@@ -2308,6 +2308,31 @@ Enquanto o selo estiver **Simulado**:
 - Nenhum fornecedor recebe nada
 
 O sistema registra o que **teria** enviado, para você conferir. Risco zero.
+
+---
+
+# 41.9. O menu de três pontinhos, e as confirmações
+
+## O "⋮" nas tabelas
+
+Em tabelas com muita ação por linha — como a de **Pedidos** — só a ação principal fica à
+vista. O resto está no botão **⋮**, no fim da linha.
+
+Em Pedidos, por exemplo: "Marcar como enviado" aparece direto (quando o pedido ainda é
+rascunho), e dentro do **⋮** ficam **Baixar o PDF**, **Mandar pelo WhatsApp** e **Mandar
+por e-mail**.
+
+> Isso não é para esconder: é porque quatro botões na mesma linha não cabiam, e os
+> últimos saíam da tela.
+
+## Cancelar uma nota agora pergunta antes
+
+Antes, clicar em **Cancelar** numa nota fiscal cancelava **na hora**. Agora abre uma
+janela dizendo o que vai acontecer — que a nota sai das contas a pagar e deixa de contar
+no orçamento da obra — com o fornecedor e o valor à vista.
+
+Para confirmar é preciso clicar em **"Sim, cancelar a nota"**. **Esc** ou **"Voltar sem
+cancelar"** saem sem fazer nada.
 
 ---
 

@@ -15,10 +15,11 @@ import {
 } from '../../servicos/solicitacoes';
 import { dinheiro } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 /** Quantos dias faltam até a data em que o material é necessário. */
 function diasAte(iso: string | null): number | null {
@@ -96,17 +97,17 @@ export function FilaAprovacao() {
         />
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Esperando você"
             valor={String(fila.length)}
             detalhe={fila.length === 1 ? 'solicitação' : 'solicitações'}
           />
-          <Cartao
+          <Indicador
             titulo="Valor acumulado"
             valor={dinheiro(valorTotal)}
             detalhe="Soma do que está na sua fila"
           />
-          <Cartao
+          <Indicador
             titulo="Prazo apertado"
             valor={String(urgentes)}
             detalhe="Vencem em até 7 dias"
@@ -121,7 +122,7 @@ export function FilaAprovacao() {
             descricao="Quando alguém enviar uma solicitação que precise da sua assinatura, ela aparece aqui."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -184,7 +185,7 @@ export function FilaAprovacao() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

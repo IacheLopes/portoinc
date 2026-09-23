@@ -21,6 +21,7 @@ import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 interface FuncaoItem {
   id: string;
@@ -138,7 +139,7 @@ export function Alcadas() {
           />
         )}
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela">
               <caption className="apenas-leitor-tela">
@@ -186,7 +187,7 @@ export function Alcadas() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Cartao>
       </section>
     </>
   );

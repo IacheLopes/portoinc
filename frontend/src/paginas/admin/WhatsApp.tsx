@@ -25,9 +25,10 @@ import {
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo } from '../../componentes/Campo';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { Cartao } from '../../componentes/Cartao';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
@@ -195,22 +196,22 @@ export function ConfiguracaoWhatsApp() {
         </div>
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Situação"
             valor={ROTULO_ESTADO[situacao.estado]}
             detalhe={situacao.numero ?? 'Nenhum número conectado'}
           />
-          <Cartao
+          <Indicador
             titulo="Adaptador"
             valor={situacao.simulado ? 'Simulado' : situacao.adaptador}
             detalhe={situacao.simulado ? 'Nada sai para fora' : 'Envio real'}
           />
-          <Cartao
+          <Indicador
             titulo="Autorizados"
             valor={String(situacao.numerosAutorizados)}
             detalhe="Podem receber mensagem"
           />
-          <Cartao
+          <Indicador
             titulo="Mensagens"
             valor={String(historico.length)}
             detalhe="No histórico"
@@ -336,7 +337,7 @@ export function ConfiguracaoWhatsApp() {
             descricao="Comece liberando o seu próprio celular para testar com segurança."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Números autorizados a receber</caption>
@@ -383,7 +384,7 @@ export function ConfiguracaoWhatsApp() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 
@@ -438,7 +439,7 @@ export function ConfiguracaoWhatsApp() {
             descricao="Cada tentativa fica registrada aqui, com o resultado."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Mensagens enviadas pelo sistema</caption>
@@ -480,7 +481,7 @@ export function ConfiguracaoWhatsApp() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 

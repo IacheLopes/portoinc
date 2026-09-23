@@ -1,4 +1,4 @@
-<!-- versao: 0.19.0 -->
+<!-- versao: 0.20.0 -->
 
 # 1. Como usar este guia
 
@@ -3466,6 +3466,69 @@ docker compose exec web npm test
 
 ---
 
+## CT-262 · O menu de ações da tabela
+
+1. Entre como **Administrador** e abra **Pedidos**
+
+**Esperado:** a tabela cabe inteira, **sem cortar nada à direita**. Cada linha tem um botão **⋮** no fim.
+
+2. Clique no **⋮** de qualquer linha
+
+**Esperado:** abre um menu com **Baixar o PDF**, **Mandar pelo WhatsApp** e **Mandar por e-mail** — cada um dizendo o que faz por extenso.
+
+3. Aperte **Esc**
+
+**Esperado:** o menu fecha e o foco volta para o botão ⋮.
+
+4. Abra de novo e escolha **Baixar o PDF**
+
+**Esperado:** o menu fecha e o PDF baixa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-263 · Cancelar uma nota pergunta antes
+
+1. Vá em **Financeiro → Notas fiscais**
+2. Clique em **Cancelar** numa nota
+
+**Esperado:** abre uma janela com o **número da nota no título**, o fornecedor, o valor, e o aviso de que cancelar não se desfaz. O fundo escurece.
+
+3. Aperte **Tab** várias vezes
+
+**Esperado:** o foco **circula dentro da janela** — nunca chega no menu da esquerda nem na tabela atrás.
+
+4. Tente rolar a página com a roda do mouse
+
+**Esperado:** o que está atrás **não rola**.
+
+5. Aperte **Esc**
+
+**Esperado:** fecha sem cancelar nada, e o foco volta para o botão **Cancelar** de onde você saiu.
+
+6. Abra de novo e confirme em **"Sim, cancelar a nota"**
+
+**Esperado:** a nota é cancelada e a janela fecha sozinha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-264 · A seta dos campos de escolha
+
+1. Abra **Solicitações** e olhe o campo **Situação**
+
+**Esperado:** a seta fica **encostada na borda direita** do campo, não solta no meio.
+
+2. Troque para o **tema escuro** e olhe de novo
+
+**Esperado:** a seta clareia junto e continua legível. Não pode ficar uma seta cinza de sistema operacional em cima do fundo escuro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3833,8 +3896,11 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-259 | Guardar o arquivo que o fornecedor mandou |  |
 | CT-260 | O tema é escolha sua, e o sistema lembra |  |
 | CT-261 | Toda tela diz onde você está e como voltar |  |
+| CT-262 | O menu de ações da tabela |  |
+| CT-263 | Cancelar uma nota pergunta antes |  |
+| CT-264 | A seta dos campos de escolha |  |
 
-**Total: 261 casos** · Etapas cobertas: 0 a 12
+**Total: 264 casos** · Etapas cobertas: 0 a 12
 
 ---
 
@@ -3855,7 +3921,7 @@ docker compose exec web npm test    # as telas — cerca de 20 segundos
 |---|---|---|
 | **Unidade** | 355 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
 | **Integração** | 325 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
-| **Telas** | 89 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+| **Telas** | 112 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
 
 > As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
 

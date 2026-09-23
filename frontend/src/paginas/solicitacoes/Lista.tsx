@@ -20,6 +20,7 @@ import { Selo } from '../../componentes/Selo';
 import { Selecao } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function ListaSolicitacoes() {
   const { pode } = useAutenticacao();
@@ -125,7 +126,7 @@ export function ListaSolicitacoes() {
             }
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Solicitações de compra</caption>
@@ -175,7 +176,7 @@ export function ListaSolicitacoes() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
 
         <p className="secao__descricao" style={{ marginTop: 'var(--esp-3)' }}>

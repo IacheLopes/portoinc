@@ -67,24 +67,11 @@
   color: var(--azul-600);
 }
 
-/* ------------------------------------------------------------
-   Caminho de navegação
-   ------------------------------------------------------------ */
-.migalhas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--esp-2);
-  margin-bottom: var(--esp-3);
-  font-size: var(--txt-sm);
-  color: var(--texto-secundario);
-}
-
-.migalhas a {
-  color: var(--azul-600);
-  text-decoration: none;
-}
-.migalhas a:hover { text-decoration: underline; }
+/* O caminho de navegação mudou de casa no Design 1: agora vive em
+   painel.css, junto do cabeçalho de tela que o desenha. Duas
+   definições da mesma classe em arquivos diferentes é justamente o
+   que o conferidor de padrão existe para evitar — a de baixo vencia
+   em silêncio. */
 
 /* ------------------------------------------------------------
    Ajustes de tabela
@@ -131,7 +118,44 @@
   resize: vertical;
 }
 
-select.campo__entrada { cursor: pointer; }
+/* ------------------------------------------------------------
+   Campo de escolha: a seta é NOSSA
+
+   Com `appearance: auto` quem desenha a seta é o navegador, e ele a
+   põe onde quer. Medido num campo de 212px: 34px para dentro da
+   borda direita, parecendo solta no meio do campo. E ela também não
+   trocava de cor com o tema — no escuro ficava uma seta clara de
+   sistema operacional em cima do nosso fundo.
+
+   Desligando a aparência nativa, a seta vira um desenho nosso,
+   posicionado por nós e na cor do texto.
+   ------------------------------------------------------------ */
+select.campo__entrada {
+  cursor: pointer;
+  appearance: none;
+
+  /* Um triângulo em SVG, na cor do texto secundário. Fica embutido
+     no CSS: um arquivo separado seria mais uma ida ao servidor para
+     desenhar 8 pixels. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235a6b7d' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--esp-3) center;
+
+  /* O texto para antes da seta, em vez de passar por baixo dela. */
+  padding-right: var(--esp-7);
+}
+
+/* No escuro a seta precisa clarear junto: a mesma cor some contra o
+   fundo escuro. */
+:root[data-tema='escuro'] select.campo__entrada {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239db2c7' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Campo desligado: a seta acompanha o esmaecido do resto. */
+select.campo__entrada:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 input[type='file'].campo__entrada {
   padding: var(--esp-2);
@@ -968,4 +992,40 @@ input[type='file'].campo__entrada {
   .lista-arquivos__nome {
     flex-basis: 100%;
   }
+}
+
+/* ------------------------------------------------------------
+   Coluna de ações da tabela
+
+   Cada botão tinha a largura do próprio texto e podia quebrar em
+   várias linhas: numa linha com quatro botões, "Marcar como
+   enviado" ocupava três linhas enquanto o vizinho ocupava uma, e
+   a borda direita da tabela ficava serrilhada.
+   ------------------------------------------------------------ */
+.celula-acoes {
+  /* A coluna fica do tamanho do conteúdo dela, e não divide o
+     espaço com as colunas de texto. */
+  width: 1%;
+  white-space: nowrap;
+}
+
+.celula-acoes .formulario__acoes {
+  /* Encostados à direita: é a borda que o olho usa para varrer a
+     coluna de cima a baixo. */
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: var(--esp-2);
+  padding-top: 0;
+}
+
+/* O texto do botão não quebra. Botão de duas alturas diferentes na
+   mesma linha é o que faz a fileira parecer torta. */
+.celula-acoes .botao {
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  /* Em tela estreita a tabela já rola de lado; deixar os botões
+     quebrarem aqui só espremeria a coluna. */
+  .celula-acoes { white-space: nowrap; }
 }

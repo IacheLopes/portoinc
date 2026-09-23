@@ -144,7 +144,10 @@ describe('o resumo do topo', () => {
 
     montar();
 
+    // Procura pelo ELEMENTO que agrupa, não pela classe: o nome da
+    // classe mudou no Design 2 (`cartao` virou `indicador`) e este
+    // teste quebrou sem que nada de verdade tivesse mudado.
     const apertado = await screen.findByText('Prazo apertado');
-    expect(apertado.closest('.cartao')).toHaveTextContent('1');
+    expect(apertado.closest('article')).toHaveTextContent('1');
   });
 });

@@ -27,6 +27,8 @@ import { Campo, Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Modal } from '../../componentes/Modal';
+import { Cartao } from '../../componentes/Cartao';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -43,6 +45,10 @@ export function NotasFiscais() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+
+  // Qual nota está esperando confirmação para ser cancelada.
+  // Null = nenhuma, e o modal fica fechado.
+  const [paraCancelar, setParaCancelar] = useState<Nota | null>(null);
 
   // Arquivamento: qual nota está com a gaveta aberta e o que há nela.
   const [gaveta, setGaveta] = useState<string | null>(null);
@@ -218,6 +224,7 @@ export function NotasFiscais() {
     try {
       const r = await cancelarNota(nota.id);
       setAviso(r.mensagem);
+      setParaCancelar(null);
       await carregar();
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível cancelar.');
@@ -498,7 +505,7 @@ export function NotasFiscais() {
             descricao="Importe o XML que o fornecedor mandou ou digite os dados da nota."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Notas fiscais lançadas</caption>
@@ -552,7 +559,7 @@ export function NotasFiscais() {
                           <small>não geradas</small>
                         )}
                       </td>
-                      <td>
+                      <td className="celula-acoes">
                         <div className="formulario__acoes">
                           <button
                             type="button"
@@ -576,7 +583,7 @@ export function NotasFiscais() {
                       </td>
 
                       {podeGerenciar && (
-                        <td>
+                        <td className="celula-acoes">
                           <div className="formulario__acoes">
                             {!n.temTitulos && n.situacao !== 'CANCELADA' && (
                               <button
@@ -592,7 +599,7 @@ export function NotasFiscais() {
                               <button
                                 type="button"
                                 className="botao botao--discreto"
-                                onClick={() => void cancelar(n)}
+                                onClick={() => setParaCancelar(n)}
                                 disabled={ocupado}
                               >
                                 Cancelar
@@ -692,8 +699,41 @@ export function NotasFiscais() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
+
+        <Modal
+          aberto={paraCancelar !== null}
+          aoFechar={() => setParaCancelar(null)}
+          titulo={'Cancelar a nota ' + (paraCancelar?.numero ?? '') + '?'}
+          descricao="Cancelar uma nota fiscal não se desfaz. Ela some das contas a pagar e deixa de contar no orçamento da obra."
+          acoes={
+            <>
+              <button
+                type="button"
+                className="botao botao--secundario"
+                onClick={() => setParaCancelar(null)}
+                disabled={ocupado}
+              >
+                Voltar sem cancelar
+              </button>
+              <button
+                type="button"
+                className="botao botao--perigo"
+                onClick={() => paraCancelar && void cancelar(paraCancelar)}
+                disabled={ocupado}
+              >
+                {ocupado ? 'Cancelando...' : 'Sim, cancelar a nota'}
+              </button>
+            </>
+          }
+        >
+          <p>
+            Fornecedor: <strong>{paraCancelar?.fornecedor}</strong>
+            <br />
+            Valor: <strong>{paraCancelar ? dinheiro(paraCancelar.valorTotal) : ''}</strong>
+          </p>
+        </Modal>
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
           <span className="aviso__icone" aria-hidden="true">💡</span>

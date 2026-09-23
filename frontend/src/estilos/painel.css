@@ -773,3 +773,74 @@ a.atalho:hover {
     align-items: flex-start;
   }
 }
+
+/* ------------------------------------------------------------
+   Menu de ações ("⋮")
+
+   Nasceu de uma medição: a linha da tabela de Pedidos tinha até
+   quatro botões, e eles ou ficavam serrilhados ou saíam da tela.
+   A ação principal fica à vista; o resto entra aqui.
+   ------------------------------------------------------------ */
+.menu-acoes {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu-acoes__gatilho {
+  /* Quadrado: dentro da tabela ele precisa ocupar pouca largura,
+     e 44px continua sendo alvo de dedo. */
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  font-size: var(--txt-lg);
+  line-height: 1;
+}
+
+.menu-acoes__lista {
+  position: absolute;
+  top: calc(100% + var(--esp-1));
+  /* Abre para a ESQUERDA: na coluna de ações, que fica no fim da
+     tabela, abrir para a direita jogaria o menu para fora da tela. */
+  right: 0;
+  z-index: 20;
+  min-width: 210px;
+  padding: var(--esp-1);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2);
+}
+
+.menu-acoes__item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--esp-2) var(--esp-3);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-size: var(--txt-sm);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu-acoes__item:hover:not(:disabled) { background: var(--fundo-suave); }
+
+.menu-acoes__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ação que não se desfaz. A cor avisa, mas quem informa é o texto
+   do item. */
+.menu-acoes__item--perigo { color: var(--erro-texto); }
+
+.menu-acoes__icone {
+  width: 18px;
+  text-align: center;
+}

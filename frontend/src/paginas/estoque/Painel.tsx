@@ -21,10 +21,11 @@ import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -261,18 +262,18 @@ export function PainelEstoque() {
 
         {resumo && (
           <div className="grade">
-            <Cartao titulo="Itens em estoque" valor={String(resumo.itens)} detalhe="Com ficha aberta" />
-            <Cartao
+            <Indicador titulo="Itens em estoque" valor={String(resumo.itens)} detalhe="Com ficha aberta" />
+            <Indicador
               titulo="Valor parado"
               valor={dinheiro(resumo.valorTotal)}
               detalhe="Pelo custo médio"
             />
-            <Cartao
+            <Indicador
               titulo="Abaixo do mínimo"
               valor={String(resumo.abaixoDoMinimo)}
               detalhe="Precisam de reposição"
             />
-            <Cartao titulo="Zerados" valor={String(resumo.semSaldo)} detalhe="Sem nenhuma unidade" />
+            <Indicador titulo="Zerados" valor={String(resumo.semSaldo)} detalhe="Sem nenhuma unidade" />
           </div>
         )}
 
@@ -393,7 +394,7 @@ export function PainelEstoque() {
             descricao="O saldo aparece assim que a primeira entrega for conferida no recebimento."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Saldo por material</caption>
@@ -434,7 +435,7 @@ export function PainelEstoque() {
                         {l.custoMedio ? dinheiro(l.custoMedio * l.quantidade) : '—'}
                       </td>
                       {podeMovimentar && (
-                        <td>
+                        <td className="celula-acoes">
                           <div className="formulario__acoes">
                             <button
                               type="button"
@@ -458,7 +459,7 @@ export function PainelEstoque() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 

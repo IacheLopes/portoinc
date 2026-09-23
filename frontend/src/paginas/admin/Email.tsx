@@ -27,6 +27,7 @@ import { ErroApi } from '../../servicos/api';
 import { Campo } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { Cartao } from '../../componentes/Cartao';
 
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
@@ -212,7 +213,7 @@ export function ConfiguracaoEmail() {
             descricao="Comece liberando o seu próprio e-mail para testar com segurança."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Endereços autorizados a receber</caption>
@@ -254,7 +255,7 @@ export function ConfiguracaoEmail() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
 
@@ -315,7 +316,7 @@ export function ConfiguracaoEmail() {
             descricao="Assim que o sistema mandar o primeiro e-mail, ele aparece aqui."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -358,7 +359,7 @@ export function ConfiguracaoEmail() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

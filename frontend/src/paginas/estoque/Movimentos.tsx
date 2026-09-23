@@ -18,6 +18,7 @@ import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function MovimentosEstoque() {
   const [movimentos, setMovimentos] = useState<Movimento[]>([]);
@@ -94,7 +95,7 @@ export function MovimentosEstoque() {
             descricao="O extrato começa na primeira entrega conferida no recebimento."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Movimentos de estoque</caption>
@@ -151,7 +152,7 @@ export function MovimentosEstoque() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

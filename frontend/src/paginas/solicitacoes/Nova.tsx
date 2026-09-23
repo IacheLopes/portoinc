@@ -21,6 +21,7 @@ import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { Selo } from '../../componentes/Selo';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -325,7 +326,7 @@ export function NovaSolicitacao() {
       {/* ---------------- Itens já adicionados ---------------- */}
       {itens.length > 0 && (
         <section className="secao">
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Itens desta solicitação</caption>
@@ -383,7 +384,7 @@ export function NovaSolicitacao() {
                 </tfoot>
               </table>
             </div>
-          </div>
+          </Cartao>
         </section>
       )}
 

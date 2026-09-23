@@ -8,10 +8,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { buscarStatus, ErroApi, type StatusSistema as DadosStatus } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 function formatarTempo(segundos: number): string {
   if (segundos < 60) return segundos + ' s';
@@ -67,13 +68,13 @@ export function StatusSistema() {
         />
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Interface"
             valor={<Selo tipo="sucesso">No ar</Selo>}
             detalhe="Você está vendo esta tela, então o React respondeu."
           />
 
-          <Cartao
+          <Indicador
             titulo="API"
             valor={<Selo tipo="sucesso">No ar</Selo>}
             detalhe={
@@ -81,7 +82,7 @@ export function StatusSistema() {
             }
           />
 
-          <Cartao
+          <Indicador
             titulo="Banco de dados"
             valor={
               status.banco.conectado ? (
@@ -100,7 +101,7 @@ export function StatusSistema() {
             }
           />
 
-          <Cartao
+          <Indicador
             titulo="Memória da API"
             valor={status.memoria.usadaMb + ' MB'}
             detalhe={'De ' + status.memoria.limiteMb + ' MB disponíveis (' + memoriaPorcento + '%)'}
@@ -119,7 +120,7 @@ export function StatusSistema() {
           </p>
         </div>
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela">
               <caption className="apenas-leitor-tela">
@@ -151,7 +152,7 @@ export function StatusSistema() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Cartao>
       </section>
 
       <button

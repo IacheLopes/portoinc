@@ -17,6 +17,7 @@ import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -152,7 +153,7 @@ export function Materiais() {
             descricao="Ajuste os filtros ou cadastre um item novo."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -199,7 +200,7 @@ export function Materiais() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
 
         <p className="secao__descricao" style={{ marginTop: 'var(--esp-3)' }}>

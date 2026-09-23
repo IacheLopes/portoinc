@@ -129,8 +129,9 @@ const FILA = [
   ['Tipos', 'docker', ['compose', 'exec', '-T', 'web', 'npx', 'tsc', '-b', '--noEmit'], RAIZ],
   ['Conferidor de padrão', 'node', ['padrao.mjs'], SCRIPTS],
   ['Provas de tela', 'docker', ['compose', 'exec', '-T', 'web', 'npm', 'test'], RAIZ],
-  ['Alinhamento 1440px', 'node', ['auditoria-ui.mjs', './auditoria', '1440'], SCRIPTS],
-  ['Alinhamento 420px', 'node', ['auditoria-ui.mjs', './auditoria-celular', '420'], SCRIPTS],
+  // Uma volta so, medindo as duas larguras em cada tela. Antes
+  // eram duas execucoes percorrendo o mesmo caminho.
+  ['Alinhamento', 'node', ['auditoria-ui.mjs', './auditoria', '1440', '--sem-print'], SCRIPTS],
   // As provas de integração do backend APAGAM o banco de teste.
   // Nunca podem dividir a vez com nada que toque nele.
   ['Provas do backend', 'docker', ['compose', 'exec', '-T', 'api', 'npm', 'test'], RAIZ],

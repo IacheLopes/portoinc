@@ -23,6 +23,7 @@ import { Campo, Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 /** O que o almoxarife preencheu em cada linha da tabela. */
 interface Linha {
@@ -311,7 +312,7 @@ export function ConferirRecebimento() {
           </p>
         </div>
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela tabela--conferencia">
               <caption className="apenas-leitor-tela">
@@ -442,7 +443,7 @@ export function ConferirRecebimento() {
               </button>
             </div>
           </div>
-        </div>
+        </Cartao>
       </section>
 
       {!dados.tudoRecebido && (

@@ -11,11 +11,12 @@ import {
 } from '../../servicos/cotacoes';
 import { dataBr, dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
@@ -68,17 +69,17 @@ export function ListaCotacoes() {
         />
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Itens esperando cotação"
             valor={String(disponiveis)}
             detalhe="Aprovados e ainda fora de qualquer pacote"
           />
-          <Cartao
+          <Indicador
             titulo="Pacotes abertos"
             valor={String(abertas.length)}
             detalhe="Com o prazo correndo"
           />
-          <Cartao
+          <Indicador
             titulo="Respostas recebidas"
             valor={String(abertas.reduce((s, c) => s + c.respostasRecebidas, 0))}
             detalhe="De fornecedores nos pacotes abertos"
@@ -134,7 +135,7 @@ export function ListaCotacoes() {
             descricao="Monte o primeiro juntando itens aprovados."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pacotes de cotação</caption>
@@ -193,7 +194,7 @@ export function ListaCotacoes() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
       </section>
     </>

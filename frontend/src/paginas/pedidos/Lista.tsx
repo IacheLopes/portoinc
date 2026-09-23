@@ -16,10 +16,12 @@ import { dinheiro } from '../../servicos/cadastros';
 import { enviarPedidoPorWhatsApp } from '../../servicos/whatsapp';
 import { enviarPedidoPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
+import { MenuDeAcoes } from '../../componentes/MenuDeAcoes';
 
 export function ListaPedidos() {
   const [pedidos, setPedidos] = useState<PedidoResumo[]>([]);
@@ -122,9 +124,9 @@ export function ListaPedidos() {
         />
 
         <div className="grade">
-          <Cartao titulo="Pedidos" valor={String(pedidos.length)} detalhe="Emitidos" />
-          <Cartao titulo="Valor total" valor={dinheiro(total)} detalhe="Soma de todos" />
-          <Cartao
+          <Indicador titulo="Pedidos" valor={String(pedidos.length)} detalhe="Emitidos" />
+          <Indicador titulo="Valor total" valor={dinheiro(total)} detalhe="Soma de todos" />
+          <Indicador
             titulo="Fornecedores"
             valor={String(new Set(pedidos.map((p) => p.fornecedor)).size)}
             detalhe="Distintos"
@@ -151,7 +153,11 @@ export function ListaPedidos() {
             descricao="Os pedidos aparecem depois que você escolhe os vencedores na equalização."
           />
         ) : (
-          <div className="cartao cartao--tabela">
+          <Cartao
+            titulo="Pedidos emitidos"
+            descricao={pedidos.length + " pedido(s) · " + dinheiro(total) + " no total"}
+            semEspaco
+          >
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pedidos de compra emitidos</caption>
@@ -186,21 +192,14 @@ export function ListaPedidos() {
                           {ROTULO_SITUACAO_PEDIDO[p.situacao as SituacaoPedido] ?? p.situacao}
                         </Selo>
                       </td>
-                      <td>
+                      <td className="celula-acoes">
                         <div className="formulario__acoes">
-                          <button
-                            type="button"
-                            className="botao botao--discreto"
-                            onClick={() => void pdf(p)}
-                            disabled={baixando === p.id}
-                          >
-                            {baixando === p.id ? 'Gerando...' : '📄 PDF'}
-                          </button>
-
+                          {/* A ação que faz o pedido ANDAR fica à vista.
+                              O resto é apoio e vai para o menu. */}
                           {p.situacao === 'RASCUNHO' && (
                             <button
                               type="button"
-                              className="botao botao--discreto"
+                              className="botao botao--secundario"
                               onClick={() => void enviar(p)}
                               disabled={enviando === p.id}
                             >
@@ -208,23 +207,29 @@ export function ListaPedidos() {
                             </button>
                           )}
 
-                          <button
-                            type="button"
-                            className="botao botao--secundario"
-                            onClick={() => void mandar(p, 'whatsapp')}
-                            disabled={zap !== null}
-                          >
-                            {zap === p.id + ':whatsapp' ? 'Enviando...' : '💬 WhatsApp'}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="botao botao--secundario"
-                            onClick={() => void mandar(p, 'email')}
-                            disabled={zap !== null}
-                          >
-                            {zap === p.id + ':email' ? 'Enviando...' : '✉ E-mail'}
-                          </button>
+                          <MenuDeAcoes
+                            descricao={'Ações do pedido ' + p.numeroFormatado}
+                            acoes={[
+                              {
+                                rotulo: baixando === p.id ? 'Gerando o PDF...' : 'Baixar o PDF',
+                                icone: '📄',
+                                aoEscolher: () => void pdf(p),
+                                desabilitada: baixando === p.id,
+                              },
+                              {
+                                rotulo: 'Mandar pelo WhatsApp',
+                                icone: '💬',
+                                aoEscolher: () => void mandar(p, 'whatsapp'),
+                                desabilitada: zap !== null,
+                              },
+                              {
+                                rotulo: 'Mandar por e-mail',
+                                icone: '✉',
+                                aoEscolher: () => void mandar(p, 'email'),
+                                desabilitada: zap !== null,
+                              },
+                            ]}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -232,7 +237,7 @@ export function ListaPedidos() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         )}
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>

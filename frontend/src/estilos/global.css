@@ -116,21 +116,96 @@ p { margin: 0; }
 /* ------------------------------------------------------------
    Cartao
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   Cartão: a caixa que embrulha qualquer conteúdo
+
+   Uma anatomia só — cabeçalho com título e ações, corpo embaixo.
+   Antes havia 29 arquivos desenhando cartão à mão, cada um com a
+   sua versão, e cada tela envelhecia por conta própria.
+
+   O canto é mais arredondado que antes (--raio-xl): é o que dá o ar
+   mais leve das telas de referência.
+   ------------------------------------------------------------ */
 .cartao {
   background: var(--fundo-elevado);
   border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  padding: var(--esp-5);
+  border-radius: var(--raio-xl);
   box-shadow: var(--sombra-1);
+  /* O espaçamento ainda vive aqui porque 29 arquivos desenham
+     cartão à mão e contam com ele. Quando essa dívida zerar, ele sai
+     daqui e fica só no corpo — e a classe `--peca` abaixo some
+     junto. */
+  padding: var(--esp-5);
 }
 
-/* Cartao que envolve uma tabela: a tabela encosta na borda. */
+/* O cartão feito pelo COMPONENTE: o espaçamento é do corpo, não da
+   caixa, senão cabeçalho e corpo ganhariam moldura dupla. */
+.cartao--peca {
+  padding: 0;
+  /* O conteúdo não vaza pelo canto arredondado. */
+  overflow: hidden;
+}
+
+/* Título à esquerda, ações à direita, separados do corpo por uma
+   linha fina. */
+.cartao__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  flex-wrap: wrap;
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--borda);
+}
+
+.cartao__texto { min-width: 0; }
+
+.cartao__titulo {
+  margin: 0;
+  font-size: var(--txt-md);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
+.cartao__descricao {
+  margin-top: var(--esp-1);
+  max-width: var(--largura-leitura);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+.cartao__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+.cartao__corpo { padding: var(--esp-5); }
+
+/* O corpo encosta na borda: é o caso da tabela, que já tem o próprio
+   espaçamento por dentro. O do cartão criaria moldura dupla. */
+.cartao--sem-espaco > .cartao__corpo { padding: 0; }
+
+/* Nome antigo, mantido enquanto as telas ainda não passaram pelo
+   componente. Sai quando a dívida de cartões à mão zerar. */
 .cartao--tabela {
   padding: 0;
   overflow: hidden;
 }
 
-.cartao__titulo {
+/* ------------------------------------------------------------
+   Indicador: um número que vale por si
+   ------------------------------------------------------------ */
+.indicador {
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-xl);
+  padding: var(--esp-5);
+  box-shadow: var(--sombra-1);
+}
+
+.indicador__titulo {
   display: flex;
   align-items: center;
   gap: var(--esp-2);
@@ -142,7 +217,7 @@ p { margin: 0; }
   margin-bottom: var(--esp-3);
 }
 
-.cartao__valor {
+.indicador__valor {
   font-size: var(--txt-2xl);
   font-weight: var(--peso-forte);
   letter-spacing: -0.02em;
@@ -150,7 +225,7 @@ p { margin: 0; }
   font-variant-numeric: tabular-nums;
 }
 
-.cartao__rodape {
+.indicador__rodape {
   margin-top: var(--esp-2);
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
@@ -247,6 +322,14 @@ p { margin: 0; }
   border-color: var(--borda);
 }
 .botao--secundario:hover:not(:disabled) { background: var(--fundo-suave); }
+
+/* Acao que nao se desfaz. A cor avisa, mas quem informa e o
+   TEXTO do botao: "Sim, cancelar a nota", nunca so "Sim". */
+.botao--perigo {
+  background: var(--erro);
+  color: var(--neutro-0);
+}
+.botao--perigo:hover:not(:disabled) { filter: brightness(1.1); }
 
 .botao:disabled {
   opacity: 0.55;
@@ -388,4 +471,129 @@ p { margin: 0; }
 .tabela-area::-webkit-scrollbar-corner,
 .modelo::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* ------------------------------------------------------------
+   Modal
+
+   O <dialog> nativo ja traz o fundo escurecido (::backdrop), a
+   trava de foco e o Esc. Aqui fica so a aparencia.
+   ------------------------------------------------------------ */
+.modal {
+  /* O <dialog> vem com borda e espacamento do navegador. */
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: min(560px, calc(100vw - var(--esp-5) * 2));
+  width: 100%;
+  color: var(--texto);
+}
+
+.modal::backdrop {
+  /* Escuro o bastante para o que esta atras sair de foco, claro o
+     bastante para a pessoa nao perder a referencia de onde estava. */
+  background: rgba(10, 28, 46, 0.55);
+}
+
+.modal__caixa {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--esp-7) * 2);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-xl);
+  box-shadow: var(--sombra-2);
+  overflow: hidden;
+}
+
+.modal__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: var(--esp-5);
+  border-bottom: 1px solid var(--borda);
+}
+
+.modal__titulo {
+  margin: 0;
+  font-size: var(--txt-lg);
+  line-height: var(--linha-apertada);
+}
+
+.modal__descricao {
+  margin-top: var(--esp-2);
+  max-width: var(--largura-leitura);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+.modal__fechar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  /* 44px: e um alvo de dedo como qualquer outro. */
+  width: 44px;
+  height: 44px;
+  margin: calc(var(--esp-2) * -1) calc(var(--esp-2) * -1) 0 0;
+  border: 0;
+  border-radius: var(--raio-md);
+  background: none;
+  color: var(--texto-secundario);
+  font-size: var(--txt-md);
+  cursor: pointer;
+  transition: background var(--transicao);
+}
+
+.modal__fechar:hover {
+  background: var(--fundo-suave);
+  color: var(--texto);
+}
+
+/* So o CORPO rola. O cabecalho e as acoes ficam sempre a vista:
+   num modal alto, o botao de confirmar sumir embaixo e o que faz a
+   pessoa achar que nao ha como confirmar. */
+.modal__corpo {
+  padding: var(--esp-5);
+  overflow-y: auto;
+}
+
+.modal__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  padding: var(--esp-4) var(--esp-5);
+  border-top: 1px solid var(--borda);
+  background: var(--fundo-suave);
+}
+
+@media (max-width: 640px) {
+  /* No celular o modal ocupa a tela inteira. Caixinha flutuante em
+     tela pequena vira caixa dentro de caixa, com duas barras de
+     rolagem. */
+  .modal {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+  }
+
+  .modal__caixa {
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* Os botoes viram largura cheia: lado a lado ficariam estreitos
+     demais para o dedo. */
+  .modal__acoes {
+    flex-direction: column-reverse;
+  }
+
+  .modal__acoes > * {
+    width: 100%;
+  }
 }

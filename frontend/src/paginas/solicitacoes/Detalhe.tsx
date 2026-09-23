@@ -17,11 +17,12 @@ import {
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { PainelDecisao } from '../../componentes/PainelDecisao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 export function DetalheSolicitacao() {
   const { id = '' } = useParams();
@@ -169,17 +170,17 @@ export function DetalheSolicitacao() {
         )}
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Total estimado"
             valor={dinheiro(dados.totalEstimado)}
             detalhe={dados.itens.length + ' item(ns)'}
           />
-          <Cartao
+          <Indicador
             titulo="Precisa até"
             valor={dataBr(dados.dataDesejada)}
             detalhe={dados.enviadaEm ? 'Enviada em ' + dataBr(dados.enviadaEm) : 'Ainda não enviada'}
           />
-          <Cartao
+          <Indicador
             titulo="Quem aprova"
             valor={<span className="cartao__texto">{aprovacao?.explicacao ?? '—'}</span>}
             detalhe="Calculado pelo valor total e pelas faixas de alçada"
@@ -252,7 +253,7 @@ export function DetalheSolicitacao() {
             <p className="secao__descricao">{dados.estadoAprovacao.resumo}</p>
           </div>
 
-          <div className="cartao cartao--tabela">
+          <Cartao semEspaco>
             <div className="tabela-area">
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Decisões registradas</caption>
@@ -290,7 +291,7 @@ export function DetalheSolicitacao() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Cartao>
         </section>
       )}
 
@@ -300,7 +301,7 @@ export function DetalheSolicitacao() {
           <h2>Itens solicitados</h2>
         </div>
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela">
               <caption className="apenas-leitor-tela">
@@ -362,7 +363,7 @@ export function DetalheSolicitacao() {
               </tfoot>
             </table>
           </div>
-        </div>
+        </Cartao>
 
         {dados.itens.some((i) => i.especificacaoTecnica) && (
           <div className="cartao" style={{ marginTop: 'var(--esp-4)' }}>

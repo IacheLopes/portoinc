@@ -18,10 +18,11 @@ import {
 
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
-import { Cartao } from '../../componentes/Cartao';
+import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 function daquiADias(dias: number): string {
   const d = new Date();
@@ -233,7 +234,7 @@ export function Equalizacao() {
         )}
 
         <div className="grade">
-          <Cartao
+          <Indicador
             titulo="Escolhendo item a item"
             valor={dinheiro(c.melhorCombinacao)}
             detalhe={
@@ -242,7 +243,7 @@ export function Equalizacao() {
               dinheiro(c.freteDaCombinacao)
             }
           />
-          <Cartao
+          <Indicador
             titulo="Fechando com um só"
             valor={c.melhorFornecedorUnico ? dinheiro(c.melhorFornecedorUnico.total) : '—'}
             detalhe={
@@ -251,7 +252,7 @@ export function Equalizacao() {
                 : 'Nenhum fornecedor cotou todos os itens'
             }
           />
-          <Cartao
+          <Indicador
             titulo="Economia ao misturar"
             valor={dinheiro(c.economiaAoMisturar)}
             detalhe={
@@ -306,7 +307,7 @@ export function Equalizacao() {
           </div>
         )}
 
-        <div className="cartao cartao--tabela">
+        <Cartao semEspaco>
           <div className="tabela-area">
             <table className="tabela mapa">
               <caption className="apenas-leitor-tela">
@@ -416,7 +417,7 @@ export function Equalizacao() {
               </tfoot>
             </table>
           </div>
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------------- Condições comerciais ---------------- */}
