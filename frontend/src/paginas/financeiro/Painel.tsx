@@ -23,6 +23,7 @@ import {
 } from '../../servicos/fiscal';
 import { dinheiro } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
+import { plural, contar } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
@@ -201,10 +202,10 @@ export function PainelFinanceiro() {
               <strong>Tem nota esperando você.</strong>
               <p>
                 {notas.comPendencia > 0 && (
-                  <>{notas.comPendencia} nota(s) com pendência de conferência. </>
+                  <>{plural(notas.comPendencia, 'nota', 'notas')} com pendência de conferência. </>
                 )}
                 {notas.semParcelas > 0 && (
-                  <>{notas.semParcelas} nota(s) sem parcelas geradas. </>
+                  <>{plural(notas.semParcelas, 'nota', 'notas')} sem parcelas geradas. </>
                 )}
                 <Link to="/financeiro/notas">Ver notas fiscais</Link>
               </p>
@@ -222,11 +223,7 @@ export function PainelFinanceiro() {
           <CartaoIndicador
             rotulo="Vencidas"
             valor={dinheiro(resumo.vencidas.valor)}
-            detalhe={
-              resumo.vencidas.quantidade === 0
-                ? 'Nada atrasado'
-                : resumo.vencidas.quantidade + ' parcela(s) em atraso'
-            }
+            detalhe={contar(resumo.vencidas.quantidade, 'parcela em atraso', 'parcelas em atraso', 'Nada atrasado')}
             explicacao="Parcelas que passaram do vencimento e ainda não foram pagas. É o único número que custa juros."
             destaque={resumo.vencidas.valor > 0 ? 'erro' : undefined}
           />
@@ -252,7 +249,7 @@ export function PainelFinanceiro() {
           <CartaoIndicador
             rotulo="Total em aberto"
             valor={dinheiro(resumo.emAberto.valor)}
-            detalhe={resumo.emAberto.quantidade + ' parcela(s) a pagar'}
+            detalhe={plural(resumo.emAberto.quantidade, 'parcela a pagar', 'parcelas a pagar')}
             explicacao="Tudo que a Porto Inc. ainda deve, somando todas as parcelas não pagas."
             destaque="info"
           />
@@ -260,7 +257,7 @@ export function PainelFinanceiro() {
           <CartaoIndicador
             rotulo="Pago no mês"
             valor={dinheiro(resumo.pagoNoMes.valor)}
-            detalhe={resumo.pagoNoMes.quantidade + ' baixa(s) registrada(s)'}
+            detalhe={plural(resumo.pagoNoMes.quantidade, 'baixa registrada', 'baixas registradas')}
             explicacao="Quanto já saiu do caixa desde o dia 1º deste mês."
             destaque="sucesso"
           />
@@ -300,24 +297,24 @@ export function PainelFinanceiro() {
 
           {temMovimento && (
             <>
-              <div className="cartao col-cheia">
+              <Cartao className="col-cheia">
                 <GraficoFluxo
                   colunas={fluxo}
                   titulo="Fluxo de caixa: o que já saiu e o que vem por aí"
                   destacar={mesDeHoje()}
                 />
-              </div>
+              </Cartao>
 
-              <div className="cartao col-meia">
+              <Cartao className="col-meia">
                 <GraficoRosca
                   fatias={carteira}
                   titulo="Composição da carteira"
                   centroValor={dinheiro(resumo.emAberto.valor + resumo.pagoNoMes.valor)}
                   centroRotulo="em notas"
                 />
-              </div>
+              </Cartao>
 
-              <div className="cartao col-meia">
+              <Cartao className="col-meia">
                 <Medidor
                   titulo="Pontualidade"
                   percentual={indicadores.pontualidade}
@@ -335,23 +332,23 @@ export function PainelFinanceiro() {
                         : 'erro'
                   }
                 />
-              </div>
+              </Cartao>
 
-              <div className="cartao col-meia">
+              <Cartao className="col-meia">
                 <GraficoRanking
                   linhas={porFornecedor}
                   titulo="Para quem a Porto Inc. mais deve"
                   vazio="Nenhuma parcela lançada ainda."
                 />
-              </div>
+              </Cartao>
 
-              <div className="cartao col-meia">
+              <Cartao className="col-meia">
                 <GraficoRanking
                   linhas={porObra}
                   titulo="Custo por obra"
                   vazio="Nenhuma parcela vinculada a obra."
                 />
-              </div>
+              </Cartao>
             </>
           )}
         </div>

@@ -32,7 +32,8 @@ import {
   type RelatorioDeConsumo, type ObraResumo,
 } from '../../servicos/relatorios';
 import type { FatiaDoGrafico } from '../../componentes/Graficos';
-import { dinheiro } from '../../servicos/cadastros';
+import { dinheiro, quantidade as quantidadeOficial } from '../../servicos/cadastros';
+import { plural, porcento, dias } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
@@ -40,6 +41,7 @@ import { CartaoIndicador, GraficoRosca, GraficoRanking } from '../../componentes
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 
 // ------------------------------------------------------------
 //  Abas
@@ -63,18 +65,14 @@ function ehAba(v: string | null): v is Aba {
 //  Apoio
 // ------------------------------------------------------------
 
-/** Número com separador de milhar, sem virar dinheiro. */
+/**
+ * Quantidade num relatório: duas casas.
+ *
+ * A função oficial usa quatro, que no estoque faz sentido e aqui
+ * vira ruído. A diferença fica dita, e não escondida numa cópia.
+ */
 function quantidade(v: number): string {
-  return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
-
-function porcento(v: number): string {
-  return v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
-}
-
-function dias(v: number): string {
-  const n = v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
-  return v === 1 ? n + ' dia' : n + ' dias';
+  return quantidadeOficial(v, 2);
 }
 
 const TONS = ['info', 'sucesso', 'atencao', 'erro'] as const;
@@ -310,7 +308,7 @@ function AbaOrcamento() {
             <CartaoIndicador
               rotulo="Previsto"
               valor={dinheiro(resumo.previsto)}
-              detalhe={linhas.length + ' linha(s) de orçamento'}
+              detalhe={plural(linhas.length, 'linha de orçamento', 'linhas de orçamento')}
               explicacao="Soma de quantidade prevista × valor unitário de cada linha do orçamento da obra."
             />
 
@@ -334,7 +332,7 @@ function AbaOrcamento() {
               rotulo="Linhas em alerta"
               valor={String(resumo.linhasEstouradas + resumo.linhasEmAtencao)}
               detalhe={
-                resumo.linhasEstouradas + ' estourada(s), ' + resumo.linhasEmAtencao + ' em atenção'
+                plural(resumo.linhasEstouradas, 'estourada', 'estouradas') + ', ' + resumo.linhasEmAtencao + ' em atenção'
               }
               explicacao="Atenção começa em 80% do previsto: avisar só quando estoura não ajuda, porque nessa hora o dinheiro já saiu."
               destaque={
@@ -533,7 +531,7 @@ function AbaEconomia() {
         />
 
         {melhores.length > 0 && (
-          <div className="cartao col-cheia">
+          <Cartao className="col-cheia">
             <GraficoRanking
               titulo="Onde a cotação mais economizou"
               vazio="Nenhuma cotação fechou abaixo do estimado no período."
@@ -546,7 +544,7 @@ function AbaEconomia() {
                 total: c.economia,
               }))}
             />
-          </div>
+          </Cartao>
         )}
       </div>
 
@@ -663,7 +661,7 @@ function AbaFornecedores() {
       </div>
 
       <div className="painel-relatorio">
-        <div className="cartao col-meia">
+        <Cartao className="col-meia">
           <GraficoRanking
             titulo="Quanto a empresa comprou de cada um"
             vazio="Nenhuma compra registrada."
@@ -676,9 +674,9 @@ function AbaFornecedores() {
               total: f.valorComprado,
             }))}
           />
-        </div>
+        </Cartao>
 
-        <div className="cartao col-meia">
+        <Cartao className="col-meia">
           <GraficoRosca
             titulo="Concentração das compras"
             centroValor={dinheiro(totalComprado)}
@@ -689,7 +687,7 @@ function AbaFornecedores() {
               totalComprado,
             )}
           />
-        </div>
+        </Cartao>
       </div>
 
       <div className="tabela-area">
@@ -714,7 +712,7 @@ function AbaFornecedores() {
                 <th scope="row" className="celula-texto">{f.nome}</th>
                 <td className="celula-valor">
                   {dinheiro(f.valorComprado)}
-                  <span className="celula-extra">{f.pedidos} pedido(s)</span>
+                  <span className="celula-extra">{plural(f.pedidos, 'pedido', 'pedidos')}</span>
                 </td>
                 <td className="celula-valor">
                   {f.respostas} de {f.convites}
@@ -844,7 +842,7 @@ function AbaTempos() {
               detalhe={
                 total.amostra === 0
                   ? 'Nenhuma solicitação concluída ainda'
-                  : total.amostra + ' solicitação(ões) concluída(s)'
+                  : plural(total.amostra, 'solicitação concluída', 'solicitações concluídas')
               }
               explicacao="Tempo médio do dia em que alguém pediu até o material entrar no almoxarifado. Só entram as que já chegaram por inteiro."
               destaque="info"
@@ -877,7 +875,7 @@ function AbaTempos() {
             />
           </div>
 
-          <div className="cartao">
+          <Cartao>
             <h2 className="gr__titulo">Onde o tempo se perde</h2>
 
             <ol className="etapas">
@@ -904,7 +902,7 @@ function AbaTempos() {
                     {e.descricao}
                     {e.amostra > 0 && (
                       <span className="texto-fraco">
-                        {' '}· média de {e.amostra} solicitação(ões)
+                        {' '}· média de {plural(e.amostra, 'solicitação', 'solicitações')}
                       </span>
                     )}
                   </p>
@@ -931,7 +929,7 @@ function AbaTempos() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Cartao>
         </>
       )}
     </>
@@ -1008,7 +1006,7 @@ function AbaConsumo() {
       ) : (
         <>
           <div className="painel-relatorio">
-            <div className="cartao col-meia">
+            <Cartao className="col-meia">
               <GraficoRosca
                 titulo="Para onde vai o dinheiro"
                 centroValor={dinheiro(total)}
@@ -1016,9 +1014,9 @@ function AbaConsumo() {
                 rotuloFatia="Família"
                 fatias={fatiasComResto(familias, total)}
               />
-            </div>
+            </Cartao>
 
-            <div className="cartao col-meia">
+            <Cartao className="col-meia">
               <GraficoRanking
                 titulo="Itens que mais pesam na conta"
                 vazio="Nenhum item comprado no período."
@@ -1031,7 +1029,7 @@ function AbaConsumo() {
                   total: m.valor,
                 }))}
               />
-            </div>
+            </Cartao>
           </div>
 
           <div className="tabela-area">

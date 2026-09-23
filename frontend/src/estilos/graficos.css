@@ -93,31 +93,69 @@
 }
 
 .indicador-grafico {
-  /* É um botão só para poder receber foco e mostrar a dica;
-     visualmente continua sendo um cartão. */
-  appearance: none;
+  /* Deixou de ser <button>: ele existia só para receber foco e
+     mostrar a dica flutuante. Agora quem recebe foco é o "?", e o
+     cartão voltou a ser o que sempre foi visualmente. */
+  position: relative;
   border: 1px solid var(--borda);
   background: var(--fundo-elevado);
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-1);
   padding: var(--esp-4);
   text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: help;
   width: 100%;
   display: grid;
   /* Rótulo com altura de duas linhas + valor + detalhe.
-     É o que mantém todos os números na mesma altura. */
+     É o que mantém todos os números na mesma altura.
+     A quarta linha é a explicação, e só existe quando aberta. */
   grid-template-rows: 2.4em auto 2.4em;
+  align-content: start;
   gap: var(--esp-1);
   transition: border-color var(--transicao), transform var(--transicao);
 }
 
-.indicador-grafico:hover,
-.indicador-grafico:focus-visible {
-  border-color: var(--azul-600);
-  transform: translateY(-2px);
+/* O rótulo abre espaço para o "?" não sentar em cima dele. */
+.indicador-grafico__rotulo { padding-right: var(--esp-6); }
+
+/* ------------------------------------------------------------
+   O "?" que abre a explicação
+
+   44px de alvo, como manda a regra do dedo — a tinta é pequena,
+   a área de toque não. Ele fica no canto, fora do fluxo, para
+   não empurrar o rótulo nem mudar a altura do cartão.
+   ------------------------------------------------------------ */
+.indicador-grafico__ajuda {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texto-secundario);
+  font: inherit;
+  font-size: var(--txt-sm);
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--raio-md);
+}
+
+.indicador-grafico__ajuda:hover {
+  color: var(--texto);
+  background: var(--fundo-suave);
+}
+
+.indicador-grafico__explicacao {
+  margin-top: var(--esp-3);
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  line-height: var(--linha-normal);
 }
 
 .indicador-grafico__rotulo {

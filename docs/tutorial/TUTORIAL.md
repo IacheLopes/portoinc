@@ -1,4 +1,4 @@
-<!-- versao: 0.21.0 -->
+<!-- versao: 0.22.0 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,22 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## O "?" dos cartões de número
+
+Nas telas de **Financeiro**, **Relatórios** e **Locação**, cada cartão de número tem um
+**?** no canto. Clique nele e a explicação do que aquele número significa abre **dentro do
+cartão**. Clique no **×** para fechar.
+
+> Antes a explicação aparecia ao passar o mouse, e a caixinha cobria o cartão do lado —
+> escondendo o número do vizinho. E passar o mouse não existe no celular.
+
+## Os números agora concordam
+
+"1 parcela" e não "1 parcela(s)"; "1 função" e não "1 função(ões)". Vale em toda a tela do
+sistema.
+
+---
 
 ## A tela inicial responde uma pergunta
 

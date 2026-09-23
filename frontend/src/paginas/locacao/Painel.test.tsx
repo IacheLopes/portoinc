@@ -60,10 +60,10 @@ function painel(contratos: Locacao[], resumo: Partial<PainelDeLocacao['resumo']>
 /**
  * A célula de Atraso da linha de um contrato.
  *
- * Mirar na linha inteira não serve: "dia(s)" aparece também na coluna
- * de Devolução, e o teste acabava falando de outra coisa. Ordem das
- * colunas: Equipamento, Obra, Cobrança, Devolução, Já custou, Atraso,
- * Situação.
+ * Mirar na linha inteira não serve: a contagem de dias aparece também
+ * na coluna de Devolução, e o teste acabava falando de outra coisa.
+ * Ordem das colunas: Equipamento, Obra, Cobrança, Devolução, Já
+ * custou, Atraso, Situação.
  */
 function celulaDeAtraso(numeroDoContrato: string) {
   const linha = screen.getByRole('row', { name: new RegExp(numeroDoContrato) });
@@ -100,7 +100,7 @@ describe('o que o atraso mostra', () => {
 
     await screen.findByText('LOC-00002');
     expect(celulaDeAtraso('LOC-00002')).toHaveTextContent('R$ 720,00');
-    expect(celulaDeAtraso('LOC-00002')).toHaveTextContent('6 dia(s)');
+    expect(celulaDeAtraso('LOC-00002')).toHaveTextContent('6 dias');
   });
 
   it('contrato em dia não inventa custo de atraso: mostra um traço', async () => {
@@ -110,7 +110,7 @@ describe('o que o atraso mostra', () => {
 
     await screen.findByText('LOC-00001');
     expect(celulaDeAtraso('LOC-00001')).toHaveTextContent('—');
-    expect(celulaDeAtraso('LOC-00001')).not.toHaveTextContent('dia(s)');
+    expect(celulaDeAtraso('LOC-00001')).not.toHaveTextContent(/d+ dias?/);
   });
 });
 

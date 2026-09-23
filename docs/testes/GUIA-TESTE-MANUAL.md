@@ -1,4 +1,4 @@
-<!-- versao: 0.21.0 -->
+<!-- versao: 0.22.0 -->
 
 # 1. Como usar este guia
 
@@ -3650,6 +3650,52 @@ nunca em vermelho no alto da tela.
 
 ---
 
+## CT-270 · A explicação do número não cobre o vizinho
+
+O defeito que este caso existe para pegar: a caixinha de explicação abria por cima do cartão
+ao lado e escondia o número dele.
+
+1. Entre como **Financeiro** (`andre@portoinc.com.br`) e abra **Financeiro**
+2. Clique no **?** do cartão **"Vencem em 7 dias"**
+
+**Esperado:** a explicação abre **dentro do próprio cartão**, abaixo do número. Os cartões
+vizinhos continuam legíveis — nenhum número fica escondido.
+
+3. Olhe a altura dos quatro cartões da fileira
+
+**Esperado:** todos crescem juntos. Nenhum fica mais alto que os outros.
+
+4. Clique no **×** do mesmo cartão
+
+**Esperado:** a explicação fecha e a fileira volta à altura de antes.
+
+5. Chegue até o **?** usando só a tecla **Tab** e aperte **Enter**
+
+**Esperado:** funciona igual ao clique.
+
+6. Repita em **Relatórios** e em **Locação**
+
+**Esperado:** o mesmo comportamento.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-271 · Os números concordam com o substantivo
+
+1. Percorra **Financeiro**, **Relatórios**, **Estoque** e **Locação**
+
+**Esperado:** em nenhum lugar aparece **"(s)"** ou **"(ões)"**. Onde houver um item, lê-se
+"1 parcela", "1 nota", "1 função"; onde houver vários, "3 parcelas", "2 solicitações".
+
+2. Olhe o canto superior direito, abaixo do seu nome
+
+**Esperado:** "1 função" para quem tem uma, "2 funções" para quem tem duas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4025,8 +4071,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-267 | A tela inicial mostra o que precisa de você |  |
 | CT-268 | Cada função vê o que pode resolver |  |
 | CT-269 | Os dois temas continuam legíveis |  |
+| CT-270 | A explicação do número não cobre o vizinho |  |
+| CT-271 | Os números concordam com o substantivo |  |
 
-**Total: 269 casos** · Etapas cobertas: 0 a 12
+**Total: 271 casos** · Etapas cobertas: 0 a 12
 
 ---
 

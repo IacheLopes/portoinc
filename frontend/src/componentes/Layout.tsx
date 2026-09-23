@@ -14,6 +14,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
 import { menuAgrupado, type Modulo } from '../navegacao';
 import { BotaoTema } from './BotaoTema';
+import { plural } from '../servicos/texto';
 
 function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/);
@@ -71,7 +72,7 @@ export function Layout() {
           </span>
           <span className="barra__nome">
             {usuario?.nome}
-            <small>{usuario?.funcoes.length} função(ões)</small>
+            <small>{plural(usuario?.funcoes.length ?? 0, 'função', 'funções')}</small>
           </span>
           <button type="button" className="botao botao--discreto" onClick={() => void sair()}>
             Sair
@@ -118,7 +119,7 @@ export function Layout() {
               </span>
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.21.0</p>
+            <p className="menu__versao">versão 0.22.0</p>
           </div>
         </nav>
 

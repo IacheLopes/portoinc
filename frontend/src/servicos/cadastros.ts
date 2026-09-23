@@ -228,8 +228,18 @@ export function dinheiro(valor: number): string {
   });
 }
 
-export function quantidade(valor: number): string {
-  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+/**
+ * Quantidade com separador de milhar.
+ *
+ * As casas são um argumento porque as duas precisões são legítimas
+ * e diferentes: no estoque uma quantidade pode ter 4 casas (0,0025
+ * de um insumo), num relatório de consumo 4 casas viram ruído.
+ *
+ * Elas eram duas funções com o mesmo nome em arquivos diferentes —
+ * e é assim que um lugar mostra "1.234,5" e outro "1.234,50".
+ */
+export function quantidade(valor: number, casas = 4): string {
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: casas });
 }
 
 export const ROTULO_SITUACAO: Record<SituacaoObra, string> = {

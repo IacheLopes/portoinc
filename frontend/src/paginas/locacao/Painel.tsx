@@ -22,6 +22,7 @@ import {
 } from '../../servicos/locacao';
 import { listarFornecedores, dinheiro, type Fornecedor } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
+import { plural } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
@@ -30,6 +31,7 @@ import { CartaoIndicador } from '../../componentes/Graficos';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
@@ -262,7 +264,7 @@ export function PainelLocacao() {
           <span className="aviso__icone" aria-hidden="true">⚠</span>
           <div>
             <strong>
-              {resumo.atrasadas} equipamento(s) parado(s) além do combinado.
+              {plural(resumo.atrasadas, 'equipamento parado', 'equipamentos parados')} além do combinado.
             </strong>
             <p>
               O atraso já custou <strong>{dinheiro(resumo.desperdicio)}</strong>. Cada
@@ -339,7 +341,7 @@ export function PainelLocacao() {
         <CartaoIndicador
           rotulo="Em andamento"
           valor={dinheiro(resumo.custoEmAndamento)}
-          detalhe={resumo.ativas + ' locação(ões) ativa(s)'}
+          detalhe={plural(resumo.ativas, 'locação ativa', 'locações ativas')}
           explicacao="Quanto os equipamentos que ainda estão na obra já custaram até hoje. Este número sobe sozinho."
           destaque="info"
         />
@@ -349,7 +351,7 @@ export function PainelLocacao() {
           Contratar
           ------------------------------------------------------ */}
       {contratando && (
-        <div className="cartao painel-movimento">
+        <Cartao className="painel-movimento">
           <div className="secao__cabecalho">
             <h2>Nova locação</h2>
             <p className="secao__descricao">
@@ -481,7 +483,7 @@ export function PainelLocacao() {
               {ocupado ? 'Registrando...' : 'Registrar locação'}
             </button>
           </div>
-        </div>
+        </Cartao>
       )}
 
       {/* ------------------------------------------------------
@@ -665,19 +667,19 @@ export function PainelLocacao() {
                   <td className="celula-texto">
                     {dataBr(c.previsaoDevolucao)}
                     <span className="celula-extra">
-                      {c.devolvidoEm ? 'voltou ' + dataBr(c.devolvidoEm) : c.diasDeUso + ' dia(s)'}
+                      {c.devolvidoEm ? 'voltou ' + dataBr(c.devolvidoEm) : plural(c.diasDeUso, 'dia', 'dias')}
                     </span>
                   </td>
 
                   <td className="celula-valor">
                     {dinheiro(c.custoAcumulado)}
-                    <span className="celula-extra">{c.periodosCobrados} período(s)</span>
+                    <span className="celula-extra">{plural(c.periodosCobrados, 'período', 'períodos')}</span>
                   </td>
 
                   <td className={'celula-valor' + (c.custoDoAtraso > 0 ? ' valor-negativo' : '')}>
                     {c.diasDeAtraso > 0 ? dinheiro(c.custoDoAtraso) : '—'}
                     {c.diasDeAtraso > 0 && (
-                      <span className="celula-extra">{c.diasDeAtraso} dia(s)</span>
+                      <span className="celula-extra">{plural(c.diasDeAtraso, 'dia', 'dias')}</span>
                     )}
                   </td>
 

@@ -1,4 +1,4 @@
-<!-- versao: 0.21.0 -->
+<!-- versao: 0.22.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -679,6 +679,89 @@ defeito: a troca de tema anima 160ms, e a régua fotografava no meio da animaç�
 Agora ela desliga toda transição antes de medir cor. Das 20 telas sobraram 3 — e as 3 eram
 reais. **Contraste se mede parado.**
 
+## Design 4 — Telas de número
+
+Financeiro, Relatórios, Estoque e Locação.
+
+### D3 — a dica que cobria o vizinho (resolvido)
+
+Apontado nos prints: no Financeiro, a explicação de "Vencem em 7 dias" abria por cima do
+cartão ao lado e escondia o número dele.
+
+Medido: o cartão do meio vai de 553 a 830px, o vizinho começa em 846, e a dica tem até
+280px **centrados no ponteiro**. Com o mouse na borda direita ela invadia ~140px do vizinho.
+
+Dava para clampar a dica dentro do cartão. Não foi o caminho, por três motivos que a
+clampagem não resolve:
+
+1. Passar o mouse **não existe no celular**, e o sistema é usado na obra
+2. Hover é justamente o que a régua **não consegue conferir** — ver a Parte 3
+3. Uma camada flutuante sempre cobre *alguma coisa*
+
+A explicação virou uma **revelação dentro do cartão**, num botão "?" no canto. Provado com
+mouse e teclado de verdade:
+
+| | |
+|---|---|
+| Alvo de toque do "?" | **44 × 44px** |
+| Nome acessível | "O que é Vencem em 7 dias?" |
+| Explicação dentro do cartão | **sim** |
+| Invade algum vizinho | **não** |
+| Altura da fileira | 154px → 226px, **nos quatro cartões juntos** |
+
+### "1 parcela(s)"
+
+Quinze lugares escreviam assim. Vira `plural()`, com as duas formas por extenso — porque em
+português "solicitação/solicitações" e "função/funções" não saem de um "s" no fim.
+
+E `contar()` para o caso do zero: "Nada atrasado" em vez de "0 parcelas em atraso". O zero
+faz a pessoa ler o número antes de entender que está tudo bem.
+
+### Treze cartões escritos à mão viraram o componente
+
+Financeiro (5), Relatórios (6), Locação (1) e Notas (1). A dívida caiu de 21 arquivos para
+16.
+
+### Duas funções com o mesmo nome, de novo
+
+`Graficos.tsx` tinha a **própria** `dinheiro()`, sem `maximumFractionDigits`. E
+`relatorios/Painel.tsx` tinha a **própria** `quantidade()`, com 2 casas contra as 4 da
+oficial. É exatamente o que a regra avisa: um lugar mostra "1.234,5" e outro "1.234,50".
+
+As cópias saíram. A diferença de casas, que era legítima, virou **argumento**:
+`quantidade(valor, 2)`. Diferença dita em voz alta, não escondida numa cópia.
+
+### Duas regras estavam medindo a coisa errada
+
+**"Mais de um botão principal" saiu do conferidor de código e foi para a régua de tela.**
+
+Do código ela não tinha como acertar: conta a classe no arquivo, e o arquivo tem o botão da
+página, o do formulário e o do modal — que nunca aparecem ao mesmo tempo. Em Locação acusava
+três onde a pessoa vê um. A dívida ficou parada em 13 porque não havia o que consertar.
+
+Medido na tela, a resposta verdadeira é **uma**: Alçadas, com "Simular" e "+ Nova faixa"
+disputando. Virou o **D6** da lista.
+
+**"Espaçamento fora da escala" passou a começar em 4px**, que é onde a escala começa
+(`--esp-1`). Abaixo disso não existe valor da escala para usar: `gap: 1px` é o fio entre
+barras empilhadas, `margin: -1px` é a aba sobrepondo a borda do quadro. São truques de
+desenho, não espaçamento — e acusá-los deixava quatro dívidas paradas que ninguém podia
+pagar. De 4 para 0.
+
+> Regra que acusa o que não dá para consertar não protege nada: ensina a ignorar o
+> conferidor. É o mesmo que um zero pintado de vermelho.
+
+### O que ficou de dívida, e por quê
+
+**Cor escrita direto no CSS: 2 arquivos.** São quatro `#fff` de texto em cima de um fundo de
+cor sólida — avatar, chip, botão de perigo. Ali o branco **não deve** trocar com o tema, que
+é justamente o que um token faria. Fica como está até haver um token que diga isso pelo nome.
+
+### E o conferidor aprendeu a dizer onde
+
+`npm run padrao -- --onde` lista os arquivos de cada dívida, em vez de só contar. Saber que
+há 16 cartões à mão não ajuda ninguém a consertá-los; saber **quais**, sim.
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -690,8 +773,9 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 |---|---|---|---|
 | ~~D1~~ | ✅ **RESOLVIDO no Design 2.** A seta do campo de escolha era do navegador, não nossa. O `appearance` está em `auto`, então o Chromium desenha a seta onde quer — medido: 34px para dentro da borda direita, num campo de 212px. Parece solta no meio do campo | Toda tela com filtro | **Design 2** — controles de formulário viram peça |
 | ~~D2~~ | ✅ **RESOLVIDO no Design 2**, com o menu "⋮". Grupo de botões de ação com larguras irregulares. Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
-| D3 | **A dica flutuante cobre o cartão vizinho.** No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
+| ~~D3~~ | ✅ **RESOLVIDO no Design 4.** A dica flutuante cobria o cartão vizinho. No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
 | D4 | **Campo de busca largo demais.** No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
+| D6 | **Dois botões principais na mesma tela.** Em Alçadas, "Simular" e "+ Nova faixa" disputam: quando dois competem, nenhum é o próximo passo | Alçadas | **Design 6** — cadastros |
 | D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
 
 ## O que já foi medido e está certo

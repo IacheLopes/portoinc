@@ -75,16 +75,18 @@ function regra(chave, titulo, porque, achar) {
 }
 
 // --- Hierarquia de botão ---
-regra(
-  'varios-botoes-principais',
-  'Telas com mais de um botão principal',
-  'Quando o olho vê três "principais", nenhum é principal. Um por tela.',
-  () =>
-    telas
-      .map((c) => ({ c, n: (readFileSync(c, 'utf8').match(/botao--principal/g) ?? []).length }))
-      .filter((x) => x.n > 1)
-      .map((x) => curto(x.c) + ' (' + x.n + ')'),
-);
+// --- Vários botões principais: MUDOU DE CASA ---
+//
+// Esta regra saiu daqui no Design 4 e foi para a régua de tela.
+//
+// Daqui ela não tinha como acertar: conta `botao--principal` no
+// arquivo, e o arquivo tem o botão da página, o do formulário e o
+// do modal — que nunca aparecem ao mesmo tempo. Em Locação ela
+// acusava três onde a pessoa vê um, e a dívida ficou parada em 13
+// porque não havia o que consertar.
+//
+// Quem conta agora é `auditoria-ui.mjs`, que olha o que está de
+// fato na tela.
 
 // --- Cartão ---
 regra(
@@ -194,7 +196,17 @@ regra(
         const s = readFileSync(c, 'utf8');
         // Só padding/margin/gap com px. Largura e altura em px são
         // outra conversa: um ícone de 20px não é espaçamento.
-        const n = (s.match(/^\s*(padding|margin|gap)[^:]*:[^;]*\d+px/gm) ?? []).length;
+        //
+        // E só a partir de 4px, que é onde a escala começa (--esp-1).
+        // Abaixo disso não existe valor da escala para usar: 1px é o
+        // fio entre barras empilhadas, -1px é a aba sobrepondo a
+        // borda do quadro. São truques de desenho, não espaçamento —
+        // e acusá-los deixava quatro dívidas paradas que ninguém
+        // podia pagar.
+        const n = (s.match(/^\s*(padding|margin|gap)[^:]*:[^;]*\d+px/gm) ?? [])
+          .filter((linha) => (linha.match(/(\d+)px/g) ?? [])
+            .some((v) => Number(v.replace('px', '')) >= 4))
+          .length;
         return { c, n };
       })
       .filter((x) => x.n > 0)
@@ -217,6 +229,11 @@ if (process.argv.includes('--aceitar')) {
 
 console.log('');
 
+// Com `--onde` ele lista os arquivos de cada divida, e nao so a
+// contagem. Saber que ha 20 cartoes a mao nao ajuda ninguem a
+// conserta-los; saber QUAIS, sim.
+const ONDE = process.argv.includes('--onde');
+
 let piorou = false;
 let melhorou = false;
 
@@ -234,8 +251,10 @@ for (const r of regras) {
   } else if (agora < limite) {
     melhorou = true;
     console.log('  melhorou ' + r.titulo + ': ' + agora + ' (era ' + limite + ')');
+    if (ONDE) for (const a of r.achados) console.log('             - ' + a);
   } else if (agora > 0) {
     console.log('  dívida   ' + r.titulo + ': ' + agora);
+    if (ONDE) for (const a of r.achados) console.log('             - ' + a);
   } else {
     console.log('  ok       ' + r.titulo);
   }

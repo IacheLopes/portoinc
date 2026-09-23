@@ -608,6 +608,31 @@ const MEDIR = `(() => {
     achados.push({ tipo: 'TABELA_SEM_LEGENDA', detalhe: semLegenda.length + ' tabela(s)', culpados: semLegenda.slice(0, 3) });
   }
 
+  // 9. Mais de um botao principal na tela.
+  //
+  //  Esta regra morava no conferidor de codigo, e la ela nao tinha
+  //  como acertar: ele conta a classe no arquivo, e o
+  //  arquivo tem o botao da pagina, o do formulario e o do modal —
+  //  que nunca aparecem juntos. Em Locacao ele acusava 3 onde a
+  //  pessoa ve 1.
+  //
+  //  Aqui e contado o que esta DE FATO na tela. Um botao principal
+  //  por vez: se dois competem, nenhum e o proximo passo.
+  const principais = [...document.querySelectorAll('main .botao--principal')]
+    .filter((b) => {
+      const r = b.getBoundingClientRect();
+      const e = getComputedStyle(b);
+      return r.width > 0 && r.height > 0 && e.visibility !== 'hidden';
+    });
+
+  if (principais.length > 1) {
+    achados.push({
+      tipo: 'VARIOS_BOTOES_PRINCIPAIS',
+      detalhe: principais.length + ' ao mesmo tempo',
+      culpados: principais.map(nomear),
+    });
+  }
+
   return JSON.stringify({
     achados,
     larguraMedida: larguraTela,

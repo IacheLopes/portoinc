@@ -20,7 +20,9 @@
 //  mouse (PC), ao tocar (celular) e ao chegar pelo teclado.
 // ============================================================
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { dinheiro } from '../servicos/cadastros';
+import { dinheiroCurto } from '../servicos/texto';
 
 const TONS = {
   erro: 'var(--erro-texto)',
@@ -33,15 +35,9 @@ const TONS = {
 
 export type Tom = keyof typeof TONS;
 
-function dinheiroCurto(valor: number): string {
-  if (Math.abs(valor) >= 1000000) return 'R$ ' + (valor / 1000000).toFixed(1).replace('.', ',') + 'M';
-  if (Math.abs(valor) >= 1000) return 'R$ ' + (valor / 1000).toFixed(1).replace('.', ',') + 'k';
-  return 'R$ ' + valor.toFixed(0);
-}
-
-function dinheiro(valor: number): string {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+// Dinheiro vem das funções oficiais. Este arquivo tinha as suas
+// próprias, e a daqui não passava `maximumFractionDigits` — duas
+// versões do mesmo número esperando divergir.
 
 // ------------------------------------------------------------
 //  A dica que aparece ao apontar
@@ -158,7 +154,24 @@ function CamadaDaDica({ dica }: { dica: DicaPosicionada | null }) {
 }
 
 // ------------------------------------------------------------
-//  Cartão de indicador, com explicação ao apontar
+//  Cartão de indicador, com explicação no "?"
+//
+//  A explicação ficava numa dica flutuante, que aparecia ao passar
+//  o mouse e seguia o ponteiro. Três problemas, e o primeiro foi
+//  apontado de fora:
+//
+//    1. Ela COBRIA o cartão vizinho. Medido: o cartão do meio do
+//       Financeiro vai de 553 a 830px, o vizinho começa em 846, e a
+//       dica tem até 280px centrados no ponteiro — com o mouse na
+//       borda direita ela invadia 140px do vizinho e escondia o
+//       número dele
+//    2. Passar o mouse não existe no celular, e o sistema é usado
+//       na obra
+//    3. Hover é justamente o que a régua não consegue conferir
+//
+//  Agora é um botão "?" no canto, e a explicação abre DENTRO do
+//  cartão. Não cobre nada, funciona no toque, funciona no teclado,
+//  e é layout — que a régua mede.
 // ------------------------------------------------------------
 
 export function CartaoIndicador({
@@ -171,30 +184,39 @@ export function CartaoIndicador({
   rotulo: string;
   valor: string;
   detalhe: string;
-  /** O que o número significa, mostrado ao apontar. */
+  /** O que o número significa. Abre dentro do cartão, no "?". */
   explicacao: string;
   destaque?: Tom;
 }) {
-  const { area, dica, ligar } = useDica();
+  const [aberta, setAberta] = useState(false);
+  const idExplicacao = useId();
 
   return (
-    <div className="indicador-area" ref={area}>
+    <article
+      className={'indicador-grafico' + (destaque ? ' indicador-grafico--' + destaque : '')}
+    >
+      <span className="indicador-grafico__rotulo">{rotulo}</span>
+
       <button
         type="button"
-        className={'indicador-grafico' + (destaque ? ' indicador-grafico--' + destaque : '')}
-        {...ligar({
-          titulo: rotulo,
-          linhas: [{ rotulo: 'Valor', valor }],
-          rodape: explicacao,
-        })}
+        className="indicador-grafico__ajuda"
+        aria-expanded={aberta}
+        aria-controls={idExplicacao}
+        aria-label={aberta ? 'Fechar a explicação de ' + rotulo : 'O que é ' + rotulo + '?'}
+        onClick={() => setAberta((v) => !v)}
       >
-        <span className="indicador-grafico__rotulo">{rotulo}</span>
-        <span className="indicador-grafico__valor">{valor}</span>
-        <span className="indicador-grafico__detalhe">{detalhe}</span>
+        <span aria-hidden="true">{aberta ? '×' : '?'}</span>
       </button>
 
-      <CamadaDaDica dica={dica} />
-    </div>
+      <span className="indicador-grafico__valor">{valor}</span>
+      <span className="indicador-grafico__detalhe">{detalhe}</span>
+
+      {aberta && (
+        <p className="indicador-grafico__explicacao" id={idExplicacao}>
+          {explicacao}
+        </p>
+      )}
+    </article>
   );
 }
 

@@ -1,10 +1,9 @@
 {
-  "varios-botoes-principais": 13,
-  "cartao-na-mao": 21,
-  "formato-na-mao": 5,
+  "cartao-na-mao": 16,
+  "formato-na-mao": 4,
   "tela-sem-titulo": 0,
   "sem-cabecalho-padrao": 0,
   "lista-sem-estados": 5,
   "cor-solta": 2,
-  "espaco-solto": 4
+  "espaco-solto": 0
 }

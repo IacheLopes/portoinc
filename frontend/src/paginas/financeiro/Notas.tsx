@@ -371,7 +371,7 @@ export function NotasFiscais() {
 
       {aberto && podeGerenciar && (
         <section className="secao">
-          <div className="cartao painel-movimento">
+          <Cartao className="painel-movimento">
             <div className="secao__cabecalho">
               <h2>{doXml ? 'Conferir a nota lida do XML' : 'Lançar nota'}</h2>
               <p className="secao__descricao">
@@ -494,7 +494,7 @@ export function NotasFiscais() {
                 {ocupado ? 'Lançando...' : 'Lançar nota'}
               </button>
             </div>
-          </div>
+          </Cartao>
         </section>
       )}
 
