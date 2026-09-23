@@ -97,8 +97,18 @@ function resumir(bruto) {
   if (r.nome.startsWith('Alinhamento')) {
     // A régua imprime o resumo no fim; vazio embaixo dele = nada achado.
     const depois = r.saida.split(/==== RESUMO[^=]*====/)[1] ?? '';
-    const achados = depois.split('\n').map((l) => l.trim()).filter(Boolean);
-    return achados.length === 0 ? 'sem achados' : achados.length + ' tipo(s) de achado';
+    const linhas = depois.split('\n').map((l) => l.trim()).filter(Boolean);
+
+    const cabecalho = r.saida.match(/==== RESUMO \((\d+) de (\d+) telas/);
+    const quantas = cabecalho ? cabecalho[1] + '/' + cabecalho[2] + ' telas, ' : '';
+
+    // Saída diferente de zero aqui quer dizer: alguma tela não pôde
+    // ser medida. Verde sem ter medido é pior que vermelho.
+    if (r.codigo !== 0) return quantas + 'NAO CONSEGUI MEDIR alguma tela';
+    if (cabecalho && cabecalho[1] === '0') return 'nada mudou no frontend, nada a medir';
+    if (linhas.length === 0) return quantas + 'sem achados';
+
+    return quantas + linhas.length + ' tipo(s) de achado';
   }
 
   if (r.nome === 'Provas de tela') {
@@ -129,9 +139,15 @@ const FILA = [
   ['Tipos', 'docker', ['compose', 'exec', '-T', 'web', 'npx', 'tsc', '-b', '--noEmit'], RAIZ],
   ['Conferidor de padrão', 'node', ['padrao.mjs'], SCRIPTS],
   ['Provas de tela', 'docker', ['compose', 'exec', '-T', 'web', 'npm', 'test'], RAIZ],
-  // Uma volta so, medindo as duas larguras em cada tela. Antes
-  // eram duas execucoes percorrendo o mesmo caminho.
-  ['Alinhamento', 'node', ['auditoria-ui.mjs', './auditoria', '1440', '--sem-print'], SCRIPTS],
+  // Uma volta só, medindo as duas larguras em cada tela. Antes
+  // eram duas execuções percorrendo o mesmo caminho.
+  //
+  // E só as telas que mudaram: percorrer as 34 para conferir 3 não
+  // descobre nada. Com `--tudo` ela mede todas, e a regra dela já é
+  // conservadora — mexeu em estilo ou componente, mede tudo sozinha.
+  ['Alinhamento', 'node',
+    ['auditoria-ui.mjs', './auditoria', '1440', '--sem-print', ...(TUDO ? [] : ['--so-mudadas'])],
+    SCRIPTS],
   // As provas de integração do backend APAGAM o banco de teste.
   // Nunca podem dividir a vez com nada que toque nele.
   ['Provas do backend', 'docker', ['compose', 'exec', '-T', 'api', 'npm', 'test'], RAIZ],
@@ -174,6 +190,23 @@ if (ruins.length > 0) {
   }
 
   process.exit(1);
+}
+
+// A regua mediu so parte das telas? Diz isso em voz alta. Verde
+// sobre 1 tela e verde sobre 34 nao valem a mesma coisa, e quem
+// esta fechando uma etapa inteira quer o segundo.
+const alinhamento = tudo.find((r) => r.nome.startsWith('Alinhamento'));
+const resumoAlinhamento = alinhamento ? resumir(alinhamento) : '';
+const contagem = resumoAlinhamento.match(/^(\d+)\/(\d+) telas/);
+
+// So avisa quando mediu MENOS que tudo. Com --tudo sao 34 de 34, e
+// ai o aviso seria ruido.
+const parcial = resumoAlinhamento.includes('nada a medir')
+  || (contagem !== null && Number(contagem[1]) < Number(contagem[2]));
+
+if (parcial) {
+  console.log('  A regua mediu so o que mudou. Para as 34 telas: npm run fechar -- --tudo');
+  console.log('');
 }
 
 console.log('  Tudo verde. A etapa pode fechar.');

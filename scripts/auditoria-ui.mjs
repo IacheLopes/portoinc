@@ -8,10 +8,11 @@
 //
 //   node auditoria.mjs <pasta> <largura> [conta]
 // ============================================================
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const EDGE = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -35,42 +36,157 @@ const SOLICITACAO = 'da72ade4-0c9d-4bec-8348-f911bc04606f';
 const COTACAO = 'f5c04aad-add6-4e56-8ff2-fe166f0098be';
 const PEDIDO = '17';
 
+// Cada tela diz QUEM a desenha.
+//
+// Serve para o `--so-mudadas`: com o arquivo em mãos, a régua
+// pergunta ao git o que mexeu e mede só as telas afetadas. Sem isto
+// ela teria de adivinhar pelo nome da rota, e adivinhar aqui é
+// deixar defeito passar.
+//
+// Quando uma tela é desenhada por mais de um arquivo, estão todos
+// listados — Avisos, por exemplo, é uma casca com duas abas dentro.
+const PG = 'frontend/src/paginas/';
+
 const TELAS = [
-  ['/', 'inicio'],
-  ['/solicitacoes', 'solicitacoes-lista'],
-  ['/solicitacoes/nova', 'solicitacoes-nova'],
-  ['/solicitacoes/' + SOLICITACAO, 'solicitacoes-detalhe'],
-  ['/aprovacoes', 'aprovacoes'],
-  ['/cotacoes', 'cotacoes-lista'],
-  ['/cotacoes/nova', 'cotacoes-nova'],
-  ['/cotacoes/' + COTACAO, 'cotacoes-detalhe'],
-  ['/cotacoes/' + COTACAO + '/equalizacao', 'cotacoes-equalizacao'],
-  ['/pedidos', 'pedidos'],
-  ['/recebimento', 'recebimento'],
-  ['/recebimento/' + PEDIDO, 'recebimento-conferir'],
-  ['/estoque', 'estoque'],
-  ['/estoque/movimentos', 'estoque-movimentos'],
-  ['/locacao', 'locacao'],
-  ['/financeiro', 'financeiro'],
-  ['/financeiro/notas', 'financeiro-notas'],
-  ['/relatorios', 'relatorios-orcamento'],
-  ['/relatorios?ver=economia', 'relatorios-economia'],
-  ['/relatorios?ver=fornecedores', 'relatorios-fornecedores'],
-  ['/relatorios?ver=tempos', 'relatorios-tempos'],
-  ['/relatorios?ver=consumo', 'relatorios-consumo'],
-  ['/cadastros', 'cadastros-indice'],
-  ['/cadastros/familias', 'cadastros-familias'],
-  ['/cadastros/materiais', 'cadastros-materiais'],
-  ['/cadastros/fornecedores', 'cadastros-fornecedores'],
-  ['/cadastros/obras', 'cadastros-obras'],
-  ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe'],
-  ['/cadastros/alcadas', 'cadastros-alcadas'],
-  ['/admin/usuarios', 'admin-usuarios'],
-  ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp'],
-  ['/admin/avisos?ver=email', 'admin-avisos-email'],
-  ['/admin/status', 'admin-status'],
-  ['/minha-senha', 'minha-senha'],
+  ['/', 'inicio', [PG + 'Inicio.tsx']],
+  ['/solicitacoes', 'solicitacoes-lista', [PG + 'solicitacoes/Lista.tsx']],
+  ['/solicitacoes/nova', 'solicitacoes-nova', [PG + 'solicitacoes/Nova.tsx']],
+  ['/solicitacoes/' + SOLICITACAO, 'solicitacoes-detalhe', [PG + 'solicitacoes/Detalhe.tsx']],
+  ['/aprovacoes', 'aprovacoes', [PG + 'aprovacoes/Fila.tsx']],
+  ['/cotacoes', 'cotacoes-lista', [PG + 'cotacoes/Lista.tsx']],
+  ['/cotacoes/nova', 'cotacoes-nova', [PG + 'cotacoes/Nova.tsx']],
+  ['/cotacoes/' + COTACAO, 'cotacoes-detalhe', [PG + 'cotacoes/Detalhe.tsx']],
+  ['/cotacoes/' + COTACAO + '/equalizacao', 'cotacoes-equalizacao', [PG + 'cotacoes/Equalizacao.tsx']],
+  ['/pedidos', 'pedidos', [PG + 'pedidos/Lista.tsx']],
+  ['/recebimento', 'recebimento', [PG + 'recebimento/Painel.tsx']],
+  ['/recebimento/' + PEDIDO, 'recebimento-conferir', [PG + 'recebimento/Conferir.tsx']],
+  ['/estoque', 'estoque', [PG + 'estoque/Painel.tsx']],
+  ['/estoque/movimentos', 'estoque-movimentos', [PG + 'estoque/Movimentos.tsx']],
+  ['/locacao', 'locacao', [PG + 'locacao/Painel.tsx']],
+  ['/financeiro', 'financeiro', [PG + 'financeiro/Painel.tsx']],
+  ['/financeiro/notas', 'financeiro-notas', [PG + 'financeiro/Notas.tsx']],
+  ['/relatorios', 'relatorios-orcamento', [PG + 'relatorios/Painel.tsx']],
+  ['/relatorios?ver=economia', 'relatorios-economia', [PG + 'relatorios/Painel.tsx']],
+  ['/relatorios?ver=fornecedores', 'relatorios-fornecedores', [PG + 'relatorios/Painel.tsx']],
+  ['/relatorios?ver=tempos', 'relatorios-tempos', [PG + 'relatorios/Painel.tsx']],
+  ['/relatorios?ver=consumo', 'relatorios-consumo', [PG + 'relatorios/Painel.tsx']],
+  ['/cadastros', 'cadastros-indice', [PG + 'cadastros/Indice.tsx']],
+  ['/cadastros/familias', 'cadastros-familias', [PG + 'cadastros/Familias.tsx']],
+  ['/cadastros/materiais', 'cadastros-materiais', [PG + 'cadastros/Materiais.tsx']],
+  ['/cadastros/fornecedores', 'cadastros-fornecedores', [PG + 'cadastros/Fornecedores.tsx']],
+  ['/cadastros/obras', 'cadastros-obras', [PG + 'cadastros/Obras.tsx']],
+  ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe', [PG + 'cadastros/ObraDetalhe.tsx']],
+  ['/cadastros/alcadas', 'cadastros-alcadas', [PG + 'cadastros/Alcadas.tsx']],
+  ['/admin/usuarios', 'admin-usuarios', [PG + 'admin/Usuarios.tsx']],
+  ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp', [PG + 'admin/Avisos.tsx', PG + 'admin/WhatsApp.tsx']],
+  ['/admin/avisos?ver=email', 'admin-avisos-email', [PG + 'admin/Avisos.tsx', PG + 'admin/Email.tsx']],
+  ['/admin/status', 'admin-status', [PG + 'admin/StatusSistema.tsx']],
+  ['/minha-senha', 'minha-senha', [PG + 'MinhaSenha.tsx']],
 ];
+
+// ------------------------------------------------------------
+//  Medir só o que mudou
+//
+//  Percorrer as 34 telas para conferir 3 que mudaram não descobre
+//  nada: descobre 31 vezes o que já se sabia.
+//
+//  A regra é conservadora de propósito. Errar para menos aqui é
+//  deixar defeito passar; errar para mais custa segundos. Por isso,
+//  em toda dúvida — git mudo, arquivo que não sei de quem é, coisa
+//  compartilhada mexida — ela mede tudo.
+// ------------------------------------------------------------
+const SO_MUDADAS = process.argv.includes('--so-mudadas');
+const RAIZ_PROJETO = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const git = (comando) => execSync('git ' + comando, { cwd: RAIZ_PROJETO }).toString().trim();
+
+/** O que mexeu desde o último marco, contando o que ainda não foi salvo. */
+function arquivosMexidos() {
+  const marco = git('describe --tags --abbrev=0');
+
+  const mexidos = [
+    // `git diff <marco>` compara a pasta de trabalho com o marco, então
+    // já inclui o que está salvo e o que não está.
+    ...git('diff --name-only ' + marco).split('\n'),
+    ...git('ls-files --others --exclude-standard').split('\n'),
+  ].map((l) => l.trim()).filter(Boolean);
+
+  return { marco, mexidos };
+}
+
+/**
+ * Só a versão mudou neste arquivo?
+ *
+ * Subo a versão em toda etapa, e ela é escrita em dois lugares: o
+ * `package.json` e o rodapé da barra lateral, que fica no Layout —
+ * um componente compartilhado. Se isso contasse como "mexeu em coisa
+ * que toda tela usa", a régua mediria as 34 telas sempre e o corte
+ * não serviria para nada.
+ *
+ * Uma dependência nova, ou qualquer outra linha do Layout, cai fora
+ * deste teste e força a volta inteira.
+ */
+function soAVersao(arquivo, marco) {
+  try {
+    const diff = execSync('git diff -U0 ' + marco + ' -- ' + arquivo, { cwd: RAIZ_PROJETO }).toString();
+    const linhas = diff.split('\n').filter((l) => /^[+-][^+-]/.test(l));
+    return linhas.length > 0 && linhas.every((l) => /"version"|menu__versao/.test(l));
+  } catch {
+    return false;
+  }
+}
+
+/** Mexeu em coisa que TODA tela usa: estilo, componente, navegação, tema? */
+function ehDeTodos(arquivo, marco) {
+  if (!arquivo.startsWith('frontend/')) return false;
+  if (arquivo.startsWith(PG)) return false;
+  if (/\.test\.tsx?$/.test(arquivo)) return false;
+  if (soAVersao(arquivo, marco)) return false;
+  return true;
+}
+
+function telasParaMedir() {
+  if (!SO_MUDADAS) return TELAS;
+
+  let marco;
+  let mexidos;
+  try {
+    ({ marco, mexidos } = arquivosMexidos());
+  } catch {
+    console.log('  git nao respondeu: medindo as ' + TELAS.length + ' telas.');
+    return TELAS;
+  }
+
+  const deTodos = mexidos.filter((a) => ehDeTodos(a, marco));
+  if (deTodos.length > 0) {
+    console.log('  Mexeu em coisa que toda tela usa (' + deTodos.slice(0, 3).join(', ') +
+      (deTodos.length > 3 ? ', +' + (deTodos.length - 3) : '') + '): medindo as ' + TELAS.length + '.');
+    return TELAS;
+  }
+
+  const escolhidas = TELAS.filter(([, , arquivos]) => arquivos.some((a) => mexidos.includes(a)));
+
+  const paginasMexidas = mexidos.filter((a) => a.startsWith(PG) && !/\.test\.tsx?$/.test(a));
+  const orfas = paginasMexidas.filter((a) => !TELAS.some(([, , arq]) => arq.includes(a)));
+  if (orfas.length > 0) {
+    console.log('  Nao sei que tela usa ' + orfas.join(', ') + ': medindo as ' + TELAS.length + '.');
+    return TELAS;
+  }
+
+  console.log('  Desde ' + marco + ': ' + escolhidas.length + ' de ' + TELAS.length + ' telas mexidas.');
+  return escolhidas;
+}
+
+const ESCOLHIDAS = telasParaMedir();
+
+// Nada para medir: nem abre o navegador. Subir o Edge e fazer login
+// custava 8s para depois nao olhar tela nenhuma.
+if (ESCOLHIDAS.length === 0) {
+  console.log('  Nada mexido no frontend desde o ultimo marco: nem abro o navegador.');
+  console.log('');
+  console.log('==== RESUMO (0 de ' + TELAS.length + ' telas) ====');
+  process.exit(0);
+}
 
 mkdirSync(SAIDA, { recursive: true });
 
@@ -177,6 +293,87 @@ async function esperarPor(seletor, limite = 40000) {
 //
 // O que funciona e perguntar se a tela ESTABILIZOU: contar os elementos
 // e so medir quando a conta se repete tres vezes seguidas, sem rodinha.
+/**
+ * Espera a tela ANTIGA sair de cena.
+ *
+ * Aqui havia um `dormir(500)` fixo, e ele existia por um motivo
+ * real: logo depois de trocar de rota o React ainda não montou nada,
+ * a tela velha continua desenhada, e o "esperar acalmar" abaixo
+ * declarava calma sobre a tela que eu estava deixando.
+ *
+ * Só que meio segundo é o PIOR caso, pago em toda tela. Cronometrado:
+ * 17s das 34 telas, para um trabalho que costuma levar menos de 100ms.
+ *
+ * Agora pergunta de 40 em 40ms se o título mudou. As telas com o
+ * mesmo título — as abas de Relatórios — pagam o limite, que é o
+ * mesmo meio segundo de antes. Nunca pior, quase sempre melhor.
+ */
+/**
+ * O que a tela mostra AGORA.
+ *
+ * Serve para decidir o que fazer quando ela nao acalma: esperar mais
+ * e recomecar sao respostas para problemas diferentes, e sem olhar
+ * nao da para escolher.
+ */
+async function retratoDaTela() {
+  return JSON.parse(await js(`JSON.stringify({
+    rota: location.pathname + location.search,
+    titulo: (document.querySelector('h1') || {}).textContent || null,
+    rodinha: !!document.querySelector('.girando'),
+    quantos: document.querySelectorAll('button, a[href], select, input, textarea, [role=tab], [role=menuitem]').length,
+    alerta: ((document.querySelector('[role=alert]') || {}).textContent || '').slice(0, 90) || null,
+    estadoVazio: ((document.querySelector('.estado') || {}).textContent || '').slice(0, 90) || null,
+  })`));
+}
+
+/** Sai da rota e volta, para a tela pedir os dados de novo. */
+async function recarregar(caminho) {
+  await js('history.pushState({}, "", "/"); window.dispatchEvent(new PopStateEvent("popstate"));');
+  await dormir(400);
+  await js(
+    'history.pushState({}, "", ' + JSON.stringify(caminho) + ');' +
+    ' window.dispatchEvent(new PopStateEvent("popstate"));',
+  );
+}
+
+async function esperarTrocar(tituloAnterior, limite = 500) {
+  const ate = Date.now() + limite;
+
+  while (Date.now() < ate) {
+    const agora = await js('(document.querySelector("h1") || {}).textContent || ""');
+    if (agora !== tituloAnterior) return;
+    await dormir(40);
+  }
+}
+
+/**
+ * Espera o layout parar depois de mudar a largura da janela.
+ *
+ * Aqui havia `dormir(400)` por largura — 27s das 34 telas. E 13s
+ * disso eram gastos na PRIMEIRA largura, que nem muda: ela já estava
+ * posta antes de navegar.
+ *
+ * Em vez de contar tempo, pergunta duas coisas: a caixa de layout já
+ * é a largura que pedi, e a geometria parou de mudar. A segunda parte
+ * cobre transição de CSS de qualquer duração — o tempo fixo só cobria
+ * por sorte.
+ */
+async function esperarLayoutParar(largura, limite = 1500) {
+  const ate = Date.now() + limite;
+  let anterior = '';
+
+  while (Date.now() < ate) {
+    const agora = await js(
+      "(() => { const d = document.documentElement;" +
+      " return d.clientWidth + 'x' + d.scrollWidth + 'x' + d.scrollHeight; })()",
+    );
+
+    if (agora.startsWith(largura + 'x') && agora === anterior) return;
+    anterior = agora;
+    await dormir(45);
+  }
+}
+
 async function esperarAcalmar(limite = 8000) {
   const ate = Date.now() + limite;
   let anterior = -1;
@@ -192,8 +389,10 @@ async function esperarAcalmar(limite = 8000) {
     if (!estado.carregando && estado.temTitulo && estado.quantos === anterior) {
       iguais += 1;
       if (iguais >= 2) {
-        // Um respiro final para transicao de CSS terminar.
-        await dormir(250);
+        // Um respiro final para transicao de CSS terminar. Curto
+        // porque `esperarLayoutParar` logo abaixo confere a
+        // geometria de verdade, em vez de torcer para ter dado tempo.
+        await dormir(100);
         return true;
       }
     } else {
@@ -201,7 +400,7 @@ async function esperarAcalmar(limite = 8000) {
     }
 
     anterior = estado.quantos;
-    await dormir(180);
+    await dormir(70);
   }
 
   return false;
@@ -438,18 +637,71 @@ const LARGURAS = process.argv.includes('--so-uma')
   ? [LARGURA]
   : [1440, 420];
 
-for (const [caminho, nome] of TELAS) {
+for (const [caminho, nome] of ESCOLHIDAS) {
   try {
     await cdp('Emulation.setDeviceMetricsOverride', {
       width: LARGURAS[0], height: ALTURA, deviceScaleFactor: 1, mobile: false,
     });
 
+    const tituloAnterior = await js('(document.querySelector("h1") || {}).textContent || ""');
+
     await js(
       'history.pushState({}, "", ' + JSON.stringify(caminho) + ');' +
       ' window.dispatchEvent(new PopStateEvent("popstate"));',
     );
-    await dormir(500);
-    await esperarAcalmar();
+
+    await esperarTrocar(tituloAnterior);
+
+    // A resposta do `esperarAcalmar` era JOGADA FORA. Quando a tela
+    // nao acalmava no prazo, a regua media assim mesmo — e o que ela
+    // media era o "Carregando", que nao tem titulo. Saia dali um
+    // SEM_H1 numa tela que tem titulo.
+    //
+    // Pego numa rodada de estabilidade: mesma tela, tres execucoes,
+    // duas certas e uma acusando SEM_H1. O defeito nao era a tela.
+    //
+    // Agora: segunda chance mais longa, porque a API divide um nucleo
+    // com todo o resto. E se ainda assim nao carregar, a regua DIZ
+    // que nao conseguiu medir, em vez de inventar um achado.
+    let acalmou = await esperarAcalmar();
+    // Nao acalmou: POR QUE? A resposta muda o remedio.
+    if (!acalmou) {
+      const porque = await retratoDaTela();
+
+      // Caso 1: a API barrou a regua.
+      //
+      // O limite e 200 chamadas por minuto, e uma volta inteira gasta
+      // 105 — medido. Uma volta cabe; duas coladas estouram, e ai a
+      // tela desenha o aviso de excesso, que nao tem titulo. A regua
+      // acusava "tela sem titulo" numa tela que tem titulo.
+      //
+      // Pedir de novo agora leva outro nao. A unica saida e esperar a
+      // janela do limite virar.
+      if (/Muitas requisi/i.test(porque.alerta ?? '')) {
+        console.log(nome.padEnd(28), 'A API BARROU A REGUA - esperando a janela virar (60s)');
+        await dormir(60000);
+      }
+
+      // Caso 2: busca pendurada. Esperar nao desentope; pedir de novo,
+      // sim. Vale para os dois casos, entao fica fora do if.
+      await recarregar(caminho);
+      acalmou = await esperarAcalmar(30000);
+    }
+
+    if (!acalmou) {
+      // Desistir sem dizer o que se viu transforma o defeito em
+      // misterio.
+      const retrato = await retratoDaTela();
+
+      relatorio.push({
+        tela: nome,
+        caminho,
+        erro: 'nao carregou a tempo; medir agora seria medir o "Carregando"',
+        retrato,
+      });
+      console.log(nome.padEnd(28), 'NAO CARREGOU -', JSON.stringify(retrato));
+      continue;
+    }
 
     const achados = [];
     let estado = null;
@@ -458,9 +710,7 @@ for (const [caminho, nome] of TELAS) {
       await cdp('Emulation.setDeviceMetricsOverride', {
         width: largura, height: ALTURA, deviceScaleFactor: 1, mobile: largura < 700,
       });
-      // A troca de largura refaz o layout: medir antes disso terminar
-      // devolveria as caixas da largura anterior.
-      await dormir(400);
+      await esperarLayoutParar(largura);
 
       const bruto = await js(MEDIR);
       const medido = JSON.parse(bruto);
@@ -512,7 +762,18 @@ for (const [caminho, nome] of TELAS) {
 
 writeFileSync(SAIDA + '/achados.json', JSON.stringify(relatorio, null, 2));
 
-console.log('\n==== RESUMO (' + LARGURAS.join('px, ') + 'px) ====');
+console.log('\n==== RESUMO (' + ESCOLHIDAS.length + ' de ' + TELAS.length + ' telas · ' +
+  LARGURAS.join('px, ') + 'px) ====');
+
+if (ESCOLHIDAS.length === 0) {
+  console.log('Nada mexido no frontend desde o ultimo marco: nada para medir.');
+}
+
+const naoMedidas = relatorio.filter((t) => t.erro);
+if (naoMedidas.length > 0) {
+  console.log('NAO CONSEGUI MEDIR' + ' '.repeat(14), naoMedidas.length + ' tela(s):',
+    naoMedidas.map((t) => t.tela).join(', '));
+}
 
 for (const largura of LARGURAS) {
   const porTipo = new Map();
@@ -534,4 +795,4 @@ for (const largura of LARGURAS) {
 }
 
 await fecharNavegador();
-process.exit(0);
+process.exit(naoMedidas.length > 0 ? 1 : 0);

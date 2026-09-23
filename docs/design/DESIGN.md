@@ -1,4 +1,4 @@
-<!-- versao: 0.20.1 -->
+<!-- versao: 0.20.2 -->
 
 # Design do sistema — Porto Inc.
 
@@ -497,6 +497,95 @@ de trás travada, e o foco de volta no botão de origem ao fechar.
 
 > A sonda travar foi sorte. Ela ficou esperando uma resposta que ninguém ia dar. Agora ela
 > responde sozinha e **anota que a pergunta apareceu** — que é o defeito que eu queria ver.
+
+## Design 2.2 — A régua ficou barata
+
+Reclamação de fora, e justa: as etapas demoram demais. Antes de mexer, cronometrei a régua
+por dentro. O resultado explica tudo:
+
+| | |
+|---|---|
+| dormindo de propósito | **68s** |
+| medindo de fato | menos de 1s, nas 34 telas |
+| trocando de rota | menos de 1s |
+
+Ela media em menos de um segundo e dormia 68. As esperas existiam por um motivo real —
+medir cedo demais deu alarme falso três vezes — mas eram **esperas fixas**, e espera fixa
+paga o pior caso em toda tela, inclusive nas que ficam prontas em 200ms.
+
+### Corte 1 — perguntar em vez de contar
+
+Cada espera contada virou uma espera medida:
+
+| Onde | Era | Virou |
+|---|---|---|
+| depois de trocar de tela | dormir 500ms | perguntar de 40 em 40ms se o título mudou |
+| depois de mudar a largura | dormir 400ms, duas vezes | perguntar se a caixa de layout já é a largura pedida e se a geometria parou |
+| dentro do "acalmar" | passo de 180ms | passo de 70ms |
+
+A segunda linha é a que mais rendeu: metade daquele tempo era gasto na **primeira** largura,
+que nem muda — ela já estava posta antes de navegar.
+
+### Corte 2 — medir só o que mudou
+
+Percorrer as 34 telas para conferir 3 que mudaram não descobre nada: descobre 31 vezes o
+que já se sabia. A tabela de telas passou a dizer **qual arquivo desenha cada uma**, e a
+régua pergunta ao git o que mexeu.
+
+A regra é conservadora de propósito — errar para menos aqui deixa defeito passar, errar
+para mais custa segundos:
+
+| O que mudou | Quantas telas ela mede |
+|---|---|
+| uma página | só a dela |
+| estilo, componente, navegação, tema | **as 34** |
+| só o número da versão | nenhuma |
+| nada no frontend | nenhuma — nem abre o navegador |
+| o git não respondeu | **as 34** |
+| página que não sei de quem é | **as 34** |
+
+Os seis casos foram testados um a um.
+
+### O resultado
+
+| | Antes | Agora |
+|---|---|---|
+| Régua, 34 telas | 73s | **24s** |
+| Régua, uma tela mexida | 73s | **9s** |
+| Fechar etapa (sem backend) | 2min06 | **51s** |
+
+### E o que apareceu no meio do caminho
+
+Rodando a régua três vezes seguidas para conferir se ela era estável, uma delas acusou
+**SEM_H1** numa tela que tem título. Duas causas, empilhadas.
+
+**A primeira: a régua media mesmo quando desistia de esperar.** A resposta do "esperar
+acalmar" era jogada fora. Quando a tela não acalmava no prazo, ela media assim mesmo — e o
+que media era o "Carregando", que não tem título. O defeito não era a tela; era a régua
+dizer que mediu quando não mediu. Agora ela **diz que não conseguiu**, e isso reprova o
+fechamento. Verde sem ter medido é pior que vermelho.
+
+**A segunda: a API estava barrando a régua.** O retrato da tela no instante da desistência
+trouxe a frase inteira:
+
+> "Muitas requisições em pouco tempo. Aguarde um instante."
+
+O limite é 200 chamadas por minuto. Uma volta inteira gasta **105** — medido nos registros
+da API. Uma volta cabe com folga; duas coladas estouram. E foi exatamente o que eu fiz ao
+rodar três de enfiada para testar estabilidade: **o meu teste é que criava a condição.**
+
+Vale registrar a parte desconfortável: ao ficar 3× mais rápida, a régua triplicou o ritmo de
+chamadas. O corte de tempo **foi** a causa disso. Eu havia dito o contrário antes de olhar o
+retrato.
+
+A régua agora reconhece a frase, espera a janela do limite virar e refaz a tela. O limite da
+API ficou como estava — mexer nele para a medição passar seria fazer a medição mentir.
+
+Depois disso, três voltas coladas deram o **mesmo veredito**, inclusive a que foi barrada
+(95s, com o minuto de espera dentro).
+
+> Quarta vez nesta obra que o "defeito" era a medição. A regra se mantém: quando o número
+> vier bonito, desconfie dele antes de comemorar.
 
 ---
 
