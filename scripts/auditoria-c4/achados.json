@@ -1,0 +1,372 @@
+[
+  {
+    "tela": "inicio",
+    "caminho": "/",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Boa noite, Administrador"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "1 combinacao(oes)",
+        "culpados": [
+          "a \"Status do sistema\" 1.83:1 (minimo 4.5)"
+        ],
+        "largura": 1440,
+        "tema": "escuro"
+      }
+    ]
+  },
+  {
+    "tela": "solicitacoes-lista",
+    "caminho": "/solicitacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 18,
+      "titulo": "Solicitações de compra"
+    },
+    "achados": []
+  },
+  {
+    "tela": "solicitacoes-nova",
+    "caminho": "/solicitacoes/nova",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Nova solicitação de compra"
+    },
+    "achados": []
+  },
+  {
+    "tela": "solicitacoes-detalhe",
+    "caminho": "/solicitacoes/da72ade4-0c9d-4bec-8348-f911bc04606f",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "SOL-00015"
+    },
+    "achados": []
+  },
+  {
+    "tela": "aprovacoes",
+    "caminho": "/aprovacoes",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Aprovações"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-lista",
+    "caminho": "/cotacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Cotações"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-nova",
+    "caminho": "/cotacoes/nova",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Novo pacote de cotação"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-detalhe",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "BID-00015"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-equalizacao",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be/equalizacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Equalização"
+    },
+    "achados": []
+  },
+  {
+    "tela": "pedidos",
+    "caminho": "/pedidos",
+    "estado": {
+      "vazio": false,
+      "linhas": 17,
+      "titulo": "Pedidos de compra"
+    },
+    "achados": []
+  },
+  {
+    "tela": "recebimento",
+    "caminho": "/recebimento",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Recebimento"
+    },
+    "achados": []
+  },
+  {
+    "tela": "recebimento-conferir",
+    "caminho": "/recebimento/17",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Conferir PC-00017"
+    },
+    "achados": []
+  },
+  {
+    "tela": "estoque",
+    "caminho": "/estoque",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Estoque"
+    },
+    "achados": []
+  },
+  {
+    "tela": "estoque-movimentos",
+    "caminho": "/estoque/movimentos",
+    "estado": {
+      "vazio": false,
+      "linhas": 28,
+      "titulo": "Extrato do estoque"
+    },
+    "achados": []
+  },
+  {
+    "tela": "locacao",
+    "caminho": "/locacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Locação de equipamentos"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "1 combinacao(oes)",
+        "culpados": [
+          "button.botao.botao--link \"Cancelar\" 2.12:1 (minimo 4.5)"
+        ],
+        "largura": 1440,
+        "tema": "escuro"
+      }
+    ]
+  },
+  {
+    "tela": "financeiro",
+    "caminho": "/financeiro",
+    "estado": {
+      "vazio": false,
+      "linhas": 29,
+      "titulo": "Financeiro"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "1 combinacao(oes)",
+        "culpados": [
+          "text.[object.SVGAnimatedString] \"67%\" 1.42:1 (minimo 4.5)"
+        ],
+        "largura": 1440,
+        "tema": "escuro"
+      }
+    ]
+  },
+  {
+    "tela": "financeiro-notas",
+    "caminho": "/financeiro/notas",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Notas fiscais"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-orcamento",
+    "caminho": "/relatorios",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-economia",
+    "caminho": "/relatorios?ver=economia",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-fornecedores",
+    "caminho": "/relatorios?ver=fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-tempos",
+    "caminho": "/relatorios?ver=tempos",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-consumo",
+    "caminho": "/relatorios?ver=consumo",
+    "estado": {
+      "vazio": false,
+      "linhas": 33,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-indice",
+    "caminho": "/cadastros",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Cadastros"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-familias",
+    "caminho": "/cadastros/familias",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Famílias de material"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-materiais",
+    "caminho": "/cadastros/materiais",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Materiais e serviços"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-fornecedores",
+    "caminho": "/cadastros/fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Fornecedores"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-obras",
+    "caminho": "/cadastros/obras",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Obras"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-obra-detalhe",
+    "caminho": "/cadastros/obras/83fbfc58-1d58-46d7-add8-48270ebdf663",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Residencial Porto Belo"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-alcadas",
+    "caminho": "/cadastros/alcadas",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Limites de alçada"
+    },
+    "achados": []
+  },
+  {
+    "tela": "admin-usuarios",
+    "caminho": "/admin/usuarios",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Usuários"
+    },
+    "achados": []
+  },
+  {
+    "tela": "admin-avisos-whatsapp",
+    "caminho": "/admin/avisos?ver=whatsapp",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": []
+  },
+  {
+    "tela": "admin-avisos-email",
+    "caminho": "/admin/avisos?ver=email",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": []
+  },
+  {
+    "tela": "admin-status",
+    "caminho": "/admin/status",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Status do sistema"
+    },
+    "achados": []
+  },
+  {
+    "tela": "minha-senha",
+    "caminho": "/minha-senha",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Trocar minha senha"
+    },
+    "achados": []
+  }
+]

@@ -1,4 +1,4 @@
-<!-- versao: 0.20.2 -->
+<!-- versao: 0.21.0 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,56 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## A tela inicial responde uma pergunta
+
+Ao entrar, a primeira tela responde **o que precisa de você agora**. Ela é montada com as
+suas permissões: você só vê número de coisa que você pode resolver.
+
+### "O que precisa de você"
+
+A faixa de cima, quando tem alguma coisa. A ordem é a do dia: primeiro o prazo que já
+passou, depois o que vence se ninguém agir.
+
+| Faixa na lateral | Quer dizer |
+|---|---|
+| **Vermelha** | prazo já perdido — parcela vencida, equipamento que devia ter voltado |
+| **Amarela** | vence se ninguém agir — assinatura parada, material no ponto de repor |
+
+> A cor nunca informa sozinha: a faixa está lá para quem não distingue as cores, e a linha
+> de baixo diz por extenso o que aconteceu.
+
+Quando não há nada, no lugar da faixa aparece **"Nada esperando por você"**. Ela não fica
+vazia nem some.
+
+### "Como estão as coisas"
+
+Os outros números, sem cobrança: cotações abertas, entregas a conferir, suas solicitações
+em andamento. Bom saber, não pede nada.
+
+### Todo número leva até a tela dele
+
+**O cartão inteiro é clicável.** "Contas vencidas: 3" abre o financeiro já filtrado nas
+vencidas; "Esperando sua assinatura" abre a fila de aprovação.
+
+> O número que aparece aqui é o **mesmo** que a tela de destino mostra: quem conta é o
+> servidor, uma vez só. A tela inicial não refaz conta nenhuma.
+
+### O que cada função vê
+
+| Quem entra | Vê, por exemplo |
+|---|---|
+| Almoxarife | material abaixo do mínimo, entregas a conferir |
+| Financeiro | contas vencidas, o que vence em 7 dias |
+| Gestor de obra | o que espera a assinatura dele |
+| Comprador | cotações abertas, pedido emitido e não enviado |
+
+### O aviso de andamento saiu do topo
+
+O texto sobre as etapas do projeto e o modo de teste continua na tela, mas **no fim e em
+voz baixa**. Ele fala do projeto, não do seu trabalho — e ocupava o lugar mais valioso.
+
+---
 
 ## Os formulários que abrem em janela
 

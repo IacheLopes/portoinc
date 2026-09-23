@@ -76,14 +76,23 @@
 }
 
 /* ------------------------------------------------------------
-   Cartão de indicador
+   Cartão de indicador COM GRÁFICO
+
+   Nome próprio desde o Design 3. Ele e o `Indicador` simples
+   usavam a mesma classe `.indicador`, com definições
+   diferentes — e este arquivo carrega depois, então vencia em
+   silêncio: todo indicador do sistema estava saindo com
+   `cursor: help` e a grade de três linhas daqui.
+
+   Duas peças diferentes, dois nomes. É a mesma lição do
+   `.migalhas` no Design 2.
    ------------------------------------------------------------ */
 .indicador-area {
   position: relative;
   display: flex;
 }
 
-.indicador {
+.indicador-grafico {
   /* É um botão só para poder receber foco e mostrar a dica;
      visualmente continua sendo um cartão. */
   appearance: none;
@@ -105,13 +114,13 @@
   transition: border-color var(--transicao), transform var(--transicao);
 }
 
-.indicador:hover,
-.indicador:focus-visible {
+.indicador-grafico:hover,
+.indicador-grafico:focus-visible {
   border-color: var(--azul-600);
   transform: translateY(-2px);
 }
 
-.indicador__rotulo {
+.indicador-grafico__rotulo {
   font-size: var(--txt-sm);
   font-weight: var(--peso-forte);
   text-transform: uppercase;
@@ -120,7 +129,7 @@
   line-height: 1.2;
 }
 
-.indicador__valor {
+.indicador-grafico__valor {
   font-size: var(--txt-2xl);
   font-weight: var(--peso-forte);
   letter-spacing: -0.02em;
@@ -129,21 +138,21 @@
   align-self: center;
 }
 
-.indicador__detalhe {
+.indicador-grafico__detalhe {
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
   line-height: 1.2;
 }
 
 /* Um fio de cor na lateral quando o número merece atenção. */
-.indicador--erro    { border-left: 3px solid var(--erro-texto); }
-.indicador--atencao { border-left: 3px solid var(--atencao-texto); }
-.indicador--sucesso { border-left: 3px solid var(--sucesso-texto); }
-.indicador--info    { border-left: 3px solid var(--info-texto); }
+.indicador-grafico--erro    { border-left: 3px solid var(--erro-texto); }
+.indicador-grafico--atencao { border-left: 3px solid var(--atencao-texto); }
+.indicador-grafico--sucesso { border-left: 3px solid var(--sucesso-texto); }
+.indicador-grafico--info    { border-left: 3px solid var(--info-texto); }
 
 @media (max-width: 520px) {
   /* No celular o rótulo pode ocupar o espaço que precisar. */
-  .indicador { grid-template-rows: auto auto auto; }
+  .indicador-grafico { grid-template-rows: auto auto auto; }
 }
 
 /* ------------------------------------------------------------
@@ -629,8 +638,8 @@
     animation: none;
   }
 
-  .indicador:hover,
-  .indicador:focus-visible {
+  .indicador-grafico:hover,
+  .indicador-grafico:focus-visible {
     transform: none;
   }
 }

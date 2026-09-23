@@ -195,6 +195,26 @@ p { margin: 0; }
 }
 
 /* ------------------------------------------------------------
+   Link
+
+   O sistema nao tinha regra nenhuma para <a>. Todo link sem
+   classe caia no azul padrao do navegador — e no tema escuro
+   isso da 1,83:1 contra um fundo quase preto: some da tela.
+
+   Achado medindo, no Design 3. A regua so passou a olhar cor
+   nesta etapa; antes ela media espaco e tamanho, e cor errada
+   nao "parece" errada em print.
+   ------------------------------------------------------------ */
+a {
+  color: var(--info-texto);
+  /* Sublinhado por baixo do texto, e nao cortando as descidas do
+     g e do p. */
+  text-underline-offset: 0.2em;
+}
+
+a:hover { text-decoration-thickness: 2px; }
+
+/* ------------------------------------------------------------
    Indicador: um número que vale por si
    ------------------------------------------------------------ */
 .indicador {
@@ -229,6 +249,68 @@ p { margin: 0; }
   margin-top: var(--esp-2);
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   Indicador que leva a algum lugar
+
+   O cartão inteiro é o link, e não um "ver mais" no canto: um
+   número que aponta um problema e não leva até ele obriga a
+   pessoa a procurar a tela certa sozinha.
+   ------------------------------------------------------------ */
+a.indicador--clicavel {
+  display: block;
+  color: var(--texto);
+  /* A regra global sublinha todo <a>, e aqui o <a> é o cartão
+     inteiro: título, número e rodapé saíam os três sublinhados. */
+  text-decoration: none;
+  transition: border-color var(--transicao), transform var(--transicao),
+    box-shadow var(--transicao);
+}
+
+a.indicador--clicavel:hover {
+  border-color: var(--azul-600);
+  box-shadow: var(--sombra-2);
+}
+
+/* Some para quem pediu menos movimento na tela. */
+@media (prefers-reduced-motion: no-preference) {
+  a.indicador--clicavel:hover { transform: translateY(-2px); }
+}
+
+/* ------------------------------------------------------------
+   O peso do indicador
+
+   Os nomes são `atencao` e `erro`, e não `perigo`: é o mesmo
+   vocabulário do selo, do aviso e do cartão-com-gráfico.
+   Inventar um quinto nome para a mesma ideia é como a casa
+   fica com duas palavras para a mesma coisa.
+
+   A cor NUNCA informa sozinha: a faixa da esquerda dá a marca
+   também para quem não distingue as cores, e o texto do rodapé
+   já diz por extenso o que aconteceu.
+
+   O número herda a cor do tom; o rótulo e o rodapé não, senão a
+   tela inteira vira vermelha e nada mais se destaca.
+   ------------------------------------------------------------ */
+.indicador--atencao { border-left: 4px solid var(--atencao-texto); }
+.indicador--atencao .indicador__valor { color: var(--atencao-texto); }
+
+.indicador--erro { border-left: 4px solid var(--erro-texto); }
+.indicador--erro .indicador__valor { color: var(--erro-texto); }
+
+/* ------------------------------------------------------------
+   Nota de rodapé da página
+
+   O aviso de andamento do PROJETO. Ele não fala do trabalho de
+   quem abriu a tela, então fica no fim e em voz baixa — antes
+   ocupava o lugar mais valioso da tela inicial.
+   ------------------------------------------------------------ */
+.nota-do-rodape {
+  max-width: var(--largura-leitura);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  line-height: var(--linha-solta);
 }
 
 /* ------------------------------------------------------------
@@ -300,6 +382,14 @@ p { margin: 0; }
   min-height: 44px;
   padding: var(--esp-2) var(--esp-5);
   border: 1px solid transparent;
+  /* Fundo NOSSO, mesmo quando a variante nao pinta nada.
+
+     Sem esta linha o navegador usava o cinza dele (rgb(240,240,240))
+     em toda variante sem fundo proprio — o botao-link e o discreto.
+     No tema escuro isso virava um retangulo claro com texto azul
+     claro em cima: medido, 2,12:1. E no claro passava por design,
+     sem nunca ter sido escolhido por ninguem. */
+  background: transparent;
   border-radius: var(--raio-md);
   font: inherit;
   font-weight: var(--peso-medio);

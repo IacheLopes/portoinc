@@ -1,4 +1,4 @@
-<!-- versao: 0.20.2 -->
+<!-- versao: 0.21.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -587,6 +587,98 @@ Depois disso, três voltas coladas deram o **mesmo veredito**, inclusive a que f
 > Quarta vez nesta obra que o "defeito" era a medição. A regra se mantém: quando o número
 > vier bonito, desconfie dele antes de comemorar.
 
+## Design 3 — Início e barra lateral
+
+### A tela inicial era um muro de atalhos
+
+Treze caixas iguais, todas dizendo "clique aqui", nenhuma dizendo se havia algo para fazer.
+Quem chegava de manhã abria tela por tela para descobrir que uma parcela venceu ontem.
+
+Ela passou a responder **uma pergunta**, e a página é a ordem da resposta:
+
+1. **O que precisa de você** — prazo perdido primeiro, depois o que vence se ninguém agir
+2. **Como estão as coisas** — acompanhamento, sem cobrança
+3. **Ir para** — os atalhos, que viraram o rodapé da página em vez do corpo dela
+
+Duas regras decidem o que aparece, e as duas são do servidor:
+
+- **Sem a permissão, o cartão nem existe.** Mostrar "Contas vencidas: 3" para quem não abre
+  o financeiro é dar uma notícia que a pessoa não pode resolver
+- **Urgente é o que tem peso E tem número.** Um "Contas vencidas: 0" em vermelho no alto da
+  tela ensina a ignorar vermelho
+
+O peso vem pronto do servidor. Se a tela decidisse sozinha, ela e a fila de aprovação
+poderiam discordar sobre o mesmo número.
+
+O aviso de andamento do projeto foi para o fim, em letra menor. Ele fala do projeto, não do
+trabalho de quem abriu a tela — e ocupava o lugar mais valioso da página.
+
+### A régua passou a medir COR
+
+Até aqui ela media espaço, tamanho e transbordo. Nunca cor — e cor errada não *parece*
+errada num print.
+
+A regra nova calcula o contraste de cada texto contra o fundo real (subindo pelos pais até
+achar um opaco) e compara com a WCAG AA: 4,5:1, ou 3:1 para texto grande. E roda nos **dois
+temas**, porque contraste não muda com a largura da janela, mas muda inteiro com o tema.
+
+O que ela achou na primeira volta:
+
+| Onde | Medido | Por quê |
+|---|---|---|
+| "1 função(ões)", no cabeçalho | **1,66:1** | cor cravada à mão (`#b9cbe0`), de quando a barra era azul-marinho escuro |
+| Item ativo do menu, tema claro | **3,85:1** | o azul da marca é claro demais para texto pequeno |
+| "← Voltar para X", em 33 telas | **4,31:1** | o mesmo azul, sobre o fundo da página |
+| Todo `<a>` sem classe, tema escuro | **1,83:1** | o sistema não tinha regra nenhuma para link: caía no azul do navegador |
+| Botão "Cancelar" da locação, tema escuro | **2,12:1** | o `.botao` não definia fundo, e o navegador pintava o cinza dele |
+
+Os dois últimos são de fundação, e valiam para o sistema inteiro. O ponto da marca ("Porto
+Inc**.**") também entrou, em 3,62:1.
+
+A correção quase sempre foi **usar o token que já existia**: `--info-texto` é a versão
+escurecida do azul para texto sobre fundo claro, criada no Design 0 exatamente para isto.
+Onde o azul continua cheio é em borda e controle, onde o mínimo é 3:1 e ele cumpre.
+
+Depois: **34 telas, dois temas, nenhum contraste fraco.**
+
+### Duas peças diferentes com o mesmo nome
+
+O achado mais desconfortável. `Indicador` e `CartaoIndicador` (o número com gráfico ao lado)
+emitiam a **mesma classe** `.indicador`, com definições diferentes em arquivos diferentes.
+`graficos.css` carrega depois, então vencia em silêncio.
+
+Resultado: **todo indicador do sistema estava sendo desenhado pelas regras do
+cartão-com-gráfico** — com `cursor: help` e uma grade de três linhas fixas. O bloco em
+`global.css` era quase todo letra morta.
+
+Descobri porque meus tons novos não apareciam. Medido: a faixa lateral saía `1px solid
+#dde4ec` onde eu tinha escrito `4px solid vermelho`.
+
+O cartão-com-gráfico ganhou nome próprio: `.indicador-grafico`. É a mesma lição do
+`.migalhas` no Design 2, um nível abaixo — duas peças, dois nomes.
+
+### Um vocabulário, não cinco
+
+Eu havia inventado `perigo` para o tom mais grave. O sistema já dizia **`erro`** — no selo,
+no aviso e no cartão-com-gráfico. Voltou para `erro`. Uma palavra por ideia.
+
+### O que foi conferido e está certo, não mexer
+
+- **O item do menu tem 40px no computador e 44px no celular.** Não é descuido: a régua dos
+  44px vale para o dedo, e na gaveta do celular ele volta aos 44. É o que permite os 16
+  itens e os quatro rótulos de grupo caberem sem rolar
+- **Os atalhos de alturas diferentes** são de **fileiras** diferentes, não da mesma. A regra
+  é sobre a mesma fileira
+
+### E uma quinta vez
+
+A primeira medição de contraste acusou 20 telas no tema escuro, com o *mesmo* seletor dando
+2,39, 3,39 e 4,23 em telas diferentes. Valor que muda sem o CSS mudar é medição, não
+defeito: a troca de tema anima 160ms, e a régua fotografava no meio da animação.
+
+Agora ela desliga toda transição antes de medir cor. Das 20 telas sobraram 3 — e as 3 eram
+reais. **Contraste se mede parado.**
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -600,7 +692,7 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 | ~~D2~~ | ✅ **RESOLVIDO no Design 2**, com o menu "⋮". Grupo de botões de ação com larguras irregulares. Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
 | D3 | **A dica flutuante cobre o cartão vizinho.** No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
 | D4 | **Campo de busca largo demais.** No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
-| D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 6** — celular |
+| D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
 
 ## O que já foi medido e está certo
 

@@ -35,7 +35,7 @@
   white-space: nowrap;
 }
 
-.entrada__ponto { color: var(--azul-600); }
+.entrada__ponto { color: var(--info-texto); }
 
 .entrada__titulo {
   margin-top: var(--esp-5);
@@ -110,7 +110,10 @@
   white-space: nowrap;
 }
 
-.barra__ponto { color: var(--azul-500); }
+/* O ponto da marca e enfeite, mas continua sendo texto: o
+   azul-500 dava 3,62:1 sobre a barra branca. O --info-texto
+   mantem o azul e passa. */
+.barra__ponto { color: var(--info-texto); }
 
 .barra__usuario {
   display: flex;
@@ -142,7 +145,12 @@
 .barra__nome small {
   font-size: var(--txt-xs);
   font-weight: var(--peso-normal);
-  color: #b9cbe0;
+  /* Cor de papel, não cravada à mão.
+     Este #b9cbe0 era de quando a barra do topo era azul-marinho
+     escuro. No Design 0 ela passou a acompanhar o tema e ficou
+     branca — e ninguém viu, porque a régua media espaço e tamanho,
+     nunca cor. Medido: 1,66:1, o pior contraste do sistema. */
+  color: var(--texto-secundario);
 }
 
 .botao--discreto {
@@ -694,7 +702,7 @@ a.atalho:hover {
 }
 
 .migalhas a:hover {
-  color: var(--azul-600);
+  color: var(--info-texto);
   text-decoration: underline;
 }
 
@@ -713,7 +721,7 @@ a.atalho:hover {
   padding: var(--esp-1) var(--esp-3);
   margin-right: calc(var(--esp-3) * -1);
   border-radius: var(--raio-md);
-  color: var(--azul-600);
+  color: var(--info-texto);
   text-decoration: none;
   font-size: var(--txt-sm);
   font-weight: var(--peso-medio);

@@ -14,19 +14,55 @@
 // ============================================================
 
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+/**
+ * O peso do número.
+ *
+ * `erro` é prazo já perdido, `atencao` é o que vence se ninguém
+ * agir, `neutro` é acompanhamento. Quem decide isto é o servidor,
+ * não a tela — assim duas telas não discordam sobre o mesmo número.
+ */
+export type TomDoIndicador = 'neutro' | 'atencao' | 'erro';
 
 interface Props {
   titulo: string;
   valor: ReactNode;
   detalhe?: ReactNode;
+  /**
+   * Para onde o número leva.
+   *
+   * Informado, o cartão inteiro vira link — não um "ver mais" no
+   * canto. Um número que aponta um problema e não leva até ele
+   * obriga a pessoa a procurar a tela certa sozinha.
+   */
+  para?: string;
+  tom?: TomDoIndicador;
 }
 
-export function Indicador({ titulo, valor, detalhe }: Props) {
-  return (
-    <article className="indicador">
+export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro' }: Props) {
+  const classes = 'indicador'
+    + (tom !== 'neutro' ? ' indicador--' + tom : '')
+    + (para ? ' indicador--clicavel' : '');
+
+  const miolo = (
+    <>
       <h3 className="indicador__titulo">{titulo}</h3>
       <p className="indicador__valor">{valor}</p>
       {detalhe && <p className="indicador__rodape">{detalhe}</p>}
-    </article>
+    </>
   );
+
+  // Link em volta de tudo, e não um `<article>` com link dentro:
+  // assim o alvo de toque é o cartão inteiro, e o leitor de tela
+  // anuncia rótulo, número e contexto como um item só.
+  if (para) {
+    return (
+      <Link to={para} className={classes}>
+        {miolo}
+      </Link>
+    );
+  }
+
+  return <article className={classes}>{miolo}</article>;
 }

@@ -74,7 +74,14 @@
   --menu-texto-secundario: var(--neutro-600);
   --menu-hover:            var(--neutro-100);
   --menu-ativo-fundo:      var(--azul-100);
-  --menu-ativo-texto:      var(--azul-600);
+  /* O azul da MARCA e claro demais para texto pequeno em cima do
+     fundo do item ativo: medido, 3,85:1 contra o minimo de 4,5 da
+     WCAG AA. E justamente o item onde a pessoa esta.
+
+     O sistema ja tinha a resposta: --info-texto existe para isto,
+     a versao escurecida do azul para texto sobre fundo leve. Aqui
+     ela da 6,08:1. No tema escuro os dois ja eram o mesmo valor. */
+  --menu-ativo-texto:      var(--info-texto);
   --menu-marca:            var(--marinho-900);
 
   /* ---------- Espacamento (escala de 4px) ----------
@@ -171,7 +178,7 @@
   --menu-texto-secundario: #8ba3ba;
   --menu-hover:            #12283c;
   --menu-ativo-fundo:      #14304d;
-  --menu-ativo-texto:      #7aa7f7;
+  --menu-ativo-texto:      var(--info-texto);
   --menu-marca:            #ffffff;
 
   --sucesso-leve: #11301f;

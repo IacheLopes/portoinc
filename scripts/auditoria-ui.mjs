@@ -619,6 +619,99 @@ const MEDIR = `(() => {
   });
 })()`;
 
+
+// ------------------------------------------------------------
+//  Contraste de texto, medido nos DOIS temas
+//
+//  Sai do MEDIR e vira script próprio por um motivo: contraste
+//  não muda com a largura da janela, mas muda inteiro com o tema.
+//  Medir só o tema aberto deixaria metade do sistema sem régua —
+//  e o tema escuro foi pedido, não é enfeite.
+// ------------------------------------------------------------
+const CONTRASTE = `(() => {
+  const nomear = (el) => {
+    const classe = (el.className || '').toString().split(' ').filter(Boolean).slice(0, 2).join('.');
+    const texto = (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 40);
+    return el.tagName.toLowerCase() + (classe ? '.' + classe : '') + (texto ? ' "' + texto + '"' : '');
+  };
+
+  // 9. Contraste de texto (WCAG AA).
+  //
+  //  A regua media espaco e tamanho, nunca cor. E cor errada nao
+  //  "parece" errada em print: o azul da marca sobre o fundo do
+  //  item ativo do menu dava 3,85:1 e passava batido a olho.
+  //
+  //  O minimo e 4,5:1, ou 3:1 quando o texto e grande (>=24px, ou
+  //  >=18,66px e negrito) — sao os numeros da WCAG AA.
+  const corDe = (t) => {
+    const m = (t || '').match(/[0-9.]+/g) || [];
+    return { r: +m[0], g: +m[1], b: +m[2], a: m[3] === undefined ? 1 : +m[3] };
+  };
+
+  const canal = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const luz = (c) => 0.2126 * canal(c.r) + 0.7152 * canal(c.g) + 0.0722 * canal(c.b);
+
+  // O fundo de VERDADE: sobe pelos pais ate achar um opaco. Ler so
+  // o do proprio elemento daria "transparente" na maioria deles.
+  const fundoReal = (el) => {
+    let n = el;
+    while (n) {
+      const c = corDe(getComputedStyle(n).backgroundColor);
+      if (c.a > 0.9) return c;
+      n = n.parentElement;
+    }
+    return { r: 255, g: 255, b: 255, a: 1 };
+  };
+
+  const razao = (a, b) => {
+    const x = luz(a); const y = luz(b);
+    const [alto, baixo] = x > y ? [x, y] : [y, x];
+    return Math.round(((alto + 0.05) / (baixo + 0.05)) * 100) / 100;
+  };
+
+  const fracos = [];
+  const vistos = new Set();
+
+  for (const el of document.querySelectorAll('main *, .menu *, .barra *')) {
+    // So elementos que realmente desenham texto proprio.
+    const texto = [...el.childNodes]
+      .filter((n) => n.nodeType === 3)
+      .map((n) => n.textContent.trim()).join('');
+    if (!texto) continue;
+
+    const e = getComputedStyle(el);
+    if (e.visibility === 'hidden' || e.display === 'none' || +e.opacity === 0) continue;
+    if (el.closest('.apenas-leitor-tela')) continue;
+
+    const tamanho = parseFloat(e.fontSize);
+    const grosso = parseInt(e.fontWeight, 10) >= 700;
+    const minimo = (tamanho >= 24 || (tamanho >= 18.66 && grosso)) ? 3 : 4.5;
+
+    // Em SVG quem pinta o texto e o fill, nao o color. Lendo color
+    // ali eu media uma cor herdada que nao aparece na tela: o
+    // rotulo 67% do medidor foi acusado em 1,42:1 quando ele usa
+    // fill: var(--texto), que passa folgado.
+    const pintura = el.ownerSVGElement ? e.fill : e.color;
+    const r = razao(corDe(pintura), fundoReal(el));
+    if (r >= minimo) continue;
+
+    // Uma linha por combinacao de classe+cor: dez celulas iguais de
+    // uma tabela sao UM problema, nao dez.
+    const assinatura = (el.className || '') + '|' + e.color + '|' + Math.round(r * 10);
+    if (vistos.has(assinatura)) continue;
+    vistos.add(assinatura);
+
+    fracos.push(nomear(el) + ' ' + r + ':1 (minimo ' + minimo + ')');
+  }
+
+  return JSON.stringify(fracos.length === 0 ? [] : [{
+    tipo: 'CONTRASTE_FRACO',
+    detalhe: fracos.length + ' combinacao(oes)',
+    culpados: fracos.slice(0, 8),
+  }]);
+
+})()`;
+
 const relatorio = [];
 
 /**
@@ -730,6 +823,43 @@ for (const [caminho, nome] of ESCOLHIDAS) {
       // celular e no computador são conversas diferentes.
       for (const a of medido.achados) achados.push({ ...a, largura });
 
+      // Contraste só na largura grande, e nos dois temas: ele não
+      // depende da largura, e medir duas vezes o mesmo seria pagar
+      // o dobro por nada.
+      if (largura === LARGURAS[0]) {
+        // Desliga TODA transicao antes de trocar de tema.
+        //
+        // A troca de tema anima 160ms. Medindo dentro desse tempo, a
+        // cor lida e uma cor intermediaria que nunca fica na tela: o
+        // mesmo item do menu deu 2,39, 3,39 e 4,23 em telas
+        // diferentes, quando o valor verdadeiro e 5,58. Contraste se
+        // mede parado.
+        await js(`(() => {
+          const e = document.createElement('style');
+          e.id = 'regua-sem-transicao';
+          e.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';
+          document.head.appendChild(e);
+        })()`);
+
+        for (const tema of ['claro', 'escuro']) {
+          await js(tema === 'escuro'
+            ? "document.documentElement.setAttribute('data-tema', 'escuro')"
+            : "document.documentElement.removeAttribute('data-tema')");
+          await dormir(120);
+
+          for (const a of JSON.parse(await js(CONTRASTE))) {
+            achados.push({ ...a, largura, tema });
+          }
+        }
+
+        // Volta ao claro, que e o padrao do sistema, e devolve as
+        // transicoes. Sem isto a tela seguinte seria medida no escuro
+        // e sem animacao nenhuma.
+        await js("document.documentElement.removeAttribute('data-tema')");
+        await js("document.getElementById('regua-sem-transicao')?.remove()");
+        await dormir(80);
+      }
+
       // O print de pagina inteira e a parte cara da medicao: numa tela
       // com 18 linhas de tabela ele sozinho leva mais que a medicao.
       // Com `--sem-print` a regua mede e nao fotografa — e o que basta
@@ -752,7 +882,7 @@ for (const [caminho, nome] of ESCOLHIDAS) {
 
     const resumo = achados.length === 0
       ? 'ok'
-      : achados.map((a) => a.tipo + '@' + a.largura).join(', ');
+      : achados.map((a) => a.tipo + '@' + (a.tema ?? a.largura)).join(', ');
     console.log(nome.padEnd(28), resumo);
   } catch (e) {
     relatorio.push({ tela: nome, caminho, erro: String(e.message).slice(0, 160) });

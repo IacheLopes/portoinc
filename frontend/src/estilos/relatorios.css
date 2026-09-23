@@ -50,12 +50,12 @@
 }
 
 .aba--ativa {
-  color: var(--azul-600);
+  color: var(--info-texto);
   border-bottom-color: var(--azul-600);
 }
 
 .aba--ativa:hover {
-  color: var(--azul-600);
+  color: var(--info-texto);
 }
 
 .aba__pergunta {

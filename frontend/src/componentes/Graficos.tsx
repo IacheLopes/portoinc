@@ -181,16 +181,16 @@ export function CartaoIndicador({
     <div className="indicador-area" ref={area}>
       <button
         type="button"
-        className={'indicador' + (destaque ? ' indicador--' + destaque : '')}
+        className={'indicador-grafico' + (destaque ? ' indicador-grafico--' + destaque : '')}
         {...ligar({
           titulo: rotulo,
           linhas: [{ rotulo: 'Valor', valor }],
           rodape: explicacao,
         })}
       >
-        <span className="indicador__rotulo">{rotulo}</span>
-        <span className="indicador__valor">{valor}</span>
-        <span className="indicador__detalhe">{detalhe}</span>
+        <span className="indicador-grafico__rotulo">{rotulo}</span>
+        <span className="indicador-grafico__valor">{valor}</span>
+        <span className="indicador-grafico__detalhe">{detalhe}</span>
       </button>
 
       <CamadaDaDica dica={dica} />

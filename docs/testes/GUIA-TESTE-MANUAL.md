@@ -1,4 +1,4 @@
-<!-- versao: 0.20.2 -->
+<!-- versao: 0.21.0 -->
 
 # 1. Como usar este guia
 
@@ -3582,6 +3582,74 @@ quem preencheu foi o sistema, não você.
 
 ---
 
+## CT-267 · A tela inicial mostra o que precisa de você
+
+1. Entre como **Financeiro** (`andre@portoinc.com.br`)
+
+**Esperado:** logo abaixo da saudação, a faixa **"O que precisa de você"**. Se houver parcela
+vencida, o cartão dela tem **faixa vermelha na lateral esquerda** e o número em vermelho.
+
+2. Confira a ordem dos cartões da faixa
+
+**Esperado:** o que já passou do prazo vem **antes** do que ainda vai vencer.
+
+3. Clique no cartão **Contas vencidas**
+
+**Esperado:** abre o **Financeiro**. O número que estava no cartão bate com o que a tela mostra.
+
+4. Volte ao início e olhe o fim da página
+
+**Esperado:** o aviso sobre etapas e **modo de teste** está lá embaixo, em letra menor — não no topo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-268 · Cada função vê o que pode resolver
+
+1. Entre como **Almoxarife** (`neilma@portoinc.com.br`)
+
+**Esperado:** aparecem números de **estoque** e **recebimento**. **Não** aparece nenhum cartão de
+contas a pagar — contar uma parcela vencida para quem não abre o financeiro é dar uma notícia que
+a pessoa não pode resolver.
+
+2. Entre como **Gestor de obra** (`gilson@portoinc.com.br`)
+
+**Esperado:** aparece **"Esperando sua assinatura"**, e o número bate com o que a tela de
+**Aprovações** mostra.
+
+3. Entre como **Administrador** e confira a faixa "Como estão as coisas"
+
+**Esperado:** os cartões com **zero** ficam nessa faixa, em cinza, dizendo o que está em dia —
+nunca em vermelho no alto da tela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-269 · Os dois temas continuam legíveis
+
+1. Em qualquer tela, clique em **Tema escuro** no fim do menu lateral
+2. Olhe o item do menu onde você está (o destacado)
+
+**Esperado:** o texto dele é legível contra o fundo destacado, nos **dois** temas.
+
+3. Olhe o nome de usuário no canto superior direito, e a linha "1 função(ões)" abaixo dele
+
+**Esperado:** a segunda linha é legível. Não pode ser um cinza claro quase invisível.
+
+4. Vá em **Locação** e olhe o botão **Cancelar** de um contrato, no tema escuro
+
+**Esperado:** ele acompanha o tema. Não pode ser um retângulo cinza-claro do sistema operacional.
+
+5. No início, clique em **Status do sistema** no texto do fim da página
+
+**Esperado:** o link é visível nos dois temas e leva à tela de status.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3954,8 +4022,11 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-264 | A seta dos campos de escolha |  |
 | CT-265 | O formulário vem até você |  |
 | CT-266 | Ele pergunta antes de jogar fora o que você digitou |  |
+| CT-267 | A tela inicial mostra o que precisa de você |  |
+| CT-268 | Cada função vê o que pode resolver |  |
+| CT-269 | Os dois temas continuam legíveis |  |
 
-**Total: 266 casos** · Etapas cobertas: 0 a 12
+**Total: 269 casos** · Etapas cobertas: 0 a 12
 
 ---
 

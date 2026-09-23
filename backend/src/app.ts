@@ -14,6 +14,7 @@ import rateLimit from '@fastify/rate-limit';
 import { ambiente } from './config/ambiente.js';
 import { pluginAutenticacao } from './plugins/autenticacao.js';
 import { rotasSaude } from './rotas/saude.js';
+import { rotasInicio } from './rotas/inicio.js';
 import { rotasIntegracoes } from './rotas/integracoes.js';
 import { rotasAutenticacao } from './rotas/autenticacao.js';
 import { rotasUsuarios } from './rotas/usuarios.js';
@@ -123,6 +124,7 @@ export async function criarApp(): Promise<FastifyInstance> {
   await app.register(pluginAutenticacao);
 
   await app.register(rotasSaude);
+  await app.register(rotasInicio);
   await app.register(rotasAutenticacao);
   await app.register(rotasUsuarios);
   await app.register(rotasObras);

@@ -1,0 +1,758 @@
+[
+  {
+    "tela": "inicio",
+    "caminho": "/",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Boa noite, Administrador"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "2 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "solicitacoes-lista",
+    "caminho": "/solicitacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 18,
+      "titulo": "Solicitações de compra"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "solicitacoes-nova",
+    "caminho": "/solicitacoes/nova",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Nova solicitação de compra"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Solicitações\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "solicitacoes-detalhe",
+    "caminho": "/solicitacoes/da72ade4-0c9d-4bec-8348-f911bc04606f",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "SOL-00015"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Solicitações\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "aprovacoes",
+    "caminho": "/aprovacoes",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Aprovações"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-lista",
+    "caminho": "/cotacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Cotações"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-nova",
+    "caminho": "/cotacoes/nova",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Novo pacote de cotação"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cotações\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-detalhe",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "BID-00015"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cotações\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-equalizacao",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be/equalizacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Equalização"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "6 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Pacote de cotação\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "span.celula-valor \"✓ R$ 3.240,00\" 3.85:1 (minimo 4.5)",
+          "span \"✓\" 3.85:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "pedidos",
+    "caminho": "/pedidos",
+    "estado": {
+      "vazio": false,
+      "linhas": 17,
+      "titulo": "Pedidos de compra"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "recebimento",
+    "caminho": "/recebimento",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Recebimento"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "recebimento-conferir",
+    "caminho": "/recebimento/17",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Conferir PC-00017"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Recebimento\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "estoque",
+    "caminho": "/estoque",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Estoque"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "estoque-movimentos",
+    "caminho": "/estoque/movimentos",
+    "estado": {
+      "vazio": false,
+      "linhas": 28,
+      "titulo": "Extrato do estoque"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Estoque\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "locacao",
+    "caminho": "/locacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Locação de equipamentos"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.botao.botao--link \"Cancelar\" 3.99:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "financeiro",
+    "caminho": "/financeiro",
+    "estado": {
+      "vazio": false,
+      "linhas": 29,
+      "titulo": "Financeiro"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "financeiro-notas",
+    "caminho": "/financeiro/notas",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Notas fiscais"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Financeiro\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-orcamento",
+    "caminho": "/relatorios",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"Orçamento\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-economia",
+    "caminho": "/relatorios?ver=economia",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"Economia\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-fornecedores",
+    "caminho": "/relatorios?ver=fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"Fornecedores\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-tempos",
+    "caminho": "/relatorios?ver=tempos",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"Tempos\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-consumo",
+    "caminho": "/relatorios?ver=consumo",
+    "estado": {
+      "vazio": false,
+      "linhas": 33,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"Consumo\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-indice",
+    "caminho": "/cadastros",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Cadastros"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-familias",
+    "caminho": "/cadastros/familias",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Famílias de material"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cadastros\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-materiais",
+    "caminho": "/cadastros/materiais",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Materiais e serviços"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cadastros\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-fornecedores",
+    "caminho": "/cadastros/fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Fornecedores"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cadastros\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-obras",
+    "caminho": "/cadastros/obras",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Obras"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cadastros\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-obra-detalhe",
+    "caminho": "/cadastros/obras/83fbfc58-1d58-46d7-add8-48270ebdf663",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Residencial Porto Belo"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Obras\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-alcadas",
+    "caminho": "/cadastros/alcadas",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Limites de alçada"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Cadastros\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "admin-usuarios",
+    "caminho": "/admin/usuarios",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Usuários"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "admin-avisos-whatsapp",
+    "caminho": "/admin/avisos?ver=whatsapp",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"WhatsApp\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "admin-avisos-email",
+    "caminho": "/admin/avisos?ver=email",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "5 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)",
+          "button.aba.aba--ativa \"E-mail\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "admin-status",
+    "caminho": "/admin/status",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Status do sistema"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  },
+  {
+    "tela": "minha-senha",
+    "caminho": "/minha-senha",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Trocar minha senha"
+    },
+    "achados": [
+      {
+        "tipo": "CONTRASTE_FRACO",
+        "detalhe": "4 combinacao(oes)",
+        "culpados": [
+          "span.barra__ponto \".\" 3.62:1 (minimo 4.5)",
+          "small \"1 função(ões)\" 1.66:1 (minimo 4.5)",
+          "a.cabecalho__voltar \"← Voltar para Início\" 4.31:1 (minimo 4.5)",
+          "span \"←\" 4.31:1 (minimo 4.5)"
+        ],
+        "largura": 1440
+      }
+    ]
+  }
+]

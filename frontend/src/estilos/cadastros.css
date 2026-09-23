@@ -64,7 +64,7 @@
   margin-top: var(--esp-1);
   font-size: var(--txt-xs);
   font-weight: var(--peso-forte);
-  color: var(--azul-600);
+  color: var(--info-texto);
 }
 
 /* O caminho de navegação mudou de casa no Design 1: agora vive em
@@ -246,7 +246,7 @@ input[type='file'].campo__entrada {
 .botao--link {
   text-decoration: none;
   border-color: var(--borda);
-  color: var(--azul-600);
+  color: var(--info-texto);
 }
 
 /* Era o único botão do sistema sem retorno ao mouse: a pessoa
@@ -492,7 +492,7 @@ input[type='file'].campo__entrada {
   margin-bottom: var(--esp-5);
 }
 
-.portal__ponto { color: var(--azul-600); }
+.portal__ponto { color: var(--info-texto); }
 
 .portal__topo {
   display: flex;
@@ -544,7 +544,7 @@ input[type='file'].campo__entrada {
   padding: 0 var(--esp-2);
   border-radius: var(--raio-total);
   background: var(--info-leve);
-  color: var(--azul-600);
+  color: var(--info-texto);
   font-size: var(--txt-xs);
   font-weight: var(--peso-forte);
 }
@@ -588,7 +588,7 @@ input[type='file'].campo__entrada {
 .item-cotacao__quantidade {
   margin-top: var(--esp-1);
   font-size: var(--txt-sm);
-  color: var(--azul-600);
+  color: var(--info-texto);
 }
 
 .opcao--sem-estoque {
@@ -746,7 +746,7 @@ input[type='file'].campo__entrada {
   background: var(--info-leve);
 }
 
-.celula-preco--escolhida .celula-valor { color: var(--azul-600); font-weight: var(--peso-forte); }
+.celula-preco--escolhida .celula-valor { color: var(--info-texto); font-weight: var(--peso-forte); }
 
 .ultima-chamada {
   margin-top: var(--esp-4);
