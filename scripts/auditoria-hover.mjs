@@ -54,19 +54,26 @@ const TELAS = [
   ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe'],
   ['/cadastros/alcadas', 'cadastros-alcadas'],
   ['/admin/usuarios', 'admin-usuarios'],
-  ['/admin/whatsapp', 'admin-whatsapp'],
+  ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp'],
+  ['/admin/avisos?ver=email', 'admin-avisos-email'],
   ['/admin/status', 'admin-status'],
   ['/minha-senha', 'minha-senha'],
 ];
 
 /** Propriedades em que um hover costuma se manifestar. */
+// Só nomes de propriedade RESOLVIDA, nunca atalho.
+//
+// `border-color` é atalho: lido pela própria página devolve string
+// vazia, e aí todo elemento parecia igual antes e depois. Os quatro
+// lados separados sempre respondem.
 const OLHAR = [
-  'background-color', 'color', 'border-color', 'opacity',
+  'background-color', 'color', 'opacity',
   'box-shadow', 'text-decoration-line', 'transform',
+  'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
   // O foco do sistema e um contorno: sem a espessura e o estilo,
   // a mudanca passava despercebida e tudo parecia sem foco.
   'outline-color', 'outline-width', 'outline-style', 'outline-offset',
-  'border-bottom-color', 'filter',
+  'filter',
   // O hover nem sempre e cor: na rosca engrossa o traco, no link
   // engrossa o sublinhado. Sem estas, os dois pareciam sem hover.
   'stroke-width', 'stroke', 'text-decoration-thickness', 'text-underline-offset',
@@ -139,18 +146,47 @@ async function esperarPor(seletor, limite = 40000) {
   throw new Error('nao apareceu na tela em ' + (limite / 1000) + 's: ' + seletor);
 }
 
-// Espera a tela PARAR de carregar antes de medir.
+// Espera a tela PARAR DE MUDAR antes de medir.
 //
-// Com espera fixa a regua chegava cedo demais em maquina ocupada e media o
-// "Carregando...", acusando falta de titulo em tela que tem titulo. Aqui ela
-// pergunta ao navegador se a rodinha (.girando) ja sumiu.
-async function esperarCarregar(limite = 20000) {
+// Duas tentativas anteriores falharam aqui, e vale registrar por que:
+//
+//   1. Espera fixa (2,2s): em maquina ocupada a regua chegava cedo e
+//      media o "Carregando...", acusando falta de titulo em tela que
+//      tem titulo.
+//   2. Esperar a rodinha (.girando) sumir: a rodinha pode ainda NAO
+//      TER APARECIDO. Logo depois de trocar de rota o React nao montou
+//      nada, nao ha rodinha, e a resposta e "pronto". Telas de dezenas
+//      de botoes eram medidas com 2 ou 4.
+//
+// O que funciona e perguntar se a tela ESTABILIZOU: contar os elementos
+// e so medir quando a conta se repete tres vezes seguidas, sem rodinha.
+async function esperarAcalmar(limite = 8000) {
   const ate = Date.now() + limite;
+  let anterior = -1;
+  let iguais = 0;
+
   while (Date.now() < ate) {
-    const pronto = await js("!document.querySelector('.girando')");
-    if (pronto) { await dormir(400); return true; }
-    await dormir(200);
+    const estado = JSON.parse(await js(`JSON.stringify({
+      carregando: !!document.querySelector('.girando'),
+      quantos: document.querySelectorAll('button, a[href], select, input, textarea, [role=tab], [role=menuitem]').length,
+      temTitulo: !!document.querySelector('h1'),
+    })`));
+
+    if (!estado.carregando && estado.temTitulo && estado.quantos === anterior) {
+      iguais += 1;
+      if (iguais >= 2) {
+        // Um respiro final para transicao de CSS terminar.
+        await dormir(250);
+        return true;
+      }
+    } else {
+      iguais = 0;
+    }
+
+    anterior = estado.quantos;
+    await dormir(180);
   }
+
   return false;
 }
 
@@ -186,18 +222,34 @@ if (!sessao) {
   process.exit(1);
 }
 
-async function estiloDe(nodeId) {
-  // Da um instante para o navegador recalcular o estilo. Sem isso,
-  // o estado forcado ainda nao valeu quando lemos, e todo elemento
-  // parece nao ter hover nenhum.
-  await dormir(60);
+/**
+ * Lê o estilo do elemento pela PRÓPRIA PÁGINA.
+ *
+ * `getComputedStyle` força o recálculo na hora e enxerga o estado
+ * real do elemento — inclusive o `:hover` de um ponteiro de verdade.
+ * O caminho do DevTools (`CSS.getComputedStyleForNode` junto com
+ * `CSS.forcePseudoState`) se mostrou instável nesta versão do Edge:
+ * no mesmo botão detectava a mudança numa execução e não detectava
+ * na seguinte.
+ */
+async function estiloDe(indice) {
+  const bruto = await js(`(() => {
+    const e = document.querySelector('[data-auditoria="${indice}"]');
+    if (!e) return 'null';
+    const s = getComputedStyle(e);
+    const olhar = ${JSON.stringify(OLHAR)};
+    const m = {};
+    for (const k of olhar) m[k] = s.getPropertyValue(k);
+    return JSON.stringify(m);
+  })()`);
 
-  const { computedStyle } = await cdp('CSS.getComputedStyleForNode', { nodeId });
-  const mapa = {};
-  for (const { name, value } of computedStyle) {
-    if (OLHAR.includes(name)) mapa[name] = value;
-  }
-  return mapa;
+  return bruto === 'null' ? null : JSON.parse(bruto);
+}
+
+/** Tira o ponteiro de cima de qualquer coisa. */
+async function pontaLonge() {
+  await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 2, y: 2, buttons: 0 });
+  await dormir(120);
 }
 
 const relatorio = [];
@@ -208,7 +260,7 @@ for (const [caminho, nome] of TELAS) {
     ' window.dispatchEvent(new PopStateEvent("popstate"));',
   );
   await dormir(500);
-  await esperarCarregar();
+  await esperarAcalmar();
 
   // Marca os clicáveis com um atributo para poder achá-los por seletor.
   const quantos = await js(`(() => {
@@ -223,12 +275,25 @@ for (const [caminho, nome] of TELAS) {
       if (getComputedStyle(el).cursor === 'pointer') candidatos.push(el);
     }
 
+    // Um elemento por TIPO, nao um por elemento.
+    //
+    // Os 16 botoes "Abrir" de uma tabela sao o MESMO botao repetido:
+    // mesma tag, mesmas classes, mesmo CSS. Medir os 16 leva 16 vezes
+    // mais tempo para descobrir exatamente a mesma coisa. O que muda
+    // o resultado e o TIPO, e um de cada basta.
+    const tipos = new Set();
+
     for (const el of candidatos) {
       if (vistos.has(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 4 || r.height < 4) continue;
       if (el.disabled) continue;
       vistos.add(el);
+
+      const tipo = el.tagName + '|' + (el.className || '').toString().trim();
+      if (tipos.has(tipo)) continue;
+      tipos.add(tipo);
+
       el.setAttribute('data-auditoria', String(n));
       n += 1;
     }
@@ -238,28 +303,9 @@ for (const [caminho, nome] of TELAS) {
   const achados = [];
 
   for (let i = 0; i < quantos; i += 1) {
-    const { root } = await cdp('DOM.getDocument', { depth: -1 });
-    const { nodeId } = await cdp('DOM.querySelector', {
-      nodeId: root.nodeId,
-      selector: '[data-auditoria="' + i + '"]',
-    });
-    if (!nodeId) continue;
-
-    const antes = await estiloDe(nodeId);
-
-    await cdp('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['hover'] });
-    const depois = await estiloDe(nodeId);
-
-    await cdp('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['focus-visible'] });
-    const comFoco = await estiloDe(nodeId);
-
-    await cdp('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
-
-    const mudou = OLHAR.filter((k) => antes[k] !== depois[k]);
-    const mudouFoco = OLHAR.filter((k) => antes[k] !== comFoco[k]);
-
-    const info = await js(`(() => {
+    const cru = await js(`(() => {
       const el = document.querySelector('[data-auditoria="${i}"]');
+      if (!el) return 'null';
       const r = el.getBoundingClientRect();
       const classe = (el.className || '').toString().split(' ').filter(Boolean).slice(0, 2).join('.');
       return JSON.stringify({
@@ -267,14 +313,59 @@ for (const [caminho, nome] of TELAS) {
         texto: (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 26),
         cursor: getComputedStyle(el).cursor,
         dentroDeClicavel: !!el.parentElement?.closest('button, a[href], [role=menuitem], [role=tab], label'),
+        x: Math.round(r.x + r.width / 2),
+        y: Math.round(r.y + r.height / 2),
+        naTela: r.top >= 0 && r.bottom <= window.innerHeight,
       });
     })()`);
 
-    const { nome: tag, texto, cursor, dentroDeClicavel } = JSON.parse(info);
+    if (cru === 'null') continue;
+
+    const { nome: tag, texto, cursor, dentroDeClicavel, x, y, naTela } = JSON.parse(cru);
 
     // Elemento clicável que está DENTRO de outro clicável herda o
     // hover do pai: não precisa ter o seu.
     if (dentroDeClicavel) continue;
+
+    // --- Foco: dado ANTES de mexer o mouse ---
+    //
+    // `:focus-visible` vale quando o navegador entende que a pessoa
+    // está navegando por teclado. Mover o ponteiro primeiro estragaria
+    // a leitura.
+    await pontaLonge();
+    const antes = await estiloDe(i);
+    if (!antes) continue;
+
+    await js(`document.querySelector('[data-auditoria="${i}"]')?.focus()`);
+    await dormir(120);
+    const comFoco = await estiloDe(i);
+
+    await js('document.activeElement?.blur()');
+    await dormir(80);
+
+    // --- Hover: com o ponteiro de verdade em cima ---
+    let depois = antes;
+
+    if (naTela) {
+      await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
+      // A transição do sistema é de 150ms: esperar menos lê a cor no
+      // meio do caminho.
+      await dormir(320);
+      depois = (await estiloDe(i)) ?? antes;
+      await pontaLonge();
+    }
+
+    const mudou = OLHAR.filter((k) => antes[k] !== depois[k]);
+    const mudouFoco = comFoco ? OLHAR.filter((k) => antes[k] !== comFoco[k]) : [];
+
+    // Elemento fora da parte visível da janela não recebe o ponteiro:
+    // não dá para afirmar nada sobre o hover dele.
+    if (!naTela) {
+      if (mudouFoco.length === 0) {
+        achados.push({ tipo: 'SEM_FOCO', alvo: tag + ' "' + texto + '"', cursor });
+      }
+      continue;
+    }
 
     if (mudou.length === 0) {
       achados.push({ tipo: 'SEM_HOVER', alvo: tag + ' "' + texto + '"', cursor });

@@ -22,6 +22,11 @@ import {
   type ParcelaParaIndicador,
 } from '../servicos/indicadores-financeiros.js';
 import { gerarArquivoDaTabela, formatoValido } from '../servicos/tabela-arquivo.js';
+import { gerarPdfNotaFiscal } from '../servicos/pdf-nota-fiscal.js';
+import {
+  guardarArquivo, lerArquivo, apagarArquivo, tipoAceito, tamanhoLegivel,
+  ErroDeArquivo, TAMANHO_MAXIMO,
+} from '../servicos/arquivos.js';
 
 const INCLUIR_NOTA = {
   fornecedor: true,
@@ -771,6 +776,208 @@ export async function rotasFiscal(app: FastifyInstance) {
           };
         }),
       };
+    },
+  );
+
+  // --------------------------------------------------------
+  //  Arquivamento da nota
+  //
+  //  O fluxo de compras pede a nota "arquivada em PDF". São dois
+  //  caminhos, e o sistema tem os dois:
+  //
+  //  - o fornecedor mandou o PDF ou o XML  -> guardamos o arquivo dele
+  //  - a nota foi digitada à mão           -> geramos o espelho
+  // --------------------------------------------------------
+
+  /** O espelho, gerado na hora a partir do que está lançado. */
+  app.get(
+    '/api/notas-fiscais/:id/pdf',
+    { preHandler: app.exigirPermissao('financeiro.ver') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      const nota = await banco.notaFiscal.findUnique({ where: { id }, include: INCLUIR_NOTA });
+      if (!nota) return res.status(404).send({ erro: 'Nota não encontrada.' });
+
+      const pdf = await gerarPdfNotaFiscal({
+        numero: nota.numero,
+        serie: nota.serie,
+        chaveAcesso: nota.chaveAcesso,
+        emitidaEm: nota.emitidaEm,
+        situacao: nota.situacao,
+        doXml: nota.doXml,
+        valorTotal: numero(nota.valorTotal) ?? 0,
+        valorProdutos: numero(nota.valorProdutos),
+        valorFrete: numero(nota.valorFrete),
+        divergencias: nota.divergencias,
+        observacoes: nota.observacoes,
+        lancadaPor: nota.lancadaPor.nome,
+        fornecedor: {
+          razaoSocial: nota.fornecedor.razaoSocial,
+          nomeFantasia: nota.fornecedor.nomeFantasia,
+          cnpj: nota.fornecedor.cnpj,
+        },
+        pedido: nota.pedido
+          ? { numeroFormatado: formatarNumeroPedido(nota.pedido.numero) }
+          : null,
+        itens: nota.itens.map((i) => ({
+          ordem: i.ordem,
+          codigo: i.codigo,
+          descricao: i.descricao,
+          unidade: i.unidade,
+          quantidade: numero(i.quantidade) ?? 0,
+          valorUnitario: numero(i.valorUnitario) ?? 0,
+          valorTotal: numero(i.valorTotal) ?? 0,
+        })),
+      });
+
+      return res
+        .header('Content-Type', 'application/pdf')
+        .header(
+          'Content-Disposition',
+          'attachment; filename="NF-' + nota.numero + '-' + nota.serie + '.pdf"',
+        )
+        .send(pdf);
+    },
+  );
+
+  /** O que já está arquivado nesta nota. */
+  app.get(
+    '/api/notas-fiscais/:id/arquivos',
+    { preHandler: app.exigirPermissao('financeiro.ver') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      const nota = await banco.notaFiscal.findUnique({ where: { id }, select: { id: true } });
+      if (!nota) return res.status(404).send({ erro: 'Nota não encontrada.' });
+
+      const arquivos = await banco.arquivo.findMany({
+        where: { notaFiscalId: id },
+        include: { enviadoPor: { select: { nome: true } } },
+        orderBy: { criadoEm: 'desc' },
+      });
+
+      return {
+        arquivos: arquivos.map((a) => ({
+          id: a.id,
+          nomeOriginal: a.nomeOriginal,
+          tipo: a.tipo,
+          tipoMime: a.tipoMime,
+          tamanho: a.tamanho,
+          tamanhoLegivel: tamanhoLegivel(a.tamanho),
+          enviadoPor: a.enviadoPor.nome,
+          criadoEm: a.criadoEm,
+        })),
+      };
+    },
+  );
+
+  /**
+   * Arquiva o PDF ou o XML que o fornecedor mandou.
+   *
+   * O conteúdo chega em base64 dentro do JSON. É o mesmo caminho
+   * por onde o XML já entrava: evita uma biblioteca de upload só
+   * para dois tipos de arquivo pequenos.
+   */
+  app.post(
+    '/api/notas-fiscais/:id/arquivos',
+    { preHandler: app.exigirPermissao('financeiro.gerenciar') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      const dados = z
+        .object({
+          nomeArquivo: textoObrigatorio(3, 'O nome do arquivo'),
+          tipoMime: textoObrigatorio(3, 'O tipo do arquivo'),
+          conteudoBase64: z.string().min(16, 'O arquivo está vazio.'),
+        })
+        .safeParse(req.body);
+
+      if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
+
+      const nota = await banco.notaFiscal.findUnique({ where: { id }, select: { id: true } });
+      if (!nota) return res.status(404).send({ erro: 'Nota não encontrada.' });
+
+      if (!tipoAceito(dados.data.tipoMime)) {
+        return res.status(400).send({
+          erro: 'Só aceitamos PDF e XML da nota fiscal.',
+        });
+      }
+
+      const conteudo = Buffer.from(dados.data.conteudoBase64, 'base64');
+
+      if (conteudo.length > TAMANHO_MAXIMO) {
+        return res.status(413).send({
+          erro: 'O arquivo passa de ' + TAMANHO_MAXIMO / 1024 / 1024 + ' MB.',
+        });
+      }
+
+      try {
+        const guardado = await guardarArquivo({
+          conteudo,
+          nomeOriginal: dados.data.nomeArquivo,
+          tipoMime: dados.data.tipoMime,
+          tipo: dados.data.tipoMime === 'application/pdf' ? 'PDF_NFE' : 'XML_NFE',
+          notaFiscalId: id,
+          usuarioId: req.usuario!.id,
+        });
+
+        return res.status(201).send({
+          arquivo: {
+            id: guardado.id,
+            nomeOriginal: guardado.nomeOriginal,
+            tipo: guardado.tipo,
+            tamanho: guardado.tamanho,
+            tamanhoLegivel: tamanhoLegivel(guardado.tamanho),
+          },
+          mensagem: 'Arquivo guardado junto da nota.',
+        });
+      } catch (erro) {
+        if (erro instanceof ErroDeArquivo) {
+          return res.status(400).send({ erro: erro.message });
+        }
+        throw erro;
+      }
+    },
+  );
+
+  /** Baixa um arquivo guardado. */
+  app.get(
+    '/api/arquivos/:id',
+    { preHandler: app.exigirPermissao('financeiro.ver') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      try {
+        const achado = await lerArquivo(id);
+        if (!achado) return res.status(404).send({ erro: 'Arquivo não encontrado.' });
+
+        return res
+          .header('Content-Type', achado.ficha.tipoMime)
+          .header(
+            'Content-Disposition',
+            'attachment; filename="' + achado.ficha.nomeOriginal.replace(/"/g, '') + '"',
+          )
+          .send(achado.conteudo);
+      } catch (erro) {
+        if (erro instanceof ErroDeArquivo) {
+          return res.status(410).send({ erro: erro.message });
+        }
+        throw erro;
+      }
+    },
+  );
+
+  app.delete(
+    '/api/arquivos/:id',
+    { preHandler: app.exigirPermissao('financeiro.gerenciar') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      const apagou = await apagarArquivo(id);
+      if (!apagou) return res.status(404).send({ erro: 'Arquivo não encontrado.' });
+
+      return { ok: true, mensagem: 'Arquivo removido do arquivamento.' };
     },
   );
 }

@@ -253,6 +253,21 @@ APOIO
 > As etapas **1 a 9** formam o sistema mínimo utilizável: já substituem as planilhas.
 > As etapas **10 a 12** agregam automação, inteligência e o controle de locação.
 
+### Conferência contra os documentos de origem (2026-09-23)
+
+Revisão do sistema contra o BPMN e a ata de reunião. Três coisas estavam nos documentos e
+não existiam no sistema; duas foram construídas, uma foi decidida.
+
+| O que | Onde estava | Situação |
+|---|---|---|
+| Pedido enviado por **e-mail** | Trilha A, passo 7: "envia o pedido por e-mail/WhatsApp" | **Feito** na versão 0.17.0. Adaptador em `mock`, mesma trava do WhatsApp |
+| **NF arquivada em PDF** | Trilha B, passo 10 | **Feito** na versão 0.17.0: espelho gerado + arquivo do fornecedor guardado |
+| **Requisição entrando pelo WhatsApp** | Divergência D4 | **Não entra.** O BPMN dizia formulário; a ata dizia WhatsApp. O canal oficial é a tela, que funciona no celular. Confirmado pelo dono do sistema: no fluxo antigo eles usavam Google Forms, e a tela ocupa esse lugar |
+
+Sobre o **espelho da nota**: NÃO é um DANFE, e diz isso no próprio rodapé. O DANFE tem
+layout definido em lei e só vale com o protocolo de autorização da SEFAZ, que depende do
+certificado digital A1 — a dúvida nº 8, ainda sem resposta da empresa.
+
 ### Finalização (sem data)
 
 O que era a "Etapa 13 — Entrega" **deixou de ser etapa**, por decisão da direção em

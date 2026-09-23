@@ -17,6 +17,7 @@ import {
 import { dataBr, dataHoraBr } from '../../servicos/solicitacoes';
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { enviarConvites } from '../../servicos/whatsapp';
+import { convidarPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
@@ -130,13 +131,18 @@ export function DetalheCotacao() {
     }
   }
 
-  /** Manda o link do portal para cada fornecedor convidado. */
-  async function mandarConvites() {
+  /**
+   * Manda o link do portal para cada fornecedor convidado.
+   *
+   * Os dois canais levam o mesmo link. Fornecedor sem o contato
+   * daquele canal é pulado com aviso, não trava o envio dos outros.
+   */
+  async function mandarConvites(canal: 'whatsapp' | 'email') {
     setOcupado(true);
     setErro(null);
 
     try {
-      const r = await enviarConvites(id);
+      const r = canal === 'whatsapp' ? await enviarConvites(id) : await convidarPorEmail(id);
       setAviso(r.mensagem);
       await carregar();
     } catch (e) {
@@ -249,10 +255,21 @@ export function DetalheCotacao() {
             <button
               type="button"
               className="botao botao--secundario"
-              onClick={() => void mandarConvites()}
+              onClick={() => void mandarConvites('whatsapp')}
               disabled={ocupado}
             >
-              💬 Enviar convites pelo WhatsApp
+              💬 Convidar pelo WhatsApp
+            </button>
+          )}
+
+          {aberto && (
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => void mandarConvites('email')}
+              disabled={ocupado}
+            >
+              ✉ Convidar por e-mail
             </button>
           )}
 

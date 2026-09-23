@@ -14,7 +14,7 @@ import { Inicio } from './paginas/Inicio';
 import { MinhaSenha } from './paginas/MinhaSenha';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { StatusSistema } from './paginas/admin/StatusSistema';
-import { ConfiguracaoWhatsApp } from './paginas/admin/WhatsApp';
+import { Avisos } from './paginas/admin/Avisos';
 import { CadastrosIndice } from './paginas/cadastros/Indice';
 import { Familias } from './paginas/cadastros/Familias';
 import { Materiais } from './paginas/cadastros/Materiais';
@@ -332,10 +332,20 @@ function Rotas() {
         />
 
         <Route
+          path="admin/avisos"
+          element={
+            <Protegida permissoes={['sistema.integracoes']}>
+              <Avisos />
+            </Protegida>
+          }
+        />
+
+        {/* O endereço antigo continua valendo: cai na aba do WhatsApp. */}
+        <Route
           path="admin/whatsapp"
           element={
             <Protegida permissoes={['sistema.integracoes']}>
-              <ConfiguracaoWhatsApp />
+              <Avisos />
             </Protegida>
           }
         />

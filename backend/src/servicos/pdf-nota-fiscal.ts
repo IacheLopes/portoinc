@@ -1,0 +1,278 @@
+// ============================================================
+//  PDF da nota fiscal — o ESPELHO
+//
+//  ATENÇÃO AO NOME. Isto NÃO é um DANFE.
+//
+//  O DANFE tem layout definido em lei e só vale acompanhado do
+//  protocolo de autorização que a SEFAZ devolve. Enquanto o
+//  certificado digital A1 da empresa não estiver configurado, o
+//  sistema não tem esse protocolo — e um papel que se parece com
+//  um DANFE sem sê-lo é pior do que nenhum papel.
+//
+//  O que este arquivo gera é o ESPELHO: uma folha com o que foi
+//  lançado no sistema, para o almoxarifado arquivar e o financeiro
+//  conferir. Ele diz isso de forma clara no rodapé.
+//
+//  Quando o fornecedor manda o PDF de verdade, é esse PDF que fica
+//  guardado (ver `arquivos.ts`); o espelho existe para a nota
+//  digitada à mão, que é a maioria hoje.
+// ============================================================
+
+import PDFDocument from 'pdfkit';
+import { formatarCnpj } from './util.js';
+
+const MARINHO = '#0f2942';
+const AZUL = '#2f6fed';
+const CINZA = '#5a6b7d';
+const BORDA = '#dde4ec';
+
+export interface DadosNotaFiscal {
+  numero: string;
+  serie: string;
+  chaveAcesso: string | null;
+  emitidaEm: Date;
+  situacao: string;
+  doXml: boolean;
+  valorTotal: number;
+  valorProdutos: number | null;
+  valorFrete: number | null;
+  divergencias: string[];
+  observacoes: string | null;
+  lancadaPor: string;
+  fornecedor: {
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    cnpj: string;
+  };
+  pedido: { numeroFormatado: string } | null;
+  itens: Array<{
+    ordem: number;
+    codigo: string | null;
+    descricao: string;
+    unidade: string | null;
+    quantidade: number;
+    valorUnitario: number;
+    valorTotal: number;
+  }>;
+}
+
+function dinheiro(valor: number): string {
+  return 'R$ ' + valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function numeroBr(valor: number): string {
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+}
+
+/** A chave tem 44 dígitos: quebrada de 4 em 4, dá para conferir com o olho. */
+function chaveLegivel(chave: string): string {
+  return (chave.match(/.{1,4}/g) ?? []).join(' ');
+}
+
+export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 50, bottom: 50, left: 45, right: 45 },
+      info: {
+        Title: 'Espelho da nota fiscal ' + dados.numero + '-' + dados.serie,
+        Author: 'Porto Inc.',
+      },
+    });
+
+    const pedacos: Buffer[] = [];
+    doc.on('data', (p: Buffer) => pedacos.push(p));
+    doc.on('end', () => resolve(Buffer.concat(pedacos)));
+    doc.on('error', reject);
+
+    const larguraUtil = doc.page.width - 90;
+
+    // ---------- Cabeçalho ----------
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(20)
+      .text('Porto Inc', 45, 45, { continued: true });
+    doc.fillColor(AZUL).text('.');
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(9)
+      .text('Compras e Almoxarifado', 45, 70);
+
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(14)
+      .text('ESPELHO DA NOTA FISCAL', 45, 45, { width: larguraUtil, align: 'right' });
+
+    doc.fillColor(AZUL).fontSize(15)
+      .text('NF ' + dados.numero + ' / série ' + dados.serie, 45, 64, {
+        width: larguraUtil, align: 'right',
+      });
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(8.5)
+      .text(
+        'Emitida em ' + dados.emitidaEm.toLocaleDateString('pt-BR') +
+          (dados.doXml ? ' · lida do XML' : ' · digitada'),
+        45, 85, { width: larguraUtil, align: 'right' },
+      );
+
+    doc.moveTo(45, 106).lineTo(doc.page.width - 45, 106).strokeColor(AZUL).lineWidth(2).stroke();
+
+    // ---------- Fornecedor e pedido ----------
+    let y = 122;
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('FORNECEDOR', 45, y);
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(11)
+      .text(dados.fornecedor.nomeFantasia ?? dados.fornecedor.razaoSocial, 45, y + 10, {
+        width: 280,
+      });
+
+    doc.fillColor('#16202b').font('Helvetica').fontSize(8.5)
+      .text(dados.fornecedor.razaoSocial, 45, y + 25, { width: 280 });
+    doc.text('CNPJ ' + formatarCnpj(dados.fornecedor.cnpj), 45, y + 37);
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('PEDIDO DE COMPRA', 340, y);
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(10)
+      .text(dados.pedido?.numeroFormatado ?? 'Sem pedido vinculado', 340, y + 10, { width: 175 });
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('LANÇADA POR', 340, y + 28);
+    doc.fillColor('#16202b').font('Helvetica').fontSize(8.5)
+      .text(dados.lancadaPor, 340, y + 38, { width: 175 });
+
+    y += 62;
+
+    // ---------- Chave de acesso ----------
+    if (dados.chaveAcesso) {
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('CHAVE DE ACESSO', 45, y);
+      doc.fillColor('#16202b').font('Courier').fontSize(9)
+        .text(chaveLegivel(dados.chaveAcesso), 45, y + 10, { width: larguraUtil });
+      y += 30;
+    }
+
+    // ---------- Itens ----------
+    doc.moveTo(45, y).lineTo(doc.page.width - 45, y).strokeColor(BORDA).lineWidth(1).stroke();
+    y += 10;
+
+    // Sem itens não há tabela: só o cabeçalho, sem nada embaixo,
+    // parece defeito de impressão. Nota digitada à mão costuma vir
+    // assim — o detalhamento só existe quando veio do XML.
+    if (dados.itens.length === 0) {
+      doc.fillColor(CINZA).font('Helvetica-Oblique').fontSize(9)
+        .text(
+          'Esta nota foi lançada sem detalhamento de itens. O valor total confere ' +
+            'com o que foi digitado; o detalhe por item existe quando a nota é lida ' +
+            'do arquivo XML do fornecedor.',
+          45, y, { width: larguraUtil },
+        );
+      y += 40;
+    }
+
+    const COLUNAS = [
+      { titulo: 'ITEM', x: 45, largura: 30, alinhar: 'left' as const },
+      { titulo: 'DESCRIÇÃO', x: 78, largura: 225, alinhar: 'left' as const },
+      { titulo: 'UN', x: 306, largura: 28, alinhar: 'left' as const },
+      { titulo: 'QTD', x: 337, largura: 55, alinhar: 'right' as const },
+      { titulo: 'UNITÁRIO', x: 395, largura: 70, alinhar: 'right' as const },
+      { titulo: 'TOTAL', x: 468, largura: 82, alinhar: 'right' as const },
+    ];
+
+    if (dados.itens.length > 0) {
+      doc.fillColor(CINZA).font('Helvetica-Bold').fontSize(7.5);
+      for (const c of COLUNAS) {
+        doc.text(c.titulo, c.x, y, { width: c.largura, align: c.alinhar });
+      }
+
+      y += 14;
+      doc.moveTo(45, y - 3).lineTo(doc.page.width - 45, y - 3)
+        .strokeColor(BORDA).lineWidth(1).stroke();
+    }
+
+    for (const item of dados.itens) {
+      // Folha nova antes de estourar a margem de baixo.
+      if (y > doc.page.height - 150) {
+        doc.addPage();
+        y = 60;
+      }
+
+      const descricao = item.codigo ? item.codigo + ' — ' + item.descricao : item.descricao;
+      const altura = doc.font('Helvetica').fontSize(8.5).heightOfString(descricao, { width: 225 });
+
+      doc.fillColor('#16202b').font('Helvetica').fontSize(8.5);
+      doc.text(String(item.ordem + 1), 45, y, { width: 30 });
+      doc.text(descricao, 78, y, { width: 225 });
+      doc.text(item.unidade ?? '—', 306, y, { width: 28 });
+      doc.text(numeroBr(item.quantidade), 337, y, { width: 55, align: 'right' });
+      doc.text(dinheiro(item.valorUnitario), 395, y, { width: 70, align: 'right' });
+      doc.font('Helvetica-Bold').text(dinheiro(item.valorTotal), 468, y, {
+        width: 82, align: 'right',
+      });
+
+      y += Math.max(altura, 11) + 7;
+    }
+
+    // ---------- Totais ----------
+    y += 4;
+    doc.moveTo(300, y).lineTo(doc.page.width - 45, y).strokeColor(BORDA).lineWidth(1).stroke();
+    y += 8;
+
+    const linhasTotal: Array<[string, string]> = [];
+    if (dados.valorProdutos !== null) linhasTotal.push(['Produtos', dinheiro(dados.valorProdutos)]);
+    if (dados.valorFrete !== null && dados.valorFrete > 0) {
+      linhasTotal.push(['Frete', dinheiro(dados.valorFrete)]);
+    }
+
+    for (const [rotulo, valor] of linhasTotal) {
+      doc.fillColor(CINZA).font('Helvetica').fontSize(8.5)
+        .text(rotulo, 340, y, { width: 110, align: 'right' });
+      doc.fillColor('#16202b').text(valor, 455, y, { width: 95, align: 'right' });
+      y += 13;
+    }
+
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(11)
+      .text('TOTAL DA NOTA', 300, y + 2, { width: 150, align: 'right' });
+    doc.fillColor(AZUL).fontSize(13)
+      .text(dinheiro(dados.valorTotal), 455, y, { width: 95, align: 'right' });
+
+    y += 28;
+
+    // ---------- Divergências ----------
+    if (dados.divergencias.length > 0) {
+      doc.fillColor('#a3261f').font('Helvetica-Bold').fontSize(9)
+        .text('O que não bateu com o pedido', 45, y);
+      y += 14;
+
+      doc.fillColor('#16202b').font('Helvetica').fontSize(8.5);
+      for (const d of dados.divergencias) {
+        doc.text('• ' + d, 45, y, { width: larguraUtil });
+        y += 12;
+      }
+      y += 6;
+    }
+
+    if (dados.observacoes) {
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('OBSERVAÇÕES', 45, y);
+      doc.fillColor('#16202b').font('Helvetica').fontSize(8.5)
+        .text(dados.observacoes, 45, y + 10, { width: larguraUtil });
+    }
+
+    // ---------- Rodapé ----------
+    //
+    // Escrever abaixo da margem de baixo faz o pdfkit abrir uma
+    // folha nova sozinho — uma em branco por rodapé. Zeramos a
+    // margem enquanto escrevemos e devolvemos depois.
+    const margemDeBaixo = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+
+    const rodape = doc.page.height - 44;
+    doc.moveTo(45, rodape - 8).lineTo(doc.page.width - 45, rodape - 8)
+      .strokeColor(BORDA).lineWidth(1).stroke();
+
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
+      .text(
+        'Documento interno da Porto Inc., gerado a partir do que foi lançado no sistema. ' +
+          'NÃO substitui o DANFE nem tem valor fiscal.',
+        45, rodape, { width: larguraUtil },
+      );
+
+    doc.page.margins.bottom = margemDeBaixo;
+
+    doc.end();
+  });
+}

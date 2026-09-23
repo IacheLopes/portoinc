@@ -10,12 +10,14 @@
 //  ligada, ela vira só um terceiro caminho.
 // ============================================================
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   listarNotas, listarPedidosParaNota, lerXml, lancarNota, gerarTitulos, cancelarNota,
-  ROTULO_NOTA, COR_NOTA,
-  type Nota, type PedidoParaNota, type ItemDaNota,
+  baixarEspelhoDaNota, listarArquivosDaNota, guardarArquivoDaNota,
+  baixarArquivoGuardado, removerArquivoDaNota, lerArquivoEmBase64,
+  ROTULO_NOTA, COR_NOTA, ROTULO_TIPO_ARQUIVO,
+  type Nota, type PedidoParaNota, type ItemDaNota, type ArquivoDaNota,
 } from '../../servicos/fiscal';
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
@@ -40,6 +42,13 @@ export function NotasFiscais() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+
+  // Arquivamento: qual nota está com a gaveta aberta e o que há nela.
+  const [gaveta, setGaveta] = useState<string | null>(null);
+  const [arquivosDaNota, setArquivosDaNota] = useState<ArquivoDaNota[]>([]);
+  const [carregandoArquivos, setCarregandoArquivos] = useState(false);
+  const [baixando, setBaixando] = useState<string | null>(null);
+  const escolherArquivo = useRef<HTMLInputElement>(null);
 
   // Formulário de lançamento.
   const [aberto, setAberto] = useState(false);
@@ -211,6 +220,75 @@ export function NotasFiscais() {
       await carregar();
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível cancelar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  /** Abre (ou fecha) a gaveta de arquivos de uma nota. */
+  async function abrirGaveta(id: string) {
+    if (gaveta === id) {
+      setGaveta(null);
+      return;
+    }
+
+    setGaveta(id);
+    setArquivosDaNota([]);
+    setCarregandoArquivos(true);
+
+    try {
+      const r = await listarArquivosDaNota(id);
+      setArquivosDaNota(r.arquivos);
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao ler os arquivos da nota.');
+    } finally {
+      setCarregandoArquivos(false);
+    }
+  }
+
+  async function baixarEspelho(n: Nota) {
+    setBaixando(n.id);
+    setErro(null);
+    try {
+      await baixarEspelhoDaNota(n.id, n.numero, n.serie);
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível gerar o PDF da nota.');
+    } finally {
+      setBaixando(null);
+    }
+  }
+
+  async function guardar(notaId: string, escolhido: File) {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+
+    try {
+      const dados = await lerArquivoEmBase64(escolhido);
+      const r = await guardarArquivoDaNota(notaId, dados);
+      setAviso(r.mensagem);
+
+      const lista = await listarArquivosDaNota(notaId);
+      setArquivosDaNota(lista.arquivos);
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível guardar o arquivo.');
+    } finally {
+      setOcupado(false);
+      if (escolherArquivo.current) escolherArquivo.current.value = '';
+    }
+  }
+
+  async function tirarDoArquivo(notaId: string, arquivoId: string) {
+    setOcupado(true);
+    setErro(null);
+    try {
+      const r = await removerArquivoDaNota(arquivoId);
+      setAviso(r.mensagem);
+
+      const lista = await listarArquivosDaNota(notaId);
+      setArquivosDaNota(lista.arquivos);
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível remover o arquivo.');
     } finally {
       setOcupado(false);
     }
@@ -435,6 +513,7 @@ export function NotasFiscais() {
                     <th scope="col" className="numero">Valor</th>
                     <th scope="col">Situação</th>
                     <th scope="col">Parcelas</th>
+                    <th scope="col">Arquivo</th>
                     {podeGerenciar && (
                       <th scope="col">
                         <span className="apenas-leitor-tela">Ações</span>
@@ -444,7 +523,8 @@ export function NotasFiscais() {
                 </thead>
                 <tbody>
                   {notas.map((n) => (
-                    <tr key={n.id}>
+                    <Fragment key={n.id}>
+                    <tr>
                       <th scope="row" className="mono">
                         {n.numero}/{n.serie}
                         <small className="linha-extra">
@@ -475,6 +555,29 @@ export function NotasFiscais() {
                           <small>não geradas</small>
                         )}
                       </td>
+                      <td>
+                        <div className="formulario__acoes">
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => void baixarEspelho(n)}
+                            disabled={baixando === n.id}
+                          >
+                            {baixando === n.id ? 'Gerando...' : '📄 PDF'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => void abrirGaveta(n.id)}
+                            aria-expanded={gaveta === n.id}
+                            aria-controls={'arquivos-' + n.id}
+                          >
+                            📎 Arquivos
+                          </button>
+                        </div>
+                      </td>
+
                       {podeGerenciar && (
                         <td>
                           <div className="formulario__acoes">
@@ -502,6 +605,92 @@ export function NotasFiscais() {
                         </td>
                       )}
                     </tr>
+
+                    {/* A gaveta abre embaixo da nota, sem tirar
+                        ninguém da tela nem abrir janela por cima. */}
+                    {gaveta === n.id && (
+                      <tr id={'arquivos-' + n.id} className="linha-gaveta">
+                        <td colSpan={podeGerenciar ? 8 : 7}>
+                          {carregandoArquivos ? (
+                            <p className="texto-fraco">Lendo os arquivos...</p>
+                          ) : (
+                            <>
+                              {arquivosDaNota.length === 0 ? (
+                                <p className="texto-fraco">
+                                  Nada arquivado nesta nota ainda. O PDF ao lado é gerado a
+                                  partir do que está lançado; aqui fica o arquivo que o
+                                  fornecedor mandou.
+                                </p>
+                              ) : (
+                                <ul className="lista-arquivos">
+                                  {arquivosDaNota.map((a) => (
+                                    <li key={a.id}>
+                                      <span aria-hidden="true">
+                                        {a.tipo === 'XML_NFE' ? '📃' : '📄'}
+                                      </span>
+                                      <span className="lista-arquivos__nome">
+                                        <strong>{a.nomeOriginal}</strong>
+                                        <small>
+                                          {ROTULO_TIPO_ARQUIVO[a.tipo]} · {a.tamanhoLegivel} ·
+                                          guardado por {a.enviadoPor}
+                                        </small>
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className="botao botao--discreto"
+                                        onClick={() =>
+                                          void baixarArquivoGuardado(a.id, a.nomeOriginal)
+                                        }
+                                      >
+                                        Baixar
+                                      </button>
+                                      {podeGerenciar && (
+                                        <button
+                                          type="button"
+                                          className="botao botao--discreto"
+                                          onClick={() => void tirarDoArquivo(n.id, a.id)}
+                                          disabled={ocupado}
+                                        >
+                                          Remover
+                                        </button>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+
+                              {podeGerenciar && (
+                                <div className="campo">
+                                  <label
+                                    className="campo__rotulo"
+                                    htmlFor={'subir-' + n.id}
+                                  >
+                                    Guardar o PDF ou o XML que o fornecedor mandou
+                                  </label>
+                                  <input
+                                    id={'subir-' + n.id}
+                                    ref={escolherArquivo}
+                                    type="file"
+                                    className="campo__entrada"
+                                    accept=".pdf,.xml,application/pdf,text/xml"
+                                    disabled={ocupado}
+                                    onChange={(e) => {
+                                      const escolhido = e.target.files?.[0];
+                                      if (escolhido) void guardar(n.id, escolhido);
+                                    }}
+                                  />
+                                  <p className="campo__ajuda">
+                                    Só PDF e XML, até 5 MB. O arquivo fica guardado com a
+                                    nota e pode ser baixado depois.
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

@@ -160,14 +160,6 @@ export function ConfiguracaoWhatsApp() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>WhatsApp</h1>
-          <p className="secao__descricao">
-            Conectar um número para o sistema enviar convites de cotação e pedidos de compra
-            sem sair da tela.
-          </p>
-        </div>
-
         {/* ---------- A trava, antes de tudo ---------- */}
         <div className={'aviso ' + (situacao.modoTeste ? 'aviso--atencao' : 'aviso--erro')}>
           <span className="aviso__icone" aria-hidden="true">

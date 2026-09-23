@@ -1,4 +1,4 @@
-<!-- versao: 0.16.0 -->
+<!-- versao: 0.17.0 -->
 
 # 1. Antes de começar
 
@@ -31,6 +31,9 @@ O sistema tem **8 funções**. Uma pessoa pode ter mais de uma função ao mesmo
 > Nada aqui é promessa: se está descrito, está funcionando na sua máquina.
 
 O projeto tem **12 etapas**, e este manual cobre todas: da **0** à **12**.
+
+> A partir da versão 0.17.0 ele cobre também o **envio por e-mail** e o **arquivamento da
+> nota fiscal** — duas coisas que estavam nos documentos de origem e faltavam.
 
 ---
 
@@ -1538,6 +1541,49 @@ O mesmo fornecedor **não lança a mesma nota duas vezes** — número e série 
 
 ---
 
+# 31.1. Arquivar a nota fiscal
+
+> O fluxo de compras diz que, com a entrega conforme, a nota é **arquivada em PDF**.
+> São dois caminhos, e o sistema tem os dois.
+
+## O espelho: quando a nota foi digitada
+
+Na tela **Notas fiscais**, coluna **Arquivo**, botão **📄 PDF**. Sai uma folha com tudo o
+que foi lançado: fornecedor, pedido, chave de acesso, itens, totais e as divergências.
+
+**Este documento NÃO é o DANFE.** Ele diz isso no rodapé, com todas as letras:
+
+> Documento interno da Porto Inc., gerado a partir do que foi lançado no sistema.
+> NÃO substitui o DANFE nem tem valor fiscal.
+
+O DANFE de verdade tem layout definido em lei e só vale acompanhado do protocolo de
+autorização que a SEFAZ devolve. Enquanto o certificado digital da empresa não estiver
+configurado, o sistema não tem esse protocolo — e um papel parecido com um DANFE sem
+sê-lo seria pior do que papel nenhum.
+
+## O arquivo do fornecedor: quando ele mandou
+
+Ainda na coluna **Arquivo**, botão **📎 Arquivos**. Abre uma gaveta embaixo da nota com o
+que já está guardado e um campo para subir o PDF ou o XML que o fornecedor enviou.
+
+- Só **PDF e XML**, até **5 MB**
+- O arquivo fica guardado **junto da nota** e pode ser baixado depois
+- Quem guardou e quando ficam registrados
+
+> O arquivo volta **exatamente** como entrou. O sistema guarda um resumo do conteúdo e
+> confere na hora de devolver: arquivo trocado ou corrompido vira erro claro, em vez de um
+> PDF que não abre e ninguém sabe por quê.
+
+## Onde os arquivos ficam
+
+Num volume do Docker, fora do banco. Binário dentro do banco incharia a cópia de segurança
+e deixaria toda consulta mais lenta sem devolver nada em troca.
+
+> Isso quer dizer que a **cópia de segurança do banco não leva os arquivos junto**. Ao
+> mudar o sistema de máquina, o volume `portoink_arquivos` também precisa ir.
+
+---
+
 # 32. Contas a pagar
 
 ## De onde vêm as parcelas
@@ -1836,6 +1882,57 @@ Na tela do WhatsApp, seção **Enviar uma mensagem de teste**. Serve para confer
 | **Falhou** | Tentou sair e deu erro (número sem WhatsApp, conexão caída) |
 
 > O bloqueio aparecer no histórico é de propósito. Se alguém tentou mandar para fora da lista, isso precisa ficar registrado.
+
+---
+
+# 38.1. Enviar por e-mail
+
+> O fluxo de compras sempre disse "envia o pedido por **e-mail/WhatsApp**". O WhatsApp
+> chegou na Etapa 10; o e-mail faltava, e agora está no lugar.
+
+## Onde fica
+
+Menu **Administração → Avisos**. A tela tem duas abas: **WhatsApp** e **E-mail**. Elas fazem
+o mesmo trabalho — levar o convite e o pedido até o fornecedor —, têm a mesma trava e o
+mesmo histórico, então ficam juntas.
+
+## A trava é a mesma
+
+Enquanto o **modo de teste** estiver ligado, o sistema só manda e-mail para os endereços
+da **lista de autorizados**. Qualquer outro é barrado **antes de sair**, e a tentativa
+fica registrada.
+
+> Comece liberando o **seu próprio e-mail**. É assim que se confere a configuração sem
+> risco de chegar alguma coisa na caixa de entrada de um fornecedor antes da hora.
+
+## Como se manda
+
+| Onde | Botão | O que vai |
+|---|---|---|
+| Cotação aberta | **✉ Convidar por e-mail** | O link individual de cada fornecedor |
+| Pedidos | **✉ E-mail** | O texto com total e pagamento, **com o PDF do pedido em anexo** |
+
+Os dois botões ficam ao lado dos de WhatsApp. Quem escolhe é quem está mandando: nem todo
+fornecedor lê os dois canais.
+
+Se o envio der certo e o pedido ainda estiver em rascunho, ele passa para **Enviado**
+sozinho — igual ao WhatsApp.
+
+Fornecedor sem e-mail cadastrado é **pulado com aviso**, e os outros seguem normalmente.
+
+## Hoje ele está simulado
+
+O adaptador de e-mail vem em `mock`: **nada sai para fora**. A tela diz isso no alto, e o
+histórico mostra o que teria sido enviado.
+
+Para ligar de verdade, três coisas precisam existir:
+
+1. Conta em um provedor de e-mail transacional
+2. O **domínio da empresa verificado**, com SPF e DKIM publicados no DNS
+3. `EMAIL_ADAPTER=resend` e as credenciais no `.env`
+
+> O passo 2 não é burocracia: sem ele o e-mail sai, mas cai na caixa de spam do
+> fornecedor — que é pior do que não enviar, porque você acha que enviou.
 
 ---
 

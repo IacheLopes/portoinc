@@ -14,6 +14,7 @@ import {
 import { dataBr } from '../../servicos/solicitacoes';
 import { dinheiro } from '../../servicos/cadastros';
 import { enviarPedidoPorWhatsApp } from '../../servicos/whatsapp';
+import { enviarPedidoPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
@@ -69,18 +70,31 @@ export function ListaPedidos() {
     }
   }
 
-  /** Manda o PDF do pedido para o fornecedor. */
-  async function mandarPorWhatsApp(p: PedidoResumo) {
-    setZap(p.id);
+  /**
+   * Manda o PDF do pedido para o fornecedor.
+   *
+   * Os dois canais do fluxo de compras — WhatsApp e e-mail — levam
+   * o mesmo PDF e tiram o pedido do rascunho do mesmo jeito. Quem
+   * escolhe é quem está mandando: nem todo fornecedor lê os dois.
+   */
+  async function mandar(p: PedidoResumo, canal: 'whatsapp' | 'email') {
+    setZap(p.id + ':' + canal);
     setErro(null);
     setAviso(null);
 
     try {
-      const r = await enviarPedidoPorWhatsApp(p.id);
+      const r = canal === 'whatsapp'
+        ? await enviarPedidoPorWhatsApp(p.id)
+        : await enviarPedidoPorEmail(p.id);
+
       setAviso(r.mensagem);
       await carregar();
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'Não foi possível enviar pelo WhatsApp.');
+      setErro(
+        e instanceof ErroApi
+          ? e.message
+          : 'Não foi possível enviar por ' + (canal === 'whatsapp' ? 'WhatsApp' : 'e-mail') + '.',
+      );
     } finally {
       setZap(null);
     }
@@ -194,10 +208,19 @@ export function ListaPedidos() {
                           <button
                             type="button"
                             className="botao botao--secundario"
-                            onClick={() => void mandarPorWhatsApp(p)}
-                            disabled={zap === p.id}
+                            onClick={() => void mandar(p, 'whatsapp')}
+                            disabled={zap !== null}
                           >
-                            {zap === p.id ? 'Enviando...' : '💬 WhatsApp'}
+                            {zap === p.id + ':whatsapp' ? 'Enviando...' : '💬 WhatsApp'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="botao botao--secundario"
+                            onClick={() => void mandar(p, 'email')}
+                            disabled={zap !== null}
+                          >
+                            {zap === p.id + ':email' ? 'Enviando...' : '✉ E-mail'}
                           </button>
                         </div>
                       </td>

@@ -1,4 +1,4 @@
-<!-- versao: 0.16.0 -->
+<!-- versao: 0.17.0 -->
 
 # 1. Como usar este guia
 
@@ -3306,6 +3306,110 @@ docker compose exec web npm test
 
 ---
 
+## CT-255 · O e-mail não sai para quem não está na lista
+
+1. Menu **Administração → Avisos**, aba **E-mail**
+2. Confira o aviso do alto
+
+**Esperado:** diz **"Modo simulado: nenhum e-mail sai para fora"** e explica que só a lista recebe.
+
+3. Em **Enviar um e-mail de teste**, digite um endereço que **não** esteja na lista e clique em **Enviar teste**
+
+**Esperado:** aparece um aviso dizendo que o endereço **não está na lista de autorizados** e que **nada foi enviado**.
+
+4. Role até **O que o sistema tentou enviar**
+
+**Esperado:** a tentativa aparece como **Bloqueada**, com o motivo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-256 · O e-mail sai depois de liberar
+
+1. Ainda na aba **E-mail**, em **Endereços autorizados**, preencha o seu e-mail e o nome, e clique em **Liberar e-mail**
+
+**Esperado:** o endereço entra na lista **mascarado** (tipo `fu•••••@empresa.com.br`). O endereço inteiro não pode aparecer.
+
+2. Mande o teste para esse mesmo endereço
+
+**Esperado:** passa, e a mensagem diz que **o e-mail foi registrado, mas não saiu para fora** — porque o adaptador está simulado.
+
+3. Digite o mesmo endereço com **outras maiúsculas** (`FULANO@Empresa.com.br`) e mande de novo
+
+**Esperado:** passa igual. E-mail não diferencia maiúscula de minúscula.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-257 · Convite e pedido saem pelos dois canais
+
+1. Abra uma **cotação aberta**
+
+**Esperado:** existem os dois botões — **💬 Convidar pelo WhatsApp** e **✉ Convidar por e-mail**.
+
+2. Clique no de e-mail
+
+**Esperado:** o sistema responde quantos convites saíram e quantos foram bloqueados. Fornecedor sem e-mail cadastrado é **pulado com aviso**, sem travar os outros.
+
+3. Vá em **Pedidos** e clique em **✉ E-mail** num pedido
+
+**Esperado:** o mesmo comportamento do WhatsApp — e, se o pedido estava em rascunho, ele passa para **Enviado** sozinho.
+
+4. Volte em **Avisos → E-mail** e olhe o histórico
+
+**Esperado:** os envios aparecem, com **de onde partiram** (cotação, pedido) e **qual documento**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-258 · O PDF da nota fiscal
+
+1. Menu **Financeiro → Notas fiscais**
+2. Na coluna **Arquivo**, clique em **📄 PDF** de qualquer nota
+
+**Esperado:** baixa um PDF de **uma folha só**, com fornecedor, pedido, totais e — se a nota veio do XML — os itens.
+
+3. Olhe o **rodapé** do PDF
+
+**Esperado:** diz que é documento interno e que **NÃO substitui o DANFE**. Isso é obrigatório: sem o certificado digital da empresa, o sistema não emite DANFE.
+
+4. Baixe o PDF de uma nota **digitada à mão** (sem itens)
+
+**Esperado:** em vez de uma tabela vazia, uma frase explicando que a nota foi lançada sem detalhamento de itens.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-259 · Guardar o arquivo que o fornecedor mandou
+
+1. Ainda em **Notas fiscais**, clique em **📎 Arquivos** de uma nota
+
+**Esperado:** abre uma gaveta **embaixo da linha**, sem janela por cima e sem tirar você da lista.
+
+2. Escolha um **PDF** qualquer no campo de subir arquivo
+
+**Esperado:** o arquivo aparece na lista com nome, tamanho e quem guardou.
+
+3. Clique em **Baixar** nesse arquivo
+
+**Esperado:** baixa **o mesmo arquivo**, com o nome original.
+
+4. Tente subir um arquivo que **não** seja PDF nem XML (uma imagem, por exemplo)
+
+**Esperado:** o sistema **recusa**, dizendo que só aceita PDF e XML.
+
+5. Clique em **Remover** e confira a lista
+
+**Esperado:** o arquivo some.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3666,8 +3770,13 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-252 | Instalação nova deixa alguém entrar |  |
 | CT-253 | A cópia de segurança volta inteira |  |
 | CT-254 | As telas têm prova automática |  |
+| CT-255 | O e-mail não sai para quem não está na lista |  |
+| CT-256 | O e-mail sai depois de liberar |  |
+| CT-257 | Convite e pedido saem pelos dois canais |  |
+| CT-258 | O PDF da nota fiscal |  |
+| CT-259 | Guardar o arquivo que o fornecedor mandou |  |
 
-**Total: 254 casos** · Etapas cobertas: 0 a 12
+**Total: 259 casos** · Etapas cobertas: 0 a 12
 
 ---
 
@@ -3686,9 +3795,9 @@ docker compose exec web npm test    # as telas — cerca de 20 segundos
 
 | Grupo | Quantidade | O que confere |
 |---|---|---|
-| **Unidade** | 341 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
-| **Integração** | 296 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
-| **Telas** | 35 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+| **Unidade** | 355 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
+| **Integração** | 325 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
+| **Telas** | 42 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
 
 > As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
 

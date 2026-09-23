@@ -45,6 +45,9 @@ model Usuario {
   contaPagars       ContaPagar[]
   numeroAutorizados NumeroAutorizado[]
   mensagemEnviadas  MensagemEnviada[]
+  emailAutorizados  EmailAutorizado[]
+  emailEnviados     EmailEnviado[]
+  arquivos          Arquivo[]
   locacoesContratadas ContratoLocacao[] @relation("LocacaoContratada")
   locacoesDevolvidas  ContratoLocacao[] @relation("LocacaoDevolvida")
 
@@ -907,6 +910,7 @@ model NotaFiscal {
   itens        NotaFiscalItem[]
   titulos      ContaPagar[]
   recebimentos Recebimento[]
+  arquivos     Arquivo[]
 
   /// O mesmo fornecedor não emite duas notas com o mesmo número e série.
   @@unique([fornecedorId, numero, serie])
@@ -1127,4 +1131,109 @@ model ContratoLocacao {
   @@index([situacao])
   @@index([previsaoDevolucao])
   @@map("contratos_locacao")
+}
+
+// ============================================================
+//  E-MAIL
+//
+//  Mesma arquitetura do WhatsApp, e pelo mesmo motivo: uma porta
+//  de saída só, com trava de lista de autorizados e registro de
+//  TUDO — inclusive do que foi barrado.
+// ============================================================
+
+/// Quem pode receber e-mail enquanto o modo de teste está ligado.
+model EmailAutorizado {
+  id String @id @default(uuid())
+
+  /// Guardado sempre em minúsculas: e-mail não diferencia caixa.
+  email      String  @unique
+  nome       String
+  observacao String?
+
+  criadoPorId String   @map("criado_por_id")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id])
+
+  @@map("emails_autorizados")
+}
+
+/// Tudo que o sistema tentou enviar por e-mail.
+///
+/// Guarda até o que foi BLOQUEADO: tentativa de mandar para fora
+/// da lista precisa aparecer em algum lugar.
+model EmailEnviado {
+  id String @id @default(uuid())
+
+  para     String
+  destino  String?
+  assunto  String
+  corpo    String
+  temAnexo Boolean @default(false) @map("tem_anexo")
+
+  situacao   SituacaoMensagem
+  idMensagem String?          @map("id_mensagem")
+  erro       String?
+  adaptador  String
+
+  /// De onde partiu: "cotacao", "pedido", "teste".
+  contexto   String?
+  /// O documento de origem: "BID-00002", "PC-00001".
+  referencia String?
+
+  enviadoPorId String?  @map("enviado_por_id")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  enviadoPor Usuario? @relation(fields: [enviadoPorId], references: [id])
+
+  @@index([criadoEm])
+  @@index([situacao])
+  @@map("emails_enviados")
+}
+
+// ============================================================
+//  ARQUIVOS
+//
+//  O sistema não guardava arquivo nenhum. A nota fiscal precisa
+//  ficar arquivada, e é para isso que isto existe.
+//
+//  O conteúdo vai para um volume do Docker; aqui fica só a ficha
+//  do arquivo. Banco não é lugar para guardar binário grande:
+//  incha a cópia de segurança e deixa toda consulta mais lenta.
+// ============================================================
+
+enum TipoArquivo {
+  /// XML da NF-e, como veio do fornecedor ou do SEFAZ.
+  XML_NFE
+  /// PDF da nota (o DANFE que o fornecedor mandou).
+  PDF_NFE
+  OUTRO
+}
+
+model Arquivo {
+  id String @id @default(uuid())
+
+  nomeOriginal String      @map("nome_original")
+  tipoMime     String      @map("tipo_mime")
+  /// Em bytes.
+  tamanho      Int
+  tipo         TipoArquivo @default(OUTRO)
+
+  /// Caminho RELATIVO dentro da pasta de arquivos. Nunca absoluto:
+  /// mudar a pasta não pode exigir mexer no banco.
+  caminho String @unique
+  /// Resumo do conteúdo. Detecta arquivo trocado ou corrompido, e
+  /// evita guardar o mesmo arquivo duas vezes.
+  sha256  String
+
+  notaFiscalId String? @map("nota_fiscal_id")
+
+  enviadoPorId String   @map("enviado_por_id")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  notaFiscal NotaFiscal? @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+  enviadoPor Usuario     @relation(fields: [enviadoPorId], references: [id])
+
+  @@index([notaFiscalId])
+  @@map("arquivos")
 }

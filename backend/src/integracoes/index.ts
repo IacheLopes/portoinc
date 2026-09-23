@@ -28,6 +28,10 @@ import type { PortaPagamento } from './pagamento/porta.js';
 import { AdaptadorPagamentoMock } from './pagamento/adaptador.mock.js';
 import { AdaptadorPagamentoCnab } from './pagamento/adaptador.cnab.js';
 
+import type { PortaEmail } from './email/porta.js';
+import { AdaptadorEmailMock } from './email/adaptador.mock.js';
+import { AdaptadorEmailResend } from './email/adaptador.resend.js';
+
 function montarWhatsApp(): PortaWhatsApp {
   switch (ambiente.WHATSAPP_ADAPTER) {
     case 'baileys':
@@ -68,11 +72,22 @@ function montarPagamento(): PortaPagamento {
   return new AdaptadorPagamentoMock();
 }
 
+function montarEmail(): PortaEmail {
+  if (ambiente.EMAIL_ADAPTER === 'resend') {
+    return new AdaptadorEmailResend(
+      ambiente.EMAIL_API_TOKEN ?? '',
+      ambiente.EMAIL_REMETENTE ?? '',
+    );
+  }
+  return new AdaptadorEmailMock();
+}
+
 export const integracoes = {
   whatsapp: montarWhatsApp(),
   fiscal: montarFiscal(),
   gtin: montarGtin(),
   pagamento: montarPagamento(),
+  email: montarEmail(),
 };
 
 /** Resumo do que esta ligado, mostrado na tela de status. */
@@ -101,6 +116,12 @@ export function resumoIntegracoes() {
       adaptador: integracoes.pagamento.nome,
       simulado: integracoes.pagamento.nome === 'mock',
       descricao: 'Envio da ordem para contas a pagar',
+    },
+    {
+      area: 'E-mail',
+      adaptador: integracoes.email.nome,
+      simulado: integracoes.email.nome === 'mock',
+      descricao: 'Convite de cotação e pedido enviados ao fornecedor',
     },
   ];
 }

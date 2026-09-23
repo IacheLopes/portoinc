@@ -60,7 +60,8 @@ const TELAS = [
   ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe'],
   ['/cadastros/alcadas', 'cadastros-alcadas'],
   ['/admin/usuarios', 'admin-usuarios'],
-  ['/admin/whatsapp', 'admin-whatsapp'],
+  ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp'],
+  ['/admin/avisos?ver=email', 'admin-avisos-email'],
   ['/admin/status', 'admin-status'],
   ['/minha-senha', 'minha-senha'],
 ];
@@ -135,18 +136,47 @@ async function esperarPor(seletor, limite = 40000) {
   throw new Error('nao apareceu na tela em ' + (limite / 1000) + 's: ' + seletor);
 }
 
-// Espera a tela PARAR de carregar antes de medir.
+// Espera a tela PARAR DE MUDAR antes de medir.
 //
-// Com espera fixa a regua chegava cedo demais em maquina ocupada e media o
-// "Carregando...", acusando falta de titulo em tela que tem titulo. Aqui ela
-// pergunta ao navegador se a rodinha (.girando) ja sumiu.
-async function esperarCarregar(limite = 20000) {
+// Duas tentativas anteriores falharam aqui, e vale registrar por que:
+//
+//   1. Espera fixa (2,2s): em maquina ocupada a regua chegava cedo e
+//      media o "Carregando...", acusando falta de titulo em tela que
+//      tem titulo.
+//   2. Esperar a rodinha (.girando) sumir: a rodinha pode ainda NAO
+//      TER APARECIDO. Logo depois de trocar de rota o React nao montou
+//      nada, nao ha rodinha, e a resposta e "pronto". Telas de dezenas
+//      de botoes eram medidas com 2 ou 4.
+//
+// O que funciona e perguntar se a tela ESTABILIZOU: contar os elementos
+// e so medir quando a conta se repete tres vezes seguidas, sem rodinha.
+async function esperarAcalmar(limite = 8000) {
   const ate = Date.now() + limite;
+  let anterior = -1;
+  let iguais = 0;
+
   while (Date.now() < ate) {
-    const pronto = await js("!document.querySelector('.girando')");
-    if (pronto) { await dormir(400); return true; }
-    await dormir(200);
+    const estado = JSON.parse(await js(`JSON.stringify({
+      carregando: !!document.querySelector('.girando'),
+      quantos: document.querySelectorAll('button, a[href], select, input, textarea, [role=tab], [role=menuitem]').length,
+      temTitulo: !!document.querySelector('h1'),
+    })`));
+
+    if (!estado.carregando && estado.temTitulo && estado.quantos === anterior) {
+      iguais += 1;
+      if (iguais >= 2) {
+        // Um respiro final para transicao de CSS terminar.
+        await dormir(250);
+        return true;
+      }
+    } else {
+      iguais = 0;
+    }
+
+    anterior = estado.quantos;
+    await dormir(180);
   }
+
   return false;
 }
 
@@ -357,7 +387,7 @@ for (const [caminho, nome] of TELAS) {
       ' window.dispatchEvent(new PopStateEvent("popstate"));',
     );
     await dormir(500);
-    await esperarCarregar();
+    await esperarAcalmar();
 
     const bruto = await js(MEDIR);
     const { achados, estado } = JSON.parse(bruto);

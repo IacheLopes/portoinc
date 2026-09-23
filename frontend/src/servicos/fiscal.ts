@@ -233,6 +233,98 @@ export function exportarContas(formato: FormatoDeArquivo) {
 }
 
 // ------------------------------------------------------------
+//  Arquivamento da nota
+//
+//  O fluxo de compras pede a nota "arquivada em PDF". Dois
+//  caminhos: o espelho, gerado do que está lançado, e o arquivo
+//  que o fornecedor mandou.
+// ------------------------------------------------------------
+
+export type TipoDeArquivo = 'XML_NFE' | 'PDF_NFE' | 'OUTRO';
+
+export const ROTULO_TIPO_ARQUIVO: Record<TipoDeArquivo, string> = {
+  PDF_NFE: 'PDF da nota',
+  XML_NFE: 'XML da nota',
+  OUTRO: 'Outro',
+};
+
+export interface ArquivoDaNota {
+  id: string;
+  nomeOriginal: string;
+  tipo: TipoDeArquivo;
+  tipoMime: string;
+  tamanho: number;
+  tamanhoLegivel: string;
+  enviadoPor: string;
+  criadoEm: string;
+}
+
+/** O espelho: gerado na hora, a partir do que está lançado. */
+export function baixarEspelhoDaNota(id: string, numero: string, serie: string) {
+  return baixarArquivo(
+    '/api/notas-fiscais/' + id + '/pdf',
+    'NF-' + numero + '-' + serie + '.pdf',
+  );
+}
+
+export function listarArquivosDaNota(id: string) {
+  return chamar<{ arquivos: ArquivoDaNota[] }>('/api/notas-fiscais/' + id + '/arquivos');
+}
+
+export function guardarArquivoDaNota(
+  id: string,
+  dados: { nomeArquivo: string; tipoMime: string; conteudoBase64: string },
+) {
+  return chamar<{ arquivo: ArquivoDaNota; mensagem: string }>(
+    '/api/notas-fiscais/' + id + '/arquivos',
+    { metodo: 'POST', corpo: dados },
+  );
+}
+
+export function baixarArquivoGuardado(id: string, nome: string) {
+  return baixarArquivo('/api/arquivos/' + id, nome);
+}
+
+export function removerArquivoDaNota(id: string) {
+  return chamar<{ ok: boolean; mensagem: string }>('/api/arquivos/' + id, { metodo: 'DELETE' });
+}
+
+/**
+ * Lê o arquivo escolhido e devolve o conteúdo em base64.
+ *
+ * O envio vai dentro do JSON, pelo mesmo caminho por onde o XML
+ * já entrava: evita uma biblioteca de upload só para dois tipos
+ * de arquivo pequenos.
+ */
+export function lerArquivoEmBase64(
+  arquivo: File,
+): Promise<{ nomeArquivo: string; tipoMime: string; conteudoBase64: string }> {
+  return new Promise((ok, nao) => {
+    const leitor = new FileReader();
+
+    leitor.onerror = () => nao(new Error('Não consegui ler o arquivo escolhido.'));
+    leitor.onload = () => {
+      const url = String(leitor.result);
+      const virgula = url.indexOf(',');
+
+      // O navegador nem sempre sabe o tipo pela extensão; quando
+      // não sabe, mandamos o que o nome do arquivo indica.
+      const porNome = arquivo.name.toLowerCase().endsWith('.xml')
+        ? 'text/xml'
+        : 'application/pdf';
+
+      ok({
+        nomeArquivo: arquivo.name,
+        tipoMime: arquivo.type || porNome,
+        conteudoBase64: url.slice(virgula + 1),
+      });
+    };
+
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+// ------------------------------------------------------------
 //  Painel: indicadores e gráficos
 // ------------------------------------------------------------
 

@@ -19,6 +19,7 @@ const esquema = z.object({
   FISCAL_ADAPTER: z.enum(['mock', 'sefaz']).default('mock'),
   GTIN_ADAPTER: z.enum(['mock', 'gs1']).default('mock'),
   PAGAMENTO_ADAPTER: z.enum(['mock', 'cnab', 'open-finance']).default('mock'),
+  EMAIL_ADAPTER: z.enum(['mock', 'resend']).default('mock'),
 
   // --- Credenciais (so exigidas quando o adaptador real for ligado) ---
   WHATSAPP_SESSAO_DIR: z.string().default('/app/sessao-whatsapp'),
@@ -30,6 +31,12 @@ const esquema = z.object({
   SEFAZ_CERTIFICADO_SENHA: z.string().optional(),
   GS1_TOKEN: z.string().optional(),
   BANCO_CODIGO: z.string().optional(),
+  /** Com 'true', so envia para endereco da lista de autorizados. */
+  EMAIL_MODO_TESTE: z.enum(['true','false']).default('true'),
+  EMAIL_API_TOKEN: z.string().optional(),
+  EMAIL_REMETENTE: z.string().optional(),
+  /** Onde ficam os arquivos guardados (NF em PDF, XML). */
+  ARQUIVOS_DIR: z.string().default('/app/arquivos'),
 });
 
 const resultado = esquema.safeParse(process.env);

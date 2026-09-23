@@ -8,10 +8,7 @@ import { banco } from '../plugins/banco.js';
 import { integracoes } from '../integracoes/index.js';
 import { erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
-import { formatarNumeroPedido } from '../servicos/equalizacao.js';
-import { descreverPagamento } from '../servicos/cotacao.js';
-import { numero as decimal } from '../servicos/util.js';
-import { gerarPdfPedido } from '../servicos/pdf-pedido.js';
+import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
 import {
   enviarPeloWhatsApp, modoTeste, mascarar, normalizarTelefone,
   textoConviteCotacao, textoPedidoDeCompra,
@@ -341,117 +338,35 @@ export async function rotasWhatsApp(app: FastifyInstance) {
     async (req, res) => {
       const { id } = req.params as { id: string };
 
-      const pedido = await banco.pedido.findUnique({
-        where: { id },
-        include: {
-          fornecedor: true,
-          comprador: { select: { nome: true } },
-          bid: { select: { numero: true, titulo: true } },
-          itens: {
-            orderBy: { ordem: 'asc' },
-            include: {
-              bidItem: {
-                include: {
-                  material: { select: { codigoInterno: true, descricao: true, normaTecnica: true } },
-                  solicitacaoItem: {
-                    select: {
-                      solicitacao: {
-                        select: { numero: true, obra: { select: { codigo: true, nome: true } } },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
+      const pronto = await prepararPedidoParaEnvio(id);
+      if (!pronto) return res.status(404).send({ erro: 'Pedido não encontrado.' });
 
-      if (!pedido) return res.status(404).send({ erro: 'Pedido não encontrado.' });
-
-      if (!pedido.fornecedor.whatsapp) {
+      if (!pronto.whatsapp) {
         return res.status(400).send({
           erro: 'Este fornecedor não tem WhatsApp cadastrado.',
         });
       }
 
-      const total =
-        pedido.itens.reduce(
-          (s, i) => s + (decimal(i.quantidade) ?? 0) * (decimal(i.valorUnitario) ?? 0),
-          0,
-        ) +
-        (decimal(pedido.valorFrete) ?? 0) +
-        (decimal(pedido.outrosCustos) ?? 0);
-
-      const pdf = await gerarPdfPedido({
-        numero: pedido.numero,
-        situacao: pedido.situacao,
-        criadoEm: pedido.criadoEm,
-        comprador: pedido.comprador.nome,
-        origem: formatarNumeroBid(pedido.bid.numero) + ' — ' + pedido.bid.titulo,
-        fornecedor: {
-          razaoSocial: pedido.fornecedor.razaoSocial,
-          nomeFantasia: pedido.fornecedor.nomeFantasia,
-          cnpj: pedido.fornecedor.cnpj,
-          email: pedido.fornecedor.email,
-          telefone: pedido.fornecedor.whatsapp ?? pedido.fornecedor.telefone,
-        },
-        frete: decimal(pedido.valorFrete) ?? 0,
-        outrosCustos: decimal(pedido.outrosCustos) ?? 0,
-        pagamento: descreverPagamento(
-          decimal(pedido.percentualEntrada),
-          pedido.quantidadeParcelas,
-          pedido.intervaloParcelasDias,
-        ),
-        observacoes: pedido.observacoes,
-        itens: pedido.itens.map((i) => ({
-          ordem: i.ordem,
-          codigo: i.bidItem.material.codigoInterno,
-          descricao: i.bidItem.material.descricao,
-          normaTecnica: i.bidItem.material.normaTecnica,
-          unidadeMedida: i.unidadeMedida,
-          quantidade: decimal(i.quantidade) ?? 0,
-          valorUnitario: decimal(i.valorUnitario) ?? 0,
-          marca: i.marca,
-          modelo: i.modelo,
-          prazoEntregaDias: i.prazoEntregaDias,
-          obra: i.bidItem.solicitacaoItem.solicitacao.obra,
-        })),
-      });
-
-      const nomeFornecedor = pedido.fornecedor.nomeFantasia ?? pedido.fornecedor.razaoSocial;
-      const numeroFormatado = formatarNumeroPedido(pedido.numero);
-
       const resposta = await enviarPeloWhatsApp({
-        para: pedido.fornecedor.whatsapp,
-        destino: nomeFornecedor,
+        para: pronto.whatsapp,
+        destino: pronto.nomeFornecedor,
         texto: textoPedidoDeCompra({
-          numeroPedido: numeroFormatado,
-          fornecedor: nomeFornecedor,
-          total: 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-          pagamento: descreverPagamento(
-            decimal(pedido.percentualEntrada),
-            pedido.quantidadeParcelas,
-            pedido.intervaloParcelasDias,
-          ),
+          numeroPedido: pronto.numeroFormatado,
+          fornecedor: pronto.nomeFornecedor,
+          total: pronto.totalEmReais,
+          pagamento: pronto.pagamento,
         }),
         anexo: {
-          nomeArquivo: numeroFormatado + '.pdf',
-          conteudo: pdf,
+          nomeArquivo: pronto.numeroFormatado + '.pdf',
+          conteudo: pronto.pdf,
           tipoMime: 'application/pdf',
         },
         contexto: 'pedido',
-        referencia: numeroFormatado,
+        referencia: pronto.numeroFormatado,
         usuarioId: req.usuario!.id,
       });
 
-      // Enviou de verdade: o pedido sai do rascunho sozinho.
-      if (resposta.sucesso && pedido.situacao === 'RASCUNHO') {
-        await banco.pedido.update({
-          where: { id },
-          data: { situacao: 'ENVIADO', enviadoEm: new Date() },
-        });
-      }
+      if (resposta.sucesso) await marcarPedidoComoEnviado(id, pronto.situacao);
 
       return res.status(resposta.sucesso ? 200 : resposta.bloqueado ? 403 : 502).send(resposta);
     },
