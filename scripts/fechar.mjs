@@ -20,14 +20,47 @@
 //  de cinco, e esperar uma vez em vez de cinco.
 // ============================================================
 
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPTS = join(RAIZ, 'scripts');
 
-const SOMENTE = process.argv.includes('--rapido');
+const TUDO = process.argv.includes('--tudo');
+
+/**
+ * O backend mudou desde o último marco?
+ *
+ * As 325 provas de integração levam ~2,5 minutos e apagam o banco de
+ * teste. Numa etapa de design elas rodam para confirmar que nada
+ * mudou — e nada mudou mesmo, porque design não toca em backend.
+ *
+ * Com `--tudo` ele roda de qualquer jeito. E quando o git não
+ * responde (pasta sem repositório, por exemplo), roda também: na
+ * dúvida, conferir.
+ */
+function backendMudou() {
+  if (TUDO) return true;
+
+  try {
+    const marco = execSync('git describe --tags --abbrev=0', { cwd: RAIZ })
+      .toString()
+      .trim();
+
+    const desdeOMarco = execSync('git diff --name-only ' + marco + ' -- backend/', { cwd: RAIZ })
+      .toString()
+      .trim();
+
+    const naoSalvo = execSync('git status --porcelain -- backend/', { cwd: RAIZ })
+      .toString()
+      .trim();
+
+    return Boolean(desdeOMarco || naoSalvo);
+  } catch {
+    return true;
+  }
+}
 
 /** Tira os códigos de cor da saída, senão nenhum padrão casa nela. */
 function semCor(texto) {
@@ -103,14 +136,17 @@ const FILA = [
   ['Provas do backend', 'docker', ['compose', 'exec', '-T', 'api', 'npm', 'test'], RAIZ],
 ];
 
+const rodarBackend = backendMudou();
+
 console.log('  Fechando a etapa. São ' + FILA.length + ' passos, em fila.\n');
 
 const tudo = [];
 
 for (const [nome, comando, argumentos, pasta] of FILA) {
-  // O rápido pula as provas do backend, que são a metade do tempo e
-  // não mudam quando o trabalho foi só de tela.
-  if (SOMENTE && nome === 'Provas do backend') continue;
+  if (nome === 'Provas do backend' && !rodarBackend) {
+    console.log('  ' + nome.padEnd(24) + 'pulado   nada mudou em backend/ desde o último marco');
+    continue;
+  }
 
   process.stdout.write('  ' + nome.padEnd(24) + '... ');
   const r = await rodar(nome, comando, argumentos, pasta);
