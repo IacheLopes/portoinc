@@ -1,4 +1,4 @@
-<!-- versao: 0.22.1 -->
+<!-- versao: 0.23.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -811,6 +811,89 @@ devolve nesse teste.
 > Sexta vez que o "defeito" era a medição. A conferência que valeu foi a geometria: dentro
 > da janela, fora do título, e de que lado do ponteiro.
 
+## Design 5 — Telas de fluxo
+
+Solicitações, Aprovações, Cotações, Equalização, Pedidos e Recebimento.
+
+### D4 — o campo largo demais (resolvido, e era maior do que parecia)
+
+Apontado nos prints: no Recebimento o campo do número do pedido ocupa quase a tela inteira.
+Medido: **969px para receber oito caracteres**.
+
+Olhando as outras telas de fluxo, não era um caso isolado — era uma **classe**:
+
+| Campo | Recebe | Media antes | Agora |
+|---|---|---|---|
+| Número do pedido | `PC-00001` | **969px** | 148px |
+| Quantidade | `120` | 545px | 138px |
+| Precisa até | `dd/mm/aaaa` | 545px | 138px |
+| Justificativa | texto livre | 1106px | 1106px |
+
+O conserto foi no componente, e não tela a tela: `Campo` ganhou uma **largura**, em degraus
+ligados ao conteúdo (`curta`, `media`, `cheia`). E **data e número já vêm curtos sem ninguém
+pedir** — "dd/mm/aaaa" e "120" têm tamanho conhecido, e deixar cada tela lembrar de declarar
+isso é garantir que metade vai esquecer.
+
+A medida é em `ch`, a largura do dígito da fonte, e não em px: assim ela acompanha o tamanho
+do texto em vez de brigar com ele.
+
+**Efeito colateral bom, medido:** a rolagem horizontal no celular caiu de **18 para 16
+telas**. Campo estreito é menos coisa empurrando a página para fora.
+
+### Colisão de nome, a terceira
+
+`--curta` já existia: era a quantidade dentro de uma **célula de tabela**, com
+`text-align: right` e dígito de largura fixa. Coisa específica, com nome genérico.
+
+Ela virou `--celula`, que é o que ela é. `curta` ficou sendo um degrau da escala de largura.
+Mesma lição do `.migalhas` no Design 2 e do `.indicador` no Design 3: **duas coisas com o
+mesmo nome, e uma vence em silêncio.**
+
+Na mesma linha, duas peças INTERNAS do cartão estavam sendo usadas por fora dele:
+`.cartao__rodape` no Conferir e `.cartao__texto` no Detalhe. Ganharam nome próprio
+(`.rodape-da-tabela`, `.indicador__texto`). Tela que usa o avesso de outro componente quebra
+quando aquele componente muda por dentro.
+
+### Caixas sem título
+
+Cinco blocos de formulário eram caixas mudas. Viraram cartões com nome: "Para qual obra",
+"Adicionar item", "Antes de salvar", "O pacote", "Resumo do pacote".
+
+A dívida de cartões escritos à mão caiu de **16 arquivos para 11**.
+
+**Um cuidado com o nível do título:** o cartão do componente usa `h3`, porque o `h1` é da
+tela e o `h2` é da seção. "Justificativa", no Detalhe da solicitação, morava numa seção sem
+`h2` — virar `h3` ali pularia do `h1` direto para o `h3`, que é buraco na estrutura para
+quem usa leitor de tela. Ela foi para uma seção própria, como "Itens solicitados" e
+"Histórico" já eram no mesmo arquivo.
+
+### A regra dos três estados, e onde ela estava exigindo demais
+
+Ela cobra `<Carregando>`, `<Erro>` e `<Vazio>` em toda tela com tabela. Três telas de fluxo
+apareciam na lista — e as três **já tratavam** a lista vazia, só que não com aquele
+componente:
+
+- **Nova solicitação:** a tabela só aparece com itens, e o vazio dela é o aviso "Adicione
+  pelo menos um item" — que diz o que fazer, e é melhor que um `<Vazio>` genérico
+- **Detalhe da solicitação:** a tabela de itens nunca fica vazia (solicitação sem item não
+  pode ser salva), e a seção de assinaturas só existe quando há assinatura
+- **Detalhe da cotação:** cada lista tem o próprio ramo para o caso de estar vazia
+
+Aqui eu **não** afrouxei a regra, como fiz com as duas do Design 4. `<Vazio>` ser o
+componente padrão é o ponto da padronização. Usei a dispensa que o conferidor já tem —
+`// padrao-ignora: <regra> — motivo` — declarada no arquivo, com o porquê escrito ao lado.
+Quem ler depois vê a decisão, e não o silêncio.
+
+### A dívida, antes e agora
+
+| Regra | Design 3 | Agora |
+|---|---|---|
+| Cartões escritos à mão | 21 arquivos | **11** |
+| Formatação fora das funções oficiais | 5 | **3** |
+| Listas sem os três estados | 5 | **2** |
+| Espaçamento fora da escala | 4 | **0** |
+| Vários botões principais | 13 (no código) | **1** (medido na tela) |
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -823,7 +906,7 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 | ~~D1~~ | ✅ **RESOLVIDO no Design 2.** A seta do campo de escolha era do navegador, não nossa. O `appearance` está em `auto`, então o Chromium desenha a seta onde quer — medido: 34px para dentro da borda direita, num campo de 212px. Parece solta no meio do campo | Toda tela com filtro | **Design 2** — controles de formulário viram peça |
 | ~~D2~~ | ✅ **RESOLVIDO no Design 2**, com o menu "⋮". Grupo de botões de ação com larguras irregulares. Na tabela de Pedidos uma linha tem 4 botões e as outras 3; como cada um tem a largura do próprio texto, as colunas não se formam e a borda direita fica serrilhada | Pedidos, e toda tabela com ações | **Design 5** — telas de fluxo |
 | ~~D3~~ | ✅ **RESOLVIDO no Design 4.** A dica flutuante cobria o cartão vizinho. No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
-| D4 | **Campo de busca largo demais.** No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
+| ~~D4~~ | ✅ **RESOLVIDO no Design 5.** Campo de busca largo demais. No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
 | D6 | **Dois botões principais na mesma tela.** Em Alçadas, "Simular" e "+ Nova faixa" disputam: quando dois competem, nenhum é o próximo passo | Alçadas | **Design 6** — cadastros |
 | D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
 

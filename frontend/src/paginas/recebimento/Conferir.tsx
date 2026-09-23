@@ -361,7 +361,7 @@ export function ConferirRecebimento() {
                       </td>
                       <td className="numero">
                         <input
-                          className="campo__entrada campo__entrada--curta"
+                          className="campo__entrada campo__entrada--celula"
                           type="text"
                           inputMode="decimal"
                           aria-label={'Quantidade recebida de ' + item.descricao}
@@ -372,7 +372,7 @@ export function ConferirRecebimento() {
                       </td>
                       <td className="numero">
                         <input
-                          className="campo__entrada campo__entrada--curta"
+                          className="campo__entrada campo__entrada--celula"
                           type="text"
                           inputMode="decimal"
                           aria-label={'Quantidade devolvida de ' + item.descricao}
@@ -419,7 +419,7 @@ export function ConferirRecebimento() {
             </table>
           </div>
 
-          <div className="cartao__rodape">
+          <div className="rodape-da-tabela">
             <p>
               <strong>{marcados}</strong> {marcados === 1 ? 'item marcado' : 'itens marcados'} nesta
               conferência.
@@ -456,7 +456,7 @@ export function ConferirRecebimento() {
           </p>
         </div>
 
-        <div className="cartao">
+        <Cartao>
           <div className="formulario__linha">
             <Selecao
               rotulo="Entrou no almoxarifado"
@@ -499,7 +499,7 @@ export function ConferirRecebimento() {
               {ocupado ? 'Registrando...' : 'Registrar recebimento'}
             </button>
           </div>
-        </div>
+        </Cartao>
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
           <span className="aviso__icone" aria-hidden="true">💡</span>

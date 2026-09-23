@@ -9,10 +9,18 @@
 //  campos a menos para digitar em cada linha.
 // ============================================================
 
+// padrao-ignora: sem-estados — a lista de itens comeca vazia por
+// definicao, e o vazio dela nao e um <Vazio> generico: e o aviso
+// "Adicione pelo menos um item", que diz o que fazer. A tabela so
+// aparece com itens (itens.length > 0), entao tela em branco sem
+// explicacao nao acontece aqui.
+
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   listarObras, buscarObra, listarMateriais, dinheiro,
+  // Com nome proprio: a tela ja tem um estado chamado quantidade.
+  quantidade as formatarQuantidade,
   type Obra, type LinhaOrcamento, type Material,
 } from '../../servicos/cadastros';
 import { criarSolicitacao, type ItemParaEnviar } from '../../servicos/solicitacoes';
@@ -187,7 +195,7 @@ export function NovaSolicitacao() {
           }
         />
 
-        <div className="cartao formulario">
+        <Cartao className="formulario" titulo="Para qual obra">
           <div className="formulario__linha">
             <Selecao
               rotulo="Obra"
@@ -214,7 +222,7 @@ export function NovaSolicitacao() {
             exemplo="Concretagem da laje do 3º pavimento"
             ajuda="Por que este material é necessário. Facilita muito a aprovação."
           />
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------------- Montagem dos itens ---------------- */}
@@ -227,7 +235,7 @@ export function NovaSolicitacao() {
           </p>
         </div>
 
-        <div className="cartao formulario">
+        <Cartao className="formulario" titulo="Adicionar item">
           <div className="formulario__linha">
             <Selecao
               rotulo="Item do catálogo"
@@ -320,7 +328,7 @@ export function NovaSolicitacao() {
               + Adicionar item à solicitação
             </button>
           </div>
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------------- Itens já adicionados ---------------- */}
@@ -355,7 +363,7 @@ export function NovaSolicitacao() {
                         )}
                       </td>
                       <td className="mono">{i.material.unidadeMedida}</td>
-                      <td className="numero">{i.quantidade.toLocaleString('pt-BR')}</td>
+                      <td className="numero">{formatarQuantidade(i.quantidade)}</td>
                       <td className="numero">
                         {i.valorEstimado !== null
                           ? dinheiro(i.quantidade * i.valorEstimado)
@@ -389,7 +397,7 @@ export function NovaSolicitacao() {
       )}
 
       <section className="secao">
-        <div className="cartao formulario">
+        <Cartao className="formulario" titulo="Antes de salvar">
           <Campo
             rotulo="Observações gerais"
             valor={observacoes}
@@ -426,7 +434,7 @@ export function NovaSolicitacao() {
               <Selo tipo="info">Nada é enviado para aprovação ainda</Selo>
             </span>
           </div>
-        </div>
+        </Cartao>
       </section>
     </form>
   );

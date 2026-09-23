@@ -194,6 +194,11 @@ p { margin: 0; }
   overflow: hidden;
 }
 
+/* Um respiro acima, no lugar de um `style` escrito na tela.
+   Espaçamento em atributo inline é como uma tela passa a
+   respirar diferente da outra sem ninguém decidir isso. */
+.respiro-acima { margin-top: var(--esp-4); }
+
 /* ------------------------------------------------------------
    Link
 
@@ -243,6 +248,14 @@ a:hover { text-decoration-thickness: 2px; }
   letter-spacing: -0.02em;
   /* Numeros com a mesma largura: as colunas nao dancam ao atualizar. */
   font-variant-numeric: tabular-nums;
+}
+
+/* Um indicador cujo valor e TEXTO, e nao numero: "quem aprova"
+   e uma frase. Sem isto ela sairia no tamanho do numero. */
+.indicador__texto {
+  font-size: var(--txt-md);
+  font-weight: var(--peso-medio);
+  line-height: var(--linha-normal);
 }
 
 .indicador__rodape {

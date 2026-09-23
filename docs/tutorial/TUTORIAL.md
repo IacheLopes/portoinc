@@ -1,4 +1,4 @@
-<!-- versao: 0.22.1 -->
+<!-- versao: 0.23.0 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,23 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## Os campos passaram a ter o tamanho do que recebem
+
+Antes, um campo para digitar "PC-00001" ocupava quase a tela toda. Agora a caixa tem a
+largura do conteúdo: campo de número é curto, campo de data é curto, campo de texto livre
+usa o espaço.
+
+> Isso não muda o que você digita — muda o que você **vê** antes de digitar. Uma caixa
+> enorme para três dígitos faz procurar onde escrever, e sugere que cabe muito mais.
+
+## As caixas dos formulários ganharam nome
+
+Em **Nova solicitação** e **Nova cotação**, cada bloco do formulário agora diz o que é:
+"Para qual obra", "Adicionar item", "Antes de salvar", "O pacote", "Resumo do pacote".
+Antes eram caixas sem título nenhum.
+
+---
 
 ## O "?" dos cartões de número
 

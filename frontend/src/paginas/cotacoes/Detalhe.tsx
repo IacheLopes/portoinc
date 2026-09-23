@@ -6,6 +6,11 @@
 //   - ABERTO:   acompanhar quem viu e quem já respondeu
 // ============================================================
 
+// padrao-ignora: sem-estados — cada lista trata o proprio vazio no
+// lugar dela: os itens sugeridos tem ramo proprio quando nao ha
+// nenhum, e a lista de convidados so aparece depois que alguem foi
+// convidado. Nao ha caminho que leve a uma tabela em branco.
+
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {

@@ -774,9 +774,15 @@ input[type='file'].campo__entrada {
 }
 
 .busca-pedido .campo {
-  flex: 1 1 320px;
+  /* Não cresce mais para ocupar a linha inteira: o campo recebe um
+     número de pedido, e é o texto de ajuda embaixo que pede largura. */
+  flex: 0 1 46ch;
   margin-bottom: 0;
 }
+
+/* Oito caracteres em fonte mono, com folga para o leitor de código
+   de barras colar algo maior. Era 969px — o D4 da lista. */
+.busca-pedido .campo__entrada { max-width: 14ch; }
 
 .campo__entrada--destaque {
   font-size: var(--txt-lg);
@@ -784,9 +790,39 @@ input[type='file'].campo__entrada {
   letter-spacing: 0.04em;
 }
 
-/* Quantidade dentro da tabela: estreita e alinhada à direita,
-   para a coluna continuar legível de cima para baixo. */
-.campo__entrada--curta {
+/* ------------------------------------------------------------
+   A largura do campo segue o conteúdo
+
+   Em `ch`, e não em px: `ch` é a largura do dígito da fonte, então
+   a medida acompanha o tamanho do texto em vez de brigar com ele.
+
+   Medido antes: o campo do número do pedido, no Recebimento, tinha
+   969px para receber "PC-00001". Oito caracteres.
+   ------------------------------------------------------------ */
+.campo__entrada--curta { max-width: 16ch; }
+.campo__entrada--media { max-width: 34ch; }
+
+/* Quantidade dentro de uma CÉLULA de tabela: estreita, alinhada à
+   direita e com dígito de largura fixa, para a coluna continuar
+   legível de cima para baixo.
+
+   Chamava-se `--curta` e passou a ter nome próprio no Design 5:
+   `curta` virou um degrau da escala de largura acima, e duas coisas
+   diferentes com o mesmo nome é como uma delas vence em silêncio. */
+/* O rodape da tabela de conferencia. Usava .cartao__rodape, que
+   e peca INTERNA do componente de cartao: usar por fora e como a
+   tela passa a depender do avesso de outra coisa. */
+.rodape-da-tabela {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+}
+
+.campo__entrada--celula {
   width: 7.5rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -830,7 +866,7 @@ input[type='file'].campo__entrada {
 
 @media (max-width: 640px) {
   .busca-pedido .campo { flex-basis: 100%; }
-  .campo__entrada--curta { width: 5.5rem; }
+  .campo__entrada--celula { width: 5.5rem; }
 }
 
 /* ------------------------------------------------------------

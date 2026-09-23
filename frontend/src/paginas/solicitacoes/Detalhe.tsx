@@ -6,6 +6,12 @@
 //  "quem mandou comprar isso?".
 // ============================================================
 
+// padrao-ignora: sem-estados — as duas tabelas nunca aparecem
+// vazias. A de itens: solicitacao sem item nao pode ser salva. A de
+// assinaturas: a secao inteira so existe quando ha assinatura
+// (dados.aprovacoes.length > 0). Um <Vazio> ali seria um aviso
+// sobre algo que a pessoa nem sabe que existe.
+
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -182,16 +188,15 @@ export function DetalheSolicitacao() {
           />
           <Indicador
             titulo="Quem aprova"
-            valor={<span className="cartao__texto">{aprovacao?.explicacao ?? '—'}</span>}
+            valor={<span className="indicador__texto">{aprovacao?.explicacao ?? '—'}</span>}
             detalhe="Calculado pelo valor total e pelas faixas de alçada"
           />
         </div>
 
         {dados.justificativa && (
-          <div className="cartao" style={{ marginTop: 'var(--esp-4)' }}>
-            <h2 className="cartao__titulo">Justificativa</h2>
+          <Cartao titulo="Justificativa" className="respiro-acima">
             <p>{dados.justificativa}</p>
-          </div>
+          </Cartao>
         )}
 
         {/* ---------------- Ações ---------------- */}
@@ -366,8 +371,7 @@ export function DetalheSolicitacao() {
         </Cartao>
 
         {dados.itens.some((i) => i.especificacaoTecnica) && (
-          <div className="cartao" style={{ marginTop: 'var(--esp-4)' }}>
-            <h2 className="cartao__titulo">Especificações técnicas</h2>
+          <Cartao titulo="Especificações técnicas" className="respiro-acima">
             {dados.itens
               .filter((i) => i.especificacaoTecnica)
               .map((i) => (
@@ -378,7 +382,7 @@ export function DetalheSolicitacao() {
                   <p>{i.especificacaoTecnica}</p>
                 </div>
               ))}
-          </div>
+          </Cartao>
         )}
       </section>
 

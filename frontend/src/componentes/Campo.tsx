@@ -8,8 +8,22 @@
 
 import { useId, type ReactNode } from 'react';
 
+/**
+ * Quanto o campo recebe.
+ *
+ * A largura segue o CONTEÚDO, não a coluna em que o campo caiu.
+ * Um campo de 969px para receber "PC-00001" faz a pessoa procurar
+ * onde escrever, e sugere que cabe muito mais do que cabe.
+ *
+ *   curta  — número, quantidade, data, código: até uns 12 dígitos
+ *   media  — nome, e-mail, uma linha de texto curta
+ *   cheia  — texto livre, que usa o espaço que tiver
+ */
+export type LarguraDoCampo = 'curta' | 'media' | 'cheia';
+
 interface Base {
   rotulo: string;
+  largura?: LarguraDoCampo;
   /** Esconde a marca "(opcional)" em campos que são exigidos
    *  por uma ação da tela, mas não pelo envio do formulário. */
   semMarcaOpcional?: boolean;
@@ -38,9 +52,15 @@ interface PropsTexto extends Base {
 export function Campo({
   rotulo, valor, aoMudar, tipo = 'text', ajuda, erro,
   exemplo, obrigatorio, desabilitado, maximo, semMarcaOpcional, aoConfirmar,
+  largura,
 }: PropsTexto) {
   const id = useId();
   const idAjuda = id + '-ajuda';
+
+  // Data e número já vêm curtos sem ninguém pedir: "dd/mm/aaaa" e
+  // "120" têm tamanho conhecido, e deixar que cada tela lembre de
+  // declarar isso é garantir que metade vai esquecer.
+  const tamanho = largura ?? (tipo === 'date' || tipo === 'number' ? 'curta' : 'cheia');
 
   return (
     <div className="campo">
@@ -54,7 +74,7 @@ export function Campo({
       <input
         id={id}
         type={tipo}
-        className="campo__entrada"
+        className={'campo__entrada' + (tamanho !== 'cheia' ? ' campo__entrada--' + tamanho : '')}
         value={valor}
         onChange={(e) => aoMudar(e.target.value)}
         onKeyDown={

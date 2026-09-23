@@ -431,8 +431,7 @@ export function Equalizacao() {
 
         <div className="grade grade--larga">
           {dados.condicoes.map((cond) => (
-            <article key={cond.bidFornecedorId} className="cartao">
-              <h3 className="fornecedor__nome">{cond.fornecedor}</h3>
+            <Cartao key={cond.bidFornecedorId} titulo={cond.fornecedor}>
               <dl className="dados">
                 <div>
                   <dt>Pagamento</dt>
@@ -450,7 +449,7 @@ export function Equalizacao() {
                 )}
               </dl>
               {cond.observacao && <p className="funcao__descricao">{cond.observacao}</p>}
-            </article>
+            </Cartao>
           ))}
         </div>
       </section>
@@ -458,7 +457,7 @@ export function Equalizacao() {
       {/* ---------------- Decisão ---------------- */}
       {!concluido && (
         <section className="secao">
-          <div className="cartao painel-decisao">
+          <Cartao className="painel-decisao">
             <h2 className="formulario__titulo">Fechar a compra</h2>
 
             <dl className="dados">
@@ -590,7 +589,7 @@ export function Equalizacao() {
                 </div>
               </div>
             )}
-          </div>
+          </Cartao>
         </section>
       )}
 

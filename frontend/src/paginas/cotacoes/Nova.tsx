@@ -148,7 +148,7 @@ export function NovaCotacao() {
           }
         />
 
-        <div className="cartao formulario">
+        <Cartao className="formulario" titulo="O pacote">
           <div className="formulario__linha">
             <Campo
               rotulo="Título do pacote"
@@ -174,7 +174,7 @@ export function NovaCotacao() {
             aoMudar={setObservacoes}
             exemplo="Entrega no canteiro. Informar prazo real de entrega."
           />
-        </div>
+        </Cartao>
       </section>
 
       {/* ---------------- Escolha dos itens ---------------- */}
@@ -306,9 +306,7 @@ export function NovaCotacao() {
 
       {/* ---------------- Resumo e envio ---------------- */}
       <section className="secao">
-        <div className="cartao formulario">
-          <h2 className="formulario__titulo">Resumo do pacote</h2>
-
+        <Cartao className="formulario" titulo="Resumo do pacote">
           <dl className="dados">
             <div>
               <dt>Itens</dt>
@@ -375,7 +373,7 @@ export function NovaCotacao() {
               <Selo tipo="info">Nada é enviado a fornecedor ainda</Selo>
             </span>
           </div>
-        </div>
+        </Cartao>
       </section>
     </form>
   );

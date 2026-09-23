@@ -1,4 +1,4 @@
-<!-- versao: 0.22.1 -->
+<!-- versao: 0.23.0 -->
 
 # 1. Como usar este guia
 
@@ -3723,6 +3723,33 @@ cartão e por cima do título do gráfico.
 
 ---
 
+## CT-273 · O campo tem o tamanho do que recebe
+
+O defeito que este caso existe para pegar: o campo do número do pedido ocupava 969px para
+receber oito caracteres.
+
+1. Entre como **Almoxarife** (`neilma@portoinc.com.br`) e abra **Recebimento**
+
+**Esperado:** o campo **Número do pedido** é curto — cabe "PC-00001" com folga e nada mais.
+O botão **Abrir conferência** fica ao lado dele, e não no outro canto da tela.
+
+2. Abra **Solicitações → Nova solicitação**
+
+**Esperado:** **Quantidade** e **Precisa até** são campos curtos. **Justificativa** e
+**Observações gerais** continuam largos, porque recebem texto livre.
+
+3. Olhe as três caixas do formulário
+
+**Esperado:** cada uma tem um título — "Para qual obra", "Adicionar item", "Antes de salvar".
+
+4. Abra **Cotações → Nova cotação**
+
+**Esperado:** o mesmo: "O pacote" e "Resumo do pacote".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4101,8 +4128,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-270 | A explicação do número não cobre o vizinho |  |
 | CT-271 | Os números concordam com o substantivo |  |
 | CT-272 | A dica dos gráficos não fica cortada |  |
+| CT-273 | O campo tem o tamanho do que recebe |  |
 
-**Total: 272 casos** · Etapas cobertas: 0 a 12
+**Total: 273 casos** · Etapas cobertas: 0 a 12
 
 ---
 
