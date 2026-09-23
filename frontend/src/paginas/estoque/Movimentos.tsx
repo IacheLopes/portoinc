@@ -6,7 +6,6 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   listarMovimentos, buscarEstoque, soma,
   ROTULO_MOVIMENTO, COR_MOVIMENTO,
@@ -18,6 +17,7 @@ import { ErroApi } from '../../servicos/api';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function MovimentosEstoque() {
   const [movimentos, setMovimentos] = useState<Movimento[]>([]);
@@ -62,19 +62,15 @@ export function MovimentosEstoque() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/estoque">Estoque</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Extrato</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <h1>Extrato do estoque</h1>
-          <p className="secao__descricao">
-            Tudo o que entrou e saiu, do mais recente para o mais antigo. Nenhum movimento é
+        <CabecalhoDePagina
+          titulo="Extrato do estoque"
+          descricao={
+            <>
+              Tudo o que entrou e saiu, do mais recente para o mais antigo. Nenhum movimento é
             apagado ou alterado.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="barra-acoes">
           <Selecao

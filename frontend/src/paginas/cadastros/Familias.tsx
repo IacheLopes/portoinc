@@ -8,6 +8,7 @@ import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function Familias() {
   const { pode } = useAutenticacao();
@@ -43,14 +44,16 @@ export function Familias() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Famílias de material</h1>
-          <p className="secao__descricao">
-            A família diz a que grupo o item pertence. É ela que define{' '}
+        <CabecalhoDePagina
+          titulo="Famílias de material"
+          descricao={
+            <>
+              A família diz a que grupo o item pertence. É ela que define{' '}
             <strong>quais fornecedores são convidados</strong> quando o comprador monta
             uma cotação — um BID de elétrica só vai para quem vende elétrica.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

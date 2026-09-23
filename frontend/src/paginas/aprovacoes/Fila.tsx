@@ -18,6 +18,7 @@ import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 /** Quantos dias faltam até a data em que o material é necessário. */
 function diasAte(iso: string | null): number | null {
@@ -80,17 +81,19 @@ export function FilaAprovacao() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Aprovações</h1>
-          <p className="secao__descricao">
-            O que depende da <strong>sua</strong> assinatura agora. Você está aprovando
+        <CabecalhoDePagina
+          titulo="Aprovações"
+          descricao={
+            <>
+              O que depende da <strong>sua</strong> assinatura agora. Você está aprovando
             como{' '}
             <strong>
               {minhasFuncoes.map(nomeDaFuncao).join(' e ')}
             </strong>
             .
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="grade">
           <Cartao

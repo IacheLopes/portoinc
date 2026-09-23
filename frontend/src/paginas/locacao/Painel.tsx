@@ -29,6 +29,7 @@ import { Selo } from '../../componentes/Selo';
 import { CartaoIndicador } from '../../componentes/Graficos';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
 
@@ -233,13 +234,15 @@ export function PainelLocacao() {
 
   return (
     <section className="secao">
-      <div className="secao__cabecalho">
-        <h1>Locação de equipamentos</h1>
-        <p className="secao__descricao">
-          Equipamento alugado tem relógio correndo: o custo sobe sozinho enquanto
+      <CabecalhoDePagina
+          titulo="Locação de equipamentos"
+          descricao={
+            <>
+              Equipamento alugado tem relógio correndo: o custo sobe sozinho enquanto
           ele não volta. Esta tela mostra o que está parado além do combinado.
-        </p>
-      </div>
+            </>
+          }
+        />
 
       {aviso && (
         <p className="aviso aviso--sucesso" role="status">

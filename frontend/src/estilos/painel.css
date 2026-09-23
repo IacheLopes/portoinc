@@ -640,3 +640,136 @@ a.atalho:hover {
   flex: 0 1 auto;
   min-width: 180px;
 }
+
+/* ------------------------------------------------------------
+   Cabeçalho de tela
+
+   A mesma estrutura nas 34 telas: caminho e voltar em cima,
+   título e ações embaixo. É o que faz a pessoa reconhecer onde
+   está sem precisar ler — a posição já conta a história.
+   ------------------------------------------------------------ */
+.cabecalho {
+  margin-bottom: var(--esp-6);
+}
+
+/* Caminho à esquerda, voltar à direita. Em telas estreitas eles
+   empilham, com o voltar primeiro: no celular ele é o que mais
+   se usa. */
+.cabecalho__caminho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--esp-3);
+  padding-bottom: var(--esp-3);
+  border-bottom: 1px solid var(--borda);
+}
+
+.migalhas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+.migalhas__degrau {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.migalhas__seta {
+  color: var(--texto-secundario);
+  /* Mais fraca que o texto: ela separa, não informa. */
+  opacity: 0.6;
+}
+
+.migalhas a {
+  color: var(--texto-secundario);
+  text-decoration: none;
+}
+
+.migalhas a:hover {
+  color: var(--azul-600);
+  text-decoration: underline;
+}
+
+/* Onde a pessoa está: mais forte que os degraus do caminho. */
+.migalhas [aria-current="page"] {
+  color: var(--texto);
+  font-weight: var(--peso-medio);
+}
+
+.cabecalho__voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  /* 44px de alvo: no celular este é o botão mais usado da tela. */
+  min-height: 44px;
+  padding: var(--esp-1) var(--esp-3);
+  margin-right: calc(var(--esp-3) * -1);
+  border-radius: var(--raio-md);
+  color: var(--azul-600);
+  text-decoration: none;
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-medio);
+  white-space: nowrap;
+  transition: background var(--transicao);
+}
+
+.cabecalho__voltar:hover {
+  background: var(--fundo-suave);
+  text-decoration: underline;
+}
+
+/* Título à esquerda, ações à direita, alinhados pela BASE: com
+   alturas diferentes, o centro deixaria os botões flutuando em
+   relação ao título. */
+.cabecalho__linha {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  flex-wrap: wrap;
+}
+
+.cabecalho__texto {
+  min-width: 0;
+}
+
+.cabecalho__descricao {
+  margin-top: var(--esp-1);
+  /* Linha longa demais faz o olho perder a volta. */
+  max-width: var(--largura-leitura);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+.cabecalho__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  /* No celular as ações viram largura cheia e empilham: lado a
+     lado elas ficariam estreitas demais para o dedo. */
+  .cabecalho__acoes {
+    width: 100%;
+  }
+
+  .cabecalho__acoes > * {
+    flex: 1 1 100%;
+  }
+
+  /* O voltar vem antes do caminho: é o que mais se usa aqui. */
+  .cabecalho__caminho {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+}

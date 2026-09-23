@@ -20,6 +20,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 interface FuncaoItem {
   id: string;
@@ -72,14 +73,16 @@ export function Alcadas() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Limites de alçada</h1>
-          <p className="secao__descricao">
-            Definem quem precisa assinar cada compra, conforme o valor. O fluxo enviado
+        <CabecalhoDePagina
+          titulo="Limites de alçada"
+          descricao={
+            <>
+              Definem quem precisa assinar cada compra, conforme o valor. O fluxo enviado
             pela Porto Inc. deixou esse limite como <em>"A definir"</em> — os valores
             abaixo são um ponto de partida e podem ser mudados a qualquer momento.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {avisos.length > 0 && (
           <div className="aviso aviso--atencao" role="alert">

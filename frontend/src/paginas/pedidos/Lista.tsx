@@ -19,6 +19,7 @@ import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function ListaPedidos() {
   const [pedidos, setPedidos] = useState<PedidoResumo[]>([]);
@@ -110,13 +111,15 @@ export function ListaPedidos() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Pedidos de compra</h1>
-          <p className="secao__descricao">
-            O documento final da compra, gerado a partir da equalização. É pelo número
+        <CabecalhoDePagina
+          titulo="Pedidos de compra"
+          descricao={
+            <>
+              O documento final da compra, gerado a partir da equalização. É pelo número
             dele que o almoxarife confere o recebimento.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="grade">
           <Cartao titulo="Pedidos" valor={String(pedidos.length)} detalhe="Emitidos" />

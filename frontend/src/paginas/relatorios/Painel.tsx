@@ -39,6 +39,7 @@ import { Selo } from '../../componentes/Selo';
 import { CartaoIndicador, GraficoRosca, GraficoRanking } from '../../componentes/Graficos';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 // ------------------------------------------------------------
 //  Abas
@@ -190,13 +191,15 @@ export function PainelRelatorios() {
 
   return (
     <section className="secao">
-      <div className="secao__cabecalho">
-        <h1>Relatórios</h1>
-        <p className="secao__descricao">
-          Os números saem do que já aconteceu no sistema: solicitação, cotação,
+      <CabecalhoDePagina
+          titulo="Relatórios"
+          descricao={
+            <>
+              Os números saem do que já aconteceu no sistema: solicitação, cotação,
           pedido e recebimento. Nada é digitado duas vezes.
-        </p>
-      </div>
+            </>
+          }
+        />
 
       <div className="abas" role="tablist" aria-label="Relatórios disponíveis">
         {ABAS.map((a) => (

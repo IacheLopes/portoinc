@@ -17,6 +17,7 @@ import { ErroApi } from '../../servicos/api';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 /** Daqui a N dias, no formato que o campo de data aceita. */
 function daquiADias(dias: number): string {
@@ -137,18 +138,14 @@ export function NovaCotacao() {
   return (
     <form onSubmit={enviar} noValidate>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/cotacoes">Cotações</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Novo pacote</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <h1>Novo pacote de cotação</h1>
-          <p className="secao__descricao">
-            Escolha os itens aprovados. Na próxima tela você convida os fornecedores.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Novo pacote de cotação"
+          descricao={
+            <>
+              Escolha os itens aprovados. Na próxima tela você convida os fornecedores.
+            </>
+          }
+        />
 
         <div className="cartao formulario">
           <div className="formulario__linha">

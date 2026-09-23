@@ -1,3 +1,4 @@
+import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 // ============================================================
 //  Aviso de tela ainda não construída
 //
@@ -16,15 +17,14 @@ interface Props {
 export function EmConstrucao({ titulo, etapa, descricao, itens }: Props) {
   return (
     <section className="secao">
-      <div className="secao__cabecalho">
-        <div className="em-obra__topo">
-          <h1>{titulo}</h1>
-          <span className="selo selo--info">
-            <span aria-hidden="true">🚧</span> Etapa {etapa}
-          </span>
-        </div>
-        <p className="secao__descricao">{descricao}</p>
-      </div>
+      <CabecalhoDePagina
+          titulo={titulo}
+          descricao={
+            <>
+              {descricao}
+            </>
+          }
+        />
 
       <div className="cartao">
         <h2 className="em-obra__titulo">O que esta tela vai fazer</h2>

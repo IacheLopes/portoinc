@@ -22,6 +22,7 @@ import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 /** O que o almoxarife preencheu em cada linha da tabela. */
 interface Linha {
@@ -207,12 +208,6 @@ export function ConferirRecebimento() {
   if (erro && !dados) {
     return (
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/recebimento">Recebimento</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">{numero}</span>
-        </nav>
-
         <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />
       </section>
     );
@@ -237,18 +232,20 @@ export function ConferirRecebimento() {
           <span aria-current="page">{pedido.numeroFormatado}</span>
         </nav>
 
-        <div className="secao__cabecalho">
-          <div className="em-obra__topo">
-            <h1>Conferir {pedido.numeroFormatado}</h1>
+        <CabecalhoDePagina
+          titulo={'Conferir ' + pedido.numeroFormatado}
+          marcadores={
             <Selo tipo={COR_SITUACAO_PEDIDO[pedido.situacao]}>
               {ROTULO_SITUACAO_PEDIDO[pedido.situacao]}
             </Selo>
-          </div>
-          <p className="secao__descricao">
-            {pedido.fornecedor} · {pedido.origem}
+          }
+          descricao={
+            <>
+              {pedido.fornecedor} · {pedido.origem}
             {pedido.obra ? ' · ' + pedido.obra : ''}
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

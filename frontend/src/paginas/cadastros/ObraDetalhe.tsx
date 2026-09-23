@@ -7,7 +7,7 @@
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   buscarObra, criarLinha, apagarLinha, importarOrcamento,
   dinheiro, quantidade, ROTULO_SITUACAO, UNIDADES,
@@ -19,6 +19,7 @@ import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -70,28 +71,22 @@ export function ObraDetalhe() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/cadastros">Cadastros</Link>
-          <span aria-hidden="true">›</span>
-          <Link to="/cadastros/obras">Obras</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">{obra.codigo}</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <div className="em-obra__topo">
-            <h1>{obra.nome}</h1>
+        <CabecalhoDePagina
+          titulo={obra.nome}
+          marcadores={
             <Selo tipo={obra.situacao === 'EM_ANDAMENTO' ? 'sucesso' : 'info'}>
               {ROTULO_SITUACAO[obra.situacao]}
             </Selo>
-          </div>
-          <p className="secao__descricao">
-            {obra.codigo}
+          }
+          descricao={
+            <>
+              {obra.codigo}
             {obra.cliente ? ' · ' + obra.cliente : ''}
             {obra.cidade ? ' · ' + obra.cidade : ''}
             {obra.uf ? '/' + obra.uf : ''}
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="grade">
           <Cartao

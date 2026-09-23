@@ -5,6 +5,8 @@
 //  única que gente de fora da Porto Inc. vai ver. Por isso ela
 //  precisa se explicar sozinha: quem chega aqui nunca usou o
 //  sistema e não vai receber treinamento.
+//
+//  padrao-ignora: sem-cabecalho — é do fornecedor, que não tem conta nem menu no sistema.
 // ============================================================
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';

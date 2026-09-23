@@ -11,6 +11,8 @@
 //  padrao-ignora: sem-titulo — é conteúdo de aba; o <h1> é do
 //  invólucro (Avisos.tsx), e dois títulos na mesma tela quebram a
 //  hierarquia para quem usa leitor de tela.
+//
+//  padrao-ignora: sem-cabecalho — é conteúdo de aba; o cabeçalho é do invólucro (Avisos.tsx).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';

@@ -13,6 +13,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Selo, type TipoSelo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -56,14 +57,16 @@ export function Obras() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Obras</h1>
-          <p className="secao__descricao">
-            Cada obra tem o próprio orçamento e o próprio almoxarifado. Toda compra é
+        <CabecalhoDePagina
+          titulo="Obras"
+          descricao={
+            <>
+              Cada obra tem o próprio orçamento e o próprio almoxarifado. Toda compra é
             apontada para uma linha do orçamento — é assim que se descobre quanto custou
             cada parte da obra.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

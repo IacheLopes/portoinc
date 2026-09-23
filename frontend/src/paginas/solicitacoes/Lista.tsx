@@ -19,6 +19,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selo } from '../../componentes/Selo';
 import { Selecao } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function ListaSolicitacoes() {
   const { pode } = useAutenticacao();
@@ -66,14 +67,16 @@ export function ListaSolicitacoes() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Solicitações de compra</h1>
-          <p className="secao__descricao">
-            {vendoTodas
+        <CabecalhoDePagina
+          titulo="Solicitações de compra"
+          descricao={
+            <>
+              {vendoTodas
               ? 'Você enxerga as solicitações de toda a empresa.'
               : 'Você enxerga apenas as solicitações que você mesmo abriu.'}
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="barra-acoes">
           <Selecao

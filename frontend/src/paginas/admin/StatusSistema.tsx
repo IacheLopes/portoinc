@@ -11,6 +11,7 @@ import { buscarStatus, ErroApi, type StatusSistema as DadosStatus } from '../../
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 function formatarTempo(segundos: number): string {
   if (segundos < 60) return segundos + ' s';
@@ -56,12 +57,14 @@ export function StatusSistema() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Status do sistema</h1>
-          <p className="secao__descricao">
-            Confira se as três partes do sistema estão no ar e o que já está ligado.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Status do sistema"
+          descricao={
+            <>
+              Confira se as três partes do sistema estão no ar e o que já está ligado.
+            </>
+          }
+        />
 
         <div className="grade">
           <Cartao

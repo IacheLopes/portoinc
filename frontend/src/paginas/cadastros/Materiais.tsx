@@ -16,6 +16,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -69,12 +70,14 @@ export function Materiais() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Materiais e serviços</h1>
-          <p className="secao__descricao">
-            O catálogo da Porto Inc. Serviço não tem código de barras e não entra no estoque.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Materiais e serviços"
+          descricao={
+            <>
+              O catálogo da Porto Inc. Serviço não tem código de barras e não entra no estoque.
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

@@ -24,6 +24,7 @@ import { Campo, Selecao } from '../../componentes/Campo';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -211,12 +212,14 @@ export function PainelEstoque() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Estoque</h1>
-          <p className="secao__descricao">
-            O que existe hoje em cada almoxarifado, quanto vale e o que está prestes a acabar.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Estoque"
+          descricao={
+            <>
+              O que existe hoje em cada almoxarifado, quanto vale e o que está prestes a acabar.
+            </>
+          }
+        />
 
         <div className="barra-acoes">
           <Selecao

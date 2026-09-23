@@ -21,6 +21,7 @@ import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function PainelRecebimento() {
   const navegar = useNavigate();
@@ -80,13 +81,15 @@ export function PainelRecebimento() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Recebimento</h1>
-          <p className="secao__descricao">
-            Chegou material? Comece pelo número do pedido que está na nota e no
+        <CabecalhoDePagina
+          titulo="Recebimento"
+          descricao={
+            <>
+              Chegou material? Comece pelo número do pedido que está na nota e no
             documento que o fornecedor recebeu.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <form className="busca-pedido" onSubmit={abrir}>
           <div className="campo">

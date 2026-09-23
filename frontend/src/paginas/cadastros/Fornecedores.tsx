@@ -15,6 +15,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -65,14 +66,16 @@ export function Fornecedores() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Fornecedores</h1>
-          <p className="secao__descricao">
-            Marque <strong>quais famílias cada fornecedor atende</strong>. Na Etapa 5,
+        <CabecalhoDePagina
+          titulo="Fornecedores"
+          descricao={
+            <>
+              Marque <strong>quais famílias cada fornecedor atende</strong>. Na Etapa 5,
             um pacote de cotação de elétrica será enviado apenas a quem vende elétrica —
             exatamente como o fluxo da Porto Inc. determina.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

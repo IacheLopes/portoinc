@@ -32,6 +32,7 @@ import {
 } from '../../componentes/Graficos';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -151,12 +152,14 @@ export function PainelFinanceiro() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Financeiro</h1>
-          <p className="secao__descricao">
-            As parcelas nascem da nota fiscal, com as condições combinadas na cotação.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Financeiro"
+          descricao={
+            <>
+              As parcelas nascem da nota fiscal, com as condições combinadas na cotação.
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

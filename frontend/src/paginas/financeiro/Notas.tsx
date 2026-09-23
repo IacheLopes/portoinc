@@ -26,6 +26,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -308,19 +309,15 @@ export function NotasFiscais() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/financeiro">Contas a pagar</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Notas fiscais</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <h1>Notas fiscais</h1>
-          <p className="secao__descricao">
-            A nota liga o pedido de compra ao dinheiro que vai sair. É dela que nascem as
+        <CabecalhoDePagina
+          titulo="Notas fiscais"
+          descricao={
+            <>
+              A nota liga o pedido de compra ao dinheiro que vai sair. É dela que nascem as
             parcelas a pagar.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {podeGerenciar && (
           <div className="barra-acoes">

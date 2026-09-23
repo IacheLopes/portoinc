@@ -127,7 +127,25 @@ regra(
   () =>
     telas
       .filter((c) => !dispensado(c, 'sem-titulo'))
-      .filter((c) => !/<h1[\s>]/.test(readFileSync(c, 'utf8')))
+      .filter((c) => {
+        const s = readFileSync(c, 'utf8');
+        // O cabeçalho padrão desenha o <h1> por dentro. A tela que o
+        // usa tem título mesmo sem a tag aparecer no arquivo — e é o
+        // caminho preferido, porque traz migalhas e Voltar junto.
+        return !/<h1[\s>]/.test(s) && !s.includes('<CabecalhoDePagina');
+      })
+      .map(curto),
+);
+
+// --- Cabeçalho padrão ---
+regra(
+  'sem-cabecalho-padrao',
+  'Telas sem o cabeçalho padrão',
+  'É ele que traz o caminho e o Voltar. Antes dele, 25 das 34 telas não tinham para onde voltar.',
+  () =>
+    telas
+      .filter((c) => !dispensado(c, 'sem-cabecalho'))
+      .filter((c) => !readFileSync(c, 'utf8').includes('<CabecalhoDePagina'))
       .map(curto),
 );
 

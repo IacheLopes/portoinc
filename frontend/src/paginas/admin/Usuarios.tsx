@@ -18,6 +18,7 @@ import {
 import { Selo } from '../../componentes/Selo';
 import { Campo } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 interface FuncaoItem {
   id: string;
@@ -87,13 +88,15 @@ export function Usuarios() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Usuários</h1>
-          <p className="secao__descricao">
-            Cada pessoa pode acumular várias funções. As permissões somam: quem é
+        <CabecalhoDePagina
+          titulo="Usuários"
+          descricao={
+            <>
+              Cada pessoa pode acumular várias funções. As permissões somam: quem é
             Comprador <em>e</em> Solicitante tem o que as duas funções liberam.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="barra-acoes">
           <Campo

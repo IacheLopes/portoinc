@@ -22,6 +22,7 @@ import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -162,23 +163,19 @@ export function DetalheCotacao() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/cotacoes">Cotações</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">{dados.numeroFormatado}</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <div className="em-obra__topo">
-            <h1>{dados.numeroFormatado}</h1>
+        <CabecalhoDePagina
+          titulo={dados.numeroFormatado}
+          marcadores={
             <Selo tipo={COR_SITUACAO_BID[dados.situacao]}>
               {ROTULO_SITUACAO_BID[dados.situacao]}
             </Selo>
-          </div>
-          <p className="secao__descricao">
-            {dados.titulo} · comprador {dados.comprador.nome}
-          </p>
-        </div>
+          }
+          descricao={
+            <>
+              {dados.titulo} · comprador {dados.comprador.nome}
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

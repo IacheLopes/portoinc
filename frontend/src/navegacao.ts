@@ -257,3 +257,176 @@ export function menuAgrupado(
       .filter((g) => g.itens.length > 0),
   };
 }
+
+// ============================================================
+//  A hierarquia das telas
+//
+//  De onde saem as migalhas ("Início › Cotações › BID-00002") e
+//  o botão de Voltar. Mora aqui junto com o menu de propósito:
+//  quando menu e migalhas liam listas separadas, elas divergiram
+//  e a tela de Início passou a anunciar coisa que não era mais
+//  verdade.
+// ============================================================
+
+export interface Pagina {
+  /** O padrão da rota, como está no App.tsx. */
+  rota: string;
+  /** Nome curto, para a migalha e para o botão de voltar. */
+  titulo: string;
+  /** A rota da tela-mãe. Sem mãe só o Início. */
+  mae?: string;
+}
+
+/**
+ * A tela-mãe, e não "a tela anterior".
+ *
+ * Voltar para a anterior parece igual mas não é: se a pessoa
+ * chegou por outro caminho, ou acabou de salvar um formulário, o
+ * botão a joga num lugar inesperado ou numa tela desatualizada.
+ * A tela-mãe é sempre o mesmo lugar.
+ */
+export const PAGINAS: Pagina[] = [
+  { rota: '/', titulo: 'Início' },
+  { rota: '/minha-senha', titulo: 'Minha senha', mae: '/' },
+
+  // --- Compras ---
+  { rota: '/solicitacoes', titulo: 'Solicitações', mae: '/' },
+  { rota: '/solicitacoes/nova', titulo: 'Nova solicitação', mae: '/solicitacoes' },
+  { rota: '/solicitacoes/:id', titulo: 'Solicitação', mae: '/solicitacoes' },
+  { rota: '/aprovacoes', titulo: 'Aprovações', mae: '/' },
+  { rota: '/cotacoes', titulo: 'Cotações', mae: '/' },
+  { rota: '/cotacoes/nova', titulo: 'Novo pacote', mae: '/cotacoes' },
+  { rota: '/cotacoes/:id', titulo: 'Pacote de cotação', mae: '/cotacoes' },
+  { rota: '/cotacoes/:id/equalizacao', titulo: 'Equalização', mae: '/cotacoes/:id' },
+  { rota: '/pedidos', titulo: 'Pedidos', mae: '/' },
+
+  // --- Almoxarifado ---
+  { rota: '/recebimento', titulo: 'Recebimento', mae: '/' },
+  { rota: '/recebimento/:numero', titulo: 'Conferência', mae: '/recebimento' },
+  { rota: '/estoque', titulo: 'Estoque', mae: '/' },
+  { rota: '/estoque/movimentos', titulo: 'Extrato', mae: '/estoque' },
+  { rota: '/locacao', titulo: 'Locação', mae: '/' },
+
+  // --- Gestão ---
+  { rota: '/financeiro', titulo: 'Financeiro', mae: '/' },
+  { rota: '/financeiro/notas', titulo: 'Notas fiscais', mae: '/financeiro' },
+  { rota: '/relatorios', titulo: 'Relatórios', mae: '/' },
+
+  // --- Administração ---
+  { rota: '/cadastros', titulo: 'Cadastros', mae: '/' },
+  { rota: '/cadastros/familias', titulo: 'Famílias', mae: '/cadastros' },
+  { rota: '/cadastros/materiais', titulo: 'Materiais', mae: '/cadastros' },
+  { rota: '/cadastros/fornecedores', titulo: 'Fornecedores', mae: '/cadastros' },
+  { rota: '/cadastros/obras', titulo: 'Obras', mae: '/cadastros' },
+  { rota: '/cadastros/obras/:id', titulo: 'Obra', mae: '/cadastros/obras' },
+  { rota: '/cadastros/alcadas', titulo: 'Limites de alçada', mae: '/cadastros' },
+  { rota: '/admin/usuarios', titulo: 'Usuários', mae: '/' },
+  { rota: '/admin/avisos', titulo: 'Avisos ao fornecedor', mae: '/' },
+  { rota: '/admin/whatsapp', titulo: 'Avisos ao fornecedor', mae: '/' },
+  { rota: '/admin/status', titulo: 'Status do sistema', mae: '/' },
+];
+
+/** Quebra o endereço em pedaços, sem os vazios das barras. */
+function pedacos(caminho: string): string[] {
+  return caminho.split('/').filter(Boolean);
+}
+
+/**
+ * O endereço casa com o padrão da rota?
+ *
+ * `/cotacoes/abc/equalizacao` casa com `/cotacoes/:id/equalizacao`;
+ * `/cotacoes/nova` NÃO casa com `/cotacoes/:id`, porque o pedaço
+ * fixo ganha do coringa — senão "nova" viraria um id.
+ */
+export function casa(rota: string, caminho: string): boolean {
+  const r = pedacos(rota);
+  const c = pedacos(caminho);
+
+  if (r.length !== c.length) return false;
+
+  return r.every((parte, i) => parte.startsWith(':') || parte === c[i]);
+}
+
+/**
+ * A página que corresponde ao endereço.
+ *
+ * O padrão sem coringa vence: entre `/cotacoes/nova` e
+ * `/cotacoes/:id`, quem abriu "nova" está na tela de novo pacote,
+ * não numa cotação chamada "nova".
+ */
+export function paginaDe(caminho: string): Pagina | null {
+  const candidatas = PAGINAS.filter((p) => casa(p.rota, caminho));
+  if (candidatas.length === 0) return null;
+
+  const fixas = candidatas.filter((p) => !p.rota.includes(':'));
+  return fixas[0] ?? candidatas[0];
+}
+
+/**
+ * Troca os coringas do padrão pelos valores do endereço atual.
+ *
+ * A mãe de `/cotacoes/:id/equalizacao` é `/cotacoes/:id` — e o
+ * botão precisa levar à cotação DAQUELE id, não a um endereço com
+ * dois-pontos no meio.
+ */
+export function enderecoReal(rota: string, atual: string): string {
+  const paginaAtual = paginaDe(atual);
+  if (!paginaAtual) return rota;
+
+  const padrao = pedacos(paginaAtual.rota);
+  const valores = pedacos(atual);
+
+  const mapa = new Map<string, string>();
+  padrao.forEach((parte, i) => {
+    if (parte.startsWith(':')) mapa.set(parte, valores[i]);
+  });
+
+  const montado = pedacos(rota)
+    .map((parte) => (parte.startsWith(':') ? mapa.get(parte) ?? parte : parte))
+    .join('/');
+
+  return '/' + montado;
+}
+
+/**
+ * A trilha do Início até a tela atual.
+ *
+ * Devolve os endereços já resolvidos, prontos para virar link.
+ */
+export function trilhaDe(caminho: string): Array<{ titulo: string; para: string }> {
+  const atual = paginaDe(caminho);
+  if (!atual) return [];
+
+  const trilha: Array<{ titulo: string; para: string }> = [];
+  let passo: Pagina | undefined = atual;
+  // Trava contra hierarquia circular: uma mãe apontando de volta
+  // para a filha travaria a tela inteira num laço infinito.
+  let voltas = 0;
+
+  while (passo && voltas < PAGINAS.length) {
+    trilha.unshift({
+      titulo: passo.titulo,
+      para: enderecoReal(passo.rota, caminho),
+    });
+
+    passo = passo.mae ? PAGINAS.find((p) => p.rota === passo!.mae) : undefined;
+    voltas += 1;
+  }
+
+  return trilha;
+}
+
+/**
+ * Para onde o botão de Voltar leva, e o que ele diz.
+ *
+ * Null só no Início, que não tem mãe.
+ */
+export function voltarDe(caminho: string): { titulo: string; para: string } | null {
+  const atual = paginaDe(caminho);
+  if (!atual?.mae) return null;
+
+  const mae = PAGINAS.find((p) => p.rota === atual.mae);
+  if (!mae) return null;
+
+  return { titulo: mae.titulo, para: enderecoReal(mae.rota, caminho) };
+}

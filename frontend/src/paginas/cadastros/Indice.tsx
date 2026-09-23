@@ -12,6 +12,7 @@ import { useAutenticacao } from '../../contexto/Autenticacao';
 import {
   listarFamilias, listarObras, listarMateriais, listarFornecedores,
 } from '../../servicos/cadastros';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 interface Cartao {
   ordem: number;
@@ -116,13 +117,15 @@ export function CadastrosIndice() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Cadastros</h1>
-          <p className="secao__descricao">
-            A base que as próximas etapas usam. Os números indicam a ordem recomendada
+        <CabecalhoDePagina
+          titulo="Cadastros"
+          descricao={
+            <>
+              A base que as próximas etapas usam. Os números indicam a ordem recomendada
             para preencher — cada um depende do anterior.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="aviso aviso--info">
           <span className="aviso__icone" aria-hidden="true">

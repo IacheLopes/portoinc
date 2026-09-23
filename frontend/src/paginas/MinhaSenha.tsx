@@ -9,6 +9,7 @@
 import { useState, type FormEvent } from 'react';
 import { trocarSenha, ErroApi } from '../servicos/api';
 import { useAutenticacao } from '../contexto/Autenticacao';
+import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 
 export function MinhaSenha() {
   const { usuario, sair } = useAutenticacao();
@@ -69,12 +70,14 @@ export function MinhaSenha() {
 
   return (
     <section className="secao secao--estreita">
-      <div className="secao__cabecalho">
-        <h1>Trocar minha senha</h1>
-        <p className="secao__descricao">
-          Você está conectado como <strong>{usuario?.email}</strong>.
-        </p>
-      </div>
+      <CabecalhoDePagina
+          titulo="Trocar minha senha"
+          descricao={
+            <>
+              Você está conectado como <strong>{usuario?.email}</strong>.
+            </>
+          }
+        />
 
       <form className="cartao formulario" onSubmit={enviar} noValidate>
         <div className="campo">

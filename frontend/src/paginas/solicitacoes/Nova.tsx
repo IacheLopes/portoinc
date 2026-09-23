@@ -20,6 +20,7 @@ import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { Selo } from '../../componentes/Selo';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -175,19 +176,15 @@ export function NovaSolicitacao() {
   return (
     <form onSubmit={enviar} noValidate>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/solicitacoes">Solicitações</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Nova</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <h1>Nova solicitação de compra</h1>
-          <p className="secao__descricao">
-            Ela nasce como <strong>rascunho</strong>. Você pode revisar e só então
+        <CabecalhoDePagina
+          titulo="Nova solicitação de compra"
+          descricao={
+            <>
+              Ela nasce como <strong>rascunho</strong>. Você pode revisar e só então
             enviar para aprovação.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="cartao formulario">
           <div className="formulario__linha">

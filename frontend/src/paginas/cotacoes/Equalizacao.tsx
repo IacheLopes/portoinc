@@ -21,6 +21,7 @@ import { ErroApi } from '../../servicos/api';
 import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 function daquiADias(dias: number): string {
   const d = new Date();
@@ -172,14 +173,6 @@ export function Equalizacao() {
   if (c.fornecedores.length === 0) {
     return (
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/cotacoes">Cotações</Link>
-          <span aria-hidden="true">›</span>
-          <Link to={'/cotacoes/' + id}>{cotacao.numeroFormatado}</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Equalização</span>
-        </nav>
-
         <Vazio
           titulo="Nenhum fornecedor respondeu ainda"
           descricao="O comparativo aparece assim que chegar a primeira cotação."
@@ -199,19 +192,23 @@ export function Equalizacao() {
           <span aria-current="page">Equalização</span>
         </nav>
 
-        <div className="secao__cabecalho">
-          <div className="em-obra__topo">
-            <h1>Equalização</h1>
-            <Selo tipo={COR_SITUACAO_BID[cotacao.situacao]}>
-              {ROTULO_SITUACAO_BID[cotacao.situacao]}
-            </Selo>
-            {cotacao.rodada > 1 && <Selo tipo="atencao">Rodada {cotacao.rodada}</Selo>}
-          </div>
-          <p className="secao__descricao">
-            {cotacao.numeroFormatado} · {cotacao.titulo} ·{' '}
+        <CabecalhoDePagina
+          titulo="Equalização"
+          marcadores={
+            <>
+              <Selo tipo={COR_SITUACAO_BID[cotacao.situacao]}>
+                {ROTULO_SITUACAO_BID[cotacao.situacao]}
+              </Selo>
+              {cotacao.rodada > 1 && <Selo tipo="atencao">Rodada {cotacao.rodada}</Selo>}
+            </>
+          }
+          descricao={
+            <>
+              {cotacao.numeroFormatado} · {cotacao.titulo} ·{' '}
             {cotacao.totalResponderam} de {cotacao.totalConvidados} fornecedores responderam
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

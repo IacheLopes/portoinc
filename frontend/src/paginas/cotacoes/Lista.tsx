@@ -15,6 +15,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
@@ -56,13 +57,15 @@ export function ListaCotacoes() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Cotações</h1>
-          <p className="secao__descricao">
-            Um <strong>pacote de cotação</strong> (BID) agrupa itens já aprovados e vai
+        <CabecalhoDePagina
+          titulo="Cotações"
+          descricao={
+            <>
+              Um <strong>pacote de cotação</strong> (BID) agrupa itens já aprovados e vai
             de uma vez para todos os fornecedores da família correspondente.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className="grade">
           <Cartao

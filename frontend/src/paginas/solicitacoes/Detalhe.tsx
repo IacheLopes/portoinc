@@ -7,7 +7,7 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   buscarSolicitacao, enviarSolicitacao, cancelarSolicitacao, baixarPdf,
   ROTULO_SITUACAO, COR_SITUACAO, dataBr, dataHoraBr,
@@ -21,6 +21,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { PainelDecisao } from '../../componentes/PainelDecisao';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 export function DetalheSolicitacao() {
   const { id = '' } = useParams();
@@ -125,25 +126,23 @@ export function DetalheSolicitacao() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/solicitacoes">Solicitações</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">{dados.numeroFormatado}</span>
-        </nav>
-
-        <div className="secao__cabecalho">
-          <div className="em-obra__topo">
-            <h1>{dados.numeroFormatado}</h1>
-            <Selo tipo={COR_SITUACAO[situacao]}>{ROTULO_SITUACAO[situacao]}</Selo>
-            {dados.itens.some((i) => i.primeiraCompra) && (
-              <Selo tipo="atencao">Tem item nunca comprado</Selo>
-            )}
-          </div>
-          <p className="secao__descricao">
-            Aberta por <strong>{dados.solicitante.nome}</strong> em{' '}
+        <CabecalhoDePagina
+          titulo={dados.numeroFormatado}
+          marcadores={
+            <>
+              <Selo tipo={COR_SITUACAO[situacao]}>{ROTULO_SITUACAO[situacao]}</Selo>
+              {dados.itens.some((i) => i.primeiraCompra) && (
+                <Selo tipo="atencao">Tem item nunca comprado</Selo>
+              )}
+            </>
+          }
+          descricao={
+            <>
+              Aberta por <strong>{dados.solicitante.nome}</strong> em{' '}
             {dataHoraBr(dados.criadaEm)} · Obra {dados.obra.codigo} — {dados.obra.nome}
-          </p>
-        </div>
+            </>
+          }
+        />
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

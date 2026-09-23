@@ -6,6 +6,8 @@
 //   - o erro aparece perto do botão, não no topo da página
 //   - o botão mostra que está trabalhando e trava contra clique duplo
 //   - o navegador pode salvar a senha (autocomplete correto)
+//
+//  padrao-ignora: sem-cabecalho — é a tela de entrada: não há sistema atrás dela para onde voltar.
 // ============================================================
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';

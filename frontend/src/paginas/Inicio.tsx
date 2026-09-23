@@ -19,6 +19,7 @@ import {
   FINALIZACAO,
   oQueFalta,
 } from '../navegacao';
+import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 
 function saudacao(): string {
   const hora = new Date().getHours();
@@ -38,16 +39,16 @@ export function Inicio() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>
-            {saudacao()}, {primeiroNome}
-          </h1>
-          <p className="secao__descricao">
-            Você está no sistema como{' '}
+        <CabecalhoDePagina
+          titulo={saudacao() + ', ' + primeiroNome}
+          descricao={
+            <>
+              Você está no sistema como{' '}
             <strong>{usuario?.funcoes.map((f) => f.replace(/_/g, ' ').toLowerCase()).join(' e ')}</strong>
             , com {usuario?.permissoes.length} permissões liberadas.
-          </p>
-        </div>
+            </>
+          }
+        />
 
         <div className={'aviso ' + (MODULO_COMPLETO ? 'aviso--sucesso' : 'aviso--info')}>
           <span className="aviso__icone" aria-hidden="true">

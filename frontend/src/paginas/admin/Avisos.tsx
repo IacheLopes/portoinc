@@ -18,6 +18,7 @@
 import { useSearchParams } from 'react-router-dom';
 import { ConfiguracaoWhatsApp } from './WhatsApp';
 import { ConfiguracaoEmail } from './Email';
+import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 
 const ABAS = [
   {
@@ -52,12 +53,14 @@ export function Avisos() {
   return (
     <>
       <section className="secao">
-        <div className="secao__cabecalho">
-          <h1>Avisos ao fornecedor</h1>
-          <p className="secao__descricao">
-            Como o convite de cotação e o pedido de compra chegam até quem vai vender.
-          </p>
-        </div>
+        <CabecalhoDePagina
+          titulo="Avisos ao fornecedor"
+          descricao={
+            <>
+              Como o convite de cotação e o pedido de compra chegam até quem vai vender.
+            </>
+          }
+        />
 
         <div className="abas" role="tablist" aria-label="Canais de aviso">
           {ABAS.map((a) => (
