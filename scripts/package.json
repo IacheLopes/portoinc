@@ -14,7 +14,8 @@
     "backup": "node backup.mjs",
     "restaurar": "node restaurar.mjs",
     "padrao": "node padrao.mjs",
-    "versao": "node versao.mjs"
+    "versao": "node versao.mjs",
+    "fechar": "node fechar.mjs"
   },
   "dependencies": {
     "marked": "^15.0.6"

@@ -20,7 +20,13 @@ const EDGE = [
 
 const SAIDA = process.argv[2];
 const LARGURA = Number(process.argv[3] ?? 1440);
-const CONTA = process.argv[4] ?? 'admin@portoinc.com.br';
+// A conta é o quarto argumento, mas só se não for uma bandeira:
+// `--sem-print` caía nessa posição e virava o e-mail do login.
+const QUARTO = process.argv[4];
+const CONTA = QUARTO && !QUARTO.startsWith('--') ? QUARTO : 'admin@portoinc.com.br';
+// Medir sem fotografar: o print e a parte cara, e so serve quando
+// eu vou OLHAR o resultado.
+const SEM_PRINT = process.argv.includes('--sem-print');
 const ALTURA = 1000;
 const PORTA = 9340 + (LARGURA % 7) + (Date.now() % 40) * 10;
 
@@ -413,8 +419,18 @@ for (const [caminho, nome] of TELAS) {
     const bruto = await js(MEDIR);
     const { achados, estado } = JSON.parse(bruto);
 
-    const { data } = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-    writeFileSync(SAIDA + '/' + nome + '.png', Buffer.from(data, 'base64'));
+    // O print de página inteira é a parte cara da medição: numa tela
+    // com 18 linhas de tabela ele sozinho leva mais que a medição.
+    // Com `--sem-print` a régua mede e não fotografa — é o que basta
+    // para fechar uma etapa. O print serve para eu OLHAR, e aí vale
+    // rodar sem a opção.
+    if (!SEM_PRINT) {
+      const { data } = await cdp('Page.captureScreenshot', {
+        format: 'png',
+        captureBeyondViewport: true,
+      });
+      writeFileSync(SAIDA + '/' + nome + '.png', Buffer.from(data, 'base64'));
+    }
 
     relatorio.push({ tela: nome, caminho, estado, achados });
 

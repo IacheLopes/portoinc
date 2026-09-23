@@ -1,4 +1,4 @@
-<!-- versao: 0.18.0 -->
+<!-- versao: 0.19.0 -->
 
 # 1. Como usar este guia
 
@@ -3436,6 +3436,36 @@ docker compose exec web npm test
 
 ---
 
+## CT-261 · Toda tela diz onde você está e como voltar
+
+1. Entre como **Administrador** e abra **Cotações**
+
+**Esperado:** no alto, o caminho **"Início › Cotações"** e, à direita, **"← Voltar para Início"**.
+
+2. Abra uma cotação e clique em **Equalizar e escolher**
+
+**Esperado:** o caminho vira **"Início › Cotações › Pacote de cotação › Equalização"**.
+
+3. Clique em **Voltar**
+
+**Esperado:** volta para **aquela cotação** — a mesma que você estava vendo, não a lista.
+
+4. Clique em **Voltar** de novo
+
+**Esperado:** agora sim vai para a lista de Cotações.
+
+5. No caminho do alto, clique direto em **Início**
+
+**Esperado:** pula direto, sem passar pelo meio.
+
+6. Passe por 5 ou 6 telas diferentes
+
+**Esperado:** todas têm o caminho e o Voltar, no mesmo lugar. As únicas sem são a tela de entrar e o portal do fornecedor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3802,8 +3832,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-258 | O PDF da nota fiscal |  |
 | CT-259 | Guardar o arquivo que o fornecedor mandou |  |
 | CT-260 | O tema é escolha sua, e o sistema lembra |  |
+| CT-261 | Toda tela diz onde você está e como voltar |  |
 
-**Total: 260 casos** · Etapas cobertas: 0 a 12
+**Total: 261 casos** · Etapas cobertas: 0 a 12
 
 ---
 
@@ -3824,7 +3855,7 @@ docker compose exec web npm test    # as telas — cerca de 20 segundos
 |---|---|---|
 | **Unidade** | 355 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
 | **Integração** | 325 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
-| **Telas** | 60 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+| **Telas** | 89 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
 
 > As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
 

@@ -1,4 +1,4 @@
-<!-- versao: 0.18.0 -->
+<!-- versao: 0.19.0 -->
 
 # 1. Antes de começar
 
@@ -2308,6 +2308,30 @@ Enquanto o selo estiver **Simulado**:
 - Nenhum fornecedor recebe nada
 
 O sistema registra o que **teria** enviado, para você conferir. Risco zero.
+
+---
+
+# 42.0. Achar o caminho de volta
+
+Toda tela do sistema mostra, no alto, **onde você está** e **como voltar**.
+
+```
+Início › Cotações › Pacote de cotação        ← Voltar para Cotações
+```
+
+À esquerda fica o caminho. Cada pedaço dele é clicável: dá para pular direto para
+**Cotações** sem passar pelo meio.
+
+À direita fica o **Voltar**, e ele diz para onde vai. Repare que é "Voltar para
+Cotações", não só uma seta — você sabe onde vai parar antes de clicar.
+
+> **Ele volta um degrau, não "para a tela anterior".** Se você abriu a equalização de
+> uma cotação, o Voltar leva **àquela cotação**. Se tivesse levado "à anterior", e você
+> tivesse chegado por um link ou acabado de salvar alguma coisa, ele te jogaria num
+> lugar inesperado.
+
+Três telas não têm Voltar, de propósito: a de **entrar** (não há sistema atrás dela) e
+o **portal do fornecedor** (ele não tem conta nem menu aqui).
 
 ---
 

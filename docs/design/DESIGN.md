@@ -1,4 +1,4 @@
-<!-- versao: 0.18.0 -->
+<!-- versao: 0.19.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -259,6 +259,80 @@ Cada etapa seguinte derruba parte disso. O Design 2 (peças) zera as duas maiore
 - O botão troca, e a escolha sobrevive ao recarregamento
 - 60 provas de tela verdes
 - Alinhamento medido nas duas larguras, sem achados
+
+## Design 1 — Cabeçalho e navegação
+
+**A situação antes.** Das 34 telas, 9 mostravam onde a pessoa estava e 2 tinham algum
+"Voltar" — e nessas duas ele ficava no rodapé do formulário, não no topo. Nas outras 25,
+quem entrava só saía pelo menu ou pelo botão do navegador.
+
+**A estrutura**, agora igual em 30 telas:
+
+```
+Início › Cotações › Pacote de cotação        ← Voltar para Cotações
+────────────────────────────────────────────────────────────────────
+Pacote de cotação BID-00002   [Em aberto]         [Baixar] [Convidar]
+Material elétrico — 2º pavimento
+```
+
+### Três decisões, e o porquê
+
+**O Voltar leva à tela-mãe, não à anterior.** Voltar "para a anterior" parece igual mas
+não é: se a pessoa chegou por outro caminho, ou acabou de salvar um formulário, o botão a
+joga num lugar inesperado ou numa tela desatualizada. A tela-mãe é sempre o mesmo lugar.
+
+**O rótulo diz o destino** — "Voltar para Cotações", não uma seta solta. Quem usa leitor
+de tela ouve para onde vai; quem enxerga também.
+
+**O último degrau da migalha não é link.** É onde a pessoa está. Link que não leva a lugar
+nenhum engana quem navega por teclado: aperta Enter e nada acontece.
+
+### Onde a hierarquia mora
+
+Em `navegacao.ts`, junto da lista que monta o menu. Mesmo motivo de antes: quando menu e
+migalhas liam listas separadas, elas divergiram e a tela de Início passou meses anunciando
+coisa que não era mais verdade.
+
+Os coringas da rota são trocados pelos valores do endereço atual — numa equalização, o
+Voltar leva **àquela** cotação, não à lista.
+
+### As quatro telas de fora
+
+Cada uma com o motivo escrito no próprio arquivo:
+
+| Tela | Por quê |
+|---|---|
+| Entrar | Não há sistema atrás dela para onde voltar |
+| Portal do fornecedor | É de quem não tem conta nem menu no sistema |
+| Abas de WhatsApp e E-mail | O cabeçalho é do invólucro; dois títulos na mesma tela quebram a hierarquia |
+
+### Virou medição
+
+O conferidor ganhou a regra **"telas sem o cabeçalho padrão"**. Tela nova sem Voltar
+reprova. "Voltar em todas as páginas" deixou de ser promessa e virou fato conferido.
+
+### Três erros do script de conversão
+
+Trinta telas convertidas por script, e ele errou três vezes. Vale registrar porque são
+erros que qualquer conversão em massa comete:
+
+1. **Apagou a descrição de 27 das 30 telas.** O padrão de busca exigia que a descrição
+   fosse o fim do bloco, e o bloco termina noutra tag. A pasta das telas foi devolvida ao
+   marco anterior e o trabalho refeito.
+2. **Jogou fora os selos de situação** de 5 telas de detalhe. Apareceu porque o compilador
+   passou a acusar `Selo` importado e não usado — import sobrando é sintoma, não sujeira.
+   O cabeçalho ganhou um lugar próprio para eles, porque "SOL-00018, aguardando aprovação"
+   é uma coisa só.
+3. **Transformou um título em texto literal.** Apareceria com as chaves na tela.
+
+**A lição:** conversão em massa precisa de conferência do RESULTADO, não só do compilador.
+Os três passaram pela compilação; dois só apareceram ao olhar a tela e o aviso de import.
+
+### Conferido
+
+- 769 provas verdes (355 unidade, 325 integração, 89 tela)
+- Alinhamento sem achados em 1440px e 420px
+- Conferidor aprovado, com a regra do cabeçalho em ok
 
 ---
 

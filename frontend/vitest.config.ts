@@ -21,6 +21,11 @@ export default defineConfig({
     // O container tem 1 GB e 1 núcleo. Uma thread só: sem isso o
     // Vitest abre uma por núcleo e o teste morre por falta de memória.
     pool: 'threads',
+    // Reaproveita o ambiente entre arquivos. Cada arquivo abrindo o
+    // seu custava ~2,7s de partida — com 10 arquivos, 25 segundos
+    // gastos antes de a primeira prova rodar. Os testes ja limpam o
+    // que montam (ver testes/preparar.ts), entao nao ha o que isolar.
+    isolate: false,
     minWorkers: 1,
     maxWorkers: 1,
   },
