@@ -34,6 +34,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { Modal } from '../../componentes/Modal';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -107,6 +108,25 @@ export function PainelFinanceiro() {
     setErro(null);
     setAviso(null);
   }
+
+  function fecharBaixa() {
+    setPagando(null);
+    setErro(null);
+  }
+
+  /**
+   * A pessoa mexeu no formulário, ou está do jeito que abriu?
+   *
+   * O modal usa isto para perguntar antes de jogar fora o que foi
+   * preenchido. Sem a conta, ou ele pergunta sempre — e vira barulho
+   * em quem só abriu por engano — ou nunca pergunta, e perde o que
+   * a pessoa digitou.
+   */
+  const mexeuNaBaixa =
+    pagando !== null &&
+    (forma.trim() !== '' ||
+      valorPago !== String(pagando.valor) ||
+      dataPagamento !== hojeIso());
 
   async function confirmarBaixa() {
     if (!pagando) return;
@@ -390,43 +410,37 @@ export function PainelFinanceiro() {
           />
         </div>
 
-        {pagando && (
-          <div className="cartao painel-movimento">
-            <div className="secao__cabecalho">
-              <h3>Dar baixa em {pagando.numeroFormatado}</h3>
-              <p className="secao__descricao">
-                {pagando.fornecedor} · parcela {pagando.parcela}/{pagando.totalParcelas} ·{' '}
-                {dinheiro(pagando.valor)} · {pagando.quando}
-              </p>
-            </div>
+        {/* --------------------------------------------------
+            Dar baixa
 
-            <div className="formulario__linha">
-              <Campo
-                rotulo="Pago em"
-                valor={dataPagamento}
-                aoMudar={setDataPagamento}
-                tipo="date"
-                obrigatorio
-              />
-              <Campo
-                rotulo="Valor pago"
-                valor={valorPago}
-                aoMudar={setValorPago}
-                ajuda="Mude se pagou com desconto ou juros."
-              />
-              <Campo
-                rotulo="Forma de pagamento"
-                valor={forma}
-                aoMudar={setForma}
-                exemplo="PIX, boleto, transferência"
-              />
-            </div>
+            Era um painel que abria ACIMA da tabela. Quem
+            clicava numa parcela do fim da lista não via nada
+            acontecer: o formulário nascia fora da tela e a
+            página não se mexia.
 
-            <div className="formulario__acoes formulario__acoes--fim">
+            Virou modal, que é o que o padrão manda para
+            formulário curto que interrompe uma decisão. A
+            diferença não é só rolagem: o formulário vem até a
+            pessoa, o foco entra nele, e Esc sai.
+            -------------------------------------------------- */}
+        <Modal
+          aberto={pagando !== null}
+          aoFechar={fecharBaixa}
+          titulo={'Dar baixa em ' + (pagando?.numeroFormatado ?? '')}
+          descricao={
+            pagando
+              ? pagando.fornecedor + ' · parcela ' + pagando.parcela + '/' +
+                pagando.totalParcelas + ' · ' + dinheiro(pagando.valor) + ' · ' + pagando.quando
+              : undefined
+          }
+          temAlteracao={mexeuNaBaixa}
+          acoes={
+            <>
               <button
                 type="button"
-                className="botao botao--discreto"
-                onClick={() => setPagando(null)}
+                className="botao botao--secundario"
+                onClick={fecharBaixa}
+                disabled={ocupado}
               >
                 Cancelar
               </button>
@@ -438,9 +452,39 @@ export function PainelFinanceiro() {
               >
                 {ocupado ? 'Registrando...' : 'Confirmar pagamento'}
               </button>
-            </div>
+            </>
+          }
+        >
+          {/* O aviso de erro do topo da página fica ATRÁS do modal.
+              Se a baixa falhar, o motivo precisa aparecer aqui. */}
+          {erro && (
+            <p className="aviso aviso--erro" role="alert">
+              <span aria-hidden="true">⚠</span> {erro}
+            </p>
+          )}
+
+          <div className="formulario__linha">
+            <Campo
+              rotulo="Pago em"
+              valor={dataPagamento}
+              aoMudar={setDataPagamento}
+              tipo="date"
+              obrigatorio
+            />
+            <Campo
+              rotulo="Valor pago"
+              valor={valorPago}
+              aoMudar={setValorPago}
+              ajuda="Mude se pagou com desconto ou juros."
+            />
+            <Campo
+              rotulo="Forma de pagamento"
+              valor={forma}
+              aoMudar={setForma}
+              exemplo="PIX, boleto, transferência"
+            />
           </div>
-        )}
+        </Modal>
 
         {titulos.length === 0 ? (
           <Vazio

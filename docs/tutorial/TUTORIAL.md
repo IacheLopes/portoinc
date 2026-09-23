@@ -1,4 +1,4 @@
-<!-- versao: 0.20.0 -->
+<!-- versao: 0.20.1 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,30 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## Os formulários que abrem em janela
+
+Cinco ações abrem uma **janela por cima da tela**, em vez de um bloco dentro da página:
+
+| Onde | O quê |
+|---|---|
+| Financeiro | **Dar baixa** numa parcela |
+| Estoque | **Retirar** e **Contar** |
+| Locação | **Devolver** e **Cancelar** |
+
+Antes, clicar nesses botões abria o formulário em outro ponto da página — às vezes acima
+da tabela, às vezes abaixo dela. Quem clicava numa linha do fim da lista **não via nada
+acontecer**: o formulário nascia fora da tela, e a página não se mexia.
+
+Agora o formulário vem até você. O que estiver atrás fica escurecido e não rola.
+
+**Para sair sem salvar:** **Esc**, o **✕** do canto, ou o botão **Cancelar**/**Voltar**.
+
+> Se você tiver digitado alguma coisa, ele pergunta antes de jogar fora. Se não digitou
+> nada, sai direto — inclusive quando o campo já veio preenchido pelo sistema, como o
+> preço médio em Estoque ou a quantidade contada no ajuste.
+
+---
 
 ## O "⋮" nas tabelas
 

@@ -30,6 +30,7 @@ import { CartaoIndicador } from '../../componentes/Graficos';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Modal } from '../../componentes/Modal';
 
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
 
@@ -485,39 +486,33 @@ export function PainelLocacao() {
 
       {/* ------------------------------------------------------
           Devolver
+
+          Modal, e não painel na página: o botão que abre isto
+          mora no fim da tabela, e o painel nascia ACIMA dela.
+          Quem clicava não via nada acontecer.
+
+          O padrão da Parte 1 já nomeia "devolver equipamento"
+          entre os casos de modal — é decisão irreversível e
+          formulário curto.
           ------------------------------------------------------ */}
-      {devolvendo && (
-        <div className="cartao painel-movimento">
-          <div className="secao__cabecalho">
-            <h2>Devolver {devolvendo.numeroFormatado}</h2>
-            <p className="secao__descricao">
-              {devolvendo.descricao} · {devolvendo.obra.codigo} ·{' '}
-              previsto para {dataBr(devolvendo.previsaoDevolucao)}
-            </p>
-          </div>
-
-          <div className="formulario__linha">
-            <Campo
-              rotulo="Devolvido em"
-              valor={dataDevolucao}
-              aoMudar={setDataDevolucao}
-              tipo="date"
-              obrigatorio
-              ajuda="É esta data que encerra a contagem das diárias."
-            />
-            <Campo
-              rotulo="Observação"
-              valor={motivo}
-              aoMudar={setMotivo}
-              exemplo="Retirado pelo fornecedor"
-            />
-          </div>
-
-          <div className="formulario__acoes formulario__acoes--fim">
+      <Modal
+        aberto={devolvendo !== null}
+        aoFechar={() => { setDevolvendo(null); setMotivo(''); setErro(null); }}
+        titulo={'Devolver ' + (devolvendo?.numeroFormatado ?? '')}
+        descricao={
+          devolvendo
+            ? devolvendo.descricao + ' · ' + devolvendo.obra.codigo +
+              ' · previsto para ' + dataBr(devolvendo.previsaoDevolucao)
+            : undefined
+        }
+        temAlteracao={devolvendo !== null && motivo.trim() !== ''}
+        acoes={
+          <>
             <button
               type="button"
-              className="botao botao--discreto"
-              onClick={() => { setDevolvendo(null); setMotivo(''); }}
+              className="botao botao--secundario"
+              onClick={() => { setDevolvendo(null); setMotivo(''); setErro(null); }}
+              disabled={ocupado}
             >
               Voltar
             </button>
@@ -529,36 +524,50 @@ export function PainelLocacao() {
             >
               {ocupado ? 'Registrando...' : 'Confirmar devolução'}
             </button>
-          </div>
+          </>
+        }
+      >
+        {/* O aviso de erro da página fica ATRÁS do modal. */}
+        {erro && (
+          <p className="aviso aviso--erro" role="alert">
+            <span aria-hidden="true">⚠</span> {erro}
+          </p>
+        )}
+
+        <div className="formulario__linha">
+          <Campo
+            rotulo="Devolvido em"
+            valor={dataDevolucao}
+            aoMudar={setDataDevolucao}
+            tipo="date"
+            obrigatorio
+            ajuda="É esta data que encerra a contagem das diárias."
+          />
+          <Campo
+            rotulo="Observação"
+            valor={motivo}
+            aoMudar={setMotivo}
+            exemplo="Retirado pelo fornecedor"
+          />
         </div>
-      )}
+      </Modal>
 
       {/* ------------------------------------------------------
           Cancelar
           ------------------------------------------------------ */}
-      {cancelando && (
-        <div className="cartao painel-movimento">
-          <div className="secao__cabecalho">
-            <h2>Cancelar {cancelando.numeroFormatado}</h2>
-            <p className="secao__descricao">
-              Cancelar é para contrato que não chegou a existir de verdade. O que já
-              aconteceu deve ser registrado como devolução.
-            </p>
-          </div>
-
-          <Campo
-            rotulo="Por que está cancelando?"
-            valor={motivo}
-            aoMudar={setMotivo}
-            obrigatorio
-            exemplo="Equipamento nunca foi entregue"
-          />
-
-          <div className="formulario__acoes formulario__acoes--fim">
+      <Modal
+        aberto={cancelando !== null}
+        aoFechar={() => { setCancelando(null); setMotivo(''); setErro(null); }}
+        titulo={'Cancelar ' + (cancelando?.numeroFormatado ?? '')}
+        descricao="Cancelar é para contrato que não chegou a existir de verdade. O que já aconteceu deve ser registrado como devolução."
+        temAlteracao={cancelando !== null && motivo.trim() !== ''}
+        acoes={
+          <>
             <button
               type="button"
-              className="botao botao--discreto"
-              onClick={() => { setCancelando(null); setMotivo(''); }}
+              className="botao botao--secundario"
+              onClick={() => { setCancelando(null); setMotivo(''); setErro(null); }}
+              disabled={ocupado}
             >
               Voltar
             </button>
@@ -570,9 +579,23 @@ export function PainelLocacao() {
             >
               {ocupado ? 'Cancelando...' : 'Cancelar locação'}
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        }
+      >
+        {erro && (
+          <p className="aviso aviso--erro" role="alert">
+            <span aria-hidden="true">⚠</span> {erro}
+          </p>
+        )}
+
+        <Campo
+          rotulo="Por que está cancelando?"
+          valor={motivo}
+          aoMudar={setMotivo}
+          obrigatorio
+          exemplo="Equipamento nunca foi entregue"
+        />
+      </Modal>
 
       {/* ------------------------------------------------------
           A lista

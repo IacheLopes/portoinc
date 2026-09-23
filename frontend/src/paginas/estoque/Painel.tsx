@@ -10,7 +10,7 @@
 //  quem está no almoxarifado não quer navegar, quer dar baixa.
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   buscarEstoque, registrarMovimento, transferir, buscarReposicao,
@@ -25,6 +25,7 @@ import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
@@ -91,16 +92,42 @@ export function PainelEstoque() {
     [dados, almoxarifadoId],
   );
 
+  /**
+   * O que o sistema preencheu sozinho ao abrir.
+   *
+   * O modal pergunta antes de descartar o que foi preenchido, e para
+   * isso precisa saber se foi a PESSOA que preencheu. Vários campos
+   * já nascem escritos — o preço médio sempre, a quantidade no ajuste
+   * — e comparar com "vazio" acusava mudança onde não houve nenhuma:
+   * abrir "Contar" e apertar Esc perguntava "descartar o que você
+   * digitou?" para quem não tinha digitado nada.
+   *
+   * Guardo o que foi posto, em vez de reescrever a regra do que é
+   * posto. Regra escrita duas vezes é regra que vai divergir.
+   */
+  const comoAbriu = useRef({
+    valor: '', destino: '', observacao: '', precoEntrada: '', destinoTransferencia: '',
+  });
+
   function abrirPainel(linha: LinhaEstoque, qual: Acao) {
+    const inicio = {
+      valor: qual === 'AJUSTE' ? String(linha.quantidade) : '',
+      destino: '',
+      observacao: '',
+      precoEntrada: linha.custoMedio ? String(linha.custoMedio) : '',
+      destinoTransferencia:
+        dados?.almoxarifados.find((a) => a.id !== almoxarifadoId)?.id ?? '',
+    };
+
     setLinhaAberta(linha);
     setAcao(qual);
-    setValor(qual === 'AJUSTE' ? String(linha.quantidade) : '');
-    setDestino('');
-    setObservacao('');
-    setPrecoEntrada(linha.custoMedio ? String(linha.custoMedio) : '');
-    setDestinoTransferencia(
-      dados?.almoxarifados.find((a) => a.id !== almoxarifadoId)?.id ?? '',
-    );
+    setValor(inicio.valor);
+    setDestino(inicio.destino);
+    setObservacao(inicio.observacao);
+    setPrecoEntrada(inicio.precoEntrada);
+    setDestinoTransferencia(inicio.destinoTransferencia);
+    comoAbriu.current = inicio;
+
     setErro(null);
     setImpedimentos([]);
     setAviso(null);
@@ -109,6 +136,38 @@ export function PainelEstoque() {
   function fecharPainel() {
     setLinhaAberta(null);
   }
+
+  /** A pessoa mexeu no formulário, ou está do jeito que abriu? */
+  const mexeuNoMovimento =
+    linhaAberta !== null &&
+    (valor !== comoAbriu.current.valor ||
+      destino !== comoAbriu.current.destino ||
+      observacao !== comoAbriu.current.observacao ||
+      precoEntrada !== comoAbriu.current.precoEntrada ||
+      destinoTransferencia !== comoAbriu.current.destinoTransferencia);
+
+  /**
+   * O aviso de erro, escrito uma vez e usado em dois lugares.
+   *
+   * Ele precisa aparecer na página, para as falhas de carregamento,
+   * e TAMBÉM dentro do modal — porque o da página fica atrás dele, e
+   * quem tentou registrar um movimento que falhou não veria o motivo.
+   */
+  const avisoDeErro = erro ? (
+    <div className="aviso aviso--erro" role="alert">
+      <span className="aviso__icone" aria-hidden="true">⚠</span>
+      <div>
+        <strong>{erro}</strong>
+        {impedimentos.length > 0 && (
+          <ul className="campo__erro-lista">
+            {impedimentos.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  ) : null;
 
   async function confirmar() {
     if (!linhaAberta) return;
@@ -283,21 +342,7 @@ export function PainelEstoque() {
           </p>
         )}
 
-        {erro && (
-          <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
-            <div>
-              <strong>{erro}</strong>
-              {impedimentos.length > 0 && (
-                <ul className="campo__erro-lista">
-                  {impedimentos.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
+        {avisoDeErro}
       </section>
 
       {alertas.length > 0 && (
@@ -463,17 +508,54 @@ export function PainelEstoque() {
         )}
       </section>
 
-      {linhaAberta && (
-        <section className="secao" aria-live="polite">
-          <div className="cartao painel-movimento">
-            <div className="secao__cabecalho">
-              <h2>{ROTULO_ACAO[acao]}</h2>
-              <p className="secao__descricao">
-                <span className="mono">{linhaAberta.codigo}</span> {linhaAberta.descricao} · saldo
-                atual {qtdBr(linhaAberta.quantidade)} {linhaAberta.unidadeMedida}
-              </p>
-            </div>
+      {/* --------------------------------------------------
+          Movimentar
 
+          Modal, e não painel na página: o botão que abre isto
+          mora nas linhas da tabela, e o painel nascia DEPOIS
+          dela. Quem clicava numa linha do começo não via nada
+          acontecer — o formulário abria fora da tela.
+
+          Movimento de estoque muda saldo. É decisão que merece
+          interromper, e o formulário cabe em poucos campos.
+          -------------------------------------------------- */}
+      <Modal
+        aberto={linhaAberta !== null}
+        aoFechar={fecharPainel}
+        titulo={ROTULO_ACAO[acao]}
+        descricao={
+          linhaAberta
+            ? linhaAberta.codigo + ' ' + linhaAberta.descricao + ' · saldo atual ' +
+              qtdBr(linhaAberta.quantidade) + ' ' + linhaAberta.unidadeMedida
+            : undefined
+        }
+        temAlteracao={mexeuNoMovimento}
+        acoes={
+          <>
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={fecharPainel}
+              disabled={ocupado}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => void confirmar()}
+              disabled={ocupado}
+            >
+              {ocupado ? 'Registrando...' : 'Registrar'}
+            </button>
+          </>
+        }
+      >
+        {/* O aviso de erro da página fica ATRÁS do modal. */}
+        {avisoDeErro}
+
+        {linhaAberta && (
+          <>
             <div className="opcoes">
               {(['SAIDA', 'ENTRADA', 'AJUSTE', 'TRANSFERENCIA'] as Acao[]).map((op) => (
                 <label className="opcao" key={op}>
@@ -482,8 +564,12 @@ export function PainelEstoque() {
                     name="acao-estoque"
                     checked={acao === op}
                     onChange={() => {
+                      const novo = op === 'AJUSTE' ? String(linhaAberta.quantidade) : '';
                       setAcao(op);
-                      setValor(op === 'AJUSTE' ? String(linhaAberta.quantidade) : '');
+                      setValor(novo);
+                      // Quem escreveu foi o sistema, entao o ponto de
+                      // partida se move junto.
+                      comoAbriu.current = { ...comoAbriu.current, valor: novo };
                     }}
                   />
                   <span>{ROTULO_ACAO[op]}</span>
@@ -553,23 +639,9 @@ export function PainelEstoque() {
                   : undefined
               }
             />
-
-            <div className="formulario__acoes formulario__acoes--fim">
-              <button type="button" className="botao botao--discreto" onClick={fecharPainel}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => void confirmar()}
-                disabled={ocupado}
-              >
-                {ocupado ? 'Registrando...' : 'Registrar'}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+          </>
+        )}
+      </Modal>
 
       <div className="aviso aviso--info">
         <span className="aviso__icone" aria-hidden="true">💡</span>

@@ -1,4 +1,4 @@
-<!-- versao: 0.20.0 -->
+<!-- versao: 0.20.1 -->
 
 # 1. Como usar este guia
 
@@ -3529,6 +3529,59 @@ docker compose exec web npm test
 
 ---
 
+## CT-265 · O formulário vem até você
+
+O defeito que este caso existe para pegar: o formulário abria fora da tela e parecia que o
+clique não tinha funcionado.
+
+1. Entre como **Financeiro** (`andre@portoinc.com.br`) e abra **Financeiro**
+2. **Role a página até o fim**, onde fica a tabela de parcelas
+3. Clique em **Dar baixa** na **última** linha
+
+**Esperado:** abre uma janela **no meio da tela**, com o número da parcela no título. O
+fundo escurece. Você **não** precisa procurar o formulário nem rolar atrás dele.
+
+4. Tente rolar a página com a roda do mouse
+
+**Esperado:** o que está atrás **não rola**.
+
+5. Aperte **Esc** sem digitar nada
+
+**Esperado:** fecha na hora, **sem perguntar nada**, e o foco volta para o botão **Dar
+baixa** de onde você saiu.
+
+6. Repita em **Estoque → Retirar**, **Estoque → Contar**, **Locação → Devolver** e
+   **Locação → Cancelar**
+
+**Esperado:** o mesmo comportamento nos cinco.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-266 · Ele pergunta antes de jogar fora o que você digitou
+
+1. Em **Estoque**, clique em **Contar** em qualquer material
+
+**Esperado:** a quantidade já vem preenchida com o saldo atual.
+
+2. Aperte **Esc** sem mexer em nada
+
+**Esperado:** fecha **direto**. Não pode perguntar "descartar o que você digitou?", porque
+quem preencheu foi o sistema, não você.
+
+3. Abra de novo, **troque a quantidade** e aperte **Esc**
+
+**Esperado:** agora **pergunta** se pode fechar mesmo assim.
+
+4. Responda que **não**
+
+**Esperado:** a janela continua aberta, com o que você digitou intacto.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -3899,8 +3952,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-262 | O menu de ações da tabela |  |
 | CT-263 | Cancelar uma nota pergunta antes |  |
 | CT-264 | A seta dos campos de escolha |  |
+| CT-265 | O formulário vem até você |  |
+| CT-266 | Ele pergunta antes de jogar fora o que você digitou |  |
 
-**Total: 264 casos** · Etapas cobertas: 0 a 12
+**Total: 266 casos** · Etapas cobertas: 0 a 12
 
 ---
 

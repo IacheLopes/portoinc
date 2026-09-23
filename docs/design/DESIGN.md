@@ -1,4 +1,4 @@
-<!-- versao: 0.20.0 -->
+<!-- versao: 0.20.1 -->
 
 # Design do sistema — Porto Inc.
 
@@ -440,6 +440,63 @@ dizer em qual largura apareceu.
 O print de página inteira mudou de lugar junto. Ele ficava depois do laço, quando a janela
 já estava na última largura — toda foto sairia de celular. Foi para dentro, e agora cada
 largura tira a sua.
+
+## Design 2.1 — Os painéis que abriam onde ninguém via
+
+Apontado de fora, no Financeiro: clicar em **Dar baixa** não fazia nada visível.
+
+Fazia. O formulário abria **acima da tabela**, e quem clicou estava lá embaixo, na última
+linha. A página não se mexia, então o clique parecia morto.
+
+Medindo o resto do sistema, o mesmo desenho aparecia em mais quatro lugares — e nem sempre
+para o mesmo lado:
+
+| Tela | Botão | Onde o formulário nascia |
+|---|---|---|
+| Financeiro | Dar baixa | **acima** da tabela |
+| Locação | Devolver | **acima** da tabela |
+| Locação | Cancelar | **acima** da tabela |
+| Estoque | Retirar | **abaixo** da tabela |
+| Estoque | Contar | **abaixo** da tabela |
+
+### Por que modal, e não rolar a página
+
+Rolar até o formulário conserta o sintoma. Mas os cinco são formulário curto que interrompe
+uma decisão — exatamente a lista do que **entra** em modal na Parte 1, onde "devolver
+equipamento" e "cancelar locação" já estavam escritos pelo nome.
+
+E a página rolada continua com dois donos da atenção: o formulário e a tabela atrás dele. O
+modal resolve os dois de uma vez — vem até a pessoa, o foco entra nele, e o que está atrás
+para de rolar.
+
+### O que a medição pegou no caminho
+
+A sonda travou ao apertar Esc em "Contar". Motivo: o modal pergunta antes de descartar o que
+foi preenchido, e a conta de "foi preenchido" era **o campo tem texto**.
+
+Só que vários campos já nascem escritos pelo sistema — a quantidade no ajuste de inventário,
+o preço médio na entrada. O modal perguntava *"descartar o que você digitou?"* para quem não
+tinha digitado nada. Foi duas vezes na mesma tela: consertei a quantidade e o preço médio
+caiu no mesmo buraco.
+
+A correção não foi reescrever a lista de padrões — regra escrita duas vezes diverge. O
+formulário **guarda o que o sistema pôs nele** ao abrir, e compara com isso.
+
+Provado nos dois sentidos, com mouse e teclado de verdade:
+
+| | Esc sem digitar nada | Esc depois de digitar |
+|---|---|---|
+| Financeiro · Dar baixa | fecha direto | — |
+| Estoque · Retirar | fecha direto | **pergunta**, e o "não" mantém o texto |
+| Estoque · Contar | fecha direto | — |
+| Locação · Devolver | fecha direto | — |
+| Locação · Cancelar | fecha direto | — |
+
+Nos cinco: janela dentro da tela mesmo com a página rolada até o fim, foco dentro, rolagem
+de trás travada, e o foco de volta no botão de origem ao fechar.
+
+> A sonda travar foi sorte. Ela ficou esperando uma resposta que ninguém ia dar. Agora ela
+> responde sozinha e **anota que a pergunta apareceu** — que é o defeito que eu queria ver.
 
 ---
 
