@@ -20,7 +20,9 @@
 //  mouse (PC), ao tocar (celular) e ao chegar pelo teclado.
 // ============================================================
 
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode,
+} from 'react';
 import { dinheiro } from '../servicos/cadastros';
 import { dinheiroCurto } from '../servicos/texto';
 
@@ -50,16 +52,30 @@ export interface ConteudoDaDica {
 }
 
 interface DicaPosicionada extends ConteudoDaDica {
+  /** Onde apontar, em coordenadas da JANELA. */
   x: number;
   y: number;
+  /**
+   * A faixa vertical do gráfico, também em coordenadas da janela.
+   *
+   * A dica fica dentro dela. Sem este limite, "acima do ponteiro"
+   * vale sempre que couber na JANELA — e no alto de uma barra alta
+   * isso é em cima do título do cartão, que foi o defeito apontado.
+   */
+  limite: { topo: number; base: number };
 }
 
 /**
- * Uma dica só por gráfico, posicionada dentro da área dele.
+ * Uma dica só por gráfico.
  *
  * Mouse: aparece ao entrar e acompanha o ponteiro.
  * Toque: aparece ao tocar e some ao tocar fora.
  * Teclado: aparece ao chegar no elemento com Tab.
+ *
+ * As coordenadas são da JANELA, e não da área do gráfico. A dica
+ * era posicionada dentro da área, e a área vive dentro do cartão —
+ * que recorta o que vaza pelo canto arredondado. Resultado: a dica
+ * saía cortada pela borda de cima do cartão.
  */
 function useDica() {
   const area = useRef<HTMLDivElement>(null);
@@ -67,28 +83,24 @@ function useDica() {
 
   const esconder = useCallback(() => setDica(null), []);
 
+  /** A faixa do gráfico, onde a dica pode morar. */
+  const faixa = useCallback(() => {
+    const c = area.current?.getBoundingClientRect();
+    return c ? { topo: c.top, base: c.bottom } : { topo: 0, base: window.innerHeight };
+  }, []);
+
   const mostrarNoPonto = useCallback(
     (e: { clientX: number; clientY: number }, conteudo: ConteudoDaDica) => {
-      const caixa = area.current?.getBoundingClientRect();
-      if (!caixa) return;
-
-      setDica({ ...conteudo, x: e.clientX - caixa.left, y: e.clientY - caixa.top });
+      setDica({ ...conteudo, x: e.clientX, y: e.clientY, limite: faixa() });
     },
-    [],
+    [faixa],
   );
 
   /** Para o teclado: ancora no meio do elemento que recebeu foco. */
   const mostrarNoElemento = useCallback((alvo: Element, conteudo: ConteudoDaDica) => {
-    const caixa = area.current?.getBoundingClientRect();
     const dele = alvo.getBoundingClientRect();
-    if (!caixa) return;
-
-    setDica({
-      ...conteudo,
-      x: dele.left - caixa.left + dele.width / 2,
-      y: dele.top - caixa.top,
-    });
-  }, []);
+    setDica({ ...conteudo, x: dele.left + dele.width / 2, y: dele.top, limite: faixa() });
+  }, [faixa]);
 
   // No celular, tocar fora fecha a dica.
   useEffect(() => {
@@ -126,13 +138,69 @@ function useDica() {
   return { area, dica, ligar };
 }
 
+/** Respiro entre a dica e o ponteiro, e entre ela e a borda da tela. */
+const FOLGA = 12;
+const MARGEM = 8;
+
+/**
+ * A camada da dica.
+ *
+ * Ela se MEDE antes de se posicionar, em vez de chutar um tamanho:
+ * a altura depende de quantas linhas o gráfico mandou, e a largura
+ * do texto mais comprido. Com medida na mão:
+ *
+ *   - Horizontal: centrada no ponteiro, presa dentro da janela
+ *   - Vertical: acima do ponteiro, e presa dentro da FAIXA do
+ *     gráfico; se não couber acima, desce para baixo dele
+ *
+ * A faixa é o que a janela sozinha não resolvia. Apontando o topo
+ * de uma barra alta, "acima do ponteiro" ainda cabia na janela — e
+ * caía em cima do título do cartão. Foi o defeito apontado.
+ *
+ * A medição roda em `useLayoutEffect`, antes da pintura — senão o
+ * primeiro quadro apareceria no lugar errado e piscaria.
+ */
 function CamadaDaDica({ dica }: { dica: DicaPosicionada | null }) {
+  const caixa = useRef<HTMLDivElement>(null);
+  const [posto, setPosto] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!dica || !caixa.current) return;
+
+    const r = caixa.current.getBoundingClientRect();
+
+    const left = Math.max(
+      MARGEM,
+      Math.min(dica.x - r.width / 2, window.innerWidth - r.width - MARGEM),
+    );
+
+    // O teto e o chão: o que for mais apertado entre a faixa do
+    // gráfico e a janela.
+    const teto = Math.max(MARGEM, dica.limite.topo);
+    const chao = Math.min(window.innerHeight - MARGEM, dica.limite.base);
+
+    const acima = dica.y - r.height - FOLGA;
+    const abaixo = dica.y + FOLGA;
+
+    let top;
+    if (acima >= teto) top = acima;
+    else if (abaixo + r.height <= chao) top = abaixo;
+    // Não cabe nem em cima nem embaixo: cola no teto. Acontece em
+    // gráfico baixo, e é melhor que sair do cartão.
+    else top = Math.max(MARGEM, Math.min(teto, window.innerHeight - r.height - MARGEM));
+
+    setPosto({ left, top });
+  }, [dica]);
+
   if (!dica) return null;
 
   return (
     <div
+      ref={caixa}
       className="dica"
-      style={{ left: dica.x, top: dica.y }}
+      // Antes de medir ela fica fora da tela: aparecer no lugar
+      // errado por um quadro é pior do que aparecer um quadro depois.
+      style={posto ? { left: posto.left, top: posto.top } : { left: -9999, top: -9999 }}
       role="status"
       aria-live="polite"
     >

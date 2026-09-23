@@ -1,4 +1,4 @@
-<!-- versao: 0.22.0 -->
+<!-- versao: 0.22.1 -->
 
 # 1. Como usar este guia
 
@@ -3696,6 +3696,33 @@ vizinhos continuam legíveis — nenhum número fica escondido.
 
 ---
 
+## CT-272 · A dica dos gráficos não fica cortada
+
+O defeito que este caso existe para pegar: o painel flutuante aparecia cortado pela borda do
+cartão e por cima do título do gráfico.
+
+1. Entre como **Financeiro** (`andre@portoinc.com.br`) e abra **Financeiro**
+2. Passe o mouse pelo **topo da barra mais alta** do gráfico "Fluxo de caixa"
+
+**Esperado:** o painel aparece **inteiro**, sem nenhum lado cortado, e **não** cobre o título
+"Fluxo de caixa: o que já saiu e o que vem por aí".
+
+3. Passe o mouse pela **última coluna da direita**
+
+**Esperado:** o painel continua inteiro e dentro da tela — não sai pela borda direita.
+
+4. Passe o mouse pela **rosca** de "Composição da carteira", na parte de cima dela
+
+**Esperado:** o painel aparece inteiro e não cobre o título "Composição da carteira".
+
+5. Repita em **Relatórios**, em todos os gráficos
+
+**Esperado:** o mesmo comportamento.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4073,8 +4100,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-269 | Os dois temas continuam legíveis |  |
 | CT-270 | A explicação do número não cobre o vizinho |  |
 | CT-271 | Os números concordam com o substantivo |  |
+| CT-272 | A dica dos gráficos não fica cortada |  |
 
-**Total: 271 casos** · Etapas cobertas: 0 a 12
+**Total: 272 casos** · Etapas cobertas: 0 a 12
 
 ---
 

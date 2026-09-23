@@ -245,9 +245,14 @@
    A dica que aparece ao apontar
    ------------------------------------------------------------ */
 .dica {
-  position: absolute;
-  /* Acima do ponteiro, sem cobrir o que foi apontado. */
-  transform: translate(-50%, calc(-100% - 12px));
+  /* `fixed`, e não `absolute`: absoluta ela era filha da área do
+     gráfico, que vive dentro do cartão — e o cartão recorta o que
+     vaza pelo canto arredondado (`overflow: hidden`). A dica saía
+     cortada pela borda de cima.
+
+     Fixa, ela se posiciona na janela e nenhum recorte a alcança.
+     Quem decide onde ela cabe é o componente, que se mede antes. */
+  position: fixed;
   background: var(--fundo-elevado);
   border: 1px solid var(--azul-600);
   border-radius: var(--raio-md);

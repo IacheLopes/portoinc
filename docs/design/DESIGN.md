@@ -1,4 +1,4 @@
-<!-- versao: 0.22.0 -->
+<!-- versao: 0.22.1 -->
 
 # Design do sistema — Porto Inc.
 
@@ -761,6 +761,55 @@ cor sólida — avatar, chip, botão de perigo. Ali o branco **não deve** troca
 
 `npm run padrao -- --onde` lista os arquivos de cada dívida, em vez de só contar. Saber que
 há 16 cartões à mão não ajuda ninguém a consertá-los; saber **quais**, sim.
+
+## Design 4.1 — A dica dos gráficos, que eu mesmo cortei
+
+Apontado de fora, com dois prints: passando o mouse nos gráficos, o painel flutuante ficava
+**cortado**, e por cima do título do cartão.
+
+E a causa foi o Design 4. Ao trocar os `<div className="cartao">` escritos à mão pelo
+componente, os gráficos passaram a viver dentro de `.cartao--peca`, que tem
+`overflow: hidden` para o conteúdo não vazar pelo canto arredondado. A dica era
+`position: absolute` **dentro** dessa caixa — e passou a ser recortada por ela.
+
+Uma troca que parecia neutra — mesma aparência, menos código à mão — tinha efeito colateral
+em quem flutua lá dentro. É o tipo de coisa que só aparece com o mouse em cima, e hover é
+justamente o que a régua não confere.
+
+### O conserto, em duas partes
+
+**1. Sair da caixa.** A dica virou `position: fixed`, em coordenadas da janela. Fixa, nenhum
+`overflow` de ancestral a alcança.
+
+**2. Saber onde cabe.** Ela **se mede** antes de se posicionar — a altura depende de quantas
+linhas o gráfico mandou, e chutar seria repetir o erro. Com a medida na mão:
+
+- **Horizontal:** centrada no ponteiro, presa dentro da janela com 8px de margem
+- **Vertical:** acima do ponteiro, e presa dentro da **faixa do gráfico**; quando não cabe
+  acima, desce
+
+A faixa é o que a janela sozinha não resolvia. Apontando o topo de uma barra alta, "acima do
+ponteiro" ainda cabia na janela — e caía em cima do título. Medido antes da correção:
+`cobreOTitulo: true`.
+
+| Caso | Dentro da janela | Cobre o título | Fica |
+|---|---|---|---|
+| Topo da barra mais alta | sim | **não** | abaixo |
+| Última barra, na borda direita | sim | **não** | abaixo |
+| Fatia de cima da rosca | sim | **não** | abaixo |
+
+A medição roda em `useLayoutEffect`, antes da pintura: senão o primeiro quadro apareceria no
+lugar errado e piscaria.
+
+### E a sonda errou de novo
+
+Ela conferia se a dica estava visível perguntando `elementFromPoint` no meio dela. Deu
+`false` nas três — e a dica estava lá. `.dica` tem `pointer-events: none` de propósito (sem
+isso o mouse "entra" nela, sai do elemento e ela pisca sem parar), então o navegador nunca a
+devolve nesse teste.
+
+> Sexta vez que o "defeito" era a medição. A conferência que valeu foi a geometria: dentro
+> da janela, fora do título, e de que lado do ponteiro.
 
 ---
 
