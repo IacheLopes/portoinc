@@ -193,6 +193,15 @@ describe('Fluxo de caixa por mês', () => {
   //  O filtro de período
   // ----------------------------------------------------------
 
+  it('a referência fica no MEIO da janela, não encostada à esquerda', () => {
+    const f = montarFluxo([], HOJE);
+
+    assert.equal(f.length, 12);
+    assert.equal(f[5].chave, '2026-09', 'o mês de hoje é a 6ª de 12 colunas');
+    assert.equal(f[0].chave, '2026-04');
+    assert.equal(f[11].chave, '2027-03');
+  });
+
   it('a referência move a janela sem mexer em hoje', () => {
     const f = montarFluxo([], HOJE, 3, 8, dia('2025-03-15'));
 

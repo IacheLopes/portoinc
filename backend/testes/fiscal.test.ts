@@ -595,7 +595,14 @@ describe('Painel financeiro', () => {
     const chaveHoje =
       hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
 
-    assert.equal(r.corpo.fluxo[3].chave, chaveHoje);
+    // Índice 5: a 6ª de 12 colunas.
+    //
+    // Esta prova sempre se chamou "no meio da janela" e conferia o
+    // índice 3 — a 4ª de 12, encostada à esquerda. O nome estava
+    // certo e o código não: escolhendo agosto no filtro, agosto
+    // aparecia no primeiro terço do gráfico. Corrigido em 24/09/2026,
+    // quando o filtro de período tornou isso visível.
+    assert.equal(r.corpo.fluxo[5].chave, chaveHoje);
   });
 
   it('cada fatia da carteira traz o tom da cor', async () => {

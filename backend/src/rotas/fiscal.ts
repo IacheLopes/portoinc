@@ -686,6 +686,13 @@ export async function rotasFiscal(app: FastifyInstance) {
           return res.status(400).send({ erro: 'Período fora do intervalo aceito.' });
         }
         alvo = new Date(ano, mes - 1, 1);
+
+        // O mês que vem ainda não aconteceu. A tela já desliga a seta
+        // e fecha o calendário, mas quem garante é o servidor: tela é
+        // conforto, regra é aqui.
+        if (alvo > new Date(hoje.getFullYear(), hoje.getMonth(), 1)) {
+          return res.status(400).send({ erro: 'O período não pode ser futuro.' });
+        }
       }
 
       const titulos = await banco.contaPagar.findMany({
@@ -707,7 +714,7 @@ export async function rotasFiscal(app: FastifyInstance) {
       }));
 
       return {
-        fluxo: montarFluxo(parcelas, hoje, 3, 8, alvo),
+        fluxo: montarFluxo(parcelas, hoje, 5, 6, alvo),
         referencia:
           alvo.getFullYear() + '-' + String(alvo.getMonth() + 1).padStart(2, '0'),
       };

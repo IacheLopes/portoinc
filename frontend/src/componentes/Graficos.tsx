@@ -355,13 +355,16 @@ export function GraficoFluxo({
 
         {periodo && (
         <div className="fluxo__periodo">
-          {/* Meia janela por toque: andando 12 de uma vez, nenhum mês
-              da tela anterior continua à vista e some a referência. */}
+          {/* UM mês por toque.
+
+              Começou com seis, e seis é o tamanho de um salto, não de
+              um passo: quem clica a seta quer o mês vizinho. Para ir
+              longe existe o seletor ao lado, que salta direto. */}
           <button
             type="button"
             className="botao botao--secundario fluxo__passo"
-            aria-label="Seis meses para trás"
-            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, -6))}
+            aria-label="Mês anterior"
+            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, -1))}
           >
             <Icone nome="anterior" />
           </button>
@@ -371,19 +374,33 @@ export function GraficoFluxo({
               seria mais código e pior em ambos. */}
           <label className="fluxo__periodo-campo">
             <span className="apenas-leitor-tela">Mês no centro do gráfico</span>
+            {/* `max`: o calendário do próprio sistema operacional já
+                fecha os meses futuros, então a regra não depende de
+                o usuário obedecer a seta desligada. */}
             <input
               type="month"
               className="campo__entrada"
+              max={periodo.hoje}
               value={periodo.referencia}
               onChange={(e) => e.target.value && periodo.aoMudar(e.target.value)}
             />
           </label>
 
+          {/* Para na frente do mês atual.
+
+              O mês que vem ainda não aconteceu: avançar para ele só
+              mostraria colunas vazias e daria a impressão de que o
+              sistema perdeu dado. Só há para onde avançar depois de
+              ter voltado — e o limite é sempre hoje.
+
+              `AAAA-MM` compara como texto na ordem certa, então o
+              teste é uma comparação simples. */}
           <button
             type="button"
             className="botao botao--secundario fluxo__passo"
-            aria-label="Seis meses para frente"
-            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, 6))}
+            aria-label="Próximo mês"
+            disabled={periodo.referencia >= periodo.hoje}
+            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, 1))}
           >
             <Icone nome="proximo" />
           </button>

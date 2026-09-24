@@ -416,6 +416,30 @@ await cdp('Emulation.setDeviceMetricsOverride', {
   width: LARGURA, height: ALTURA, deviceScaleFactor: 1, mobile: LARGURA < 700,
 });
 
+// ------------------------------------------------------------
+//  Movimento desligado, no navegador inteiro
+//
+//  Os graficos animam ao aparecer: as barras do fluxo crescem em
+//  600ms com atraso escalonado (ate ~1,1s somando o ultimo), a
+//  rosca gira em 800ms, o medidor enche em 900ms.
+//
+//  A regua fotografava no meio do voo. Em 2026-09-24 saiu uma
+//  captura do Financeiro com as barras quase invisiveis e a rosca
+//  pela metade — e nada disso era defeito do produto. Decima vez
+//  nesta obra que o defeito era a medicao.
+//
+//  Pior que a foto feia: o `backwards` faz o elemento ficar no
+//  quadro ZERO enquanto espera o atraso, entao a ALTURA medida
+//  tambem era a errada.
+//
+//  O sistema ja respeita `prefers-reduced-motion: reduce` e zera
+//  as animacoes nesse caso. Pedir isso ao navegador deixa toda
+//  medicao deterministica, sem tocar no CSS de producao.
+// ------------------------------------------------------------
+await cdp('Emulation.setEmulatedMedia', {
+  features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+});
+
 await cdp('Page.navigate', { url: 'http://localhost:5173/entrar' });
 await esperarPor('input[type="password"]');
 

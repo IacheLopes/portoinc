@@ -154,10 +154,17 @@ export type ParcelaDoFluxo = Pick<
 >;
 
 /**
- * Doze meses: os 3 anteriores e os 9 seguintes.
+ * Doze meses, com o mês de referência NO MEIO.
  *
  * O passado mostra o que já saiu; o futuro mostra o que vem.
  * Sem o passado, não dá para comparar o mês que vem com nada.
+ *
+ * Eram 3 antes e 8 depois, o que punha a referência na 4ª coluna de
+ * 12 — encostada à esquerda. Escolhendo "agosto" no filtro, agosto
+ * aparecia no primeiro terço do gráfico em vez de no meio, e a
+ * leitura ficava torta. Agora são 5 antes e 6 depois: a referência
+ * é a 6ª de 12, e sobra um mês a mais para a frente que para trás,
+ * porque o título promete "o que vem por aí".
  *
  * `hoje` e `referencia` são coisas DIFERENTES, e essa separação é o
  * que permite o filtro de período:
@@ -172,8 +179,8 @@ export type ParcelaDoFluxo = Pick<
 export function montarFluxo(
   parcelas: ParcelaDoFluxo[],
   hoje = new Date(),
-  mesesAntes = 3,
-  mesesDepois = 8,
+  mesesAntes = 5,
+  mesesDepois = 6,
   referencia = hoje,
 ): MesDoFluxo[] {
   const meses: MesDoFluxo[] = [];
