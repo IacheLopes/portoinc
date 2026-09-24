@@ -29,6 +29,7 @@ import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -83,11 +84,13 @@ export function PainelEstoque() {
     [almoxarifadoId, busca],
   );
 
+  // O almoxarifado vale na hora; o campo de procurar espera a pessoa
+  // parar de digitar, para não buscar a cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
+
   useEffect(() => {
-    void carregar();
-    // Só na primeira carga: as demais são disparadas pelos filtros.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void carregar(almoxarifadoId, buscaAdiada);
+  }, [carregar, almoxarifadoId, buscaAdiada]);
 
   const almoxarifado = useMemo(
     () => dados?.almoxarifados.find((a) => a.id === almoxarifadoId) ?? null,
@@ -307,14 +310,6 @@ export function PainelEstoque() {
             exemplo="cimento, 00131..."
             semMarcaOpcional
           />
-
-          <button
-            type="button"
-            className="botao botao--secundario"
-            onClick={() => void carregar(almoxarifadoId, busca)}
-          >
-            Buscar
-          </button>
 
           <Link to="/estoque/movimentos" className="botao botao--discreto">
             Ver extrato

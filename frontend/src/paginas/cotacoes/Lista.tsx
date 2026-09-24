@@ -46,9 +46,10 @@ export function ListaCotacoes() {
     }
   }, []);
 
+  // Sem botao: escolher a situacao ja recarrega.
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(situacao);
+  }, [carregar, situacao]);
 
   if (carregando && cotacoes.length === 0) {
     return <Carregando mensagem="Carregando cotações..." />;
@@ -111,21 +112,6 @@ export function ListaCotacoes() {
               rotulo,
             }))}
           />
-
-          <button
-
-            type="button"
-
-            className="botao botao--secundario"
-
-            onClick={() => void carregar(situacao)}
-
-          >
-
-            Filtrar
-
-          </button>
-
         </div>
 
         <NovaCotacao

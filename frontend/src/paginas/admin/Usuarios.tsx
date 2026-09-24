@@ -24,6 +24,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 
 interface FuncaoItem {
   id: string;
@@ -65,9 +66,13 @@ export function Usuarios() {
     }
   }, []);
 
+  // O campo de digitar espera a pessoa parar, para nao buscar a
+  // cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
+
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(buscaAdiada);
+  }, [carregar, buscaAdiada]);
 
   async function alternarAtivo(usuario: UsuarioAdmin) {
     setAviso(null);
@@ -122,21 +127,6 @@ export function Usuarios() {
             semMarcaOpcional
             aoConfirmar={() => void carregar(busca)}
           />
-
-          <button
-
-            type="button"
-
-            className="botao botao--secundario"
-
-            onClick={() => void carregar(busca)}
-
-          >
-
-            Buscar
-
-          </button>
-
         </div>
 
         {aviso && (

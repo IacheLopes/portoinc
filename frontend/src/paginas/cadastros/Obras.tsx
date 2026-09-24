@@ -18,6 +18,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -49,9 +50,13 @@ export function Obras() {
     }
   }, []);
 
+  // O campo de digitar espera a pessoa parar, para nao buscar a
+  // cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
+
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(buscaAdiada);
+  }, [carregar, buscaAdiada]);
 
   if (carregando && obras.length === 0) return <Carregando mensagem="Carregando obras..." />;
   if (erro && obras.length === 0) {
@@ -99,10 +104,6 @@ export function Obras() {
             semMarcaOpcional
             aoConfirmar={() => void carregar(busca)}
           />
-
-          <button type="button" className="botao botao--secundario" onClick={() => void carregar(busca)}>
-            Buscar
-          </button>
 
         </div>
         <FormularioObra

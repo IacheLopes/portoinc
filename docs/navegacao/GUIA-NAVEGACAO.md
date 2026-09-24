@@ -1,4 +1,4 @@
-<!-- versao: 0.34.0 -->
+<!-- versao: 0.35.0 -->
 
 # Guia de Navegação Simples
 
@@ -103,8 +103,11 @@ abra o pedido → **Enviar para aprovação**.
 > **O botão azul fica sempre no mesmo lugar**, em toda tela do sistema: à direita do
 > título. Se você procurar ele em outro canto, não vai achar.
 
-> **O filtro vale na hora.** Escolha a situação e a lista muda sozinha — não há botão de
-> confirmar.
+> **Todo filtro vale na hora**, em qualquer tela: escolha e a lista muda sozinha. Não
+> existe botão de confirmar em lugar nenhum.
+>
+> Nos campos de **digitar**, a lista espera você parar de digitar — meio segundo — para
+> não buscar a cada letra.
 
 > **Dica:** se você clicar em **Salvar como rascunho**, o pedido fica guardado e ninguém
 > vê. Ele só entra na fila quando você clica em **Enviar para aprovação**.

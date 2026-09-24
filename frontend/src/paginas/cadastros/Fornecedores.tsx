@@ -19,6 +19,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -51,13 +52,14 @@ export function Fornecedores() {
     [],
   );
 
-  useEffect(() => {
-    void carregar();
-  }, [carregar]);
+  // A lista suspensa vale na hora; o campo de digitar espera a
+  // pessoa parar, para nao buscar a cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
 
-  function aplicarFiltros() {
-    void carregar({ busca: busca || undefined, familiaId: familiaId || undefined });
-  }
+  useEffect(() => {
+    void carregar({ busca: buscaAdiada || undefined, familiaId: familiaId || undefined });
+  }, [carregar, buscaAdiada, familiaId]);
+
 
   if (carregando && fornecedores.length === 0) {
     return <Carregando mensagem="Carregando fornecedores..." />;
@@ -105,7 +107,6 @@ export function Fornecedores() {
             tipo="search"
             exemplo="nome ou CNPJ"
             semMarcaOpcional
-            aoConfirmar={aplicarFiltros}
           />
 
           <Selecao
@@ -117,10 +118,6 @@ export function Fornecedores() {
             opcoes={familias.map((f) => ({ valor: f.id, rotulo: f.nome }))}
           />
 
-          <button type="button" className="botao botao--secundario" onClick={aplicarFiltros}>
-            Filtrar
-          </button>
-
         </div>
         <FormularioFornecedor
           key={String(aberto)}
@@ -130,7 +127,7 @@ export function Fornecedores() {
           aoSalvar={async (nome) => {
             setAberto(false);
             setAviso('"' + nome + '" cadastrado.');
-            aplicarFiltros();
+            void carregar({ busca: busca || undefined, familiaId: familiaId || undefined });
           }}
         />
       </section>

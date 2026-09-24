@@ -21,6 +21,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -54,17 +55,18 @@ export function Materiais() {
     [],
   );
 
-  useEffect(() => {
-    void carregar();
-  }, [carregar]);
+  // A lista suspensa vale na hora; o campo de digitar espera a
+  // pessoa parar, para nao buscar a cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
 
-  function aplicarFiltros() {
+  useEffect(() => {
     void carregar({
-      busca: busca || undefined,
+      busca: buscaAdiada || undefined,
       familiaId: familiaId || undefined,
       tipo: tipo || undefined,
     });
-  }
+  }, [carregar, buscaAdiada, familiaId, tipo]);
+
 
   if (carregando && materiais.length === 0) return <Carregando mensagem="Carregando catálogo..." />;
   if (erro && materiais.length === 0) {
@@ -108,7 +110,6 @@ export function Materiais() {
             tipo="search"
             exemplo="descrição, código ou marca"
             semMarcaOpcional
-            aoConfirmar={aplicarFiltros}
           />
 
           <Selecao
@@ -132,10 +133,6 @@ export function Materiais() {
             ]}
           />
 
-          <button type="button" className="botao botao--secundario" onClick={aplicarFiltros}>
-            Filtrar
-          </button>
-
         </div>
         <FormularioMaterial
           key={String(aberto)}
@@ -145,7 +142,7 @@ export function Materiais() {
           aoSalvar={async (descricao) => {
             setAberto(false);
             setAviso('"' + descricao + '" cadastrado no catálogo.');
-            aplicarFiltros();
+            void carregar({ busca: busca || undefined, familiaId: familiaId || undefined, tipo: tipo || undefined });
           }}
         />
       </section>

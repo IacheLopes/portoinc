@@ -1,4 +1,4 @@
-<!-- versao: 0.34.0 -->
+<!-- versao: 0.35.0 -->
 
 # 1. Como usar este guia
 
@@ -4056,6 +4056,15 @@ diferentes conforme o tamanho da descrição. Corrigido em 24/09/2026.
 2. Troque **Situação** para **Aguardando aprovação**
 
 **Esperado:** a lista muda **assim que você escolhe**. Não existe botão "Filtrar".
+
+3. Repita em **Cotações**, **Estoque**, **Usuários**, **Cadastros → Materiais**,
+   **Fornecedores** e **Obras**
+
+**Esperado:** em nenhuma delas existe botão de filtrar ou buscar.
+
+4. Numa tela com campo de digitar (Estoque, por exemplo), digite **cimento** devagar
+
+**Esperado:** a lista só atualiza quando você **para** de digitar, e não a cada letra.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
