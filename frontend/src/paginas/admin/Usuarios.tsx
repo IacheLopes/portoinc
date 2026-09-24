@@ -6,7 +6,7 @@
 //  reunião: "cada usuário pode ter mais de uma função".
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
   listarUsuarios,
   listarFuncoes,
@@ -23,6 +23,7 @@ import { dataHoraBr } from '../../servicos/solicitacoes';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 interface FuncaoItem {
   id: string;
@@ -124,10 +125,9 @@ export function Usuarios() {
           <button
             type="button"
             className="botao botao--principal"
-            onClick={() => setFormAberto((v) => !v)}
-            aria-expanded={formAberto}
+            onClick={() => setFormAberto(true)}
           >
-            {formAberto ? 'Cancelar' : '+ Novo usuário'}
+            + Novo usuário
           </button>
         </div>
 
@@ -137,16 +137,17 @@ export function Usuarios() {
           </p>
         )}
 
-        {formAberto && (
-          <FormularioUsuario
-            funcoes={funcoes}
-            aoSalvar={async () => {
-              setFormAberto(false);
-              setAviso('Usuário cadastrado. Ele criará a própria senha no primeiro acesso.');
-              await carregar(busca);
-            }}
-          />
-        )}
+                <FormularioUsuario
+          key={String(formAberto)}
+          aberto={formAberto}
+          aoFechar={() => setFormAberto(false)}
+          funcoes={funcoes}
+          aoSalvar={async () => {
+            setFormAberto(false);
+            setAviso('Usuário cadastrado. Ele criará a própria senha no primeiro acesso.');
+            await carregar(busca);
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -242,12 +243,17 @@ export function Usuarios() {
 //  Formulário de novo usuário
 // ------------------------------------------------------------
 function FormularioUsuario({
+  aberto,
+  aoFechar,
   funcoes,
   aoSalvar,
 }: {
+  aberto: boolean;
+  aoFechar: () => void;
   funcoes: FuncaoItem[];
   aoSalvar: () => Promise<void>;
 }) {
+  const idForm = useId();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -292,8 +298,32 @@ function FormularioUsuario({
   }
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Novo usuário" nivel={2}>
+    /* O botao de enviar mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`: um submit fora do
+       formulario continua enviando aquele formulario. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Novo usuário"
+      descricao="As funções decidem o que a pessoa enxerga e o que ela pode fazer."
+      temAlteracao={Boolean(nome || email || telefone || senha || selecionadas.length > 0)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || selecionadas.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar usuário'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <div className="formulario__linha">
           <div className="campo">
@@ -388,16 +418,7 @@ function FormularioUsuario({
           </div>
         )}
 
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || selecionadas.length === 0}
-          >
-            {enviando ? 'Salvando...' : 'Cadastrar usuário'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }

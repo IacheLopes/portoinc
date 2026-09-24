@@ -10,7 +10,7 @@
 //  vai precisar assinar.
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
   listarAlcadas, criarAlcada, simularAlcada, dinheiro,
   type RegraAlcada,
@@ -24,6 +24,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 interface FuncaoItem {
   id: string;
@@ -120,24 +121,23 @@ export function Alcadas() {
             <button
               type="button"
               className="botao botao--principal"
-              onClick={() => setAberto((v) => !v)}
-              aria-expanded={aberto}
+              onClick={() => setAberto(true)}
             >
-              {aberto ? 'Cancelar' : '+ Nova faixa'}
+              + Nova faixa
             </button>
           </div>
         )}
-
-        {aberto && (
-          <FormularioFaixa
-            funcoes={funcoes}
-            aoSalvar={async (descricao) => {
-              setAberto(false);
-              setAviso('Faixa "' + descricao + '" criada.');
-              await carregar();
-            }}
-          />
-        )}
+        <FormularioFaixa
+          key={String(aberto)}
+          aberto={aberto}
+          aoFechar={() => setAberto(false)}
+          funcoes={funcoes}
+          aoSalvar={async (descricao) => {
+            setAberto(false);
+            setAviso('Faixa "' + descricao + '" criada.');
+            await carregar();
+          }}
+        />
 
         <Cartao semEspaco>
           {regras.length === 0 ? (
@@ -297,12 +297,17 @@ function Simulador() {
 //  Nova faixa
 // ------------------------------------------------------------
 function FormularioFaixa({
+  aberto,
+  aoFechar,
   funcoes,
   aoSalvar,
 }: {
+  aberto: boolean;
+  aoFechar: () => void;
   funcoes: FuncaoItem[];
   aoSalvar: (descricao: string) => Promise<void>;
 }) {
+  const idForm = useId();
   const [descricao, setDescricao] = useState('');
   const [valorMinimo, setValorMinimo] = useState('');
   const [valorMaximo, setValorMaximo] = useState('');
@@ -346,8 +351,32 @@ function FormularioFaixa({
   }
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Nova faixa de alçada">
+    /* O botao de enviar mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`: um submit fora do
+       formulario continua enviando aquele formulario. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Nova faixa de alçada"
+      descricao="A faixa diz quem precisa assinar uma compra, conforme o valor dela."
+      temAlteracao={Boolean(descricao || valorMinimo || selecionadas.length > 0)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !descricao || selecionadas.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Criar faixa'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <Campo
           rotulo="Descrição"
@@ -412,16 +441,7 @@ function FormularioFaixa({
 
         {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || !descricao || selecionadas.length === 0}
-          >
-            {enviando ? 'Salvando...' : 'Criar faixa'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }

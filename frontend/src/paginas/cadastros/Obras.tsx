@@ -2,7 +2,7 @@
 //  Lista de obras
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   listarObras, criarObra, ROTULO_SITUACAO, UFS,
@@ -17,6 +17,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -96,23 +97,22 @@ export function Obras() {
             <button
               type="button"
               className="botao botao--principal"
-              onClick={() => setAberto((v) => !v)}
-              aria-expanded={aberto}
+              onClick={() => setAberto(true)}
             >
-              {aberto ? 'Cancelar' : '+ Nova obra'}
+              + Nova obra
             </button>
           )}
         </div>
-
-        {aberto && (
-          <FormularioObra
-            aoSalvar={async (nome) => {
-              setAberto(false);
-              setAviso('Obra "' + nome + '" criada, já com o almoxarifado dela.');
-              await carregar();
-            }}
-          />
-        )}
+        <FormularioObra
+          key={String(aberto)}
+          aberto={aberto}
+          aoFechar={() => setAberto(false)}
+          aoSalvar={async (nome) => {
+            setAberto(false);
+            setAviso('Obra "' + nome + '" criada, já com o almoxarifado dela.');
+            await carregar();
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -178,7 +178,16 @@ export function Obras() {
 // ------------------------------------------------------------
 //  Formulário
 // ------------------------------------------------------------
-function FormularioObra({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void> }) {
+function FormularioObra({
+  aberto,
+  aoFechar,
+  aoSalvar,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+  aoSalvar: (nome: string) => Promise<void>;
+}) {
+  const idForm = useId();
   const [codigo, setCodigo] = useState('');
   const [nome, setNome] = useState('');
   const [cliente, setCliente] = useState('');
@@ -220,8 +229,33 @@ function FormularioObra({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void
   }
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Nova obra" nivel={2}>
+    /* O botao de enviar mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`: um submit fora do
+       formulario continua enviando aquele formulario. Assim o rodape
+       fica onde o padrao manda, sem estado a mais. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Nova obra"
+      descricao="Cada obra ganha um almoxarifado próprio, criado junto com ela."
+      temAlteracao={Boolean(codigo || nome || cliente || cidade)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !codigo || !nome}
+          >
+            {enviando ? 'Salvando...' : 'Criar obra'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <div className="formulario__linha">
           <Campo
@@ -278,16 +312,7 @@ function FormularioObra({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void
 
         {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || !codigo || !nome}
-          >
-            {enviando ? 'Salvando...' : 'Criar obra'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }

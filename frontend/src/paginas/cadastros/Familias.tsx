@@ -2,7 +2,7 @@
 //  Cadastro de famílias
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { listarFamilias, criarFamilia, type Familia } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
@@ -12,6 +12,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { plural } from '../../servicos/texto';
 import { Cartao } from '../../componentes/Cartao';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 export function Familias() {
   const { pode } = useAutenticacao();
@@ -69,23 +70,22 @@ export function Familias() {
             <button
               type="button"
               className="botao botao--principal"
-              onClick={() => setAberto((v) => !v)}
-              aria-expanded={aberto}
+              onClick={() => setAberto(true)}
             >
-              {aberto ? 'Cancelar' : '+ Nova família'}
+              + Nova família
             </button>
           </div>
         )}
 
-        {aberto && (
-          <FormularioFamilia
-            aoSalvar={async (nome) => {
-              setAberto(false);
-              setAviso('Família "' + nome + '" cadastrada.');
-              await carregar();
-            }}
-          />
-        )}
+        <FormularioFamilia
+          aberto={aberto}
+          aoFechar={() => setAberto(false)}
+          aoSalvar={async (nome) => {
+            setAberto(false);
+            setAviso('Família "' + nome + '" cadastrada.');
+            await carregar();
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -120,7 +120,16 @@ export function Familias() {
   );
 }
 
-function FormularioFamilia({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void> }) {
+function FormularioFamilia({
+  aberto,
+  aoFechar,
+  aoSalvar,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+  aoSalvar: (nome: string) => Promise<void>;
+}) {
+  const idForm = useId();
   const [codigo, setCodigo] = useState('');
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -148,9 +157,44 @@ function FormularioFamilia({ aoSalvar }: { aoSalvar: (nome: string) => Promise<v
     }
   }
 
+  function fechar() {
+    setCodigo('');
+    setNome('');
+    setDescricao('');
+    setErro(null);
+    setDetalhes([]);
+    aoFechar();
+  }
+
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Nova família" nivel={2}>
+    /* O botao que envia mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`. E HTML de sempre:
+       um submit fora do formulario continua enviando aquele
+       formulario — e assim o rodape fica onde o padrao manda, sem
+       quebrar o envio nem exigir estado a mais. */
+    <Modal
+      aberto={aberto}
+      aoFechar={fechar}
+      titulo="Nova família"
+      descricao="A família agrupa material do mesmo tipo, e é por ela que o sistema sugere fornecedor."
+      temAlteracao={Boolean(codigo || nome || descricao)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={fechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !codigo || !nome}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar família'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <div className="formulario__linha">
           <Campo
@@ -180,17 +224,7 @@ function FormularioFamilia({ aoSalvar }: { aoSalvar: (nome: string) => Promise<v
         />
 
         {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
-
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || !codigo || !nome}
-          >
-            {enviando ? 'Salvando...' : 'Cadastrar família'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }

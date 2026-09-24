@@ -5,7 +5,7 @@
 //  código Porto, código de barras e norma técnica (NBR).
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
   listarMateriais, listarFamilias, criarMaterial, biparCodigo,
   quantidade, UNIDADES,
@@ -20,6 +20,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -128,24 +129,23 @@ export function Materiais() {
             <button
               type="button"
               className="botao botao--principal"
-              onClick={() => setAberto((v) => !v)}
-              aria-expanded={aberto}
+              onClick={() => setAberto(true)}
             >
-              {aberto ? 'Cancelar' : '+ Novo item'}
+              + Novo item
             </button>
           )}
         </div>
-
-        {aberto && (
-          <FormularioMaterial
-            familias={familias}
-            aoSalvar={async (descricao) => {
-              setAberto(false);
-              setAviso('"' + descricao + '" cadastrado no catálogo.');
-              aplicarFiltros();
-            }}
-          />
-        )}
+        <FormularioMaterial
+          key={String(aberto)}
+          aberto={aberto}
+          aoFechar={() => setAberto(false)}
+          familias={familias}
+          aoSalvar={async (descricao) => {
+            setAberto(false);
+            setAviso('"' + descricao + '" cadastrado no catálogo.');
+            aplicarFiltros();
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -217,12 +217,17 @@ export function Materiais() {
 //  Formulário
 // ------------------------------------------------------------
 function FormularioMaterial({
+  aberto,
+  aoFechar,
   familias,
   aoSalvar,
 }: {
+  aberto: boolean;
+  aoFechar: () => void;
   familias: Familia[];
   aoSalvar: (descricao: string) => Promise<void>;
 }) {
+  const idForm = useId();
   const [familiaId, setFamiliaId] = useState('');
   const [codigoInterno, setCodigoInterno] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -288,8 +293,33 @@ function FormularioMaterial({
   }
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Novo item de catálogo" nivel={2}>
+    /* O botao de enviar mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`: um submit fora do
+       formulario continua enviando aquele formulario. Assim o rodape
+       fica onde o padrao manda, sem estado a mais. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Novo item de catálogo"
+      descricao="É deste catálogo que a solicitação escolhe o que pedir."
+      temAlteracao={Boolean(familiaId || codigoInterno || descricao)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !familiaId || !codigoInterno || !descricao}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar item'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <div className="formulario__linha">
           <Selecao
@@ -385,16 +415,7 @@ function FormularioMaterial({
 
         {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || !familiaId || !codigoInterno || !descricao}
-          >
-            {enviando ? 'Salvando...' : 'Cadastrar item'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }

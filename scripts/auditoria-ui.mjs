@@ -806,12 +806,20 @@ const MEDIR = `(() => {
   //
   //  Aqui e contado o que esta DE FATO na tela. Um botao principal
   //  por vez: se dois competem, nenhum e o proximo passo.
-  const principais = [...document.querySelectorAll('main .botao--principal')]
-    .filter((b) => {
-      const r = b.getBoundingClientRect();
-      const e = getComputedStyle(b);
-      return r.width > 0 && r.height > 0 && e.visibility !== 'hidden';
-    });
+  //  Com um modal aberto, a pagina atras esta INERTE: o navegador
+  //  nao deixa clicar nem tabular nada fora do <dialog>. Contar o
+  //  botao da pagina junto com o do modal acusa competicao que nao
+  //  existe — a pessoa so alcanca um deles.
+  const modalAberto = document.querySelector('dialog[open]');
+  const ondeProcurar = modalAberto ?? document.querySelector('main');
+
+  const principais = ondeProcurar
+    ? [...ondeProcurar.querySelectorAll('.botao--principal')].filter((b) => {
+        const r = b.getBoundingClientRect();
+        const e = getComputedStyle(b);
+        return r.width > 0 && r.height > 0 && e.visibility !== 'hidden';
+      })
+    : [];
 
   if (principais.length > 1) {
     achados.push({

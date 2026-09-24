@@ -5,7 +5,7 @@
 //  é ele que responde "quem convidar para este BID?".
 // ============================================================
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
   listarFornecedores, listarFamilias, criarFornecedor, UFS,
   type Fornecedor, type Familia,
@@ -18,6 +18,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -113,24 +114,23 @@ export function Fornecedores() {
             <button
               type="button"
               className="botao botao--principal"
-              onClick={() => setAberto((v) => !v)}
-              aria-expanded={aberto}
+              onClick={() => setAberto(true)}
             >
-              {aberto ? 'Cancelar' : '+ Novo fornecedor'}
+              + Novo fornecedor
             </button>
           )}
         </div>
-
-        {aberto && (
-          <FormularioFornecedor
-            familias={familias}
-            aoSalvar={async (nome) => {
-              setAberto(false);
-              setAviso('"' + nome + '" cadastrado.');
-              aplicarFiltros();
-            }}
-          />
-        )}
+        <FormularioFornecedor
+          key={String(aberto)}
+          aberto={aberto}
+          aoFechar={() => setAberto(false)}
+          familias={familias}
+          aoSalvar={async (nome) => {
+            setAberto(false);
+            setAviso('"' + nome + '" cadastrado.');
+            aplicarFiltros();
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -212,12 +212,17 @@ export function Fornecedores() {
 //  Formulário
 // ------------------------------------------------------------
 function FormularioFornecedor({
+  aberto,
+  aoFechar,
   familias,
   aoSalvar,
 }: {
+  aberto: boolean;
+  aoFechar: () => void;
   familias: Familia[];
   aoSalvar: (nome: string) => Promise<void>;
 }) {
+  const idForm = useId();
   const [razaoSocial, setRazaoSocial] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
   const [cnpj, setCnpj] = useState('');
@@ -267,8 +272,33 @@ function FormularioFornecedor({
   }
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <Cartao className="formulario" titulo="Novo fornecedor" nivel={2}>
+    /* O botao de enviar mora no RODAPE do modal, fora do <form>, e
+       alcanca o formulario pelo atributo `form`: um submit fora do
+       formulario continua enviando aquele formulario. Assim o rodape
+       fica onde o padrao manda, sem estado a mais. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Novo fornecedor"
+      descricao="As famílias que ele atende decidem em quais cotações ele será sugerido."
+      temAlteracao={Boolean(razaoSocial || nomeFantasia || cnpj)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !razaoSocial || !cnpj}
+          >
+            {enviando ? 'Salvando...' : 'Cadastrar fornecedor'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
 
         <div className="formulario__linha">
           <Campo
@@ -339,16 +369,7 @@ function FormularioFornecedor({
 
         {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-        <div className="formulario__acoes">
-          <button
-            type="submit"
-            className="botao botao--principal"
-            disabled={enviando || !razaoSocial || !cnpj}
-          >
-            {enviando ? 'Salvando...' : 'Cadastrar fornecedor'}
-          </button>
-        </div>
-      </Cartao>
-    </form>
+      </form>
+    </Modal>
   );
 }
