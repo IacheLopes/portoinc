@@ -751,6 +751,36 @@ const MEDIR = `(() => {
     achados.push({ tipo: 'BOTAO_SEM_NOME', detalhe: mudos.length + ' botao(oes)', culpados: mudos.slice(0, 5) });
   }
 
+  // 8a. Tabela com dados e cabecalho INVISIVEL, no computador.
+  //
+  //  No celular isso e o combinado: a linha vira cartao e o rotulo
+  //  passa a viver ao lado de cada valor. Na tela larga, nao — a
+  //  coluna de numero sem nome e indecifravel.
+  //
+  //  Foi assim que a tela de Conferencia mostrou "180 | 0 | 180" por
+  //  semanas: a regra que esconde o cabecalho no modo cartao ficou
+  //  FORA da media query, e apagou o cabecalho de 25 telas em toda
+  //  largura. Ninguem mediu, porque a regua nao perguntava isto.
+  if (larguraTela > 700) {
+    const semCabecalho = [...document.querySelectorAll('table')]
+      .filter((t) => {
+        if (!t.querySelector('tbody tr')) return false;
+        const cabeca = t.querySelector('thead');
+        if (!cabeca) return true;
+        const r = cabeca.getBoundingClientRect();
+        return r.height <= 2 || r.width <= 2;
+      })
+      .map(nomear);
+
+    if (semCabecalho.length > 0) {
+      achados.push({
+        tipo: 'TABELA_SEM_CABECALHO',
+        detalhe: semCabecalho.length + ' tabela(s) com dados e cabecalho invisivel',
+        culpados: semCabecalho.slice(0, 4),
+      });
+    }
+  }
+
   // 8. Tabela sem legenda para leitor de tela.
   const semLegenda = [...document.querySelectorAll('table')]
     .filter((t) => !t.querySelector('caption') && !t.getAttribute('aria-label'))

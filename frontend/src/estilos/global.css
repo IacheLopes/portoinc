@@ -59,9 +59,21 @@ p { margin: 0; }
   left: var(--esp-4);
 }
 
-/* Texto visivel apenas para leitores de tela. */
-.apenas-leitor-tela,
-.tabela-area--cartoes .tabela thead {
+/* Texto visivel apenas para leitores de tela.
+
+   ATENCAO ao acrescentar seletor aqui: esta regra NAO esta dentro de
+   media query nenhuma, entao vale em toda largura.
+
+   Foi assim que o cabecalho de TODAS as tabelas do sistema sumiu no
+   computador. O Design 7 pos `.tabela-area--cartoes .tabela thead`
+   nesta lista, para escondê-lo no modo cartao — mas a classe
+   `--cartoes` esta em toda tabela que nao rola, em qualquer largura.
+   O resultado: 25 telas com colunas de numero sem nome. A tela de
+   Conferencia mostrava "180 | 0 | 180" e era impossivel entender.
+
+   A regra do cabecalho mudou para dentro do bloco de celular, que e
+   onde ela sempre quis estar. */
+.apenas-leitor-tela {
   position: absolute;
   width: 1px; height: 1px;
   padding: 0; margin: -1px;
@@ -773,6 +785,21 @@ a.indicador--clicavel:focus-visible {
   .tabela-area--cartoes .tabela th {
     display: block;
     width: auto;
+  }
+
+  /* O cabeçalho sai de VISTA, não da página — e SÓ AQUI, no celular.
+
+     Esta regra morava junto do `.apenas-leitor-tela`, fora de media
+     query, e por isso escondia o cabeçalho de toda tabela em toda
+     largura. */
+  .tabela-area--cartoes .tabela thead {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* O cabeçalho sai de VISTA, não da página.

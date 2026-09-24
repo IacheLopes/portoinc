@@ -488,6 +488,19 @@ export function ConferirRecebimento() {
             ajuda="Ex.: motorista não esperou a conferência completa."
           />
 
+          {/* Diz ANTES do clique por que não dá para registrar.
+
+              O botão só estava desligado quando o pedido já tinha
+              chegado inteiro. Sem item marcado ele continuava aceso,
+              a pessoa clicava, e o servidor recusava — e ela ficava
+              sem saber o que tinha feito de errado. */}
+          {marcados === 0 && !dados.tudoRecebido && (
+            <p className="campo__ajuda">
+              Informe a quantidade em <strong>Recebido agora</strong> de pelo menos um item.
+              Se chegou tudo, use <strong>Recebi tudo que falta</strong>.
+            </p>
+          )}
+
           <div className="formulario__acoes formulario__acoes--fim">
             <Link to="/recebimento" className="botao botao--discreto">
               Voltar
@@ -496,7 +509,7 @@ export function ConferirRecebimento() {
               type="button"
               className="botao botao--principal"
               onClick={() => void registrar()}
-              disabled={ocupado || dados.tudoRecebido}
+              disabled={ocupado || dados.tudoRecebido || marcados === 0}
             >
               {ocupado ? 'Registrando...' : 'Registrar recebimento'}
             </button>
