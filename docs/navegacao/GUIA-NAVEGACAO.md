@@ -7,11 +7,40 @@
 
 ---
 
+# ⚠️ Antes de qualquer coisa: os dados são de mentira
+
+**Tudo que aparece na tela foi inventado para a demonstração.** Obras, materiais,
+fornecedores, notas fiscais, valores — nada disso existe. Serve só para o sistema ter o
+que mostrar.
+
+| O que é **real** | O que é **inventado** |
+|---|---|
+| As pessoas: Bras, Gilson, Neilma, Andre, Washington — nomes citados na reunião | As três obras, com seus nomes, cidades e clientes |
+| Os papéis de cada um e quem pode o quê | Os materiais, fornecedores e famílias do catálogo |
+| O fluxo de compra, do pedido ao pagamento | As notas fiscais, parcelas e locações |
+| A regra de que a aprovação depende do valor | **Os valores de R$ 2.000 e R$ 15.000** |
+
+**Ao apresentar, diga isso na primeira frase.** Algo como:
+
+> *"Os dados são de exemplo, para o sistema ter o que mostrar. As pessoas são as da
+> reunião; o resto é ilustração."*
+
+Sem esse aviso, alguém da Porto Inc. vai dizer *"não temos essa obra"* ou *"nosso limite
+não é esse"* — e a demonstração perde a credibilidade por causa de um detalhe que nem era
+o assunto.
+
+> **Aproveite a demonstração para perguntar.** Os limites de alçada, as famílias de
+> material e os fornecedores são justamente o que **eles** precisam informar. Chegue com
+> a pergunta pronta: *"a partir de quanto sobe para o fundador?"*
+
+---
+
 # Para que serve o sistema
 
-A **Porto Inc. é uma construtora**: ela levanta obra. Hoje tem três cadastradas — um
-residencial em São Paulo, um edifício em Santos e um galpão logístico em Cajamar. Umas
-são para clientes, outra é para a incorporadora do próprio grupo.
+A **Porto Inc. é uma construtora**: ela levanta obra.
+
+(No sistema há três obras cadastradas, de tipos diferentes — residencial, predial e
+logística. São **exemplos**, para mostrar que o sistema não assume um tipo só de obra.)
 
 **Este sistema não é a construtora — é uma parte dela.** Ele cuida de uma coisa só:
 **comprar o material e o equipamento que a obra consome, e controlar o almoxarifado.**
@@ -79,7 +108,8 @@ Aprovações. Para apresentar o sistema inteiro, entre como **Administrador**.
 - Liberar ou devolver com motivo
 - **Passo:** **Aprovações** → abra uma → **Aprovar** ou **Devolver**
 
-> **A alçada é por valor.** Estes são os limites configurados hoje:
+> **A alçada é por valor.** A regra é real; **os valores abaixo são exemplo**, e foram
+> escolhidos por mim para a demonstração funcionar:
 >
 > | Valor da solicitação | Quem assina |
 > |---|---|
@@ -87,7 +117,8 @@ Aprovações. Para apresentar o sistema inteiro, entre como **Administrador**.
 > | R$ 2.000,01 a R$ 15.000 | Gestor de obra **e** Engenheiro |
 > | acima de R$ 15.000 | Fundador |
 >
-> Mudam em **Cadastros → Limites de alçada**.
+> Mudam em **Cadastros → Limites de alçada**, e é lá que os valores de verdade da Porto
+> Inc. vão entrar quando eles informarem.
 
 ## 4. Cotações
 
@@ -217,6 +248,10 @@ Aprovações. Para apresentar o sistema inteiro, entre como **Administrador**.
 
 Segue **uma compra inteira**, do pedido ao pagamento. É a melhor forma de mostrar o
 sistema, porque conta uma história em vez de listar telas.
+
+> Você vai criar uma solicitação de verdade no banco de demonstração. Pode fazer à
+> vontade: nada sai para fornecedor nenhum (as integrações estão em modo de teste), e o
+> banco pode ser recarregado do zero quando quiser.
 
 | # | Entre como | Faça |
 |---|---|---|
