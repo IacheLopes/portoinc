@@ -44,6 +44,7 @@ const DOCUMENTOS = {
   navegacao: {
     entrada: join(RAIZ, 'docs', 'navegacao', 'GUIA-NAVEGACAO.md'),
     saida: join(RAIZ, 'docs', 'navegacao', 'Guia-Navegacao-PortoInc.pdf'),
+    compacto: true,
     titulo: 'Guia de Navegação Simples',
     subtitulo: 'Porto Inc. — para que serve cada tela, e onde clicar',
     aviso:
@@ -160,6 +161,30 @@ const ESTILO = `
   }
   pre code { background: none; color: inherit; padding: 0; }
 
+  /* ----------------------------------------------------------
+     Modo compacto
+
+     O guia de navegacao e feito de MUITAS secoes curtas, cada uma
+     com uma tabelinha ou um aviso. As regras que proibem quebrar dentro de um bloco
+     empurram cada um deles inteiro para a folha seguinte quando ele nao cabe no que sobrou — e sobra branco.
+
+     Aqui a tabela passa a poder quebrar ENTRE LINHAS (a linha em si
+     continua inteira, que e o que importa para ler), e as partes
+     nao abrem folha nova.
+     ---------------------------------------------------------- */
+  .compacto h1 { page-break-before: auto; margin-top: 10mm; }
+  .compacto h1:first-of-type { margin-top: 0; }
+
+  .compacto table { page-break-inside: auto; }
+  .compacto tr { page-break-inside: avoid; }
+  .compacto thead { display: table-header-group; }
+
+  .compacto blockquote { page-break-inside: auto; }
+  .compacto h3 + table, .compacto h3 + p + table { page-break-inside: auto; }
+
+  /* Orfas e viuvas: duas linhas minimas de cada lado da quebra. */
+  .compacto p, .compacto li { orphans: 2; widows: 2; }
+
   /* ---------- Destaque ---------- */
   blockquote {
     margin: 4mm 0; padding: 3mm 4mm; background: var(--fundo-suave);
@@ -177,6 +202,25 @@ const ESTILO = `
 
   /* Caixinhas para marcar no papel. */
   .marcar { letter-spacing: 1mm; font-size: 13pt; color: var(--suave); }
+`;
+
+// ------------------------------------------------------------
+//  Estilo so do documento compacto
+//
+//  `@page` nao enxerga classe do body, entao a margem da folha
+//  precisa de folha de estilo propria. Vale so para o guia de
+//  navegacao: os outros tres continuam com o respiro de antes.
+// ------------------------------------------------------------
+const ESTILO_COMPACTO = `
+  @page { size: A4; margin: 13mm 13mm 15mm 13mm; }
+
+  /* Secoes curtas, uma atras da outra: 8mm entre elas somava muita
+     folha em branco ao longo de 20 secoes. */
+  h2 { margin-top: 5mm; }
+  h3 { margin-top: 4mm; }
+  hr { margin: 4mm 0; }
+  table { margin: 2mm 0 3mm; }
+  blockquote { margin: 3mm 0; }
 `;
 
 function montarCapa(doc, versao, data) {
@@ -225,8 +269,9 @@ async function principal() {
   <meta charset="utf-8" />
   <title>Porto Inc.</title>
   <style>${ESTILO}</style>
+  ${doc.compacto ? '<style>' + ESTILO_COMPACTO + '</style>' : ''}
 </head>
-<body>
+<body class="${doc.compacto ? 'compacto' : ''}">
 ${montarCapa(doc, versao, data)}
 ${corpo}
 </body>
