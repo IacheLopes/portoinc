@@ -51,11 +51,14 @@ const PG = 'frontend/src/paginas/';
 const TELAS = [
   ['/', 'inicio', [PG + 'Inicio.tsx']],
   ['/solicitacoes', 'solicitacoes-lista', [PG + 'solicitacoes/Lista.tsx']],
-  ['/solicitacoes/nova', 'solicitacoes-nova', [PG + 'solicitacoes/Nova.tsx']],
+  // Quarto item: o texto do botao que abre o modal. Sem ele a regua
+  // media a tela de tras e dizia que estava tudo certo — e os maiores
+  // formularios do sistema ficavam fora de toda medicao.
+  ['/solicitacoes', 'solicitacoes-nova', [PG + 'solicitacoes/Nova.tsx'], '+ Nova solicitação'],
   ['/solicitacoes/' + SOLICITACAO, 'solicitacoes-detalhe', [PG + 'solicitacoes/Detalhe.tsx']],
   ['/aprovacoes', 'aprovacoes', [PG + 'aprovacoes/Fila.tsx']],
   ['/cotacoes', 'cotacoes-lista', [PG + 'cotacoes/Lista.tsx']],
-  ['/cotacoes/nova', 'cotacoes-nova', [PG + 'cotacoes/Nova.tsx']],
+  ['/cotacoes', 'cotacoes-nova', [PG + 'cotacoes/Nova.tsx'], '+ Novo pacote de cotação'],
   ['/cotacoes/' + COTACAO, 'cotacoes-detalhe', [PG + 'cotacoes/Detalhe.tsx']],
   ['/cotacoes/' + COTACAO + '/equalizacao', 'cotacoes-equalizacao', [PG + 'cotacoes/Equalizacao.tsx']],
   ['/pedidos', 'pedidos', [PG + 'pedidos/Lista.tsx']],
@@ -951,7 +954,7 @@ const LARGURAS = process.argv.includes('--so-uma')
   ? [LARGURA]
   : [1440, 420];
 
-for (const [caminho, nome] of ESCOLHIDAS) {
+for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
   try {
     await cdp('Emulation.setDeviceMetricsOverride', {
       width: LARGURAS[0], height: ALTURA, deviceScaleFactor: 1, mobile: false,
@@ -1028,10 +1031,12 @@ for (const [caminho, nome] of ESCOLHIDAS) {
     //  O texto e o do proprio botao, como a pessoa le: `--abrir
     //  "Nova locacao"`.
     // ----------------------------------------------------------
-    if (ABRIR) {
+    const abrir = ABRIR ?? botaoDaTela;
+
+    if (abrir) {
       const clicou = await js(`(() => {
         const alvo = [...document.querySelectorAll('button, a')]
-          .find((b) => (b.textContent || '').trim().includes(${JSON.stringify(ABRIR)}));
+          .find((b) => (b.textContent || '').trim().includes(${JSON.stringify(abrir)}));
         if (!alvo) return 'nao achei o botao';
         alvo.click();
         return 'ok';

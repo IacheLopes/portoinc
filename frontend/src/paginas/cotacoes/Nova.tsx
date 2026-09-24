@@ -6,8 +6,8 @@
 //  faz a cotação valer a pena: um pedido só, vários fornecedores.
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   listarItensDisponiveis, criarCotacao, type ItemDisponivel,
 } from '../../servicos/cotacoes';
@@ -17,10 +17,10 @@ import { ErroApi } from '../../servicos/api';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
-import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { Modal } from '../../componentes/Modal';
 
 /** Daqui a N dias, no formato que o campo de data aceita. */
 function daquiADias(dias: number): string {
@@ -29,7 +29,14 @@ function daquiADias(dias: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function NovaCotacao() {
+export function NovaCotacao({
+  aberto,
+  aoFechar,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+}) {
+  const idForm = useId();
   const navegar = useNavigate();
 
   const [itens, setItens] = useState<ItemDisponivel[]>([]);
@@ -139,16 +146,35 @@ export function NovaCotacao() {
   if (erroCarga) return <Erro mensagem={erroCarga} aoTentarNovamente={() => void carregar()} />;
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <section className="secao">
-        <CabecalhoDePagina
-          titulo="Novo pacote de cotação"
-          descricao={
-            <>
-              Escolha os itens aprovados. Na próxima tela você convida os fornecedores.
-            </>
-          }
-        />
+    /* Formulario longo em modal, por pedido do dono do sistema. O
+       corpo rola por dentro e o rodape fica preso embaixo. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Novo pacote de cotação"
+      descricao="Escolha os itens aprovados. Depois de criar, você convida os fornecedores."
+      temAlteracao={Boolean(titulo || observacoes || escolhidos.length > 0)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !titulo || !prazo || escolhidos.length === 0}
+          >
+            {enviando ? 'Criando...' : 'Criar pacote e escolher fornecedores'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
+        <section className="secao">
+        <p className="campo__ajuda">
+          <Selo tipo="info">Nada é enviado a fornecedor ainda</Selo>
+        </p>
 
         <Cartao className="formulario" titulo="O pacote">
           <div className="formulario__linha">
@@ -356,23 +382,9 @@ export function NovaCotacao() {
 
           {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-          <div className="formulario__acoes">
-            <button
-              type="submit"
-              className="botao botao--principal"
-              disabled={enviando || !titulo || !prazo || escolhidos.length === 0}
-            >
-              {enviando ? 'Criando...' : 'Criar pacote e escolher fornecedores'}
-            </button>
-            <Link to="/cotacoes" className="botao botao--secundario botao--link-cheio">
-              Cancelar
-            </Link>
-            <span className="formulario__nota">
-              <Selo tipo="info">Nada é enviado a fornecedor ainda</Selo>
-            </span>
-          </div>
         </Cartao>
-      </section>
-    </form>
+        </section>
+      </form>
+    </Modal>
   );
 }

@@ -153,6 +153,10 @@ regra(
         // O cabeçalho padrão desenha o <h1> por dentro. A tela que o
         // usa tem título mesmo sem a tag aparecer no arquivo — e é o
         // caminho preferido, porque traz migalhas e Voltar junto.
+        // Modal também não é tela: o título dele é do <dialog>,
+        // ligado por aria-labelledby, e quem tem o <h1> é a tela que
+        // o abre. Dois <h1> na mesma tela é pior que nenhum.
+        if (s.includes('<Modal')) return false;
         return !/<h1[\s>]/.test(s) && !s.includes('<CabecalhoDePagina');
       })
       .map(curto),
@@ -166,6 +170,11 @@ regra(
   () =>
     telas
       .filter((c) => !dispensado(c, 'sem-cabecalho'))
+      // Arquivo que desenha um MODAL nao e tela: o modal tem titulo,
+      // descricao e fechamento proprios, e quem traz o caminho e o
+      // Voltar e a tela que o abre. Cobrar cabecalho de pagina dele
+      // seria pedir dois titulos na mesma coisa.
+      .filter((c) => !readFileSync(c, 'utf8').includes('<Modal'))
       .filter((c) => !readFileSync(c, 'utf8').includes('<CabecalhoDePagina'))
       .map(curto),
 );

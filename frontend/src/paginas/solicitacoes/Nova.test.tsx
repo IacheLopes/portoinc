@@ -55,7 +55,7 @@ beforeEach(() => {
 function montar() {
   render(
     <MemoryRouter>
-      <NovaSolicitacao />
+      <NovaSolicitacao aberto aoFechar={() => {}} />
     </MemoryRouter>,
   );
   return userEvent.setup();

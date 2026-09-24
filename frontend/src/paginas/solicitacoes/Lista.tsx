@@ -22,6 +22,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { NovaSolicitacao } from './Nova';
 
 export function ListaSolicitacoes() {
   const { pode } = useAutenticacao();
@@ -32,6 +33,7 @@ export function ListaSolicitacoes() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [situacao, setSituacao] = useState('');
+  const [criando, setCriando] = useState(false);
   const [apenasMinhas, setApenasMinhas] = useState(false);
 
   const carregar = useCallback(
@@ -82,12 +84,28 @@ export function ListaSolicitacoes() {
           }
           acoes={
             podeCriar && (
-              <Link to="/solicitacoes/nova" className="botao botao--principal">
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setCriando(true)}
+              >
                 + Nova solicitação
-              </Link>
+              </button>
             )
           }
         />
+
+        {/* Formulario longo em modal, por pedido do dono do sistema.
+            Perdeu o endereco proprio ("/solicitacoes/nova" nao existe
+            mais): nao da mais para mandar o link do formulario vazio
+            para alguem. Em troca, quem cria nao sai da lista. */}
+        {podeCriar && (
+          <NovaSolicitacao
+            key={String(criando)}
+            aberto={criando}
+            aoFechar={() => setCriando(false)}
+          />
+        )}
 
         <div className="barra-acoes">
           <Selecao

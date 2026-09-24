@@ -23,11 +23,9 @@ import { Obras } from './paginas/cadastros/Obras';
 import { ObraDetalhe } from './paginas/cadastros/ObraDetalhe';
 import { Alcadas } from './paginas/cadastros/Alcadas';
 import { ListaSolicitacoes } from './paginas/solicitacoes/Lista';
-import { NovaSolicitacao } from './paginas/solicitacoes/Nova';
 import { DetalheSolicitacao } from './paginas/solicitacoes/Detalhe';
 import { FilaAprovacao } from './paginas/aprovacoes/Fila';
 import { ListaCotacoes } from './paginas/cotacoes/Lista';
-import { NovaCotacao } from './paginas/cotacoes/Nova';
 import { DetalheCotacao } from './paginas/cotacoes/Detalhe';
 import { Equalizacao } from './paginas/cotacoes/Equalizacao';
 import { ListaPedidos } from './paginas/pedidos/Lista';
@@ -115,15 +113,6 @@ function Rotas() {
         />
 
         <Route
-          path="solicitacoes/nova"
-          element={
-            <Protegida permissoes={['solicitacoes.criar']}>
-              <NovaSolicitacao />
-            </Protegida>
-          }
-        />
-
-        <Route
           path="solicitacoes/:id"
           element={
             <Protegida permissoes={['solicitacoes.criar', 'solicitacoes.ver_todas']}>
@@ -146,15 +135,6 @@ function Rotas() {
           element={
             <Protegida permissoes={['cotacoes.gerenciar']}>
               <ListaCotacoes />
-            </Protegida>
-          }
-        />
-
-        <Route
-          path="cotacoes/nova"
-          element={
-            <Protegida permissoes={['cotacoes.gerenciar']}>
-              <NovaCotacao />
             </Protegida>
           }
         />

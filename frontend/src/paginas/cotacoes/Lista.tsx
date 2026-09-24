@@ -19,6 +19,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { NovaCotacao } from './Nova';
 
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
@@ -26,6 +27,7 @@ export function ListaCotacoes() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [situacao, setSituacao] = useState('');
+  const [criando, setCriando] = useState(false);
 
   const carregar = useCallback(async (filtro = '') => {
     setCarregando(true);
@@ -109,10 +111,20 @@ export function ListaCotacoes() {
             Filtrar
           </button>
 
-          <Link to="/cotacoes/nova" className="botao botao--principal botao--link-cheio">
+          <button
+            type="button"
+            className="botao botao--principal"
+            onClick={() => setCriando(true)}
+          >
             + Novo pacote de cotação
-          </Link>
+          </button>
         </div>
+
+        <NovaCotacao
+          key={String(criando)}
+          aberto={criando}
+          aoFechar={() => setCriando(false)}
+        />
 
         {disponiveis === 0 && (
           <div className="aviso aviso--info">

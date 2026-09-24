@@ -980,3 +980,40 @@ a.indicador--clicavel:focus-visible {
     display: none;
   }
 }
+
+/* ------------------------------------------------------------
+   Cartão dentro de modal deixa de ser caixa
+
+   O modal JÁ é a caixa. Um `<Cartao>` lá dentro desenha borda
+   dentro de borda e canto dentro de canto — é o "caixa dentro de
+   caixa" que o próprio documento de design manda evitar.
+
+   O cartão continua servindo para AGRUPAR: o título dele vira um
+   subtítulo da seção, e o espaçamento fica. O que sai é a moldura.
+   ------------------------------------------------------------ */
+.modal .cartao {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.modal .cartao__corpo {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.modal .cartao__cabecalho {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+/* Duas seções seguidas precisam de um traço entre elas, ou o olho
+   não separa "Para qual obra" de "Itens". */
+.modal .cartao + .cartao,
+.modal .secao + .secao {
+  border-top: 1px solid var(--borda);
+  margin-top: var(--esp-4);
+  padding-top: var(--esp-4);
+}

@@ -15,8 +15,8 @@
 // aparece com itens (itens.length > 0), entao tela em branco sem
 // explicacao nao acontece aqui.
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   listarObras, buscarObra, listarMateriais, dinheiro,
   // Com nome proprio: a tela ja tem um estado chamado quantidade.
@@ -28,11 +28,11 @@ import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { Selo } from '../../componentes/Selo';
-import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { chaveLocal } from '../../servicos/identificador';
+import { Modal } from '../../componentes/Modal';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -40,7 +40,14 @@ interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   valorEstimado: number | null;
 }
 
-export function NovaSolicitacao() {
+export function NovaSolicitacao({
+  aberto,
+  aoFechar,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+}) {
+  const idForm = useId();
   const navegar = useNavigate();
 
   const [obras, setObras] = useState<Obra[]>([]);
@@ -186,17 +193,41 @@ export function NovaSolicitacao() {
   if (erroCarga) return <Erro mensagem={erroCarga} aoTentarNovamente={() => void carregar()} />;
 
   return (
-    <form onSubmit={enviar} noValidate>
-      <section className="secao">
-        <CabecalhoDePagina
-          titulo="Nova solicitação de compra"
-          descricao={
-            <>
-              Ela nasce como <strong>rascunho</strong>. Você pode revisar e só então
-            enviar para aprovação.
-            </>
-          }
-        />
+    /* Formulario longo dentro de modal, por pedido do dono do
+       sistema. O corpo rola por dentro e o rodape fica preso
+       embaixo — ver `.modal__corpo` em global.css, que precisa de
+       `flex: 1` e `min-height: 0` juntos para isso funcionar no
+       celular.
+
+       O botao de enviar mora no rodape, fora do <form>, e alcanca o
+       formulario pelo atributo `form`. */
+    <Modal
+      aberto={aberto}
+      aoFechar={aoFechar}
+      titulo="Nova solicitação de compra"
+      descricao="Ela nasce como rascunho. Você revisa e só então envia para aprovação."
+      temAlteracao={Boolean(obraId || itens.length > 0 || justificativa)}
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !obraId || itens.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Salvar como rascunho'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
+        <section className="secao">
+        <p className="campo__ajuda">
+          <Selo tipo="info">Nada é enviado para aprovação ainda</Selo>
+        </p>
 
         <Cartao className="formulario" titulo="Para qual obra">
           <div className="formulario__linha">
@@ -420,23 +451,9 @@ export function NovaSolicitacao() {
 
           {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
 
-          <div className="formulario__acoes">
-            <button
-              type="submit"
-              className="botao botao--principal"
-              disabled={enviando || !obraId || itens.length === 0}
-            >
-              {enviando ? 'Salvando...' : 'Salvar como rascunho'}
-            </button>
-            <Link to="/solicitacoes" className="botao botao--secundario botao--link-cheio">
-              Cancelar
-            </Link>
-            <span className="formulario__nota">
-              <Selo tipo="info">Nada é enviado para aprovação ainda</Selo>
-            </span>
-          </div>
         </Cartao>
-      </section>
-    </form>
+        </section>
+      </form>
+    </Modal>
   );
 }

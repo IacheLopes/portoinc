@@ -334,11 +334,11 @@ export function NotasFiscais() {
               type="button"
               className="botao botao--principal"
               onClick={() => {
-                setAberto((a) => !a);
-                if (!aberto) limparFormulario();
+                limparFormulario();
+                setAberto(true);
               }}
             >
-              {aberto ? 'Fechar' : 'Lançar nota'}
+              Lançar nota
             </button>
 
             <label className="botao botao--secundario rotulo-arquivo">
@@ -371,11 +371,40 @@ export function NotasFiscais() {
         )}
       </section>
 
-      {aberto && podeGerenciar && (
-        <section className="secao">
-          <Cartao className="painel-movimento">
+      {podeGerenciar && (
+        <Modal
+          aberto={aberto}
+          aoFechar={() => {
+            setAberto(false);
+            limparFormulario();
+          }}
+          titulo={doXml ? 'Conferir a nota lida do XML' : 'Lançar nota'}
+          temAlteracao={Boolean(numero || valorTotal || pedidoId)}
+          acoes={
+            <>
+              <button
+                type="button"
+                className="botao botao--discreto"
+                onClick={() => {
+                  setAberto(false);
+                  limparFormulario();
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => void lancar()}
+                disabled={ocupado}
+              >
+                {ocupado ? 'Lançando...' : 'Lançar nota'}
+              </button>
+            </>
+          }
+        >
+          <div>
             <div className="secao__cabecalho">
-              <h2>{doXml ? 'Conferir a nota lida do XML' : 'Lançar nota'}</h2>
               <p className="secao__descricao">
                 {doXml
                   ? 'Os dados vieram do arquivo. Confira e escolha o pedido.'
@@ -476,28 +505,8 @@ export function NotasFiscais() {
               </div>
             )}
 
-            <div className="formulario__acoes formulario__acoes--fim">
-              <button
-                type="button"
-                className="botao botao--discreto"
-                onClick={() => {
-                  setAberto(false);
-                  limparFormulario();
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => void lancar()}
-                disabled={ocupado}
-              >
-                {ocupado ? 'Lançando...' : 'Lançar nota'}
-              </button>
-            </div>
-          </Cartao>
-        </section>
+          </div>
+        </Modal>
       )}
 
       <section className="secao">
