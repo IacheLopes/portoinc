@@ -1,4 +1,4 @@
-<!-- versao: 0.29.1 -->
+<!-- versao: 0.34.0 -->
 
 # Guia de Navegação Simples
 
@@ -63,6 +63,10 @@ Abra **http://localhost:5173** e use uma destas contas:
 > **O menu muda conforme quem entrou.** Se um botão não aparece, não está quebrado: é que
 > aquela pessoa não faz aquilo.
 
+> **Todo botão azul de criar abre uma janela por cima da tela.** Para fechar: o **X** no
+> canto, a tecla **Esc**, um clique fora, ou **Cancelar**. Se você já tinha digitado algo,
+> ele pergunta antes de jogar fora.
+
 ---
 
 # 2 · As telas
@@ -92,8 +96,15 @@ até ele.
 - Fazer um pedido novo
 - Filtrar só o que interessa
 
-**Passo:** Clique em **Solicitações** → **+ Nova solicitação** → escolha a obra → escolha
-os materiais → **Enviar para aprovação**.
+**Passo:** Clique em **Solicitações** → **+ Nova solicitação** (azul, no canto direito, ao
+lado do título) → escolha a obra → adicione os materiais → **Salvar como rascunho** →
+abra o pedido → **Enviar para aprovação**.
+
+> **O botão azul fica sempre no mesmo lugar**, em toda tela do sistema: à direita do
+> título. Se você procurar ele em outro canto, não vai achar.
+
+> **O filtro vale na hora.** Escolha a situação e a lista muda sozinha — não há botão de
+> confirmar.
 
 > **Dica:** se você clicar em **Salvar como rascunho**, o pedido fica guardado e ninguém
 > vê. Ele só entra na fila quando você clica em **Enviar para aprovação**.
@@ -136,22 +147,121 @@ os materiais → **Enviar para aprovação**.
 
 **Essa tela serve para** perguntar o preço a vários fornecedores e escolher o melhor.
 
-**Aqui você consegue:**
-- Montar um pacote com os materiais aprovados
-- Chamar fornecedores por WhatsApp ou e-mail
-- Comparar os preços e escolher
+É a parte que mais economiza dinheiro — e a que tem mais passos. São **quatro telas em
+sequência**. Saber isso já resolve metade da confusão.
 
-**Passo:** Clique em **Cotações** → **+ Novo pacote** → marque os materiais → convide os
-fornecedores → espere as respostas → **Equalizar e escolher**.
+```
+1. A LISTA        os pacotes que existem
+2. CRIAR          escolher os materiais que vão junto
+3. CONVIDAR       chamar os fornecedores e esperar
+4. EQUALIZAR      comparar os preços e fechar
+```
 
-> **Equalizar** é a tela que põe todos os preços lado a lado. Ela já marca o mais barato
-> de cada item. Você pode aceitar tudo de uma vez ou escolher um por um.
-
-> **O fornecedor não entra no sistema.** Ele recebe um link, abre sem senha, e vê só os
-> materiais daquela cotação. Ele **não vê** o preço dos concorrentes.
+> **Pacote** é um grupo de materiais cotados juntos. Você não pede preço item por item:
+> junta o que faz sentido comprar do mesmo fornecedor e manda de uma vez.
 
 ---
 
+### 4.1 · A lista
+
+**Aqui você consegue** ver todos os pacotes e em que pé está cada um.
+
+| Coluna | O que diz |
+|---|---|
+| Convidados | quantos fornecedores foram chamados |
+| Respostas | quantos já mandaram preço |
+| Prazo | até quando eles podem responder |
+
+| Botão | O que faz |
+|---|---|
+| **Situação** + **Filtrar** | mostra só os pacotes naquele estado |
+| **Abrir** | vai para a tela de convidar |
+| **+ Novo pacote de cotação** | abre a tela de criar |
+
+---
+
+### 4.2 · Criar o pacote
+
+**Aqui você consegue** escolher o que vai ser cotado.
+
+A tela mostra **os itens aprovados esperando cotação** — tudo que já passou pela
+aprovação e ainda não foi comprado. Você marca quais entram neste pacote.
+
+| Campo ou botão | O que faz |
+|---|---|
+| **Título do pacote** | é o que o fornecedor vê no convite. Ex.: "Material elétrico — 2º pavimento" |
+| **Prazo para responder** | depois dessa data o fornecedor não consegue mais mandar preço |
+| **Observações para o fornecedor** | vai junto no convite. Ex.: "entrega na obra, não no escritório" |
+| **Marcar/desmarcar visíveis** | marca de uma vez tudo que está aparecendo na lista |
+| **Criar pacote e escolher fornecedores** | cria e leva para a próxima tela |
+
+> **Ainda não saiu nada.** Criar o pacote não avisa fornecedor nenhum — isso é na tela
+> seguinte.
+
+---
+
+### 4.3 · Convidar os fornecedores
+
+**Aqui você consegue** chamar quem vai dar preço, e acompanhar quem respondeu.
+
+A tela tem três partes:
+
+| Parte | O que mostra |
+|---|---|
+| **Itens do pacote** | o que está sendo cotado, e quantas respostas cada item já tem |
+| **Convidados** | quem foi chamado, se **abriu o link**, se respondeu, e o total que ofereceu |
+| **Fornecedores sugeridos** | quem vende aquela família de material e ainda não foi chamado |
+
+> O sistema sugere fornecedor **pela família do material**. Se o pacote é de elétrica, ele
+> sugere quem vende elétrica. Isso vem de **Cadastros → Fornecedores**.
+
+| Botão | O que faz |
+|---|---|
+| **Convidar pelo WhatsApp** | manda o link para o número do fornecedor |
+| **Convidar por e-mail** | manda o mesmo link por e-mail |
+| **Copiar link** | copia o link para você mandar do seu jeito |
+| **Remover** | tira um convidado que ainda não respondeu |
+| **Atualizar** | recarrega, para ver se chegou resposta nova |
+| **Equalizar e escolher** | vai para a comparação |
+| **Encerrar cotação** | fecha o pacote sem comprar nada |
+
+> ⚠️ **Está tudo em modo de teste.** Nenhuma mensagem sai para fornecedor de verdade.
+
+**Como o fornecedor responde:** ele recebe um link, abre **sem senha**, vê só os itens
+daquele pacote e preenche preço e prazo. Ele **não vê** quem mais foi convidado nem quanto
+os outros ofereceram.
+
+---
+
+### 4.4 · Equalizar e escolher
+
+**Aqui você consegue** comparar os preços lado a lado e fechar a compra.
+
+"Equalizar" quer dizer **pôr na mesma régua**: todos os preços do mesmo item, um ao lado do
+outro, para dar para comparar de verdade.
+
+| Parte | O que mostra |
+|---|---|
+| **Mapa comparativo** | uma linha por item, uma coluna por fornecedor. O mais barato já vem marcado |
+| **Condições comerciais** | prazo e forma de pagamento de cada fornecedor |
+| **Fechar a compra** | o resumo do que você escolheu, por fornecedor |
+
+| Botão | O que faz |
+|---|---|
+| **Aceitar todos os melhores preços** | escolhe o mais barato de cada item de uma vez |
+| **Salvar escolhas** | guarda sem fechar, para continuar depois |
+| **Última chamada** | avisa quem não está na frente que ainda dá para melhorar |
+| **Gerar pedidos de compra** | fecha: **um pedido para cada fornecedor escolhido** |
+
+> **O mais barato nem sempre é o melhor.** Você pode escolher item por item — às vezes vale
+> pagar um pouco mais por quem entrega no prazo. A aba **Fornecedores**, em Relatórios,
+> mostra quem costuma cumprir.
+
+**Sobre a "Última chamada":** ela avisa cada fornecedor apenas dos itens em que ele **não**
+está na frente, e o convida a rever. **O preço do concorrente nunca é revelado** — revelar
+ensinaria o mercado a se alinhar, e a Porto Inc. acabaria pagando mais caro.
+
+---
 ## 5. Pedidos
 
 **Essa tela serve para** acompanhar os pedidos já enviados aos fornecedores.

@@ -1,4 +1,4 @@
-<!-- versao: 0.29.1 -->
+<!-- versao: 0.34.0 -->
 
 # 1. Como usar este guia
 
@@ -4000,6 +4000,98 @@ Passe por estas telas, e em cada uma **arraste a página para a esquerda** com o
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+## CT-286 · O botão azul fica sempre no mesmo lugar
+
+Passe por estas telas, uma atrás da outra, **sem rolar a página**:
+
+**Solicitações** · **Cotações** · **Locação** · **Usuários** · **Cadastros → Famílias** ·
+**Cadastros → Obras**
+
+**Esperado:** em todas, o botão azul de criar está **à direita do título**, na mesma
+altura. Ele não deve pular de lugar de uma tela para a outra.
+
+> Antes ele aparecia na barra de filtros em umas, no meio da tela em outras, e em alturas
+diferentes conforme o tamanho da descrição. Corrigido em 24/09/2026.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-287 · Criar abre uma janela, e ela fecha de quatro jeitos
+
+1. Abra **Cadastros → Famílias** → **+ Nova família**
+
+**Esperado:** abre uma janela por cima, o fundo escurece, e o foco vai para dentro dela.
+
+2. Aperte **Esc**
+3. Abra de novo e clique no **X** do canto
+4. Abra de novo e clique **fora** da janela
+5. Abra de novo e clique em **Cancelar**
+
+**Esperado:** fecha nos quatro casos.
+
+6. Abra de novo
+
+**Esperado:** os campos estão **vazios** — não guardou o que você digitou antes.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-288 · A janela pergunta antes de jogar fora o que você digitou
+
+1. **Cadastros → Famílias → + Nova família**
+2. Digite alguma coisa no **Código**
+3. Aperte **Esc**
+
+**Esperado:** pergunta se você quer mesmo descartar. Só fecha se você confirmar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-289 · O filtro vale na hora, sem botão
+
+1. Abra **Solicitações**
+2. Troque **Situação** para **Aguardando aprovação**
+
+**Esperado:** a lista muda **assim que você escolhe**. Não existe botão "Filtrar".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-290 · Vindo de Aprovações, o caminho diz Aprovações
+
+**Conta:** bras@portoinc.com.br
+
+1. Abra **Aprovações** e clique em **Analisar** numa solicitação
+2. Olhe o caminho no alto da tela e o link de voltar
+
+**Esperado:** diz **Início › Aprovações › Solicitação**, e o voltar é **Voltar para**
+**Aprovações** — não para Solicitações.
+
+3. Clique no voltar
+
+**Esperado:** cai de volta na fila de Aprovações.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-291 · Toda tabela tem nome nas colunas
+
+**No computador**, abra: **Pedidos** · **Financeiro** · **Estoque** ·
+**Recebimento → Conferir**
+
+**Esperado:** todas mostram a linha de cabeçalho com o nome de cada coluna.
+
+> Entre o Design 7 e 24/09/2026 esse cabeçalho ficou invisível em 25 telas. Na Conferência
+a tela mostrava três números sem dizer o que era cada um.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4391,8 +4483,14 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-283 | O gráfico no celular, de três em três |  |
 | CT-284 | O zoom só aumenta |  |
 | CT-285 | Nenhuma tela desliza para o lado |  |
+| CT-286 | O botão azul fica sempre no mesmo lugar |  |
+| CT-287 | Criar abre janela, e ela fecha de quatro jeitos |  |
+| CT-288 | A janela pergunta antes de descartar |  |
+| CT-289 | O filtro vale na hora, sem botão |  |
+| CT-290 | Vindo de Aprovações, o caminho diz Aprovações |  |
+| CT-291 | Toda tabela tem nome nas colunas |  |
 
-**Total: 285 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
+**Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 
 ---
 
