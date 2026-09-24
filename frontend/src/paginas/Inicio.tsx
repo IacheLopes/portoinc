@@ -86,17 +86,25 @@ export function Inicio() {
     <>
       <section className="secao">
         <CabecalhoDePagina
-          titulo={saudacao() + ', ' + primeiroNome}
+          titulo={temTodasAsFuncoes ? 'Conta de Desenvolvedor' : saudacao() + ', ' + primeiroNome}
           descricao={
             /* Quem acumula TODAS as funções não é uma pessoa da
                empresa: é a conta de desenvolvimento. Listar as sete
                ("administrador e fundador e gestor obra e...") não
                diz nada — pior, faz parecer que existe alguém com
                todos esses cargos. */
+            /* Sem "Bom dia, DEV-Porto": cumprimentar uma conta de
+               sistema como se fosse gente é a primeira incoerência.
+               A segunda é os números de baixo parecerem "seus" —
+               eles são da empresa inteira, porque esta conta enxerga
+               tudo. A tela avisa antes que alguém tire conclusão
+               errada de um número. */
             temTodasAsFuncoes ? (
               <>
-                Você está no sistema com a conta de{' '}
-                <strong>Desenvolvedor</strong>: enxerga tudo, em todas as telas.
+                Esta conta acumula as <strong>sete funções</strong>: ela abre todas as telas
+                e vê a fila de aprovações de todo mundo. Serve para testar e conferir defeito.
+                <br />
+                Os números abaixo são <strong>da empresa inteira</strong>, e não de uma pessoa.
               </>
             ) : (
               <>
@@ -116,7 +124,10 @@ export function Inicio() {
           ---------------------------------------------------- */}
       <section className="secao">
         <div className="secao__cabecalho">
-          <h2>O que precisa de você</h2>
+          {/* "de você" é verdade para quem tem um papel no processo.
+              Para a conta que enxerga tudo, o certo é "de alguém":
+              ali aparece o que está travado na empresa inteira. */}
+          <h2>{temTodasAsFuncoes ? 'O que precisa de alguém' : 'O que precisa de você'}</h2>
           <p className="secao__descricao">
             Prazo perdido primeiro, depois o que vence se ninguém agir.
           </p>

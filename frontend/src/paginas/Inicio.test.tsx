@@ -7,7 +7,7 @@
 //  pessoa vai embora achando que não há nada para fazer.
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Inicio } from './Inicio';
@@ -19,14 +19,19 @@ vi.mock('../servicos/inicio', async (original) => ({
   buscarInicio: vi.fn(),
 }));
 
+// Quem entrou pode mudar de um teste para o outro: a tela se comporta
+// de um jeito para pessoa da empresa e de outro para a conta que
+// acumula todas as funcoes.
+const quem = vi.hoisted(() => ({ nome: 'Neilma Souza', funcoes: ['ALMOXARIFE'] }));
+
 vi.mock('../contexto/Autenticacao', () => ({
   useAutenticacao: () => ({
     usuario: {
       id: 'u1',
-      nome: 'Neilma Souza',
+      nome: quem.nome,
       email: 'neilma@portoinc.com.br',
       precisaTrocarSenha: false,
-      funcoes: ['ALMOXARIFE'],
+      funcoes: quem.funcoes,
       permissoes: ['estoque.ver'],
     },
     pode: () => true,
@@ -136,5 +141,57 @@ describe('o aviso de andamento do projeto', () => {
 
     // compareDocumentPosition: 4 = o segundo vem DEPOIS do primeiro.
     expect(urgente.compareDocumentPosition(nota) & 4).toBeTruthy();
+  });
+});
+
+// ------------------------------------------------------------
+//  A conta que enxerga tudo não é uma pessoa
+//
+//  Ela dizia "Bom dia, DEV-Porto" e "Você está no sistema como
+//  administrador e fundador e gestor obra e...". Cumprimentava uma
+//  conta de sistema como gente, e fazia parecer que existe alguém
+//  com sete cargos. Pior: os números da tela são da empresa
+//  inteira, e "O que precisa de VOCÊ" dava a entender que eram dela.
+// ------------------------------------------------------------
+describe('A conta de desenvolvimento se apresenta como tal', () => {
+  const AS_SETE = [
+    'ADMINISTRADOR', 'FUNDADOR', 'GESTOR_OBRA', 'ENGENHEIRO',
+    'COMPRADOR', 'SOLICITANTE', 'ALMOXARIFE',
+  ];
+
+  afterEach(() => {
+    quem.nome = 'Neilma Souza';
+    quem.funcoes = ['ALMOXARIFE'];
+  });
+
+  it('troca a saudação pelo nome da conta', async () => {
+    quem.nome = 'DEV-Porto';
+    quem.funcoes = AS_SETE;
+    buscar.mockResolvedValue({ urgentes: [], acompanhar: [] });
+
+    montar();
+
+    expect(await screen.findByText('Conta de Desenvolvedor')).toBeInTheDocument();
+    expect(screen.queryByText(/Bom dia|Boa tarde|Boa noite/)).not.toBeInTheDocument();
+  });
+
+  it('avisa que os números são da empresa, não dela', async () => {
+    quem.nome = 'DEV-Porto';
+    quem.funcoes = AS_SETE;
+    buscar.mockResolvedValue({ urgentes: [cartao()], acompanhar: [] });
+
+    montar();
+
+    expect(await screen.findByText(/da empresa inteira/)).toBeInTheDocument();
+    expect(screen.getByText('O que precisa de alguém')).toBeInTheDocument();
+  });
+
+  it('para gente da empresa, continua cumprimentando', async () => {
+    buscar.mockResolvedValue({ urgentes: [cartao()], acompanhar: [] });
+
+    montar();
+
+    expect(await screen.findByText(/Neilma/)).toBeInTheDocument();
+    expect(screen.getByText('O que precisa de você')).toBeInTheDocument();
   });
 });
