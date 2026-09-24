@@ -161,8 +161,6 @@
 .indicador-grafico__rotulo {
   font-size: var(--txt-sm);
   font-weight: var(--peso-forte);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--texto-secundario);
   line-height: 1.2;
 }

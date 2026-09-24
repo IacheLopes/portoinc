@@ -351,10 +351,18 @@ input[type='file'].campo__entrada {
 
 .texto-fraco { color: var(--texto-secundario); }
 
-/* Célula com texto corrido: limita a largura para a tabela
-   não esticar e ficar ilegível. */
-.celula-texto {
+/* Célula com texto corrido: limita a largura para a tabela não
+   esticar e ficar ilegível.
+
+   O limite só vale enquanto a tabela É tabela. No modo cartão não
+   existe coluna para estreitar, e o teto de 260px deixava a célula
+   com 75% do cartão — com o fundo da linha vencida parando no meio
+   e um vão branco do lado. */
+.tabela-area:not(.tabela-area--cartoes) .celula-texto {
   max-width: 260px;
+}
+
+.celula-texto {
   font-size: var(--txt-sm);
 }
 
@@ -444,7 +452,12 @@ input[type='file'].campo__entrada {
 .botao--perigo:hover:not(:disabled) { filter: brightness(1.1); }
 
 @media (max-width: 640px) {
-  .celula-texto { max-width: 180px; }
+  /* Só vale enquanto a tabela ainda É tabela.
+     No modo cartão não existe mais coluna para estreitar, e esta
+     regra prendia a célula a 180px dentro de um cartão de ~340 —
+     o valor ficava numa faixa à esquerda com metade do cartão em
+     branco do lado. Foi o defeito fotografado em 24/09/2026. */
+  .tabela-area:not(.tabela-area--cartoes) .celula-texto { max-width: 180px; }
 }
 
 /* ============================================================
@@ -508,8 +521,6 @@ input[type='file'].campo__entrada {
 .portal__etiqueta {
   font-size: var(--txt-xs);
   font-weight: var(--peso-forte);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--texto-secundario);
   margin-bottom: var(--esp-1);
 }

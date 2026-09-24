@@ -11,6 +11,7 @@ import { trocarSenha, ErroApi } from '../servicos/api';
 import { useAutenticacao } from '../contexto/Autenticacao';
 import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 import { Cartao } from '../componentes/Cartao';
+import { Icone } from '../componentes/Icone';
 
 export function MinhaSenha() {
   const { usuario, sair } = useAutenticacao();
@@ -57,9 +58,7 @@ export function MinhaSenha() {
     return (
       <section className="secao">
         <div className="aviso aviso--sucesso" role="status">
-          <span className="aviso__icone" aria-hidden="true">
-            ✓
-          </span>
+          <Icone nome="certo" className="aviso__icone" />
           <div>
             <strong>Senha alterada com sucesso.</strong>
             <p>Você será levado à tela de entrada para usar a nova senha.</p>
@@ -133,15 +132,13 @@ export function MinhaSenha() {
             />
             {diferentes && (
               <p className="campo__erro" role="alert">
-                <span aria-hidden="true">⚠</span> As senhas não são iguais.
+                <Icone nome="alerta" /> As senhas não são iguais.
               </p>
             )}
           </div>
 
           <div className="aviso aviso--atencao">
-            <span className="aviso__icone" aria-hidden="true">
-              ⚠
-            </span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>Ao trocar a senha, você sairá do sistema.</strong>
               <p>Será preciso entrar novamente com a senha nova.</p>
@@ -150,7 +147,7 @@ export function MinhaSenha() {
 
           {erro && (
             <div className="campo__erro" role="alert">
-              <span aria-hidden="true">⚠</span> {erro}
+              <Icone nome="alerta" /> {erro}
               {detalhes.length > 0 && (
                 <ul className="campo__erro-lista">
                   {detalhes.map((d) => (

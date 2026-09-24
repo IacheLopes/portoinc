@@ -19,6 +19,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -83,7 +84,7 @@ export function Materiais() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 

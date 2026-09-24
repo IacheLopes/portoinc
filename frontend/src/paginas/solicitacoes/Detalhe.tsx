@@ -30,6 +30,7 @@ import { PainelDecisao } from '../../componentes/PainelDecisao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function DetalheSolicitacao() {
   const { id = '' } = useParams();
@@ -154,15 +155,13 @@ export function DetalheSolicitacao() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">
-              ⚠
-            </span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erro}</strong>
               {impedimentos.length > 0 && (
@@ -219,7 +218,7 @@ export function DetalheSolicitacao() {
             onClick={() => void pdf()}
             disabled={ocupado}
           >
-            📄 Baixar PDF
+            <Icone nome="documento" /> Baixar PDF
           </button>
 
           {souOAutor && situacao !== 'CANCELADA' && situacao !== 'APROVADA' && situacao !== 'REPROVADA' && (

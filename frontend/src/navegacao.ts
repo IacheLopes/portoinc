@@ -1,4 +1,6 @@
 // ============================================================
+
+import type { NomeDoIcone } from './componentes/Icone';
 //  Os módulos do sistema, num lugar só
 //
 //  O menu lateral e os atalhos da tela de início liam listas
@@ -30,7 +32,7 @@ export interface Modulo {
   /** O que a pessoa faz ali, em uma linha. */
   descricao: string;
   para: string;
-  icone: string;
+  icone: NomeDoIcone;
   /** Permissões que liberam o módulo. Vazio = todos veem. */
   permissoes: string[];
   /**
@@ -48,7 +50,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Início',
     descricao: 'A tela inicial',
     para: '/',
-    icone: '⌂',
+    icone: 'casa',
     permissoes: [],
     noInicio: false,
   },
@@ -58,7 +60,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Abrir solicitação',
     descricao: 'Pedir material ou serviço para a obra',
     para: '/solicitacoes',
-    icone: '📝',
+    icone: 'escrever',
     permissoes: ['solicitacoes.criar', 'solicitacoes.ver_todas'],
   },
   {
@@ -67,7 +69,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Aprovações pendentes',
     descricao: 'Liberar ou devolver pedidos de compra',
     para: '/aprovacoes',
-    icone: '✓',
+    icone: 'certo',
     permissoes: ['solicitacoes.aprovar'],
   },
   {
@@ -76,7 +78,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Cotações',
     descricao: 'Montar pacote e convidar fornecedores',
     para: '/cotacoes',
-    icone: '💬',
+    icone: 'conversa',
     permissoes: ['cotacoes.gerenciar'],
   },
   {
@@ -85,7 +87,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Pedidos de compra',
     descricao: 'Ver os pedidos emitidos e baixar o PDF',
     para: '/pedidos',
-    icone: '📄',
+    icone: 'documento',
     permissoes: ['pedidos.gerenciar', 'financeiro.ver'],
   },
   {
@@ -94,7 +96,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Receber material',
     descricao: 'Conferir a entrega contra o pedido',
     para: '/recebimento',
-    icone: '📦',
+    icone: 'caixa',
     permissoes: ['recebimento.registrar'],
   },
   {
@@ -103,7 +105,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Estoque',
     descricao: 'Ver saldo, retirar material e conferir o mínimo',
     para: '/estoque',
-    icone: '🏗',
+    icone: 'obra',
     permissoes: ['estoque.ver'],
   },
   {
@@ -112,7 +114,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Locação de equipamentos',
     descricao: 'Ver o que está alugado e o que já passou do prazo',
     para: '/locacao',
-    icone: '🚜',
+    icone: 'maquina',
     permissoes: ['locacao.ver'],
   },
   {
@@ -121,7 +123,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Contas a pagar',
     descricao: 'Notas fiscais, parcelas e vencimentos',
     para: '/financeiro',
-    icone: '💰',
+    icone: 'dinheiro',
     permissoes: ['financeiro.ver'],
   },
   {
@@ -130,7 +132,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Relatórios',
     descricao: 'Orçamento, economia, fornecedores, tempos e consumo',
     para: '/relatorios',
-    icone: '📊',
+    icone: 'grafico',
     permissoes: ['relatorios.ver'],
   },
   {
@@ -139,7 +141,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Cadastros',
     descricao: 'Obras, materiais, fornecedores e alçadas',
     para: '/cadastros',
-    icone: '📁',
+    icone: 'pasta',
     permissoes: ['materiais.ver', 'obras.ver'],
   },
   {
@@ -148,7 +150,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Usuários',
     descricao: 'Cadastrar pessoas e definir funções',
     para: '/admin/usuarios',
-    icone: '👥',
+    icone: 'pessoas',
     permissoes: ['usuarios.ver'],
   },
   {
@@ -157,7 +159,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Avisos ao fornecedor',
     descricao: 'WhatsApp e e-mail: conectar e ver o que saiu',
     para: '/admin/avisos',
-    icone: '💬',
+    icone: 'conversa',
     permissoes: ['sistema.integracoes'],
   },
   {
@@ -166,7 +168,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Status do sistema',
     descricao: 'Conferir se tudo está no ar',
     para: '/admin/status',
-    icone: '⚙',
+    icone: 'engrenagem',
     permissoes: ['sistema.status'],
   },
 ];

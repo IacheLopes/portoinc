@@ -47,3 +47,7 @@ backups/
 scripts/auditoria/
 scripts/auditoria-celular/
 scripts/auditoria-hover/
+
+# Capturas de trabalho das reguas (sao geradas, nao versionadas)
+scripts/aud-*/
+scripts/aud-*.log

@@ -29,6 +29,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
@@ -128,7 +129,7 @@ export function ConfiguracaoEmail() {
           role="status"
         >
           <span className="aviso__icone" aria-hidden="true">
-            {situacao?.simulado ? '🧪' : '⚠'}
+            <Icone nome={situacao?.simulado ? 'teste' : 'alerta'} />
           </span>
           <div>
             <strong>
@@ -149,18 +150,14 @@ export function ConfiguracaoEmail() {
 
         {aviso && (
           <div className="aviso aviso--sucesso" role="status">
-            <span className="aviso__icone" aria-hidden="true">
-              ✓
-            </span>
+            <Icone nome="certo" className="aviso__icone" />
             <div>{aviso}</div>
           </div>
         )}
 
         {erro && situacao && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">
-              ⚠
-            </span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>{erro}</div>
           </div>
         )}

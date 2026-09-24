@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { decidir, nomeDaFuncao, type Decisao, type EstadoAprovacao } from '../servicos/solicitacoes';
 import { ErroApi } from '../servicos/api';
 import { Selo } from './Selo';
+import { Icone } from './Icone';
 
 interface Props {
   solicitacaoId: string;
@@ -109,7 +110,7 @@ export function PainelDecisao({
               checked={escolhida === 'APROVADA'}
               onChange={() => setEscolhida('APROVADA')}
             />
-            <span className="decisao__icone" aria-hidden="true">✓</span>
+            <Icone nome="certo" className="decisao__icone" />
             <span className="decisao__texto">
               <strong>Aprovar</strong>
               <small>Libera a solicitação para cotação</small>
@@ -123,7 +124,7 @@ export function PainelDecisao({
               checked={escolhida === 'DEVOLVIDA'}
               onChange={() => setEscolhida('DEVOLVIDA')}
             />
-            <span className="decisao__icone" aria-hidden="true">↩</span>
+            <Icone nome="voltar" className="decisao__icone" />
             <span className="decisao__texto">
               <strong>Devolver para revisão</strong>
               <small>O solicitante corrige e reenvia</small>
@@ -176,7 +177,7 @@ export function PainelDecisao({
             />
             {faltaMotivo && (
               <p className="campo__erro" role="alert">
-                <span aria-hidden="true">⚠</span> Sem explicar o motivo, o solicitante não
+                <Icone nome="alerta" /> Sem explicar o motivo, o solicitante não
                 sabe o que corrigir.
               </p>
             )}
@@ -184,7 +185,7 @@ export function PainelDecisao({
 
           {escolhida === 'REPROVADA' && (
             <div className="aviso aviso--erro">
-              <span className="aviso__icone" aria-hidden="true">⚠</span>
+              <Icone nome="alerta" className="aviso__icone" />
               <div>
                 <strong>Reprovar encerra o pedido definitivamente.</strong>
                 <p>
@@ -196,7 +197,7 @@ export function PainelDecisao({
 
           {erro && (
             <p className="campo__erro" role="alert">
-              <span aria-hidden="true">⚠</span> {erro}
+              <Icone nome="alerta" /> {erro}
             </p>
           )}
 

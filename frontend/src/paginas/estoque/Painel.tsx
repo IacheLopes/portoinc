@@ -28,6 +28,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -156,7 +157,7 @@ export function PainelEstoque() {
    */
   const avisoDeErro = erro ? (
     <div className="aviso aviso--erro" role="alert">
-      <span className="aviso__icone" aria-hidden="true">⚠</span>
+      <Icone nome="alerta" className="aviso__icone" />
       <div>
         <strong>{erro}</strong>
         {impedimentos.length > 0 && (
@@ -339,7 +340,7 @@ export function PainelEstoque() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
@@ -349,7 +350,7 @@ export function PainelEstoque() {
       {alertas.length > 0 && (
         <section className="secao">
           <div className="aviso aviso--atencao">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div style={{ width: '100%' }}>
               <strong>
                 {alertas.length === 1
@@ -645,7 +646,7 @@ export function PainelEstoque() {
       </Modal>
 
       <div className="aviso aviso--info">
-        <span className="aviso__icone" aria-hidden="true">💡</span>
+        <Icone nome="dica" className="aviso__icone" />
         <div>
           <strong>Nada aqui é apagado.</strong>
           <p>

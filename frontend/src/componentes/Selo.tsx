@@ -8,11 +8,13 @@
 
 export type TipoSelo = 'sucesso' | 'atencao' | 'erro' | 'info';
 
-const ICONES: Record<TipoSelo, string> = {
-  sucesso: '✓',
-  atencao: '⚠',
-  erro: '✕',
-  info: 'ℹ',
+import { Icone, type NomeDoIcone } from './Icone';
+
+const ICONES: Record<TipoSelo, NomeDoIcone> = {
+  sucesso: 'certo',
+  atencao: 'alerta',
+  erro: 'errado',
+  info: 'informacao',
 };
 
 interface Props {
@@ -23,7 +25,7 @@ interface Props {
 export function Selo({ tipo, children }: Props) {
   return (
     <span className={'selo selo--' + tipo}>
-      <span aria-hidden="true">{ICONES[tipo]}</span>
+      <Icone nome={ICONES[tipo]} />
       {children}
     </span>
   );

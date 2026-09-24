@@ -23,6 +23,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { MenuDeAcoes } from '../../componentes/MenuDeAcoes';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function ListaPedidos() {
   const [pedidos, setPedidos] = useState<PedidoResumo[]>([]);
@@ -136,13 +137,13 @@ export function ListaPedidos() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
       </section>
@@ -213,19 +214,19 @@ export function ListaPedidos() {
                             acoes={[
                               {
                                 rotulo: baixando === p.id ? 'Gerando o PDF...' : 'Baixar o PDF',
-                                icone: '📄',
+                                icone: <Icone nome="documento" />,
                                 aoEscolher: () => void pdf(p),
                                 desabilitada: baixando === p.id,
                               },
                               {
                                 rotulo: 'Mandar pelo WhatsApp',
-                                icone: '💬',
+                                icone: <Icone nome="conversa" />,
                                 aoEscolher: () => void mandar(p, 'whatsapp'),
                                 desabilitada: zap !== null,
                               },
                               {
                                 rotulo: 'Mandar por e-mail',
-                                icone: '✉',
+                                icone: <Icone nome="envelope" />,
                                 aoEscolher: () => void mandar(p, 'email'),
                                 desabilitada: zap !== null,
                               },
@@ -242,7 +243,7 @@ export function ListaPedidos() {
         )}
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
-          <span className="aviso__icone" aria-hidden="true">💡</span>
+          <Icone nome="dica" className="aviso__icone" />
           <div>
             <strong>O número do pedido é a chave do recebimento.</strong>
             <p>

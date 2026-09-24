@@ -20,6 +20,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 /** Daqui a N dias, no formato que o campo de data aceita. */
 function daquiADias(dias: number): string {
@@ -225,9 +226,7 @@ export function NovaCotacao() {
             </div>
 
             <div className="aviso aviso--info">
-              <span className="aviso__icone" aria-hidden="true">
-                💡
-              </span>
+              <Icone nome="dica" className="aviso__icone" />
               <div>
                 <strong>Agrupe por família.</strong>
                 <p>
@@ -344,9 +343,7 @@ export function NovaCotacao() {
 
           {familiasSelecionadas.length > 2 && (
             <div className="aviso aviso--atencao">
-              <span className="aviso__icone" aria-hidden="true">
-                ⚠
-              </span>
+              <Icone nome="alerta" className="aviso__icone" />
               <div>
                 <strong>Você misturou {familiasSelecionadas.length} famílias.</strong>
                 <p>

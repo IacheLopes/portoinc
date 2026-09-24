@@ -7,6 +7,7 @@
 // ============================================================
 
 import { useId, type ReactNode } from 'react';
+import { Icone } from './Icone';
 
 /**
  * Quanto o campo recebe.
@@ -110,7 +111,7 @@ export function Campo({
 
       {erro ? (
         <p className="campo__erro" id={idAjuda} role="alert">
-          <span aria-hidden="true">⚠</span> {erro}
+          <Icone nome="alerta" /> {erro}
         </p>
       ) : (
         ajuda && (
@@ -165,7 +166,7 @@ export function Selecao({
 
       {erro ? (
         <p className="campo__erro" id={idAjuda} role="alert">
-          <span aria-hidden="true">⚠</span> {erro}
+          <Icone nome="alerta" /> {erro}
         </p>
       ) : (
         ajuda && (
@@ -188,7 +189,7 @@ export function ErroFormulario({
 }) {
   return (
     <div className="campo__erro" role="alert">
-      <span aria-hidden="true">⚠</span> {mensagem}
+      <Icone nome="alerta" /> {mensagem}
       {detalhes.length > 0 && (
         <ul className="campo__erro-lista">
           {detalhes.map((d) => (

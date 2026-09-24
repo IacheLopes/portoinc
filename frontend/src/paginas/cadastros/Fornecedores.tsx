@@ -17,6 +17,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { Icone } from '../../componentes/Icone';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -80,7 +81,7 @@ export function Fornecedores() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 

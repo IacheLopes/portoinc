@@ -240,10 +240,8 @@
   padding: 0 var(--esp-3);
   font-size: 0.68rem;
   font-weight: var(--peso-forte);
-  /* Maiúsculas e espaçamento largo: o rótulo organiza sem competir
-     com os itens, que são o que a pessoa clica. */
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  /* O rótulo organiza sem competir com os itens, que são o que a
+     pessoa clica: some pela COR e pelo tamanho, não por gritar. */
   color: var(--menu-texto-secundario);
 }
 
@@ -294,8 +292,8 @@
 }
 
 .menu__icone {
-  width: 20px;
-  text-align: center;
+  /* A largura fixa era para centralizar emoji, que vem em
+     tamanhos diferentes. Tracado nao tem esse problema. */
   font-size: var(--txt-md);
 }
 
@@ -401,7 +399,15 @@
 .formulario__linha {
   display: grid;
   gap: var(--esp-4);
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  /* `min(240px, 100%)` e nao `240px`: quando sobra menos que 240 a
+     coluna PARA de exigir os 240 e passa a caber.
+
+     Entrou atras de um falso positivo meu (achei que um campo
+     vazava 33px; era o texto DENTRO do input rolando, que e o
+     normal). Ficou porque a defesa e legitima de todo jeito: hoje
+     nenhum cartao do sistema aperta abaixo de 240, mas basta um
+     cartao dentro de outro para apertar.*/
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
 }
 
 .formulario__acoes {
@@ -862,6 +868,5 @@ a.atalho:hover {
 .menu-acoes__item--perigo { color: var(--erro-texto); }
 
 .menu-acoes__icone {
-  width: 18px;
-  text-align: center;
+  font-size: var(--txt-md);
 }

@@ -30,6 +30,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
@@ -171,7 +172,7 @@ export function ConfiguracaoWhatsApp() {
         {/* ---------- A trava, antes de tudo ---------- */}
         <div className={'aviso ' + (situacao.modoTeste ? 'aviso--atencao' : 'aviso--erro')}>
           <span className="aviso__icone" aria-hidden="true">
-            {situacao.modoTeste ? '🔒' : '⚠'}
+            <Icone nome={situacao.modoTeste ? 'cadeado' : 'alerta'} />
           </span>
           <div>
             <strong>
@@ -226,13 +227,13 @@ export function ConfiguracaoWhatsApp() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
 
@@ -487,7 +488,7 @@ export function ConfiguracaoWhatsApp() {
       </section>
 
       <div className="aviso aviso--info">
-        <span className="aviso__icone" aria-hidden="true">💡</span>
+        <Icone nome="dica" className="aviso__icone" />
         <div>
           <strong>Use um chip de testes, não o número da empresa.</strong>
           <p>

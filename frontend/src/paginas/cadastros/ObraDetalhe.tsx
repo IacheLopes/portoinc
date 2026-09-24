@@ -22,6 +22,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -120,7 +121,7 @@ export function ObraDetalhe() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
@@ -140,7 +141,7 @@ export function ObraDetalhe() {
               onClick={() => setPainel((p) => (p === 'importar' ? 'nenhum' : 'importar'))}
               aria-expanded={painel === 'importar'}
             >
-              📥 Importar planilha
+              <Icone nome="entrada" /> Importar planilha
             </button>
           </div>
         )}
@@ -399,9 +400,7 @@ function FormularioImportacao({
       <Cartao className="formulario" titulo="Importar orçamento de planilha">
 
         <div className="aviso aviso--info">
-          <span className="aviso__icone" aria-hidden="true">
-            📋
-          </span>
+          <Icone nome="prancheta" className="aviso__icone" />
           <div>
             <strong>Como preparar o arquivo</strong>
             <p>

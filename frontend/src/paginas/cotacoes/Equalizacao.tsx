@@ -24,6 +24,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 function daquiADias(dias: number): string {
   const d = new Date();
@@ -214,13 +215,13 @@ export function Equalizacao() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erro}</strong>
               {impedimentos.length > 0 && (
@@ -266,7 +267,7 @@ export function Equalizacao() {
 
         {c.itensSemCotacao > 0 && (
           <div className="aviso aviso--atencao" style={{ marginTop: 'var(--esp-4)' }}>
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{c.itensSemCotacao} item(ns) sem nenhuma cotação.</strong>
               <p>
@@ -295,7 +296,7 @@ export function Equalizacao() {
               className="botao botao--secundario"
               onClick={aceitarTodosOsMelhores}
             >
-              ✓ Aceitar todos os melhores preços
+              <Icone nome="certo" /> Aceitar todos os melhores preços
             </button>
             <button
               type="button"
@@ -375,7 +376,7 @@ export function Equalizacao() {
                             }
                           >
                             <span className="celula-valor">
-                              {escolhido && <span aria-hidden="true">✓ </span>}
+                              {escolhido && <Icone nome="certo" />}
                               {dinheiro(r.total)}
                             </span>
                             <small className="celula-extra">
@@ -498,7 +499,7 @@ export function Equalizacao() {
 
             {!encerrado && (
               <div className="aviso aviso--atencao">
-                <span className="aviso__icone" aria-hidden="true">⚠</span>
+                <Icone nome="alerta" className="aviso__icone" />
                 <div>
                   <strong>A cotação ainda está aberta.</strong>
                   <p>
@@ -516,7 +517,7 @@ export function Equalizacao() {
                 onClick={() => void fecharPedidos()}
                 disabled={ocupado || !encerrado || faltamEscolher > 0}
               >
-                {ocupado ? 'Gerando...' : '📄 Gerar pedidos de compra'}
+                {ocupado ? 'Gerando...' : <><Icone nome="documento" /> Gerar pedidos de compra</>}
               </button>
 
               {encerrado && (
@@ -525,7 +526,7 @@ export function Equalizacao() {
                   className="botao botao--secundario"
                   onClick={() => setPainelChamada((v) => !v)}
                 >
-                  📢 Última chamada
+                  <Icone nome="aviso" /> Última chamada
                 </button>
               )}
             </div>
@@ -535,7 +536,7 @@ export function Equalizacao() {
                 <h3 className="formulario__titulo">Última chamada</h3>
 
                 <div className="aviso aviso--info">
-                  <span className="aviso__icone" aria-hidden="true">🔒</span>
+                  <Icone nome="cadeado" className="aviso__icone" />
                   <div>
                     <strong>O preço do concorrente nunca é revelado.</strong>
                     <p>
@@ -600,7 +601,7 @@ export function Equalizacao() {
       {concluido && (
         <section className="secao">
           <div className="aviso aviso--sucesso">
-            <span className="aviso__icone" aria-hidden="true">✓</span>
+            <Icone nome="certo" className="aviso__icone" />
             <div>
               <strong>Pedidos gerados.</strong>
               <p>

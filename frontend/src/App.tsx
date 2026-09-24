@@ -40,6 +40,7 @@ import { NotasFiscais } from './paginas/financeiro/Notas';
 import { PainelRelatorios } from './paginas/relatorios/Painel';
 import { PainelLocacao } from './paginas/locacao/Painel';
 import { Portal } from './paginas/Portal';
+import { Icone } from './componentes/Icone';
 
 /** Bloqueia a tela para quem não tem a permissão necessária. */
 function Protegida({
@@ -55,9 +56,7 @@ function Protegida({
     return (
       <section className="secao">
         <div className="aviso aviso--erro" role="alert">
-          <span className="aviso__icone" aria-hidden="true">
-            🔒
-          </span>
+          <Icone nome="cadeado" className="aviso__icone" />
           <div>
             <strong>Você não tem acesso a esta tela.</strong>
             <p>Se precisar dela para trabalhar, fale com o administrador do sistema.</p>

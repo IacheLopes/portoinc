@@ -6,6 +6,8 @@
 //  o usuário não sabe se travou, se deu erro ou se não há dados.
 // ============================================================
 
+import { Icone } from './Icone';
+
 interface PropsCarregando {
   mensagem?: string;
 }
@@ -29,9 +31,7 @@ export function Erro({ mensagem, aoTentarNovamente }: PropsErro) {
   return (
     // role="alert" interrompe e anuncia na hora: é uma falha.
     <div className="estado estado--erro" role="alert">
-      <span className="estado__icone" aria-hidden="true">
-        ⚠
-      </span>
+      <Icone nome="alerta" className="estado__icone" />
       <p>{mensagem}</p>
       {aoTentarNovamente && (
         <button type="button" className="botao botao--secundario" onClick={aoTentarNovamente}>

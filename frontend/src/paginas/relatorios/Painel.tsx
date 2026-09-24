@@ -43,6 +43,7 @@ import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixa
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 // ------------------------------------------------------------
 //  Abas
@@ -283,7 +284,7 @@ function AbaOrcamento() {
 
   return (
     <>
-      {erro && <p className="aviso aviso--erro" role="alert"><span aria-hidden="true">⚠</span> {erro}</p>}
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
         <FiltroDeObra
@@ -348,7 +349,7 @@ function AbaOrcamento() {
 
           {dados.foraDoOrcamento > 0 && (
             <div className="aviso aviso--atencao">
-              <span className="aviso__icone" aria-hidden="true">⚠</span>
+              <Icone nome="alerta" className="aviso__icone" />
               <div>
                 <strong>{dinheiro(dados.foraDoOrcamento)} sem apontamento.</strong>
                 <p>
@@ -486,7 +487,7 @@ function AbaEconomia() {
 
   return (
     <>
-      {erro && <p className="aviso aviso--erro" role="alert"><span aria-hidden="true">⚠</span> {erro}</p>}
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
         <p className="barra-acoes__nota">
@@ -647,7 +648,7 @@ function AbaFornecedores() {
 
   return (
     <>
-      {erro && <p className="aviso aviso--erro" role="alert"><span aria-hidden="true">⚠</span> {erro}</p>}
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
         <p className="barra-acoes__nota">
@@ -813,7 +814,7 @@ function AbaTempos() {
 
   return (
     <>
-      {erro && <p className="aviso aviso--erro" role="alert"><span aria-hidden="true">⚠</span> {erro}</p>}
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
         <FiltroDeObra
@@ -983,7 +984,7 @@ function AbaConsumo() {
 
   return (
     <>
-      {erro && <p className="aviso aviso--erro" role="alert"><span aria-hidden="true">⚠</span> {erro}</p>}
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
         <FiltroDeObra

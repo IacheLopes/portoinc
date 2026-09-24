@@ -14,7 +14,8 @@
     "restaurar": "node restaurar.mjs",
     "padrao": "node padrao.mjs",
     "versao": "node versao.mjs",
-    "fechar": "node fechar.mjs"
+    "fechar": "node fechar.mjs",
+    "pente-fino": "node pente-fino.mjs"
   },
   "dependencies": {
     "marked": "^15.0.6"

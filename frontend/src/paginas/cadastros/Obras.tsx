@@ -16,6 +16,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -72,7 +73,7 @@ export function Obras() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
@@ -265,9 +266,7 @@ function FormularioObra({ aoSalvar }: { aoSalvar: (nome: string) => Promise<void
         <Campo rotulo="Data de início" valor={dataInicio} aoMudar={setDataInicio} tipo="date" />
 
         <div className="aviso aviso--info">
-          <span className="aviso__icone" aria-hidden="true">
-            💡
-          </span>
+          <Icone nome="dica" className="aviso__icone" />
           <div>
             <strong>O almoxarifado é criado junto.</strong>
             <p>

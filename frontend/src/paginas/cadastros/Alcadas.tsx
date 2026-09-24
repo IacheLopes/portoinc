@@ -23,6 +23,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 interface FuncaoItem {
   id: string;
@@ -88,9 +89,7 @@ export function Alcadas() {
 
         {avisos.length > 0 && (
           <div className="aviso aviso--atencao" role="alert">
-            <span className="aviso__icone" aria-hidden="true">
-              ⚠
-            </span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>Atenção às faixas configuradas</strong>
               <ul className="campo__erro-lista">
@@ -104,7 +103,7 @@ export function Alcadas() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
@@ -284,7 +283,7 @@ function Simulador() {
         {resposta && (
           <p className={'aviso ' + (encontrada ? 'aviso--sucesso' : 'aviso--atencao')} role="status">
             <span className="aviso__icone" aria-hidden="true">
-              {encontrada ? '✓' : '⚠'}
+              <Icone nome={encontrada ? 'certo' : 'alerta'} />
             </span>
             <span>{resposta}</span>
           </p>

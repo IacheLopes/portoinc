@@ -37,6 +37,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -186,19 +187,19 @@ export function PainelFinanceiro() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
 
         {(notas.comPendencia > 0 || notas.semParcelas > 0) && (
           <div className="aviso aviso--atencao">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>Tem nota esperando você.</strong>
               <p>
@@ -457,7 +458,7 @@ export function PainelFinanceiro() {
               Se a baixa falhar, o motivo precisa aparecer aqui. */}
           {erro && (
             <p className="aviso aviso--erro" role="alert">
-              <span aria-hidden="true">⚠</span> {erro}
+              <Icone nome="alerta" /> {erro}
             </p>
           )}
 

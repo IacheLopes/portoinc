@@ -131,7 +131,6 @@ p { margin: 0; }
   background: var(--fundo-elevado);
   border: 1px solid var(--borda);
   border-radius: var(--raio-xl);
-  box-shadow: var(--sombra-1);
   /* O espaçamento vive no CORPO, e não na caixa: senão cabeçalho e
      corpo ganhariam moldura dupla.
 
@@ -266,8 +265,6 @@ a:hover { text-decoration-thickness: 2px; }
   gap: var(--esp-2);
   font-size: var(--txt-sm);
   font-weight: var(--peso-forte);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--texto-secundario);
   margin-bottom: var(--esp-3);
 }
@@ -311,7 +308,11 @@ a.indicador--clicavel {
     box-shadow var(--transicao);
 }
 
-a.indicador--clicavel:hover {
+/* BORDA contem, SOMBRA levanta: o cartao parado nao tem sombra
+   nenhuma, entao a sombra aqui quer dizer "este se oferece".
+   Teclado recebe o mesmo sinal que o mouse. */
+a.indicador--clicavel:hover,
+a.indicador--clicavel:focus-visible {
   border-color: var(--azul-600);
   box-shadow: var(--sombra-2);
 }
@@ -393,11 +394,12 @@ a.indicador--clicavel:hover {
   border-bottom: 1px solid var(--borda);
 }
 
-/* Só o cabeçalho da tabela fica em maiúsculas. */
+/* O cabeçalho se distingue por PESO e COR, não por caixa alta:
+   em --txt-xs a maiúscula perde a silhueta da palavra e fica mais
+   lenta de ler, justo onde a leitura é de relance. */
 .tabela thead th {
   font-size: var(--txt-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: var(--peso-forte);
   color: var(--texto-secundario);
   background: var(--fundo-suave);
 }
@@ -484,6 +486,25 @@ a.indicador--clicavel:hover {
 }
 
 .estado__icone { font-size: var(--txt-2xl); }
+
+/* ------------------------------------------------------------
+   Icone
+
+   Tracado, nao emoji. O porque esta em componentes/Icone.tsx.
+
+   Medido em `em`: o icone acompanha a letra ao lado dele. Por
+   isso as classes que ja diziam `font-size` (.aviso__icone,
+   .atalho__icone, .estado__icone...) continuam mandando no
+   tamanho, e nenhuma precisou mudar.
+   ------------------------------------------------------------ */
+.icone {
+  width: 1.15em;
+  height: 1.15em;
+  /* Nao encolhe dentro de flex: icone espremido vira borrao. */
+  flex: none;
+  /* Desce um fio para sentar na linha de base do texto. */
+  vertical-align: -0.16em;
+}
 
 .estado--erro {
   color: var(--erro-texto);
@@ -806,8 +827,6 @@ a.indicador--clicavel:hover {
     margin-bottom: 2px;
     font-size: var(--txt-xs);
     font-weight: var(--peso-forte);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     color: var(--texto-secundario);
   }
 
@@ -844,6 +863,20 @@ a.indicador--clicavel:hover {
   .grade:has(> .indicador-area) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--esp-3);
+  }
+
+  /* "O que precisa de você" ocupa a linha inteira.
+
+     Em duas colunas sobram ~165px por cartão num iPhone 15: o
+     título quebrava em duas linhas, a frase de contexto em quatro,
+     e com três cartões o terceiro ficava sozinho ocupando meia
+     tela. Fotografado em 24/09/2026.
+
+     A largura aqui É hierarquia: o que cobra ação ganha mais
+     espaço que o que só informa. Vem DEPOIS da regra acima de
+     propósito — mesma especificidade, quem vem por último vence. */
+  .grade--destaque:has(> .indicador) {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* Em dupla, a caixa tem ~138px — e "R$ 86.796,00" pedia 178 no

@@ -25,6 +25,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 /** O que o almoxarife preencheu em cada linha da tabela. */
 interface Linha {
@@ -251,13 +252,13 @@ export function ConferirRecebimento() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erro}</strong>
               {impedimentos.length > 0 && (
@@ -503,7 +504,7 @@ export function ConferirRecebimento() {
         </Cartao>
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
-          <span className="aviso__icone" aria-hidden="true">💡</span>
+          <Icone nome="dica" className="aviso__icone" />
           <div>
             <strong>Material devolvido continua em aberto.</strong>
             <p>

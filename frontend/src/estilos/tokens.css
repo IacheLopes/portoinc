@@ -1,3 +1,30 @@
+/* ------------------------------------------------------------
+   A letra do sistema: IBM Plex Sans
+
+   Ate o Design 8 a fonte era `Segoe UI, system-ui` — ou seja, a
+   que vem de graca no Windows. Nunca foi escolhida.
+
+   Plex Sans foi desenhada para contexto tecnico: numeral claro,
+   1/l/I que nao se confundem, altura-x grande. Este sistema e
+   lido de relance, muito em numero (R$, quantidade, prazo), e no
+   celular do Gilson dentro da obra, com sol na tela.
+
+   Um arquivo so, 45 KB, hospedado por nos:
+     - subconjunto latin, que cobre todo o portugues (c, a, o, e)
+     - peso variavel 400..700, entao os quatro pesos vem juntos
+     - sem chamada a servidor de terceiro; obra tem sinal ruim
+
+   `swap`: o texto aparece na hora com a fonte do sistema e troca
+   quando a nossa chega. Ninguem olha para tela em branco.
+   ------------------------------------------------------------ */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fontes/plex-sans-latin.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ============================================================
    SISTEMA DE DESIGN - Porto Inc.
 
@@ -108,7 +135,7 @@
 
   /* ---------- Tipografia ----------
      Tamanhos diferentes criam HIERARQUIA: o olho sabe onde olhar primeiro. */
-  --fonte: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --fonte: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --fonte-mono: 'Cascadia Code', 'Consolas', monospace;
 
   --txt-xs: 0.75rem;

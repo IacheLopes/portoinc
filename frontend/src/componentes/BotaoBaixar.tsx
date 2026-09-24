@@ -8,6 +8,7 @@
 // ============================================================
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { Icone, type NomeDoIcone } from './Icone';
 
 export type FormatoDeArquivo = 'pdf' | 'docx';
 
@@ -15,19 +16,19 @@ const OPCOES: Array<{
   formato: FormatoDeArquivo;
   rotulo: string;
   paraQue: string;
-  icone: string;
+  icone: NomeDoIcone;
 }> = [
   {
     formato: 'pdf',
     rotulo: 'PDF',
     paraQue: 'Para imprimir, assinar ou anexar num e-mail',
-    icone: '📄',
+    icone: 'documento',
   },
   {
     formato: 'docx',
     rotulo: 'Word (.docx)',
     paraQue: 'Para abrir no Word e mexer no texto',
-    icone: '📝',
+    icone: 'escrever',
   },
 ];
 
@@ -107,7 +108,7 @@ export function BotaoBaixar({
               className="baixar__opcao"
               onClick={() => escolher(o.formato)}
             >
-              <span className="baixar__icone" aria-hidden="true">{o.icone}</span>
+              <Icone nome={o.icone} className="baixar__icone" />
               <span className="baixar__texto">
                 <strong>{o.rotulo}</strong>
                 <small>{o.paraQue}</small>

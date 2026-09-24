@@ -588,6 +588,15 @@ const MEDIR = `(() => {
         acima = acima.parentElement;
       }
       if (escondido) return false;
+      // Campo de digitacao NAO estoura: ele rola por dentro.
+      //
+      // Um <input> com valor maior que a caixa tem scrollWidth maior
+      // que clientWidth SEMPRE — e isso e o comportamento correto,
+      // nao um defeito de layout. Enquanto isso nao estava escrito
+      // aqui, a regra acusava a tela de Avisos ao fornecedor em toda
+      // varredura, por causa de um campo com a mensagem de teste
+      // preenchida. Nona vez nesta obra que o defeito era a medicao.
+      if (el.matches('input, textarea, select')) return false;
       const estilo = getComputedStyle(el);
       if (estilo.overflowX !== 'visible' && estilo.overflowX !== 'clip') return false;
       return el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0;

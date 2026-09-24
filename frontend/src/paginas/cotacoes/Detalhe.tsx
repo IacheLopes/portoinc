@@ -30,6 +30,7 @@ import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -186,13 +187,13 @@ export function DetalheCotacao() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erro}</strong>
               {impedimentos.length > 0 && (
@@ -228,7 +229,7 @@ export function DetalheCotacao() {
               onClick={() => void abrir()}
               disabled={ocupado}
             >
-              {ocupado ? 'Abrindo...' : '📨 Abrir cotação e convidar'}
+              {ocupado ? 'Abrindo...' : <><Icone nome="enviado" /> Abrir cotação e convidar</>}
             </button>
           )}
 
@@ -251,7 +252,7 @@ export function DetalheCotacao() {
                 (dados.situacao === 'ENCERRADO' ? 'botao--principal' : 'botao--secundario')
               }
             >
-              📊 Equalizar e escolher
+              <Icone nome="grafico" /> Equalizar e escolher
             </Link>
           )}
 
@@ -262,7 +263,7 @@ export function DetalheCotacao() {
               onClick={() => void mandarConvites('whatsapp')}
               disabled={ocupado}
             >
-              💬 Convidar pelo WhatsApp
+              <Icone nome="conversa" /> Convidar pelo WhatsApp
             </button>
           )}
 
@@ -273,7 +274,7 @@ export function DetalheCotacao() {
               onClick={() => void mandarConvites('email')}
               disabled={ocupado}
             >
-              ✉ Convidar por e-mail
+              <Icone nome="envelope" /> Convidar por e-mail
             </button>
           )}
 
@@ -302,7 +303,7 @@ export function DetalheCotacao() {
 
           {sugeridos.length === 0 ? (
             <div className="aviso aviso--atencao">
-              <span className="aviso__icone" aria-hidden="true">⚠</span>
+              <Icone nome="alerta" className="aviso__icone" />
               <div>
                 <strong>Nenhum fornecedor atende as famílias deste pacote.</strong>
                 <p>
@@ -463,7 +464,7 @@ export function DetalheCotacao() {
                             className="botao botao--discreto"
                             onClick={() => void copiarLink(c.token!)}
                           >
-                            {linkCopiado === c.token ? '✓ Copiado' : '🔗 Copiar link'}
+                            {linkCopiado === c.token ? <><Icone nome="certo" /> Copiado</> : <><Icone nome="elo" /> Copiar link</>}
                           </button>
                         )}
                         {ehRascunho && (
@@ -486,7 +487,7 @@ export function DetalheCotacao() {
 
           {aberto && (
             <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-3)' }}>
-              <span className="aviso__icone" aria-hidden="true">🔒</span>
+              <Icone nome="cadeado" className="aviso__icone" />
               <div>
                 <strong>Sobre os links.</strong>
                 <p>

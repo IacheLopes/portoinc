@@ -18,6 +18,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
@@ -115,9 +116,7 @@ export function ListaCotacoes() {
 
         {disponiveis === 0 && (
           <div className="aviso aviso--info">
-            <span className="aviso__icone" aria-hidden="true">
-              💡
-            </span>
+            <Icone nome="dica" className="aviso__icone" />
             <div>
               <strong>Nenhum item esperando cotação.</strong>
               <p>

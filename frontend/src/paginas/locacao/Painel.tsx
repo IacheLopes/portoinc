@@ -34,6 +34,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
 
@@ -250,19 +251,19 @@ export function PainelLocacao() {
 
       {aviso && (
         <p className="aviso aviso--sucesso" role="status">
-          <span aria-hidden="true">✓</span> {aviso}
+          <Icone nome="certo" /> {aviso}
         </p>
       )}
 
       {erro && (
         <p className="aviso aviso--erro" role="alert">
-          <span aria-hidden="true">⚠</span> {erro}
+          <Icone nome="alerta" /> {erro}
         </p>
       )}
 
       {resumo.atrasadas > 0 && (
         <div className="aviso aviso--erro">
-          <span className="aviso__icone" aria-hidden="true">⚠</span>
+          <Icone nome="alerta" className="aviso__icone" />
           <div>
             <strong>
               {plural(resumo.atrasadas, 'equipamento parado', 'equipamentos parados')} além do combinado.
@@ -533,7 +534,7 @@ export function PainelLocacao() {
         {/* O aviso de erro da página fica ATRÁS do modal. */}
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
 
@@ -587,7 +588,7 @@ export function PainelLocacao() {
       >
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
 

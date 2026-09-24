@@ -22,6 +22,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 interface FuncaoItem {
   id: string;
@@ -132,7 +133,7 @@ export function Usuarios() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
@@ -376,7 +377,7 @@ function FormularioUsuario({
 
         {erro && (
           <div className="campo__erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
             {detalhes.length > 0 && (
               <ul className="campo__erro-lista">
                 {detalhes.map((d) => (

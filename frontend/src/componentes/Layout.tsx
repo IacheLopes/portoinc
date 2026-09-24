@@ -14,6 +14,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
 import { menuAgrupado, type Modulo } from '../navegacao';
 import { BotaoTema } from './BotaoTema';
+import { Icone } from './Icone';
 import { plural } from '../servicos/texto';
 
 function iniciais(nome: string): string {
@@ -36,9 +37,7 @@ export function Layout() {
         className={({ isActive }) => 'menu__item' + (isActive ? ' menu__item--ativo' : '')}
         onClick={() => setMenuAberto(false)}
       >
-        <span className="menu__icone" aria-hidden="true">
-          {item.icone}
-        </span>
+        <Icone nome={item.icone} className="menu__icone" />
         {item.rotulo}
       </NavLink>
     );
@@ -114,12 +113,10 @@ export function Layout() {
             <BotaoTema />
 
             <NavLink to="/minha-senha" className="menu__item menu__item--secundario">
-              <span className="menu__icone" aria-hidden="true">
-                🔒
-              </span>
+              <Icone nome="cadeado" className="menu__icone" />
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.26.0</p>
+            <p className="menu__versao">versão 0.27.0</p>
           </div>
         </nav>
 

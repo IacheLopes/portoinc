@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useAutenticacao } from '../contexto/Autenticacao';
 import { ErroApi } from '../servicos/api';
+import { Icone } from '../componentes/Icone';
 
 export function Entrar() {
   const { entrar } = useAutenticacao();
@@ -89,7 +90,7 @@ export function Entrar() {
 
           {erro && (
             <p className="campo__erro" role="alert">
-              <span aria-hidden="true">⚠</span> {erro}
+              <Icone nome="alerta" /> {erro}
             </p>
           )}
 

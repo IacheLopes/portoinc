@@ -31,6 +31,7 @@ import { Selo } from '../../componentes/Selo';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -408,9 +409,7 @@ export function NovaSolicitacao() {
 
           {itens.length === 0 && (
             <div className="aviso aviso--atencao">
-              <span className="aviso__icone" aria-hidden="true">
-                ⚠
-              </span>
+              <Icone nome="alerta" className="aviso__icone" />
               <div>
                 <strong>Adicione pelo menos um item.</strong>
                 <p>Uma solicitação sem itens não pode ser salva.</p>

@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { lerTema, aplicarTema, guardarTema, outroTema, type Tema } from '../tema';
+import { Icone } from './Icone';
 
 export function BotaoTema() {
   const [tema, setTema] = useState<Tema>(() => lerTema());
@@ -39,7 +40,7 @@ export function BotaoTema() {
       aria-pressed={tema === 'escuro'}
     >
       <span className="menu__icone" aria-hidden="true">
-        {proximo === 'escuro' ? '🌙' : '☀'}
+        <Icone nome={proximo === 'escuro' ? 'lua' : 'sol'} />
       </span>
       {proximo === 'escuro' ? 'Tema escuro' : 'Tema claro'}
     </button>

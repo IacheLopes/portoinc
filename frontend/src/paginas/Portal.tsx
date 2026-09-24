@@ -19,6 +19,7 @@ import { dinheiro, quantidade as qtdBr } from '../servicos/cadastros';
 import { dataBr } from '../servicos/solicitacoes';
 import { Carregando } from '../componentes/Estado';
 import { Selo } from '../componentes/Selo';
+import { Icone } from '../componentes/Icone';
 
 interface RespostaItem {
   disponivel: boolean;
@@ -161,7 +162,7 @@ export function Portal() {
         <div className="portal__cartao">
           <MarcaPorto />
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erroAbertura}</strong>
               <p>
@@ -181,7 +182,7 @@ export function Portal() {
         <div className="portal__cartao">
           <MarcaPorto />
           <div className="portal__sucesso">
-            <span className="portal__sucesso-icone" aria-hidden="true">✓</span>
+            <Icone nome="certo" className="portal__sucesso-icone" />
             <h1>Cotação enviada!</h1>
             <p>
               Recebemos sua proposta de <strong>{dinheiro(enviado.total)}</strong> para{' '}
@@ -242,7 +243,7 @@ export function Portal() {
 
         {cotacao.jaRespondeu && (
           <div className="aviso aviso--info">
-            <span className="aviso__icone" aria-hidden="true">ℹ</span>
+            <Icone nome="informacao" className="aviso__icone" />
             <div>
               <strong>Você já respondeu esta cotação.</strong>
               <p>
@@ -255,7 +256,7 @@ export function Portal() {
 
         {cotacao.observacoes && (
           <div className="aviso aviso--info">
-            <span className="aviso__icone" aria-hidden="true">📋</span>
+            <Icone nome="prancheta" className="aviso__icone" />
             <div>
               <strong>Observações da Porto Inc.</strong>
               <p>{cotacao.observacoes}</p>
@@ -500,7 +501,7 @@ export function Portal() {
 
         {faltamPrecos > 0 && (
           <div className="aviso aviso--atencao">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{faltamPrecos} item(ns) sem preço.</strong>
               <p>
@@ -513,7 +514,7 @@ export function Portal() {
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
-            <span className="aviso__icone" aria-hidden="true">⚠</span>
+            <Icone nome="alerta" className="aviso__icone" />
             <div>
               <strong>{erro}</strong>
               {detalhes.length > 0 && (

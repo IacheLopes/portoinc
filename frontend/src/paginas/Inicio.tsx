@@ -28,6 +28,7 @@ import { Indicador } from '../componentes/Indicador';
 import { Carregando, Erro } from '../componentes/Estado';
 import { buscarInicio, type ResumoDoInicio } from '../servicos/inicio';
 import { ErroApi } from '../servicos/api';
+import { Icone } from '../componentes/Icone';
 
 function saudacao(): string {
   const hora = new Date().getHours();
@@ -106,7 +107,7 @@ export function Inicio() {
 
         {!carregando && !erro && urgentes.length === 0 && (
           <div className="aviso aviso--sucesso">
-            <span className="aviso__icone" aria-hidden="true">✓</span>
+            <Icone nome="certo" className="aviso__icone" />
             <div>
               <strong>Nada esperando por você.</strong>
               <p>
@@ -118,7 +119,8 @@ export function Inicio() {
         )}
 
         {!carregando && !erro && urgentes.length > 0 && (
-          <div className="grade">
+          // `--destaque`: linha inteira no celular. Ver global.css.
+          <div className="grade grade--destaque">
             {urgentes.map((c) => (
               <Indicador
                 key={c.chave}
@@ -173,9 +175,7 @@ export function Inicio() {
         <div className="grade">
           {meus.map((modulo) => (
             <Link key={modulo.para} to={modulo.para} className="atalho">
-              <span className="atalho__icone" aria-hidden="true">
-                {modulo.icone}
-              </span>
+              <Icone nome={modulo.icone} className="atalho__icone" />
               <span className="atalho__texto">
                 <strong>{modulo.titulo}</strong>
                 <small>{modulo.descricao}</small>

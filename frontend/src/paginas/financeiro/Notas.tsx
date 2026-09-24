@@ -30,6 +30,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Icone } from '../../componentes/Icone';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -359,13 +360,13 @@ export function NotasFiscais() {
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
-            <span aria-hidden="true">✓</span> {aviso}
+            <Icone nome="certo" /> {aviso}
           </p>
         )}
 
         {erro && (
           <p className="aviso aviso--erro" role="alert">
-            <span aria-hidden="true">⚠</span> {erro}
+            <Icone nome="alerta" /> {erro}
           </p>
         )}
       </section>
@@ -568,7 +569,7 @@ export function NotasFiscais() {
                             onClick={() => void baixarEspelho(n)}
                             disabled={baixando === n.id}
                           >
-                            {baixando === n.id ? 'Gerando...' : '📄 PDF'}
+                            {baixando === n.id ? 'Gerando...' : <><Icone nome="documento" /> PDF</>}
                           </button>
 
                           <button
@@ -578,7 +579,7 @@ export function NotasFiscais() {
                             aria-expanded={gaveta === n.id}
                             aria-controls={'arquivos-' + n.id}
                           >
-                            📎 Arquivos
+                            <Icone nome="anexo" /> Arquivos
                           </button>
                         </div>
                       </td>
@@ -631,7 +632,7 @@ export function NotasFiscais() {
                                   {arquivosDaNota.map((a) => (
                                     <li key={a.id}>
                                       <span aria-hidden="true">
-                                        {a.tipo === 'XML_NFE' ? '📃' : '📄'}
+                                        <Icone nome={a.tipo === 'XML_NFE' ? 'pagina' : 'documento'} />
                                       </span>
                                       <span className="lista-arquivos__nome">
                                         <strong>{a.nomeOriginal}</strong>
@@ -737,7 +738,7 @@ export function NotasFiscais() {
         </Modal>
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
-          <span className="aviso__icone" aria-hidden="true">💡</span>
+          <Icone nome="dica" className="aviso__icone" />
           <div>
             <strong>A nota se confere sozinha.</strong>
             <p>
