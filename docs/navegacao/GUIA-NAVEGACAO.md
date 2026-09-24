@@ -1,280 +1,369 @@
 <!-- versao: 0.28.3 -->
 
-# Guia Prático de Navegação
+# Guia de Navegação
 
-> Guia curto, para aprender a mexer e para apresentar. Quem quiser o detalhe de cada
-> campo tem o `Tutorial-PortoInc.pdf`.
+Para aprender a mexer e para apresentar. O detalhe campo a campo está no
+`Tutorial-PortoInc.pdf`.
 
----
+# 1 · Para começar
 
-# ⚠️ Antes de qualquer coisa: os dados são de mentira
+## A empresa e o sistema
 
-**Tudo que aparece na tela foi inventado para a demonstração.** Obras, materiais,
-fornecedores, notas fiscais, valores — nada disso existe. Serve só para o sistema ter o
-que mostrar.
+A **Porto Inc. é uma construtora** — ela levanta obra. Comprar material não é o negócio
+dela; é o que faz o negócio andar, e era a parte que vivia em WhatsApp, planilha e papel.
 
-| O que é **real** | O que é **inventado** |
+**Este sistema é o caminho oficial da compra**, do pedido da obra até a nota fiscal paga.
+Ele responde três perguntas que ninguém conseguia responder antes: *o que foi pedido*,
+*quanto custou da última vez* e *se o material chegou*.
+
+## ⚠️ Os dados são de exemplo
+
+| Real | Inventado para a demonstração |
 |---|---|
-| As pessoas: Bras, Gilson, Neilma, Andre, Washington — nomes citados na reunião | As três obras, com seus nomes, cidades e clientes |
-| Os papéis de cada um e quem pode o quê | Os materiais, fornecedores e famílias do catálogo |
-| O fluxo de compra, do pedido ao pagamento | As notas fiscais, parcelas e locações |
-| A regra de que a aprovação depende do valor | **Os valores de R$ 2.000 e R$ 15.000** |
+| As pessoas (nomes da reunião) e seus papéis | Obras, materiais, fornecedores, notas, valores |
+| O fluxo de compra e as regras | **Os limites de alçada (R$ 2.000 / R$ 15.000)** |
 
-**Ao apresentar, diga isso na primeira frase.** Algo como:
-
-> *"Os dados são de exemplo, para o sistema ter o que mostrar. As pessoas são as da
-> reunião; o resto é ilustração."*
-
-Sem esse aviso, alguém da Porto Inc. vai dizer *"não temos essa obra"* ou *"nosso limite
-não é esse"* — e a demonstração perde a credibilidade por causa de um detalhe que nem era
-o assunto.
-
-> **Aproveite a demonstração para perguntar.** Os limites de alçada, as famílias de
-> material e os fornecedores são justamente o que **eles** precisam informar. Chegue com
-> a pergunta pronta: *"a partir de quanto sobe para o fundador?"*
-
----
-
-# Para que serve o sistema
-
-A **Porto Inc. é uma construtora**: ela levanta obra.
-
-(No sistema há três obras cadastradas, de tipos diferentes — residencial, predial e
-logística. São **exemplos**, para mostrar que o sistema não assume um tipo só de obra.)
-
-**Este sistema não é a construtora — é uma parte dela.** Ele cuida de uma coisa só:
-**comprar o material e o equipamento que a obra consome, e controlar o almoxarifado.**
-
-Comprar não é o negócio da Porto Inc.; é o que faz o negócio andar. E era justamente a
-parte que vivia em WhatsApp, planilha e papel — ninguém sabia ao certo o que tinha sido
-pedido, quanto custou da última vez, nem se o material chegou.
-
-O sistema é **o caminho oficial dessa compra**, do pedido da obra até a nota fiscal paga.
-
-> **Se for apresentar, comece por aqui:** *"a Porto Inc. constrói; este sistema cuida de
-> abastecer as obras dela"*. Sem essa frase, quem assiste acha que está vendo um sistema
-> de compras genérico — e aí o resto perde o sentido.
+**Diga isso na primeira frase da apresentação.** E aproveite: alçadas, famílias e
+fornecedores são justamente o que **eles** precisam informar.
 
 ## O caminho de uma compra
 
 ```
-1. SOLICITAÇÃO      a obra pede        →  Bras (gestor) ou Neilma
-2. APROVAÇÃO        alguém libera      →  depende do VALOR (alçada)
-3. COTAÇÃO          pede preço         →  Andre ou Neilma (compradores)
-4. PEDIDO           o escolhido recebe →  sai PDF + WhatsApp/e-mail
-5. RECEBIMENTO      confere a entrega  →  Gilson (almoxarife)
-6. FINANCEIRO       nota vira parcela  →  Neilma paga
+SOLICITAÇÃO → APROVAÇÃO → COTAÇÃO → PEDIDO → RECEBIMENTO → FINANCEIRO
+  a obra pede   pelo valor   3 preços  emitido   confere      paga
 ```
 
-**Cada seção do menu é uma dessas etapas.** É por isso que o menu está agrupado assim.
+**Cada grupo do menu é um trecho desse caminho.** Compras, Almoxarifado, Gestão.
 
-## Quem vê o quê
+## Contas · senha `Porto@2026`
 
-O menu **muda conforme a pessoa**. O Gilson não vê Administração; a Neilma não vê
-Aprovações. Para apresentar o sistema inteiro, entre como **Administrador**.
+| Conta `@portoinc.com.br` | Papel | Use para mostrar |
+|---|---|---|
+| `admin` | tudo | o sistema inteiro |
+| `bras` | Gestor de obra + Solicitante | pedir e aprovar |
+| `andre` | Comprador | cotar e comprar |
+| `gilson` | Almoxarife | receber e estoque |
+| `neilma` | Comprador + Solicitante | pagar |
+| `washington` | Fundador | aprovar valor alto |
 
-| Conta (senha `Porto@2026`) | Papel |
+> **O menu muda conforme a pessoa.** Botão que não aparece não é falha: é permissão.
+
+---
+
+# 2 · As telas, na ordem do menu
+
+## 1 · Início
+
+**Serve para** responder "o que preciso fazer agora", antes de qualquer menu.
+
+| Bloco | O que é |
 |---|---|
-| `admin@portoinc.com.br` | Vê tudo |
-| `bras@portoinc.com.br` | Pede e aprova |
-| `andre@portoinc.com.br` | Compra |
-| `gilson@portoinc.com.br` | Recebe e controla estoque |
-| `neilma@portoinc.com.br` | Compra e paga |
-| `washington@portoinc.com.br` | Fundador — aprova valor alto |
+| **O que precisa de você** | Só o que **cobra ação sua**: prazo perdido primeiro, depois o que vence. Vazio = nada travado |
+| **Como estão as coisas** | Números de acompanhamento. Não cobram nada |
+| **Ir para** | Atalhos — os mesmos itens do seu menu |
+
+**Todo número é clicável** e leva à tela onde ele mora, já no assunto certo.
 
 ---
 
-# As seções
+**— Compras —**
 
-## 1. Início
+## 2 · Solicitações
 
-- Mostra **o que precisa de você agora**: prazo perdido primeiro, depois o que vence
-- Cada número é um **atalho** — clicar leva à tela onde ele mora
-- **Passo:** Clique em **Início** → leia "O que precisa de você" → clique num número
+**Serve para** a obra pedir material ou serviço. É onde toda compra nasce.
+**A lista mostra** o que foi pedido e em que pé está.
 
----
-
-# Compras
-
-## 2. Solicitações
-
-- Lista tudo que as obras pediram, e em que pé está cada pedido
-- Abrir solicitação nova, acompanhar, baixar em PDF
-- **Passo:** **Solicitações** → **Nova solicitação** → escolha a obra → adicione itens → **Enviar**
-
-## 3. Aprovações
-
-- Fila do que espera assinatura, **só o que é da sua alçada**
-- Liberar ou devolver com motivo
-- **Passo:** **Aprovações** → abra uma → **Aprovar** ou **Devolver**
-
-> **A alçada é por valor.** A regra é real; **os valores abaixo são exemplo**, e foram
-> escolhidos por mim para a demonstração funcionar:
->
-> | Valor da solicitação | Quem assina |
-> |---|---|
-> | até R$ 2.000 | Gestor de obra, sozinho |
-> | R$ 2.000,01 a R$ 15.000 | Gestor de obra **e** Engenheiro |
-> | acima de R$ 15.000 | Fundador |
->
-> Mudam em **Cadastros → Limites de alçada**, e é lá que os valores de verdade da Porto
-> Inc. vão entrar quando eles informarem.
-
-## 4. Cotações
-
-- Pacotes de cotação e o que cada fornecedor respondeu
-- Montar pacote, convidar fornecedor, comparar preços e escolher
-- **Passo:** **Cotações** → **Nova cotação** → escolha itens → convide fornecedores → **Equalizar e escolher**
-
-> **Equalizar** é a tela que põe os preços lado a lado. Ela sugere o melhor de cada item;
-> você pode aceitar tudo de uma vez ou item por item.
-
-## 5. Pedidos
-
-- Os pedidos de compra já emitidos, e se o fornecedor recebeu
-- Baixar o PDF, reenviar por WhatsApp ou e-mail
-- **Passo:** **Pedidos** → escolha um → **⋮** → **Baixar PDF**
-
----
-
-# Almoxarifado
-
-## 6. Recebimento
-
-- O que está a caminho, e o que já foi conferido
-- Conferir a entrega contra o pedido — inclusive entrega parcial
-- **Passo:** **Recebimento** → escolha o pedido → **Conferir** → marque as quantidades → **Registrar**
-
-## 7. Estoque
-
-- Saldo por material e por almoxarifado, e o que está abaixo do mínimo
-- Retirar para a obra, dar entrada, ajustar, transferir entre obras
-- **Passo:** **Estoque** → ache o material → **Retirar** → informe quantidade e obra
-
-## 8. Locação
-
-- Equipamento alugado, quanto já custou e o que passou do prazo
-- Registrar locação nova, devolver, cancelar
-- **Passo:** **Locação** → **Nova locação**, ou **Devolver** numa linha existente
-
-> Esta tela mostra **o dinheiro correndo**: equipamento parado continua contando diária.
-
----
-
-# Gestão
-
-## 9. Financeiro
-
-- Números da carteira, fluxo de caixa dos próximos meses e as parcelas a pagar
-- Lançar nota fiscal, gerar parcelas, dar baixa no pagamento, baixar contas
-- **Passo:** **Financeiro** → role até **Parcelas** → **Dar baixa** na que foi paga
-
-**No gráfico de fluxo de caixa:**
-- **‹** e **›** andam um mês; o campo do meio salta para qualquer mês; **Hoje** volta
-- Não dá para avançar além do mês atual
-- Toque numa barra para ver os valores daquele mês
-
-**Notas fiscais** fica em: **Financeiro** → **Notas fiscais**
-
-## 10. Relatórios
-
-- Cinco abas, cada uma responde **uma pergunta**
-- Filtrar por obra e período, baixar em PDF ou Word
-- **Passo:** **Relatórios** → escolha a aba → filtre → **Baixar**
-
-| Aba | Responde |
+| Controle | O que faz |
 |---|---|
-| Orçamento | A obra está estourando o orçamento? |
-| Economia | A cotação valeu a pena? |
-| Fornecedores | Em quem dá para confiar? |
-| Tempos | Onde o processo trava? |
-| Consumo | O que a empresa mais compra? |
+| **Situação** | filtra por etapa; vazio = todas |
+| **Só as minhas** | só aparece para quem enxerga as dos outros |
+| **Filtrar** | aplica os dois acima |
+| **+ Nova solicitação** | só para quem tem permissão de criar |
+
+**Colunas:** Número · Obra · Solicitante · Itens · Total estimado · Precisa até · Situação
+
+### + Nova solicitação
+
+Obra → itens do catálogo → prazo. **Salvar como rascunho** guarda sem mandar; ela só entra
+na fila quando você **Enviar para aprovação**.
+
+| Campo | Observação |
+|---|---|
+| Obra · Precisa até | obrigatórios |
+| Item do catálogo | vem de Cadastros — não dá para digitar item livre |
+| Linha do orçamento | liga o gasto ao orçamento da obra; é o que alimenta o relatório |
+| Valor unitário estimado | palpite, só para calcular a alçada |
+| Justificativa | aparece para quem aprova |
+
+### Abrir uma solicitação
+
+| Bloco | O que é |
+|---|---|
+| **Itens solicitados** | o que foi pedido, com total |
+| **Assinaturas** | **quem precisa assinar e quem já assinou** — a alçada na prática |
+| **Histórico** | cada passo, com quem e quando. É a auditoria |
+| **Baixar PDF** | para imprimir ou mandar |
+| **Cancelar solicitação** | só antes de virar pedido |
+
+
+## 3 · Aprovações
+
+**Serve para** liberar ou devolver. **Mostra só o que é da sua alçada** — não é a fila de
+todo mundo.
+
+**Colunas:** Número · Obra · Solicitante · Justificativa · Valor · Precisa até · Assinaturas
+
+**Analisar** abre a solicitação com **Aprovar** e **Devolver**. Devolver **exige motivo**,
+que volta para quem pediu.
+
+> **A alçada é por valor** (valores de exemplo): até R$ 2.000 o gestor assina sozinho; de
+> R$ 2.000 a R$ 15.000 exige gestor **e** engenheiro; acima disso, o fundador. Muda em
+> Cadastros → Limites de alçada.
+
+
+## 4 · Cotações
+
+**Serve para** pedir preço a vários fornecedores e comparar.
+**A lista mostra** os pacotes, quantos foram convidados e quantos responderam.
+
+**Colunas:** Número · Título · Itens · Convidados · Respostas · Prazo · Situação
+
+### + Novo pacote de cotação
+
+Mostra **os itens já aprovados esperando cotação** — você marca quais entram. Dá título e
+prazo, e o sistema **sugere fornecedores pela família do material**.
+
+### Abrir um pacote
+
+| Bloco | O que é |
+|---|---|
+| **Itens do pacote** | o que está sendo cotado |
+| **Convidados** | quem foi chamado, se **abriu o link**, se respondeu e o total |
+| **Fornecedores sugeridos** | quem atende aquelas famílias e ainda não foi chamado |
+| **Convidar pelo WhatsApp / por e-mail** | manda o link do portal |
+| **Equalizar e escolher** | vai para o comparativo |
+| **Encerrar cotação** | fecha sem escolher |
+
+> O fornecedor **não entra no sistema**: ele responde por um link próprio (o Portal), sem
+> senha e sem ver o preço dos concorrentes.
+
+### Equalizar e escolher
+
+| Bloco | O que é |
+|---|---|
+| **Mapa comparativo** | preços lado a lado; o melhor de cada item marcado |
+| **Aceitar todos os melhores preços** | escolhe tudo de uma vez — dá para trocar item a item depois |
+| **Condições comerciais** | prazo e forma de pagamento de cada um |
+| **Última chamada** | reabre e avisa quem não respondeu |
+| **Gerar pedidos de compra** | fecha: **um pedido por fornecedor escolhido** |
+
+
+## 5 · Pedidos
+
+**Serve para** acompanhar o que foi emitido e garantir que o fornecedor recebeu.
+
+**Colunas:** Número · Fornecedor · Origem · Itens · Total · Pagamento · Situação
+
+No **⋮** de cada linha: **Baixar PDF** · **Mandar pelo WhatsApp** · **Mandar por e-mail** ·
+**Marcar como enviado** (para quando você avisou por fora).
 
 ---
 
-# Administração
+**— Almoxarifado —**
 
-## 11. Cadastros
+## 6 · Recebimento
 
-- A porta para os cinco cadastros de base
-- Cadastrar e editar o que o resto do sistema usa
-- **Passo:** **Cadastros** → escolha um dos cinco
+**Serve para** conferir a entrega **contra o pedido**. É o que impede pagar por material
+que não chegou.
+
+| Bloco | O que é |
+|---|---|
+| **Esperando entrega** | pedidos a caminho, com quantos itens faltam |
+| **Últimas entregas conferidas** | o que já passou, com nota e quem conferiu |
+
+### Conferir
+
+| Parte | O que faz |
+|---|---|
+| **O que chegou** | por item: já recebido, saldo, **recebido agora**, devolvido |
+| Como chegou | **Chegou certo** · **Aceito com ressalva** · **Devolvido** |
+| **Localizar** | **lê o código de barras** (ou o COD PORTO) e destaca o item na lista — o almoxarife confere com o leitor na mão, sem procurar |
+| **Recebi tudo que falta** | preenche o saldo de todos de uma vez |
+| **Documento da entrega** | nota, série, transportadora, almoxarifado de destino |
+| **Registrar recebimento** | dá entrada no estoque |
+
+> **Aceita entrega parcial.** O pedido continua aberto pelo saldo, e o resto chega depois.
+
+
+## 7 · Estoque
+
+**Serve para** saber o que tem, tirar para a obra e avisar quando está acabando.
+
+**Colunas:** Material · Saldo · Mínimo · Custo médio · Valor parado
+
+| Controle | O que faz |
+|---|---|
+| **Almoxarifado** | cada obra tem o seu |
+| **Procurar material** | por nome ou código |
+| **Retirar** | tira para uma obra/frente — pede para quem vai |
+| **Contar** | inventário: informa o que existe de verdade e o sistema ajusta |
+| **Ver extrato** | toda entrada e saída daquele material |
+| **Montar reposição** | lista o que está **abaixo do mínimo**, pronto para virar solicitação |
+
+
+## 8 · Locação
+
+**Serve para** equipamento alugado — e para **ver o dinheiro correndo**: parado, ele
+continua contando diária.
+
+**Colunas:** Contrato · Equipamento · Obra · Cobrança · Devolução · Já custou · Atraso · Situação
+
+Os quatro números no topo: **Atrasadas** · **Custo do atraso** · **Vencendo** · **Em andamento**.
+
+| Ação | O que faz |
+|---|---|
+| **Nova locação** | equipamento, obra, valor do período, devolução prevista |
+| **Devolver** | encerra e congela o custo |
+| **Cancelar locação** | exige motivo |
+
+**O que fazer agora**, no fim da tela, lista em texto o que está atrasado e o que fazer.
+
+---
+
+**— Gestão —**
+
+## 9 · Financeiro
+
+**Serve para** transformar nota fiscal em parcela e controlar o pagamento.
+
+**Números do topo:** Vencidas · Vencem em 7 dias · Total em aberto · Pago no mês · Prazo
+médio · Maior parcela · Parcela média · Notas lançadas.
+
+| Gráfico | Responde |
+|---|---|
+| **Fluxo de caixa** | quanto sai por mês, passado e futuro |
+| **Composição da carteira** | que parte do que devo está atrasada |
+| **Pontualidade** | das já pagas, quantas saíram no prazo |
+| **Para quem mais deve** / **Custo por obra** | concentração |
+
+**No fluxo de caixa:** **‹ ›** andam um mês · o campo do meio salta para qualquer mês ·
+**Hoje** volta. Não avança além do mês atual. Toque numa barra para ver os valores.
+
+### Parcelas (no fim da tela)
+
+**Mostrar** (Todas · Em aberto · Vencidas · Vencem em 7 dias · Pagas · Canceladas) e
+**Situação** filtram. **Dar baixa** registra o pagamento: data, forma e valor pago.
+**Baixar contas** sai em PDF ou Word.
+
+### Notas fiscais
+
+**Lançar nota** manual ou **Importar XML** (lê tudo da nota). **Gerar parcelas** cria as
+contas a pagar pela condição negociada. **Arquivos** guarda XML e PDF da nota.
+
+> A nota é sempre **ligada a um pedido** — é assim que o sistema confere o que foi
+> comprado contra o que está sendo cobrado.
+
+
+## 10 · Relatórios
+
+**Cinco abas, cada uma responde uma pergunta.** Filtram por obra e período, e baixam em
+PDF ou Word.
+
+| Aba | Pergunta |
+|---|---|
+| **Orçamento** | A obra está estourando o orçamento? |
+| **Economia** | A cotação valeu a pena? |
+| **Fornecedores** | Em quem dá para confiar? |
+| **Tempos** | Onde o processo trava? |
+| **Consumo** | O que a empresa mais compra? |
+
+> **Economia** é o relatório que justifica o sistema: mostra quanto a disputa entre
+> fornecedores economizou em dinheiro.
+
+---
+
+**— Administração —**
+
+## 11 · Cadastros
+
+**A base que o resto usa.** Numa instalação nova, comece por aqui — sem material, não há
+o que solicitar.
 
 | Cadastro | Para quê |
 |---|---|
-| Famílias | Agrupa material (cimento, elétrica, EPI) |
-| Materiais e serviços | O catálogo que a solicitação usa |
-| Fornecedores | Quem recebe cotação, por família |
-| Obras | Onde o material é usado; cria o almoxarifado |
-| Limites de alçada | Quem assina até quanto |
+| **Famílias** | agrupa material (cimento, elétrica, EPI). É por ela que o sistema sugere fornecedor |
+| **Materiais e serviços** | o catálogo que a solicitação usa |
+| **Fornecedores** | quem recebe cotação, com as famílias que atende |
+| **Obras** | onde o material é usado; **cria o almoxarifado** e recebe o orçamento por linha |
+| **Limites de alçada** | quem assina até quanto |
 
-> **Comece por aqui numa instalação nova.** Sem família e material, não há o que solicitar.
 
-## 12. Usuários
+## 12 · Usuários
 
-- Todas as pessoas e as funções de cada uma
-- Cadastrar, trocar função, desativar
-- **Passo:** **Usuários** → **Novo usuário** → marque as funções
+**Serve para** cadastrar pessoas e definir o que cada uma pode.
 
-> Uma pessoa pode ter **mais de uma função** — a Neilma compra e paga. As permissões somam.
+**Colunas:** Nome · E-mail · Funções · Último acesso · Situação
 
-## 13. Avisos ao fornecedor
+**+ Novo usuário** · **Desativar / Reativar** (desativar derruba a sessão na hora).
 
-- Se WhatsApp e e-mail estão ligados, e tudo que o sistema já mandou
-- Conectar as integrações, autorizar números, mandar teste
-- **Passo:** **Avisos** → aba **WhatsApp** ou **E-mail** → veja o histórico
+No fim da tela, **Funções e o que cada uma libera** — a tabela que responde "por que o
+Gilson não vê isso?".
 
-> ⚠️ **Hoje tudo roda em modo de teste.** Nada sai para fornecedor de verdade. A tela
-> avisa isso no topo.
+> Uma pessoa pode ter **mais de uma função**; as permissões somam.
 
-## 14. Status do sistema
 
-- Se banco, API e integrações estão no ar
-- Conferir antes de culpar o sistema
-- **Passo:** **Status do sistema** → tudo verde = tudo certo
+## 13 · Avisos ao fornecedor
+
+**Serve para** ligar WhatsApp e e-mail, e ver tudo que o sistema mandou.
+
+Duas abas. Cada uma tem: situação da conexão, **números/e-mails autorizados**, envio de
+teste e **histórico**.
+
+> ⚠️ **Tudo em modo de teste.** Nada sai para fornecedor de verdade, e a tela avisa isso
+> no topo. Só recebe quem está na lista de autorizados.
+
+
+## 14 · Status do sistema
+
+Banco, API e integrações. **Tudo verde = o problema não é o sistema.** **Atualizar agora**
+refaz a checagem.
+
+
+## Fora do menu · o Portal do fornecedor
+
+O fornecedor **não tem conta**. Ele recebe um link, abre sem senha, vê **só os itens
+daquela cotação** e preenche preço e prazo. Não vê concorrente nem preço alheio.
+
+**Para mostrar:** em Cotações → Abrir → **Copiar link**, e cole em aba anônima.
 
 ---
 
-# No rodapé do menu
+# 3 · Roteiro de apresentação · 20 minutos
 
-| Item | O que faz |
-|---|---|
-| **Tema escuro / claro** | Troca o visual; ele lembra a escolha |
-| **Trocar minha senha** | Só a sua |
+Siga **uma compra inteira**. Conta uma história em vez de listar telas.
 
----
-
-# Roteiro de 20 minutos para apresentar
-
-Segue **uma compra inteira**, do pedido ao pagamento. É a melhor forma de mostrar o
-sistema, porque conta uma história em vez de listar telas.
-
-> Você vai criar uma solicitação de verdade no banco de demonstração. Pode fazer à
-> vontade: nada sai para fornecedor nenhum (as integrações estão em modo de teste), e o
-> banco pode ser recarregado do zero quando quiser.
-
-| # | Entre como | Faça |
+| # | Conta | Faça |
 |---|---|---|
-| 1 | `bras@` | **Solicitações** → Nova → peça cimento para a OB-001 |
-| 2 | `bras@` | **Aprovações** → aprove a que você acabou de criar |
-| 3 | `andre@` | **Cotações** → Nova → convide 3 fornecedores |
-| 4 | `andre@` | **Equalizar** → aceite os melhores preços → **Gerar pedidos** |
-| 5 | `andre@` | **Pedidos** → baixe o PDF do pedido |
-| 6 | `gilson@` | **Recebimento** → confira a entrega |
-| 7 | `neilma@` | **Financeiro** → **Notas fiscais** → lance a nota → gere parcelas |
-| 8 | `neilma@` | **Financeiro** → **Dar baixa** numa parcela |
-| 9 | `admin@` | **Relatórios** → aba **Economia** → mostre quanto a cotação economizou |
+| 1 | `bras` | **Solicitações → + Nova** → peça um material → **Enviar para aprovação** |
+| 2 | `bras` | **Aprovações → Analisar → Aprovar** (mostre o bloco **Assinaturas**) |
+| 3 | `andre` | **Cotações → + Novo pacote** → marque o item → convide fornecedores |
+| 4 | — | **Copiar link** e abra em aba anônima: é a visão do fornecedor |
+| 5 | `andre` | **Equalizar** → **Aceitar todos os melhores** → **Gerar pedidos** |
+| 6 | `gilson` | **Recebimento → Conferir** → registre a entrega |
+| 7 | `neilma` | **Financeiro → Notas fiscais** → lance a nota → **Gerar parcelas** |
+| 8 | `neilma` | **Dar baixa** numa parcela |
+| 9 | `admin` | **Relatórios → Economia** → quanto a cotação economizou |
 
-**Feche com a tela de Início**: ela resume tudo isso em números, e cada número leva de
-volta à tela de origem.
+**Feche no Início:** ele resume tudo em números, e cada número volta para a tela de origem.
 
----
+> Pode criar à vontade: nada sai para fornecedor nenhum, e o banco recarrega do zero.
 
-# Se travar
+
+## Se travar
 
 | Aconteceu | O que fazer |
 |---|---|
-| A tela não abre | **Status do sistema** — veja se está tudo verde |
-| Não achei um item no menu | A conta não tem a função; entre como `admin@` |
-| "Muitas requisições" | Espere 1 minuto — é a proteção contra excesso de acessos |
-| Quero recomeçar do zero | Peça para recarregar os dados de teste |
+| A tela não abre | **Status do sistema** |
+| Não achei um item no menu | a conta não tem a função — entre como `admin` |
+| "Muitas requisições" | espere 1 minuto |
+| Quero recomeçar | peça para recarregar os dados de teste |
