@@ -198,7 +198,20 @@ export interface ItemDaFila {
 }
 
 export function listarFilaAprovacao() {
-  return chamar<{ fila: ItemDaFila[]; minhasFuncoes: string[] }>('/api/aprovacoes');
+  return chamar<{
+    fila: ItemDaFila[];
+    minhasFuncoes: string[];
+    /** Você assina alguma faixa de alçada? Se não, esta tela nunca terá nada. */
+    assinaAlgumaFaixa: boolean;
+    /** Quantas esperam aprovação no sistema inteiro, suas ou não. */
+    esperandoOutros: number;
+    /** Os papéis que assinam, para a tela poder dizer de quem é a fila. */
+    papeisQueAssinam: string[];
+    /** A fila é a do sistema inteiro (suporte), e não só a sua? */
+    enxergaTudo: boolean;
+    /** Dentro da fila, quantas dependem de você agora. */
+    minhasDeVerdade: number;
+  }>('/api/aprovacoes');
 }
 
 export function decidir(

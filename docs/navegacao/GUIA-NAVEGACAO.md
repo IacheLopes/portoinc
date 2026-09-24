@@ -1,4 +1,4 @@
-<!-- versao: 0.28.3 -->
+<!-- versao: 0.29.0 -->
 
 # Guia de Navegação
 
@@ -35,18 +35,28 @@ SOLICITAÇÃO → APROVAÇÃO → COTAÇÃO → PEDIDO → RECEBIMENTO → FINAN
 
 **Cada grupo do menu é um trecho desse caminho.** Compras, Almoxarifado, Gestão.
 
-## Contas · senha `Porto@2026`
+## Contas de teste
 
-| Conta `@portoinc.com.br` | Papel | Use para mostrar |
-|---|---|---|
-| `admin` | tudo | o sistema inteiro |
-| `bras` | Gestor de obra + Solicitante | pedir e aprovar |
-| `andre` | Comprador | cotar e comprar |
-| `gilson` | Almoxarife | receber e estoque |
-| `neilma` | Comprador + Solicitante | pagar |
-| `washington` | Fundador | aprovar valor alto |
+| Conta | Senha | Papel | Use para mostrar |
+|---|---|---|---|
+| **`porto@dev.com`** | **`admin123`** | **DEV-Porto — as 7 funções** | **enxergar tudo, inclusive a fila de aprovações** |
+| `admin@portoinc.com.br` | `Porto@2026` | Administrador | administrar o sistema |
+| `bras@portoinc.com.br` | `Porto@2026` | Gestor de obra + Solicitante | pedir e aprovar |
+| `andre@portoinc.com.br` | `Porto@2026` | Comprador | cotar e comprar |
+| `gilson@portoinc.com.br` | `Porto@2026` | Almoxarife | receber e estoque |
+| `neilma@portoinc.com.br` | `Porto@2026` | Comprador + Solicitante | pagar |
+| `washington@portoinc.com.br` | `Porto@2026` | Fundador | aprovar valor alto |
 
 > **O menu muda conforme a pessoa.** Botão que não aparece não é falha: é permissão.
+>
+> **Ver e assinar são coisas diferentes.** Ter a tela é **permissão**; assinar é estar numa
+> **faixa de alçada** — e as faixas são de Gestor de obra, Engenheiro e Fundador.
+>
+> O **Administrador** e o **DEV** enxergam a fila inteira, porque dão suporte: precisam poder
+> conferir o que alguém relata. Mas só assinam quem está na faixa — nas linhas que não são
+> suas o botão vira **Ver**, em vez de **Analisar**.
+>
+> Para demonstrar uma aprovação de verdade, entre como `bras` (2 na fila) ou `washington` (1).
 
 ---
 

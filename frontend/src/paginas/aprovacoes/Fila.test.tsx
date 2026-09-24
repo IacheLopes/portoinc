@@ -64,7 +64,7 @@ describe('a alçada aparece na tela', () => {
   it('compra pequena: uma assinatura basta', async () => {
     buscar.mockResolvedValue({
       fila: [solicitacao({ totalEstimado: 1060, exigeTodas: false })],
-      minhasFuncoes: ['GESTOR_OBRA'],
+      minhasFuncoes: ['GESTOR_OBRA'], assinaAlgumaFaixa: true, esperandoOutros: 0, papeisQueAssinam: ['Gestor de obra'], enxergaTudo: false, minhasDeVerdade: 0,
     });
 
     montar();
@@ -90,7 +90,7 @@ describe('a alçada aparece na tela', () => {
           },
         }),
       ],
-      minhasFuncoes: ['ENGENHEIRO'],
+      minhasFuncoes: ['ENGENHEIRO'], assinaAlgumaFaixa: true, esperandoOutros: 0, papeisQueAssinam: ['Gestor de obra'], enxergaTudo: false, minhasDeVerdade: 0,
     });
 
     montar();
@@ -102,11 +102,47 @@ describe('a alçada aparece na tela', () => {
 
 describe('os três estados de tela', () => {
   it('fila vazia: explica, em vez de deixar a tela em branco', async () => {
-    buscar.mockResolvedValue({ fila: [], minhasFuncoes: ['GESTOR_OBRA'] });
+    buscar.mockResolvedValue({ fila: [], minhasFuncoes: ['GESTOR_OBRA'], assinaAlgumaFaixa: true, esperandoOutros: 0, papeisQueAssinam: ['Gestor de obra'], enxergaTudo: false, minhasDeVerdade: 0 });
 
     montar();
 
     expect(await screen.findByText('Nada esperando por você')).toBeInTheDocument();
+  });
+
+  // O caso que enganou o dono do sistema em 24/09/2026: ele entrou
+  // como administrador, leu "nada esperando por você" e entendeu que
+  // o sistema estava vazio — havia três solicitações na fila.
+  it('quem não assina faixa nenhuma ouve isso, e não "nada esperando"', async () => {
+    buscar.mockResolvedValue({
+      fila: [],
+      minhasFuncoes: ['ADMINISTRADOR'],
+      assinaAlgumaFaixa: false,
+      esperandoOutros: 3,
+      papeisQueAssinam: ['Gestor de obra', 'Engenheiro', 'Fundador'], enxergaTudo: false, minhasDeVerdade: 0,
+    });
+
+    montar();
+
+    expect(await screen.findByText('Você não assina aprovações')).toBeInTheDocument();
+    // Diz de quem é a fila...
+    expect(screen.getByText(/Gestor de obra, Engenheiro, Fundador/)).toBeInTheDocument();
+    // ...e que ela NÃO está vazia.
+    expect(screen.getByText(/há 3 esperando essas pessoas/i)).toBeInTheDocument();
+  });
+
+  it('assina, mas as que existem são de outros: diz quantas são', async () => {
+    buscar.mockResolvedValue({
+      fila: [],
+      minhasFuncoes: ['GESTOR_OBRA'],
+      assinaAlgumaFaixa: true,
+      esperandoOutros: 2,
+      papeisQueAssinam: ['Gestor de obra'], enxergaTudo: false, minhasDeVerdade: 0,
+    });
+
+    montar();
+
+    expect(await screen.findByText('Nada esperando por você')).toBeInTheDocument();
+    expect(screen.getByText(/Há 2 na fila/)).toBeInTheDocument();
   });
 
   it('API fora do ar: mostra o aviso e oferece tentar de novo', async () => {
@@ -139,7 +175,7 @@ describe('o resumo do topo', () => {
         solicitacao({ id: 'a2', dataDesejada: emDias(30) }),
         solicitacao({ id: 'a3', dataDesejada: null }),
       ],
-      minhasFuncoes: ['GESTOR_OBRA'],
+      minhasFuncoes: ['GESTOR_OBRA'], assinaAlgumaFaixa: true, esperandoOutros: 0, papeisQueAssinam: ['Gestor de obra'], enxergaTudo: false, minhasDeVerdade: 0,
     });
 
     montar();

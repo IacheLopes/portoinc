@@ -46,6 +46,19 @@ function Prazo({ data }: { data: string | null }) {
 export function FilaAprovacao() {
   const [fila, setFila] = useState<ItemDaFila[]>([]);
   const [minhasFuncoes, setMinhasFuncoes] = useState<string[]>([]);
+
+  // Por que a fila está vazia. Ver o comentário na rota: "nada
+  // esperando por você" é verdade para o gestor em dia, e engana o
+  // administrador, que nunca verá nada aqui.
+  const [assina, setAssina] = useState(true);
+  const [esperandoOutros, setEsperandoOutros] = useState(0);
+  const [papeisQueAssinam, setPapeisQueAssinam] = useState<string[]>([]);
+
+  // Quem dá suporte vê a fila do SISTEMA, e não só a sua. Cada linha
+  // precisa dizer de quem ela é, senão a tela promete uma ação que o
+  // servidor vai recusar.
+  const [enxergaTudo, setEnxergaTudo] = useState(false);
+  const [minhasDeVerdade, setMinhasDeVerdade] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -56,6 +69,11 @@ export function FilaAprovacao() {
       const r = await listarFilaAprovacao();
       setFila(r.fila);
       setMinhasFuncoes(r.minhasFuncoes);
+      setAssina(r.assinaAlgumaFaixa);
+      setEsperandoOutros(r.esperandoOutros);
+      setPapeisQueAssinam(r.papeisQueAssinam);
+      setEnxergaTudo(r.enxergaTudo);
+      setMinhasDeVerdade(r.minhasDeVerdade);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar a fila.');
     } finally {
@@ -86,22 +104,35 @@ export function FilaAprovacao() {
         <CabecalhoDePagina
           titulo="Aprovações"
           descricao={
-            <>
-              O que depende da <strong>sua</strong> assinatura agora. Você está aprovando
-            como{' '}
-            <strong>
-              {minhasFuncoes.map(nomeDaFuncao).join(' e ')}
-            </strong>
-            .
-            </>
+            enxergaTudo ? (
+              <>
+                A fila do <strong>sistema inteiro</strong> — você enxerga tudo porque dá
+                suporte. <strong>{minhasDeVerdade}</strong>{' '}
+                {minhasDeVerdade === 1 ? 'depende' : 'dependem'} da sua assinatura; o resto
+                está aqui só para consulta.
+              </>
+            ) : (
+              <>
+                O que depende da <strong>sua</strong> assinatura agora. Você está aprovando
+                como{' '}
+                <strong>{minhasFuncoes.map(nomeDaFuncao).join(' e ')}</strong>.
+              </>
+            )
           }
         />
 
         <div className="grade">
+          {/* Para quem dá suporte a fila traz linhas que não são dele:
+              o número tem de contar as SUAS, senão promete trabalho
+              que não existe. */}
           <Indicador
             titulo="Esperando você"
-            valor={String(fila.length)}
-            detalhe={fila.length === 1 ? 'solicitação' : 'solicitações'}
+            valor={String(enxergaTudo ? minhasDeVerdade : fila.length)}
+            detalhe={
+              enxergaTudo
+                ? 'de ' + fila.length + ' na fila do sistema'
+                : fila.length === 1 ? 'solicitação' : 'solicitações'
+            }
           />
           <Indicador
             titulo="Valor acumulado"
@@ -118,9 +149,29 @@ export function FilaAprovacao() {
 
       <section className="secao">
         {fila.length === 0 ? (
+          /* A fila vazia tem TRÊS motivos diferentes, e dizer só
+             "nada esperando" engana em dois deles.
+
+             O administrador nunca verá nada aqui: ter a tela é
+             permissão, assinar é estar numa faixa de alçada — e as
+             faixas citam Gestor de obra, Engenheiro e Fundador. Ele
+             lia "nada esperando" e entendia "o sistema está vazio",
+             com três solicitações paradas na fila. */
           <Vazio
-            titulo="Nada esperando por você"
-            descricao="Quando alguém enviar uma solicitação que precise da sua assinatura, ela aparece aqui."
+            titulo={assina ? 'Nada esperando por você' : 'Você não assina aprovações'}
+            descricao={
+              !assina
+                ? 'Aprovar depende de estar numa faixa de valor, e as faixas de hoje são de '
+                  + papeisQueAssinam.join(', ')
+                  + '. A sua função dá acesso a esta tela, mas não à assinatura'
+                  + (esperandoOutros > 0
+                    ? ' — há ' + esperandoOutros + ' esperando essas pessoas.'
+                    : '.')
+                : esperandoOutros > 0
+                  ? 'Nenhuma precisa da sua assinatura agora. Há ' + esperandoOutros
+                    + ' na fila, esperando outras pessoas ou já assinadas por você.'
+                  : 'Quando alguém enviar uma solicitação que precise da sua assinatura, ela aparece aqui.'
+            }
           />
         ) : (
           <Cartao semEspaco>
@@ -174,11 +225,20 @@ export function FilaAprovacao() {
                         )}
                       </td>
                       <td>
+                        {/* Linha que não é sua (só aparece para quem dá
+                            suporte): abre para OLHAR, não para assinar.
+                            O botão secundário e o texto dizem isso antes
+                            do clique — prometer "Analisar" e o servidor
+                            recusar depois seria pior. */}
                         <Link
-                          className="botao botao--principal botao--link-cheio"
+                          className={
+                            'botao botao--link-cheio '
+                            + (s.esperaMinhaAssinatura ? 'botao--principal' : 'botao--secundario')
+                          }
                           to={'/solicitacoes/' + s.id}
+                          title={s.motivoBloqueio ?? undefined}
                         >
-                          Analisar
+                          {s.esperaMinhaAssinatura ? 'Analisar' : 'Ver'}
                         </Link>
                       </td>
                     </tr>

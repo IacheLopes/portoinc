@@ -51,11 +51,26 @@ export async function rotasAprovacoes(app: FastifyInstance) {
     async (req) => {
       const minhasFuncoes = req.usuario!.funcoes;
 
+      // ----------------------------------------------------
+      //  Quem dá suporte precisa ENXERGAR o que não assina
+      //
+      //  Aprovar é autoridade: depende de estar numa faixa de
+      //  alçada. Mas o administrador é o porta-voz do suporte —
+      //  quando alguém relata "minha solicitação sumiu", ele tem
+      //  de conseguir OLHAR a fila e conferir.
+      //
+      //  São coisas diferentes e o sistema passa a tratá-las
+      //  assim: `solicitacoes.ver_todas` abre a fila inteira; a
+      //  assinatura continua valendo só para quem está na faixa,
+      //  e cada linha diz de quem ela é.
+      // ----------------------------------------------------
+      const enxergaTudo = req.usuario!.permissoes.includes('solicitacoes.supervisionar');
+
       const candidatas = await banco.solicitacao.findMany({
         where: {
           situacao: 'AGUARDANDO_APROVACAO',
           // O Postgres consegue filtrar direto pelo array.
-          funcoesExigidas: { hasSome: minhasFuncoes },
+          ...(enxergaTudo ? {} : { funcoesExigidas: { hasSome: minhasFuncoes } }),
         },
         include: {
           obra: { select: { id: true, codigo: true, nome: true } },
@@ -112,9 +127,59 @@ export async function rotasAprovacoes(app: FastifyInstance) {
         })
         // Quem já assinou, ou é autor, some da fila: ela mostra
         // apenas o que realmente depende de você agora.
-        .filter((s) => s.esperaMinhaAssinatura);
+        //
+        // Menos para quem enxerga tudo: ali a fila é a fila do
+        // SISTEMA, e cada linha carrega `esperaMinhaAssinatura` e
+        // `motivoBloqueio` para a tela dizer de quem é.
+        .filter((s) => enxergaTudo || s.esperaMinhaAssinatura);
 
-      return { fila, minhasFuncoes };
+      // ----------------------------------------------------
+      //  Por que a fila está vazia
+      //
+      //  "Nada esperando por você" é verdade para o gestor que
+      //  está em dia. Para o ADMINISTRADOR é enganoso: ele nunca
+      //  vai ver nada aqui, porque o papel dele não assina faixa
+      //  nenhuma — e a tela dava a entender que o sistema estava
+      //  vazio. Foi assim que o dono do sistema tropeçou nisto em
+      //  24/09/2026, e é o tipo de coisa que estraga uma
+      //  demonstração.
+      //
+      //  Estes dois números deixam a tela dizer QUAL é o caso.
+      // ----------------------------------------------------
+      // `minhasFuncoes` guarda o CÓDIGO da função (GESTOR_OBRA), e não
+      // o nome ("Gestor de obra"). A comparação é por código; o nome
+      // serve só para a tela escrever a frase.
+      const faixas = await banco.regraAlcada.findMany({
+        where: { ativa: true },
+        select: {
+          funcoes: { select: { funcao: { select: { codigo: true, nome: true } } } },
+        },
+      });
+
+      const papeisQueAssinam = [
+        ...new Set(faixas.flatMap((f) => f.funcoes.map((x) => x.funcao.nome))),
+      ];
+
+      const esperandoOutros = await banco.solicitacao.count({
+        where: { situacao: 'AGUARDANDO_APROVACAO' },
+      });
+
+      return {
+        fila,
+        minhasFuncoes,
+        /** Esta fila é a do sistema inteiro, e não só a sua? */
+        enxergaTudo,
+        /** Dentro da fila, quantas dependem de você agora. */
+        minhasDeVerdade: fila.filter((s) => s.esperaMinhaAssinatura).length,
+        /** Você é signatário de alguma faixa de alçada? */
+        assinaAlgumaFaixa: minhasFuncoes.some(
+          (codigo) => faixas.some((r) => r.funcoes.some((x) => x.funcao.codigo === codigo)),
+        ),
+        /** Quantas esperam aprovação no sistema inteiro, suas ou não. */
+        esperandoOutros,
+        /** Quem assina, para a tela poder dizer a quem pertence a fila. */
+        papeisQueAssinam,
+      };
     },
   );
 

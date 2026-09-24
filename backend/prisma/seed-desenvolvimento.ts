@@ -16,7 +16,13 @@ const banco = new PrismaClient();
 const SENHA_PADRAO = 'Porto@2026';
 
 /** Nomes reais citados na reunião: ajuda a testar pensando nas pessoas. */
-const PESSOAS: Array<{ nome: string; email: string; funcoes: string[] }> = [
+const PESSOAS: Array<{
+  nome: string;
+  email: string;
+  funcoes: string[];
+  /** Senha só desta conta. Sem isto, vale a SENHA_PADRAO. */
+  senha?: string;
+}> = [
   {
     nome: 'Administrador do Sistema',
     email: 'admin@portoinc.com.br',
@@ -53,6 +59,39 @@ const PESSOAS: Array<{ nome: string; email: string; funcoes: string[] }> = [
     email: 'engenheiro@portoinc.com.br',
     funcoes: ['ENGENHEIRO'],
   },
+
+  // ----------------------------------------------------------
+  //  A conta de desenvolvimento
+  //
+  //  Existe para ENXERGAR o sistema inteiro de uma vez, sem
+  //  trocar de conta a cada tela. Carrega as SETE funções, e não
+  //  só a de administrador — a diferença importa:
+  //
+  //    - "Administrador" dá acesso às TELAS;
+  //    - assinar aprovação depende de estar numa FAIXA DE ALÇADA,
+  //      e as faixas citam Gestor de obra, Engenheiro e Fundador.
+  //
+  //  Por isso o administrador via a fila de Aprovações vazia: ele
+  //  tem a tela, mas não é signatário de nada. Com as sete, o DEV
+  //  vê a fila cheia — que é o ponto de uma conta de diagnóstico.
+  //
+  //  NÃO vai para produção: este arquivo inteiro se recusa a rodar
+  //  quando NODE_ENV é 'production' (ver `principal()`).
+  // ----------------------------------------------------------
+  {
+    nome: 'DEV-Porto',
+    email: 'porto@dev.com',
+    senha: 'admin123',
+    funcoes: [
+      'ADMINISTRADOR',
+      'FUNDADOR',
+      'GESTOR_OBRA',
+      'ENGENHEIRO',
+      'COMPRADOR',
+      'SOLICITANTE',
+      'ALMOXARIFE',
+    ],
+  },
 ];
 
 async function principal() {
@@ -61,12 +100,15 @@ async function principal() {
     return;
   }
 
-  const senhaHash = await hash(SENHA_PADRAO, {
-    algorithm: Algorithm.Argon2id,
-    memoryCost: 19456,
-    timeCost: 2,
-    parallelism: 1,
-  });
+  const embaralhar = (senha: string) =>
+    hash(senha, {
+      algorithm: Algorithm.Argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+      parallelism: 1,
+    });
+
+  const senhaHash = await embaralhar(SENHA_PADRAO);
 
   const funcoes = await banco.funcao.findMany();
   const porCodigo = new Map(funcoes.map((f) => [f.codigo, f.id]));
@@ -90,7 +132,7 @@ async function principal() {
       data: {
         nome: pessoa.nome,
         email: pessoa.email,
-        senhaHash,
+        senhaHash: pessoa.senha ? await embaralhar(pessoa.senha) : senhaHash,
         ativo: true,
         // Em teste não forçamos troca: atrapalharia a validação.
         precisaTrocarSenha: false,
@@ -105,6 +147,7 @@ async function principal() {
   console.log('  [seed] Contas de teste: ' + criados + ' criadas, ' + existentes + ' já existiam.');
   if (criados > 0) {
     console.log('  [seed] Senha de todas: ' + SENHA_PADRAO);
+    console.log('  [seed] Menos a conta DEV (porto@dev.com), que tem senha própria.');
   }
   console.log('');
 }
