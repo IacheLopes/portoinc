@@ -12,6 +12,7 @@ import { spawn, execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { matarOrfaos } from './orfaos.mjs';
 import { fileURLToPath } from 'node:url';
 
 const EDGE = [
@@ -197,6 +198,9 @@ mkdirSync(SAIDA, { recursive: true });
 // Apagar falha quando o navegador da rodada passada ainda está vivo
 // segurando a pasta, e a régua morre antes de medir qualquer coisa.
 const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA + '-' + Date.now());
+
+// Faxina antes de abrir: medicao interrompida deixa navegador vivo.
+matarOrfaos();
 
 const edge = spawn(EDGE, [
   '--headless=new', '--remote-debugging-port=' + PORTA, '--no-first-run',

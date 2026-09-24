@@ -10,7 +10,6 @@
     "pdfs": "npm run tutorial && npm run guia-testes && npm run design",
     "auditoria": "node auditoria-ui.mjs ./auditoria 1440",
     "auditoria:celular": "node auditoria-ui.mjs ./auditoria-celular 420",
-    "auditoria:hover": "node auditoria-hover.mjs ./auditoria-hover 1440",
     "backup": "node backup.mjs",
     "restaurar": "node restaurar.mjs",
     "padrao": "node padrao.mjs",

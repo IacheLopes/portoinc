@@ -1,20 +1,59 @@
 // ============================================================
-//  Auditoria de hover
+//  APOSENTADA — NÃO USE. Está aqui como registro.
 //
-//  Para cada elemento clicável de cada tela: força o estado
-//  :hover pelo protocolo do navegador e compara o estilo antes
-//  e depois. Se nada muda, não há retorno visual.
+//  Esta régua nunca conseguiu medir hover de verdade. Foram
+//  TRÊS implementações, e a terceira foi a que provou por quê.
 //
-//  Confere também o contrário: coisa que NÃO é clicável não
-//  deve reagir ao mouse, e coisa clicável precisa de cursor de
-//  mão e de foco visível pelo teclado.
+//  1. `CSS.forcePseudoState` (Design 1)
+//     O atalho do DevTools. Instável neste Edge: no mesmo botão
+//     detectava a mudança numa execução e não na seguinte.
+//     Acusou 16 telas sem hover.
 //
-//   node hover.mjs <pasta> [largura]
+//  2. Mouse de verdade, ponto no centro (Design 1)
+//     Continuou dando falso positivo, no padrão "3 de 6 sem
+//     hover", tela após tela. A causa ficou como suspeita.
+//
+//  3. Mouse de verdade, com o ponto conferido (Design 8)
+//     A suspeita era certa: o centro da caixa pode cair em cima
+//     de um filho, de um vizinho, ou de nada. Conferir com
+//     `elementFromPoint` resolveu ESSA parte — e ela achou um
+//     defeito real, o foco invisível das opções de radio.
+//
+//     Mas aí entrou o controle ("prove que enxerga antes de
+//     acusar"), e ele revelou o problema de baixo:
+//
+//         controle: MUDOU | :hover casa: false | sob: a.menu__item
+//
+//     O ponteiro está sobre o elemento certo, o estilo muda —
+//     e o navegador NÃO considera o elemento :hover. O que a
+//     régua chamava de "hover detectado" era outra coisa
+//     mudando de estilo. O controle era, ele mesmo, um falso
+//     positivo.
+//
+//  ----------------------------------------------------------
+//  A PISTA, para quem tentar de novo
+//
+//  Numa sonda isolada o `:hover` CASA de verdade. A diferença
+//  medida entre as duas: a sonda usa
+//  `Emulation.setDeviceMetricsOverride`, e esta régua sobe o
+//  Edge só com `--window-size`. É o primeiro lugar para olhar.
+//
+//  ----------------------------------------------------------
+//  E POR QUE ELA NÃO FICOU LIGADA "POR VIA DAS DÚVIDAS"
+//
+//  Ferramenta que mente é pior que ferramenta que falta. Uma
+//  régua que diz "tudo certo" sobre algo que ela não mede
+//  ensina a confiar no silêncio dela.
+//
+//  Hover fica, então, como a única coisa deste sistema que NÃO
+//  é medida. Está escrito, e é melhor assim do que escondido
+//  atrás de um verde que não vale nada.
 // ============================================================
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { matarOrfaos } from './orfaos.mjs';
 
 const EDGE = [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
@@ -87,6 +126,9 @@ mkdirSync(SAIDA, { recursive: true });
 // Perfil NOVO a cada execucao: apagar o anterior falha quando o
 // navegador da rodada passada ainda esta vivo segurando a pasta.
 const PERFIL = join(tmpdir(), 'portoink-auditoria-' + PORTA + '-' + Date.now());
+
+// Faxina antes de abrir: medicao interrompida deixa navegador vivo.
+matarOrfaos();
 
 const edge = spawn(EDGE, [
   '--headless=new', '--remote-debugging-port=' + PORTA, '--no-first-run',
@@ -308,6 +350,10 @@ for (const [caminho, nome] of TELAS) {
       const r = el.getBoundingClientRect();
       if (r.width < 4 || r.height < 4) continue;
       if (el.disabled) continue;
+      // Forma dentro de SVG e geometria de grafico: fatia, barra,
+      // ponto. Ela nao recebe foco, e nao precisa — o mesmo dado
+      // esta na tabela so-para-leitor-de-tela ao lado do grafico.
+      if (el.ownerSVGElement) continue;
       vistos.add(el);
 
       const tipo = el.tagName + '|' + (el.className || '').toString().trim();
@@ -322,6 +368,80 @@ for (const [caminho, nome] of TELAS) {
 
   const achados = [];
 
+  // ----------------------------------------------------------
+  //  A PROVA DE CONTROLE
+  //
+  //  Antes de acusar alguém, a régua mede elementos que TÊM hover de
+  //  certeza — botões do sistema, que mudam de cor ao passar o mouse
+  //  por regra escrita no CSS.
+  //
+  //  Se ela não detectar a mudança em NENHUM deles, quem está
+  //  quebrado é a régua, e ela cala a boca em vez de acusar a tela.
+  //  Foi por não ter isto que ela acusou 16 telas de uma vez e
+  //  precisou ser aposentada no Design 1.
+  //
+  //  Testa VÁRIOS candidatos, e confere o ponto de cada um: o
+  //  primeiro controle testava um só, sem conferir se o mouse caía
+  //  em cima dele — e deu 21 telas "cegas" que não eram.
+  // ----------------------------------------------------------
+  const candidatosDeControle = JSON.parse(await js(`(() => {
+    const fora = [];
+
+    for (const el of document.querySelectorAll('.botao, .menu__item, .atalho')) {
+      if (fora.length >= 5) break;
+      // O item ativo do menu já vem com fundo: a mudança do hover
+      // nele é pequena demais para servir de controle.
+      if (el.classList.contains('menu__item--ativo')) continue;
+      if (el.disabled) continue;
+
+      const r = el.getBoundingClientRect();
+      if (r.width < 12 || r.height < 12) continue;
+      if (r.top < 0 || r.bottom > window.innerHeight) continue;
+
+      const x = Math.round(r.x + r.width / 2);
+      const y = Math.round(r.y + r.height / 2);
+
+      // O ponto tem que ACERTAR: sem isto o mouse vai para cima de
+      // outra coisa e o controle falha sem ter testado nada.
+      const quem = document.elementFromPoint(x, y);
+      if (!quem || !(quem === el || el.contains(quem))) continue;
+
+      el.setAttribute('data-controle', String(fora.length));
+      fora.push({ x, y, i: fora.length });
+    }
+
+    return JSON.stringify(fora);
+  })()`));
+
+  let enxerga = candidatosDeControle.length === 0;
+
+  for (const c of candidatosDeControle) {
+    const ler = () => js(
+      "(() => { const e = document.querySelector('[data-controle=\"" + c.i + "\"]');"
+      + ' if (!e) return "";'
+      + ' const s = getComputedStyle(e);'
+      + " return s.backgroundColor + '|' + s.borderColor + '|' + s.color + '|' + s.boxShadow; })()",
+    );
+
+    await pontaLonge();
+    const semMouse = await ler();
+
+    await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: c.x, y: c.y, buttons: 0 });
+    await dormir(320);
+    const comMouse = await ler();
+    await pontaLonge();
+
+    if (semMouse !== comMouse) { enxerga = true; break; }
+  }
+
+  await js("document.querySelectorAll('[data-controle]').forEach((e) => e.removeAttribute('data-controle'))");
+
+  if (!enxerga) {
+    console.log(nome.padEnd(28), 'REGUA CEGA NESTA TELA - nao acuso nada');
+    relatorio.push({ tela: nome, clicaveis: quantos, cega: true, achados: [] });
+    continue;
+  }
+
   for (let i = 0; i < quantos; i += 1) {
     const cru = await js(`(() => {
       const el = document.querySelector('[data-auditoria="${i}"]');
@@ -333,15 +453,41 @@ for (const [caminho, nome] of TELAS) {
         texto: (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 26),
         cursor: getComputedStyle(el).cursor,
         dentroDeClicavel: !!el.parentElement?.closest('button, a[href], [role=menuitem], [role=tab], label'),
-        x: Math.round(r.x + r.width / 2),
-        y: Math.round(r.y + r.height / 2),
+        ...(() => {
+          // O ponto precisa ACERTAR o elemento.
+          //
+          // Era o centro, e pronto. Só que o centro pode cair em cima
+          // de outra coisa — um filho que cobre, um vizinho por cima,
+          // ou nada, quando o elemento tem forma estranha. O mouse ia
+          // parar em outro lugar, o hover não aparecia, e a régua
+          // acusava "sem hover" num botão que tem hover.
+          //
+          // Era a suspeita nunca investigada quando ela foi
+          // aposentada, e era ela mesma.
+          const pontos = [
+            [r.x + r.width / 2, r.y + r.height / 2],
+            [r.x + r.width * 0.25, r.y + r.height / 2],
+            [r.x + r.width * 0.75, r.y + r.height / 2],
+            [r.x + r.width / 2, r.y + r.height * 0.25],
+          ];
+
+          for (const [px, py] of pontos) {
+            if (px < 0 || py < 0 || px > window.innerWidth || py > window.innerHeight) continue;
+            const quem = document.elementFromPoint(Math.round(px), Math.round(py));
+            if (quem && (quem === el || el.contains(quem))) {
+              return { x: Math.round(px), y: Math.round(py), acertou: true };
+            }
+          }
+
+          return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), acertou: false };
+        })(),
         naTela: r.top >= 0 && r.bottom <= window.innerHeight,
       });
     })()`);
 
     if (cru === 'null') continue;
 
-    const { nome: tag, texto, cursor, dentroDeClicavel, x, y, naTela } = JSON.parse(cru);
+    const { nome: tag, texto, cursor, dentroDeClicavel, x, y, naTela, acertou } = JSON.parse(cru);
 
     // Elemento clicável que está DENTRO de outro clicável herda o
     // hover do pai: não precisa ter o seu.
@@ -366,7 +512,7 @@ for (const [caminho, nome] of TELAS) {
     // --- Hover: com o ponteiro de verdade em cima ---
     let depois = antes;
 
-    if (naTela) {
+    if (naTela && acertou) {
       await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
       // A transição do sistema é de 150ms: esperar menos lê a cor no
       // meio do caminho.
@@ -377,6 +523,15 @@ for (const [caminho, nome] of TELAS) {
 
     const mudou = OLHAR.filter((k) => antes[k] !== depois[k]);
     const mudouFoco = comFoco ? OLHAR.filter((k) => antes[k] !== comFoco[k]) : [];
+
+    // Não consegui pôr o ponteiro em cima dele: outro elemento está
+    // na frente, no ponto testado. Aí não dá para afirmar NADA sobre
+    // o hover — e inventar um achado aqui foi o que aposentou esta
+    // régua da primeira vez.
+    if (naTela && !acertou) {
+      achados.push({ tipo: 'NAO_CONSEGUI_APONTAR', alvo: tag + ' "' + texto + '"', cursor });
+      continue;
+    }
 
     // Elemento fora da parte visível da janela não recebe o ponteiro:
     // não dá para afirmar nada sobre o hover dele.

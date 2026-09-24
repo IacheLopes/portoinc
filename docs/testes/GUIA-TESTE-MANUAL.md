@@ -1,4 +1,4 @@
-<!-- versao: 0.25.0 -->
+<!-- versao: 0.26.0 -->
 
 # 1. Como usar este guia
 
@@ -3831,6 +3831,24 @@ fornecedor com fornecedor.
 
 ---
 
+## CT-278 · O foco aparece nas opções de escolha
+
+1. Entre como **Almoxarife** (`neilma@portoinc.com.br`) e abra **Estoque**
+2. Clique em **Retirar** em qualquer material
+3. Sem usar o mouse, aperte **Tab** até chegar nas opções **Retirar / Entrada / Ajuste /**
+   **Transferência**
+
+**Esperado:** a opção em que você está ganha um **contorno azul visível** em volta da caixa
+inteira — não só um pontinho no radio.
+
+4. Use as setas do teclado para trocar de opção
+
+**Esperado:** o contorno acompanha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4214,8 +4232,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-275 | Os cartões de lista estão alinhados por dentro |  |
 | CT-276 | No celular, a tabela vira cartão |  |
 | CT-277 | Os números no celular |  |
+| CT-278 | O foco aparece nas opções de escolha |  |
 
-**Total: 277 casos** · Etapas cobertas: 0 a 12
+**Total: 278 casos** · Etapas cobertas: 0 a 12
 
 ---
 

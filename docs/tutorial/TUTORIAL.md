@@ -1,4 +1,4 @@
-<!-- versao: 0.25.0 -->
+<!-- versao: 0.26.0 -->
 
 # 1. Antes de começar
 

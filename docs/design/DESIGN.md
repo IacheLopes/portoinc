@@ -1,4 +1,4 @@
-<!-- versao: 0.25.0 -->
+<!-- versao: 0.26.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -1053,6 +1053,86 @@ propósito**; acusar que ele não cabe ali é acusar que ele está escondido.
 A régua passou a subir pelos pais procurando esse recorte. Ela olhava só o próprio elemento,
 e o `<th>` mede 32px mesmo dentro de um cabeçalho de 1px — a guarda só funciona subindo.
 
+## Design 8 — Fechamento
+
+### A régua de hover foi aposentada
+
+O plano desta etapa era conserta-la ou aposenta-la com o motivo escrito. Tentei consertar,
+cheguei perto, e o que apareceu no fim mandou aposentar.
+
+**A suspeita de 2026-09-23 era certa.** Ela mandava o ponteiro para o centro da caixa e
+media — mas o centro pode cair em cima de um filho que cobre, de um vizinho por cima, ou de
+nada. Conferir o ponto com `elementFromPoint` resolveu essa parte, e ela chegou a achar um
+defeito real (adiante).
+
+**Aí entrou o controle, e ele derrubou tudo.** A ideia era boa: antes de acusar alguém, a
+régua mede um botão que tem hover de certeza; se não detectar nem nele, cala a boca. Só que
+ao instrumentar o controle apareceu isto:
+
+```
+controle: MUDOU | :hover casa: false | sob: a.menu__item
+```
+
+O ponteiro está sobre o elemento certo. O estilo muda. E o navegador **não considera o**
+**elemento `:hover`**. O que a régua chamava de "hover detectado" era outra coisa mudando de
+estilo — provavelmente uma transição ainda correndo da tela anterior.
+
+**O controle era, ele mesmo, um falso positivo.** Oitava vez nesta obra que o defeito era a
+medição, e a única em que a ferramenta enganou até a própria salvaguarda.
+
+#### A pista que fica
+
+Numa sonda isolada o `:hover` **casa de verdade**. A diferença medida entre as duas: a sonda
+usa `Emulation.setDeviceMetricsOverride`, e a régua sobe o Edge só com `--window-size`. É o
+primeiro lugar para olhar, e está escrito no cabeçalho do arquivo aposentado.
+
+#### Por que ela não ficou ligada "por via das dúvidas"
+
+> Ferramenta que mente é pior que ferramenta que falta. Uma régua que diz "tudo certo" sobre
+> algo que ela não mede ensina a confiar no silêncio dela.
+
+O comando `npm run auditoria:hover` saiu. O arquivo virou
+`auditoria-hover.APOSENTADA.mjs`, com a história das três tentativas no cabeçalho.
+
+**Hover fica como a única coisa deste sistema que não é medida** — escrito, e não escondido
+atrás de um verde que não vale nada.
+
+### O defeito real que ela achou antes de cair
+
+Na única volta em que o conserto do ponto funcionou, ela achou algo que nenhuma outra régua
+pegaria:
+
+> **As opções de radio não têm foco visível.** O `<input>` de dentro recebe o anel do
+> navegador, que o `accent-color` encolhe até quase sumir. Quem navega por teclado pelas
+> quatro opções do Estoque — Retirar, Entrada, Ajuste, Transferência — não via onde estava.
+
+Corrigido com `.opcao:has(input:focus-visible)`. É o saldo positivo da etapa: a ferramenta
+não presta, mas uma volta dela pagou o próprio trabalho.
+### Os 47 navegadores
+
+Medido no meio desta etapa: **47 processos do Edge vivos ao mesmo tempo**. As réguas fecham
+o navegador direito quando terminam; o problema é quando elas NÃO terminam — execução
+interrompida, tempo esgotado, erro no meio.
+
+A máquina ficou tão ocupada que a régua seguinte não conseguiu nem fazer login, e ficou
+parada sem imprimir uma linha.
+
+A saída não é lembrar de fechar: é **limpar o que ficou antes de abrir o próximo**. Quem
+interrompe uma medição raramente está com cabeça de fazer faxina depois.
+
+### Os prints do tutorial
+
+O plano dizia "atualizar os prints do tutorial". Ao abrir, a verdade era outra: **o tutorial
+nunca teve print nenhum.** As 27 imagens em `docs/tutorial/imagens/` não eram referenciadas
+pelo markdown, nem pelo HTML, nem pelo PDF, nem por script nenhum — eram capturas que eu fiz
+para conferir telas durante a construção.
+
+Elas são todas de 21 e 22 de setembro, antes do Design 0. Ou seja: são o **antes**. Mudaram
+para `docs/design/antes/`, que é o nome que elas merecem, e viraram a Parte 3.1 deste
+documento.
+
+> Uma pasta chamada "imagens do tutorial" com 27 telas de um sistema que não existe mais é
+> pior que pasta nenhuma: quem abre acredita nela.
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -1078,16 +1158,118 @@ Vale registrar para não "consertar" o que não está quebrado:
   mais alto, mas eles são alinhados pela BASE, que é o que o olho usa
 - **Os cartões de KPI da mesma fileira têm a mesma altura**, nas duas larguras medidas
 
-## Por que a régua não pegou isso sozinha
+## O que a régua não pegava, e o que ela pega hoje
 
-Ela mede rolagem lateral, alvo pequeno, texto estourando a caixa, cartões de alturas
-diferentes e base de controles na mesma linha. Ela **não** media:
+Nenhum dos seis apontamentos foi encontrado pela régua. Ela media espaço e tamanho; nada
+do que o dono do sistema viu era espaço ou tamanho.
 
-- rolagem lateral no celular: ela media, mas comparava com a janela esticada, e a conta se
-  anulava sozinha. Corrigido no Design 2 — passou a comparar com a caixa de layout
-- seta de campo de escolha fora de lugar — é desenho do navegador, não do nosso CSS
-- grupo de botões com larguras irregulares
-- dica flutuante cobrindo conteúdo
+| Apontado | A régua não via porque | Hoje ela mede? |
+|---|---|---|
+| D1 seta do campo de escolha | era desenho do navegador, não do nosso CSS | não — virou regra de CSS, e o conferidor de código cuida |
+| D2 botões de larguras irregulares | ela não olhava grupos de botão | **sim** — conta botão principal visível |
+| D3 dica cobrindo o vizinho | era hover, que ela não conseguia ler | **sim** — a dica virou layout, e layout ela mede |
+| D4 campo largo demais | ela não comparava largura com conteúdo | não — virou degrau de componente |
+| D5 "transbordo no celular" | **não existia**: era a própria régua medindo errado | **sim** — agora pergunta se a página anda |
+| D6 dois botões principais | a regra estava no lugar errado, lendo código | **sim** — conta o que está na tela |
 
-Os três entram na régua junto com a etapa que os corrige. Assim o que foi apontado uma
-vez não volta.
+E, no caminho, ela ganhou o que ninguém tinha apontado: **contraste**, nos dois temas. Foi
+ela quem achou o texto de 1,66:1 no cabeçalho e o `<a>` sem regra nenhuma.
+
+---
+
+# Parte 3.1 — Antes e depois
+
+As imagens de "antes" são capturas reais de 21 e 22 de setembro de 2026, versão 0.9.0 —
+antes do Design 0. Elas estavam soltas numa pasta do tutorial, sem nada apontando para elas;
+agora estão onde fazem sentido.
+
+## A tela inicial
+
+**Antes** — tema escuro forçado, sem migalhas, sem caminho de volta, nenhum número, e o
+aviso de obra ocupando o lugar mais valioso da tela:
+
+![A tela inicial antes do design](antes/35-inicio.png)
+
+**Depois** — tema claro por padrão, caminho e Voltar no topo, e a tela respondendo "o que
+precisa de você agora" antes de oferecer atalho nenhum:
+
+![A tela inicial depois do design](depois/inicio.png)
+
+## Pedidos
+
+**Antes:**
+
+![A lista de pedidos antes](antes/27-pedidos.png)
+
+**Depois** — cabeçalho padrão, um botão principal só, e o menu "⋮" onde antes havia quatro
+botões disputando a linha:
+
+![A lista de pedidos depois](depois/pedidos.png)
+
+## O celular
+
+**Antes** — a tabela rolava de lado, e o telefone mostrava quatro das oito colunas:
+
+![O financeiro no celular, antes](antes/43-financeiro-celular.png)
+
+**Depois** — cada linha é um cartão, com o nome da coluna acima de cada valor. Nenhum campo
+escondido:
+
+![Pedidos no celular, depois](depois/pedidos-celular.png)
+
+---
+
+# Parte 4 — As oito vezes em que o defeito era a medição
+
+É a lição mais cara desta obra, e ela se repetiu **oito vezes** em nove etapas. Vale estar
+escrita junta, porque separada cada uma parece azar.
+
+| # | Onde | A régua dizia | A verdade |
+|---|---|---|---|
+| 1 | Design 1 | 16 telas sem hover | `forcePseudoState` instável neste Edge |
+| 2 | Design 1 | "3 de 6 sem hover", tela após tela | o ponteiro caía em cima de outro elemento |
+| 3 | Design 2 | tela sem título em telas com título | media o "Carregando" |
+| 4 | Design 2 | foco não voltava ao botão | `.click()` não move o foco; mouse de verdade move |
+| 5 | Design 3 | 20 telas sem contraste no escuro | fotografava no meio da animação de 160ms |
+| 6 | Design 4 | a dica não estava visível | `pointer-events: none` esconde do `elementFromPoint` |
+| 7 | Design 7 | **16 telas transbordando no celular** | a página não andava um pixel |
+| 8 | Design 8 | a régua de hover "enxergava" | `:hover` nunca casava — o controle era falso positivo |
+
+### O padrão
+
+Todas têm a mesma forma: **a ferramenta acusou muita coisa de uma vez.** Sistema não
+apodrece de uma hora para outra; ferramenta quebra de uma hora para outra.
+
+A sétima foi a mais cara. A etapa inteira do celular estava planejada em cima de um número
+que não descrevia nada: `scrollWidth` de 830px numa página que não desliza. Se eu tivesse
+acreditado, teria reescrito 16 telas para consertar o que não estava quebrado — e o defeito
+de verdade (quatro de oito colunas escondidas) teria continuado lá.
+
+### O que passou a ser obrigatório
+
+1. **A ferramenta prova que mede o que diz medir, antes de acusar.** A régua de contraste
+   confere se a largura pedida foi aplicada; a de hover mede um botão que tem hover de
+   certeza e se cala quando não enxerga nem esse
+2. **Quando não dá para medir, ela diz isso** — `NAO_CONSEGUI_APONTAR`, `NAO CARREGOU`,
+   "régua cega nesta tela". Nunca inventa um achado no lugar
+3. **A pergunta tem que ser a da pessoa.** Não "quanto mede o `scrollWidth`", e sim "a tela
+   desliza quando eu empurro". Não "o texto cabe na caixa", e sim "o texto está escondido
+   de propósito?"
+4. **Número bonito merece a mesma desconfiança que número feio.** "Sem achados" nas 34
+   telas foi, duas vezes, sinal de régua quebrada
+
+### E duas vezes o defeito era a REGRA, não a medição
+
+Parente próximo, e vale junto:
+
+- **"Mais de um botão principal"** lia o código e contava o botão da página, o do formulário
+  e o do modal como três. Acusava 13 telas; medindo na tela, **uma**. A dívida ficou parada
+  meses porque não havia o que consertar
+- **"Espaçamento fora da escala"** acusava `gap: 1px` — o fio entre barras empilhadas. A
+  escala começa em 4px; abaixo disso não existe valor dela para usar
+
+E o caso mais desconfortável: a regra de cor solta acusava **o próprio comentário** que
+explicava uma correção anterior.
+
+> Regra que acusa o que não dá para consertar não protege nada: ensina a ignorar o
+> conferidor. E regra que pune quem documenta ensina a não documentar.

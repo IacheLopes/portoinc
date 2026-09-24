@@ -451,6 +451,19 @@
   cursor: pointer;
 }
 
+/* Foco visivel na opcao inteira.
+
+   O radio de dentro recebe o anel do navegador, que o
+   `accent-color` encolhe ate quase sumir. Quem navega por
+   teclado pelas quatro opcoes do Estoque nao via onde estava.
+
+   Achado pela regua de hover, no primeiro dia em que ela voltou
+   a funcionar — ver Design 8. */
+.opcao:has(input:focus-visible) {
+  outline: 2px solid var(--azul-600);
+  outline-offset: 2px;
+  border-color: var(--azul-600);
+}
 .opcao:hover { background: var(--fundo-suave); }
 .opcao:has(input:checked) { border-color: var(--azul-600); background: var(--info-leve); }
 .opcao input { width: 18px; height: 18px; accent-color: var(--azul-600); cursor: pointer; }
