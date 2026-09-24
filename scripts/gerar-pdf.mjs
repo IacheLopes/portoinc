@@ -41,6 +41,15 @@ const DOCUMENTOS = {
     subtitulo: 'Porto Inc. — Compras e Almoxarifado',
   },
 
+  navegacao: {
+    entrada: join(RAIZ, 'docs', 'navegacao', 'GUIA-NAVEGACAO.md'),
+    saida: join(RAIZ, 'docs', 'navegacao', 'Guia-Navegacao-PortoInc.pdf'),
+    titulo: 'Guia Prático de Navegação',
+    subtitulo: 'Porto Inc. — onde clicar e para que serve',
+    aviso:
+      'Guia curto, para aprender a mexer e para apresentar. O detalhe de cada campo está no <strong>Manual do Sistema</strong>.',
+  },
+
   'guia-testes': {
     entrada: join(RAIZ, 'docs', 'testes', 'GUIA-TESTE-MANUAL.md'),
     saida: join(RAIZ, 'docs', 'testes', 'Guia-Teste-Manual-PortoInc.pdf'),
