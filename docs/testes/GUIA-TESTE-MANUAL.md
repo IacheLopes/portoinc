@@ -1,4 +1,4 @@
-<!-- versao: 0.26.0 -->
+<!-- versao: 0.28.3 -->
 
 # 1. Como usar este guia
 
@@ -3849,6 +3849,157 @@ inteira — não só um pontinho no radio.
 
 ---
 
+## CT-279 · Os ícones são desenhos, não emojis
+
+1. Entre como **Administrador** e olhe o **menu da esquerda**
+2. Olhe os ícones ao lado de Início, Solicitações, Cotações, Cadastros, Usuários
+3. Role a tela de **Início** até "Ir para" e olhe os ícones dos cartões
+
+**Esperado:** todos são desenhos de **linha, na mesma cor do texto ao lado** — cinza no
+item normal, azul no item ativo. Nenhum é colorido, nenhum parece uma figurinha.
+
+**Confira também:** abra a mesma tela **no celular**. Os ícones têm de ser os mesmos.
+Emoji muda de desenho entre Windows, iPhone e Android; desenho de linha não muda.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-280 · O filtro de período do fluxo de caixa
+
+**Conta:** andre@portoinc.com.br
+
+1. Abra **Financeiro** e olhe o gráfico **Fluxo de caixa**
+2. Confira que o mês atual está **no meio** do gráfico, com faixa azul atrás
+3. Clique na seta **‹** uma vez
+
+**Esperado:** anda **um** mês só, não seis. O nome no campo do meio muda junto, e
+aparece o botão **Hoje** (que antes não existia).
+
+4. Clique em **Hoje**
+
+**Esperado:** volta ao mês atual e o botão **Hoje** some.
+
+5. Clique no campo com o nome do mês
+
+**Esperado:** abre o calendário do seu aparelho ou navegador. Escolha um mês bem
+antigo, como janeiro de 2025: o gráfico salta direto para lá, com janeiro no meio.
+
+> Com os dados de teste você vai ver colunas vazias em quase todo período. Isso é
+> esperado: só existem contas entre julho e dezembro de 2026.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-281 · Não dá para avançar para o futuro
+
+**Conta:** andre@portoinc.com.br
+
+1. Abra **Financeiro**, sem mexer em nada ainda
+2. Olhe a seta **›** do gráfico de fluxo
+
+**Esperado:** ela está **apagada e não clica**. Você já está no mês atual, e o mês que
+vem ainda não aconteceu.
+
+3. Clique em **‹** duas vezes
+
+**Esperado:** agora a seta **›** liga.
+
+4. Clique em **›** até voltar ao mês atual
+
+**Esperado:** ao chegar em hoje, ela apaga de novo — não passa disso.
+
+5. Abra o calendário do campo e tente escolher um mês futuro
+
+**Esperado:** o próprio calendário não deixa escolher mês depois do atual.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-282 · O vencido continua vencido em qualquer período
+
+**Conta:** andre@portoinc.com.br
+
+1. Abra **Financeiro** e anote a cor das colunas do gráfico de fluxo
+2. Volte alguns meses com a seta **‹**
+3. Olhe de novo a coluna de uma parcela que está atrasada
+
+**Esperado:** ela continua **vermelha**. Mudar o período muda **quais meses aparecem**,
+não o que está vencido.
+
+> É a regra mais importante deste filtro. Quem decide o que está vencido é **hoje**. Se
+> o vermelho virasse amarelo ao olhar o passado, o gráfico estaria mentindo sobre a
+> situação atual da empresa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-283 · O gráfico no celular mostra o mês de três em três
+
+**Conta:** andre@portoinc.com.br · **precisa de celular ou F12 em modo celular**
+
+1. Abra **Financeiro** num telefone, ou com a tela em 393px de largura
+2. Olhe os nomes dos meses embaixo do gráfico de fluxo
+
+**Esperado:** aparecem **quatro** nomes, espaçados (algo como jun/26, set/26, dez/26,
+mar/27) — e não doze nomes grudados uns nos outros. As **doze barras** continuam lá.
+
+3. Confira que o **mês atual** aparece com o nome escrito, mesmo que não caia na conta
+   de três em três
+4. **Toque** numa barra sem nome
+
+**Esperado:** aparece uma caixa com o mês, os valores e a situação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-284 · O zoom só aumenta
+
+**Precisa de celular de verdade.**
+
+1. Abra qualquer tela no telefone
+2. Com dois dedos, **aproxime** (abra os dedos)
+
+**Esperado:** a página aumenta normalmente. Você consegue ler um número pequeno.
+
+3. Com dois dedos, **afaste** (feche os dedos) o máximo que der
+
+**Esperado:** a página volta ao tamanho da tela e **para ali**. Ela não encolhe além
+disso, e **não sobra faixa branca** ao lado do conteúdo.
+
+> Se sobrar faixa branca, avise: quer dizer que alguma coisa da página está mais larga
+> que a tela, mesmo sem aparecer.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-285 · Nenhuma tela desliza para o lado
+
+**Precisa de celular, ou F12 em 393px.**
+
+Passe por estas telas, e em cada uma **arraste a página para a esquerda** com o dedo:
+
+1. **Financeiro**
+2. **Relatórios** → aba Economia
+3. **Relatórios** → aba Tempos
+4. **Relatórios** → aba Consumo
+5. **Locação**
+6. **Pedidos**
+
+**Esperado:** nenhuma delas anda para o lado. A página só rola para cima e para baixo.
+
+> As quatro primeiras tinham esse defeito e foram corrigidas em 24/09/2026. A causa era
+> uma tabela invisível, que existe só para leitor de tela e estava mais larga que a
+> tela. Vale conferir de vez em quando.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4233,8 +4384,15 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-276 | No celular, a tabela vira cartão |  |
 | CT-277 | Os números no celular |  |
 | CT-278 | O foco aparece nas opções de escolha |  |
+| CT-279 | Os ícones são desenhos, não emojis |  |
+| CT-280 | O filtro de período do fluxo de caixa |  |
+| CT-281 | Não dá para avançar para o futuro |  |
+| CT-282 | O vencido continua vencido em qualquer período |  |
+| CT-283 | O gráfico no celular, de três em três |  |
+| CT-284 | O zoom só aumenta |  |
+| CT-285 | Nenhuma tela desliza para o lado |  |
 
-**Total: 278 casos** · Etapas cobertas: 0 a 12
+**Total: 285 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 
 ---
 

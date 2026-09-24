@@ -1,4 +1,4 @@
-<!-- versao: 0.26.0 -->
+<!-- versao: 0.28.3 -->
 
 # Design do sistema — Porto Inc.
 
@@ -82,6 +82,29 @@ saber explicar por quê.
 
 ## 1.4 Tipografia
 
+**A letra: IBM Plex Sans.**
+
+Até a Revisão 1 a fonte era `Segoe UI, system-ui` — ou seja, a que vem de graça no
+Windows. Nunca foi escolhida; foi herdada.
+
+Plex Sans foi desenhada para contexto técnico: numeral claro, `1`/`l`/`I` que não se
+confundem, altura-x grande. Este sistema é lido de relance e muito em número — R$,
+quantidade, prazo — e no celular do Gilson dentro da obra, com sol na tela.
+
+| | |
+|---|---|
+| Arquivo | `frontend/public/fontes/plex-sans-latin.woff2` |
+| Peso | 45 KB, uma requisição |
+| Subconjunto | `latin` — cobre todo o português (ç, ã, õ, ê) |
+| Variável | 400 a 700 num arquivo só |
+| Hospedagem | nossa. Obra tem sinal ruim; nada de servidor de terceiro |
+
+`font-display: swap`: o texto aparece na hora com a fonte do sistema e troca quando a
+nossa chega. Ninguém olha para tela em branco.
+
+A pilha de reserva (`'Segoe UI', system-ui, -apple-system, sans-serif`) continua lá para
+o caso de o arquivo não carregar.
+
 | Token | Valor | Para quê |
 |---|---|---|
 | `--txt-xs` | 12px | Rótulo de coluna, legenda |
@@ -103,7 +126,12 @@ perder a volta ao trocar de linha.
 
 - Um `<h1>` por tela, sempre. É por ele que o leitor de tela anuncia onde a pessoa chegou
 - Nunca pular nível — de `h1` para `h3` deixa buraco na estrutura
-- Maiúsculas só em rótulo de coluna e título de cartão, nunca em texto corrido
+- **Nenhuma maiúscula de estilo.** Quem marca um rótulo é o **peso** e a **cor**, não a
+  caixa. Até a Revisão 1 havia seis lugares com `text-transform: uppercase` — cabeçalho
+  de tabela, rótulo de indicador, grupo do menu. Saíram todos, por dois motivos: é o
+  quinto sinal de "página gerada por IA" na lista da skill `frontend-design`, e custa
+  largura — "EQUIPAMENTO SEM VOLTAR" ocupa ~15% a mais que "Equipamento sem voltar", e
+  num iPhone de 393px isso era uma linha inteira a mais por cartão
 
 **Números:** dígitos de largura fixa (`font-variant-numeric: tabular-nums`) em tabela e
 em KPI. Sem isso a coluna dança a cada atualização.
@@ -187,7 +215,80 @@ Quando o olho vê três botões "principais", nenhum é principal.
 - O fundo não rola atrás
 - No celular ocupa a tela inteira
 
-## 1.10 O conferidor de padrão
+## 1.10 Ícone
+
+Todo ícone do sistema vem de `frontend/src/componentes/Icone.tsx`: 33 traçados em
+24×24, `fill: none`, `stroke: currentColor`, traço 1,7. Um arquivo, sem dependência.
+
+```tsx
+<Icone nome="alerta" />
+<Icone nome="pasta" className="menu__icone" />
+```
+
+**Por que não emoji.** Até a Revisão 1 havia **105 emojis** fazendo papel de ícone em 32
+arquivos. Quatro problemas, todos medidos:
+
+| | |
+|---|---|
+| Desenho | 📁 no Windows não é o mesmo do iPhone nem do Android |
+| Cor e peso | não obedecem; fica colorido no meio de texto cinza, some em botão escuro |
+| Leitor de tela | anuncia "emoji de pasta de arquivos" no meio da frase |
+| Alinhamento | não senta na linha de base do texto |
+
+**Tamanho em `em`**, não em pixel: o ícone acompanha a letra ao lado dele. Por isso as
+classes que já diziam `font-size` continuam mandando no tamanho.
+
+**O ícone é sempre decorativo** (`aria-hidden`). Quem carrega o significado é o texto ao
+lado. Ícone sozinho num botão exige `aria-label` **no botão**.
+
+## 1.11 Hierarquia de borda e sombra
+
+**Borda contém. Sombra levanta.**
+
+Até a Revisão 1 todo cartão tinha a mesma sombra macia. Sombra que aparece em tudo não
+informa nada — vira textura. É o quarto sinal da lista da skill: *"content chopped into
+identical rounded cards, the same soft grey shadow under each"*.
+
+- **Cartão parado:** só borda. Ele guarda conteúdo.
+- **Cartão que se clica:** ganha sombra ao passar o mouse **e ao receber foco de
+  teclado** — quando ele de fato se oferece.
+
+## 1.12 O pente-fino
+
+```
+cd scripts
+npm run pente-fino
+```
+
+Acha **classe** de defeito lendo o CSS e o TSX, em **0,14 segundo, sem navegador**.
+
+Nasceu de uma reclamação justa do cliente: o que deixava o trabalho lento nunca foi a
+régua de telas — era rodá-la como **laço** de correção, dezenas de vezes por etapa, 25s
+cada. E o defeito que motivou o script (`.celula-texto { max-width }` prendendo a célula
+dentro do modo cartão) foi achado **lendo CSS**, não medindo.
+
+A divisão de trabalho que ficou:
+
+| Ferramenta | O que faz | Custo |
+|---|---|---|
+| `pente-fino` | acha classe de defeito, lendo | 0,14s |
+| `padrao` | as 7 regras do padrão, lendo | ~0s |
+| `auditoria-ui` | confirma **uma vez**, no fim | ~25s por largura |
+
+O navegador serve para **ver**, não para acusar.
+
+**As regras de hoje:**
+
+| Regra | O que cobra |
+|---|---|
+| `CELULA_PRESA_NO_CARTAO` | teto de largura em célula sem escapar do modo cartão |
+| `COR_DE_LINHA_SEM_MODO_CARTAO` | `.linha-x > *` pintando célula sem repintar o cartão |
+| `ESCONDER_TABELA_PELA_CLASSE` | `<table>` com a classe de esconder — não obedece `width: 1px` |
+| `GRADE_DE_COLUNA_FIXA` | `repeat(N, ...)` que não cede |
+| `ROTULO_EM_MAIUSCULA` | `text-transform: uppercase` |
+| `EMOJI_COMO_ICONE` | emoji fazendo papel de ícone |
+
+## 1.13 O conferidor de padrão
 
 ```
 cd scripts
@@ -1135,6 +1236,221 @@ documento.
 > pior que pasta nenhuma: quem abre acredita nela.
 ---
 
+## Revisão 1 — 24/09/2026: o cliente com o telefone na mão
+
+Nove etapas de design fecharam com a régua dizendo **34/34 telas, zero achados**. No
+mesmo dia o dono do sistema abriu o iPhone dele e fotografou três telas feias.
+
+As três. E a régua estava certa: nenhuma delas transborda, nenhuma rola de lado, o
+contraste passa em todas.
+
+> **Ela mede transbordo, contraste e alvo de dedo. Não mede feiúra, nem espaço
+> desperdiçado, nem cartão quebrado.** Verde dela nunca foi prova de que a tela
+> está boa.
+
+Esta etapa nasceu dessa lição, e trabalhou com a skill `frontend-design` da Anthropic
+como segunda opinião sobre estética.
+
+### O que a skill cobrou, com razão
+
+Ela lista cinco "caras de design gerado por IA". O sistema acertava **duas em cheio**:
+
+| Sinal | O que o código dizia |
+|---|---|
+| **#4** — kit de cartão SaaS: um raio e a mesma sombra em tudo | `.cartao` usava `--raio-xl` e `--sombra-1`, uniforme. Havia 5 raios e 2 sombras nos tokens, e a hierarquia não usava nenhum |
+| **#5** — eyebrow ALL-CAPS espaçado acima de todo rótulo | 6 ocorrências de `text-transform: uppercase` + `letter-spacing` |
+
+E uma terceira, que ela cobra direto: *"choose your typefaces deliberately, not the
+default families you would reach for on any other project"*. A fonte era `Segoe UI` —
+a de fábrica do Windows.
+
+As três correções estão na Parte 1: §1.4 (a letra), §1.10 (ícone), §1.11 (borda e
+sombra).
+
+### Os 105 emojis
+
+Trinta e três desenhos traçados substituíram 105 emojis em 32 arquivos. O porquê está
+em §1.10; aqui fica o número: **105 → 0**. Os dois que sobram no código estão dentro do
+comentário que explica por que emoji não serve.
+
+### Os três defeitos fotografados
+
+**1. O cartão de locação rasgado ao meio.** Uma regra de uma linha:
+
+```css
+.celula-texto { max-width: 260px; }   /* valia em TODA largura */
+```
+
+Ela servia para estreitar uma **coluna** de tabela. Mas abaixo de 640px não existe mais
+coluna — a linha virou cartão. A regra sobreviveu e prendia a célula a 260px dentro de
+um cartão de ~345: **75%**, com o fundo da linha vencida parando no meio e um vão
+branco do lado.
+
+Na primeira passada consertei só a regra de dentro do `@media` e não vi que existia uma
+regra base sem media query nenhuma. O cartão continuou rasgado, só que em 75% em vez de
+53%. Foi o `pente-fino` que passou a pegar as duas.
+
+**2. O cartão urgente órfão na tela inicial.** `.grade` forçava duas colunas: ~165px
+por cartão num iPhone 15, título em duas linhas, frase de contexto em quatro, e com
+três cartões o terceiro ficava sozinho ocupando meia tela. Nasceu a `.grade--destaque`:
+o que cobra ação ocupa a linha inteira. **A largura virou hierarquia.**
+
+**3. A tela de Administração.** Não tinha defeito. Conferido olhando a captura.
+
+### A cor da situação, que a régua também não pegava
+
+Segunda rodada de fotos, mesmo dia:
+
+```css
+.linha-vencida > * { background: var(--erro-leve); }
+```
+
+Pintar `> *` é o certo **enquanto a linha é linha**: a célula tem fundo próprio e
+cobriria o do `<tr>`. No celular a linha **vira** o cartão, e as células ficam recuadas
+pelo padding dele — a cor virava retângulos soltos, com moldura branca em volta e um
+vão embaixo do título.
+
+Valia para as três: `.linha-destacada`, `.linha-atencao`, `.linha-vencida`. No modo
+cartão a cor voltou para o `<tr>`, a célula ficou transparente e a borda passou a
+acompanhar.
+
+### O zoom, e o que ele destapou
+
+O cliente reclamou de conseguir **afastar** o zoom no celular e sobrar faixa branca ao
+lado. A correção é uma linha:
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+```
+
+Sem `maximum-scale` e sem `user-scalable=no`, de propósito: **quem precisa aumentar
+para ler tem de conseguir.** Bloquear isso é das piores faltas de acessibilidade que
+uma tela pode ter.
+
+Mas o interessante veio depois. Enquanto a página podia encolher, o navegador
+disfarçava um defeito antigo. Proibido o encolhimento, **quatro telas passaram a rolar
+de lado** — Financeiro (181px) e as três abas de Relatórios (52 a 65px).
+
+O culpado:
+
+```tsx
+<table className="apenas-leitor-tela">   // a tabela acessível dos gráficos
+```
+
+A técnica de esconder encolhe a caixa para 1px e recorta o resto. **Num `<table>` não
+funciona**: a largura mínima do conteúdo vence o `width: 1px`. A tabela ficava com a
+largura real — invisível, e empurrando a página. Medido: 574px numa tela de 393.
+
+A classe passou para um `<div>` em volta, que obedece o 1px e recorta a tabela de
+dentro. Financeiro voltou a 393 exatos.
+
+> **A reclamação do cliente era o sintoma de um defeito que eu tinha visto e não sabia
+> nomear.** Eu havia anotado "574px inexplicados" num commit anterior.
+
+### O filtro de período do fluxo de caixa
+
+Pedido do cliente: poder olhar um mês que já saiu da janela. Entrou só no gráfico —
+indicadores, rosca e rankings continuam falando de hoje.
+
+O servidor já estava pronto: `montarFluxo` recebia a janela por parâmetro. O que
+faltava era separar duas coisas que moravam no mesmo argumento:
+
+- **`referencia`** decide QUAIS meses aparecem
+- **`hoje`** decide o que é vencido e o que ainda vai vencer
+
+Juntas, olhar dezembro de 2025 faria toda parcela em aberto parecer "a vencer" —
+porque naquele mês ela ainda estava. **O gráfico mentiria sobre o presente para poder
+mostrar o passado.** Há teste cobrando exatamente isso.
+
+Três acertos vieram de reclamação do cliente, e os três valem como regra geral:
+
+| Era | Ficou | Por quê |
+|---|---|---|
+| seta pulava 6 meses | anda **1** | seis é o tamanho de um salto, não de um passo; para saltar existe o seletor |
+| dava para avançar ao futuro | trava em **hoje** | o mês que vem não aconteceu: só mostraria coluna vazia e pareceria dado perdido |
+| janela 3 antes / 8 depois | **5 antes / 6 depois** | a referência era a 4ª de 12, encostada à esquerda; agora é a 6ª — no meio |
+
+A trava do futuro está em **três camadas**, porque tela é conforto e regra é servidor:
+a seta desligada, o `max` do `<input type="month">` fechando o calendário do sistema, e
+a rota recusando com 400.
+
+E a prova de integração que cobria a janela **já se chamava** *"o fluxo tem o mês de
+hoje no meio da janela"* e conferia o índice 3. O nome sempre esteve certo; o código é
+que não estava.
+
+### O gráfico no celular
+
+Doze meses em ~330px dão 27px por coluna, e "jun/26" precisa de ~40. Os rótulos viravam
+uma tira só — `jun/26jul/26ago/26set/26` — com o último cortado no meio.
+
+O rótulo passou a sair de **três em três**: quatro rótulos com ~80px cada. `visibility`
+e não `display`, para a coluna continuar ocupando o lugar dela e as barras não se
+desalinharem dos rótulos que ficaram. **O mês de hoje aparece sempre**, mesmo fora do
+ritmo — é a âncora de leitura.
+
+### O que esta etapa deixou nas ferramentas
+
+| Ferramenta | Ganhou |
+|---|---|
+| `pente-fino` | o script inteiro — ver §1.12 |
+| régua | `MAIS_LARGO_QUE_A_TELA`: elemento passa da tela **sem a página rolar**. O Design 7 tirou a comparação com `scrollWidth` porque acusava 16 telas sadias; a lição era descartar o *scrollWidth*, não a pergunta |
+| régua | nomeia os elementos mais largos mesmo quando todos estão dentro de caixa que recorta. Antes dizia "há defeito" sem dizer onde |
+| régua | `prefers-reduced-motion: reduce` emulado — ver Parte 4, caso 10 |
+| régua | `<input>`, `<textarea>` e `<select>` fora da regra de texto estourando — ver Parte 4, caso 9 |
+
+### As telas, antes e depois
+
+Todas as quatro em **393px** — a largura do iPhone 14 Pro, que é o aparelho de
+referência do projeto. O "antes" é a captura da manhã de 24/09/2026, versão 0.26.0.
+
+#### A tela inicial
+
+**Antes** — os três cartões de "O que precisa de você" em duas colunas de ~165px:
+título quebrado em duas linhas, frase em quatro, e o terceiro sozinho ocupando meia
+tela. Os atalhos com emoji de estilos diferentes, uns achatados, outros coloridos:
+
+![A tela inicial antes da revisão](antes-mobile/inicio.png)
+
+**Depois** — cada cartão urgente na linha inteira, rótulos em caixa normal, e os
+atalhos com ícones traçados, todos na cor do texto:
+
+![A tela inicial depois da revisão](depois-mobile/inicio.png)
+
+#### Locação
+
+**Antes** — o contrato atrasado com a cor da situação em retângulos soltos, moldura
+branca em volta e um vão embaixo do título. Foi esta a foto que o dono do sistema
+mandou:
+
+![Locação antes da revisão](antes-mobile/locacao.png)
+
+**Depois** — a cor pinta o cartão inteiro, com a borda acompanhando:
+
+![Locação depois da revisão](depois-mobile/locacao.png)
+
+#### Pedidos e Detalhe da obra
+
+As duas mudaram sem ter defeito apontado: é o efeito da letra, dos ícones e do fim das
+maiúsculas.
+
+| Antes | Depois |
+|---|---|
+| ![Pedidos antes](antes-mobile/pedidos.png) | ![Pedidos depois](depois-mobile/pedidos.png) |
+| ![Detalhe da obra antes](antes-mobile/cadastros-obra-detalhe.png) | ![Detalhe da obra depois](depois-mobile/cadastros-obra-detalhe.png) |
+
+### O saldo
+
+| | Antes da revisão | Depois |
+|---|---|---|
+| Emoji como ícone | 105 | **0** |
+| Rótulo em maiúscula | 6 | **0** |
+| Célula presa no modo cartão | 2 | **0** |
+| Cor de linha sem modo cartão | 3 | **0** |
+| `<table>` escondida pela classe | 2 | **0** |
+| Telas rolando de lado a 393px | 4 | **0** |
+| Fonte escolhida | não | **sim** |
+
+---
 # Parte 3 — A lista de desalinhamentos
 
 Apontados pelo dono do sistema em 2026-09-23, olhando telas de verdade. Cada um tem
@@ -1183,6 +1499,15 @@ As imagens de "antes" são capturas reais de 21 e 22 de setembro de 2026, versã
 antes do Design 0. Elas estavam soltas numa pasta do tutorial, sem nada apontando para elas;
 agora estão onde fazem sentido.
 
+> **Sobre a pasta `antes/`.** Ela guarda as **27** capturas daquele dia, e este capítulo
+> mostra três. As outras 24 ficam como **arquivo**, não como material solto: são o único
+> registro visual de como o sistema era antes do design, e um dia podem servir para
+> comparar uma tela que ninguém lembrava. Está escrito aqui para ninguém as encontrar de
+> novo sem saber o que são — foi exatamente assim que elas se perderam da primeira vez.
+>
+> As capturas de celular da Revisão 1 ficam em `antes-mobile/` e `depois-mobile/`, e
+> todas as oito aparecem no capítulo da Revisão 1.
+
 ## A tela inicial
 
 **Antes** — tema escuro forçado, sem migalhas, sem caminho de volta, nenhum número, e o
@@ -1219,9 +1544,9 @@ escondido:
 
 ---
 
-# Parte 4 — As oito vezes em que o defeito era a medição
+# Parte 4 — As dez vezes em que o defeito era a medição
 
-É a lição mais cara desta obra, e ela se repetiu **oito vezes** em nove etapas. Vale estar
+É a lição mais cara desta obra, e ela se repetiu **dez vezes** em dez etapas. Vale estar
 escrita junta, porque separada cada uma parece azar.
 
 | # | Onde | A régua dizia | A verdade |
@@ -1234,6 +1559,8 @@ escrita junta, porque separada cada uma parece azar.
 | 6 | Design 4 | a dica não estava visível | `pointer-events: none` esconde do `elementFromPoint` |
 | 7 | Design 7 | **16 telas transbordando no celular** | a página não andava um pixel |
 | 8 | Design 8 | a régua de hover "enxergava" | `:hover` nunca casava — o controle era falso positivo |
+| 9 | Revisão 1 | um campo estourava a caixa em Avisos ao fornecedor | era o texto DENTRO do `<input>` rolando, que é o comportamento correto de campo de texto |
+| 10 | Revisão 1 | o Financeiro saía com as barras quase invisíveis e a rosca pela metade | fotografava no meio da animação (barras 600ms com atraso até ~1,1s, rosca 800ms, medidor 900ms) |
 
 ### O padrão
 

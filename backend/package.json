@@ -1,6 +1,6 @@
 {
   "name": "portoink-api",
-  "version": "0.28.2",
+  "version": "0.28.3",
   "private": true,
   "description": "API do sistema de compras e almoxarifado da Porto Inc.",
   "type": "module",

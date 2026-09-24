@@ -1,4 +1,4 @@
-<!-- versao: 0.26.0 -->
+<!-- versao: 0.28.3 -->
 
 # 1. Antes de começar
 
@@ -206,6 +206,13 @@ A tela onde você está fica marcada de duas formas: cor diferente **e** uma bar
 ## No celular
 
 O menu vira uma gaveta. Toque em **☰** para abrir e toque fora dele para fechar. Todo o resto funciona igual.
+
+**Sobre o zoom:** você pode aproximar com dois dedos o quanto quiser — para ler um número
+pequeno, por exemplo. O que não dá é **afastar** além do tamanho da tela; antes isso
+deixava a página pequena no meio do visor, com faixa branca do lado.
+
+As telas foram medidas de 360px (Android comum) a 430px (iPhone Pro Max). O aparelho de
+referência do projeto é um **iPhone 14 Pro**, de 393px.
 
 ## A barra de filtros
 
@@ -1659,7 +1666,8 @@ Aparece uma caixinha com os valores daquele pedaço: no fluxo, o pago, o vencido
 
 ## Fluxo de caixa
 
-Doze meses: os **3 anteriores** e os **8 seguintes**. O mês atual fica destacado.
+Doze meses, com o mês escolhido **no meio**: os **5 anteriores** e os **6 seguintes**.
+O mês atual fica destacado com uma faixa azul.
 
 Cada coluna empilha três cores:
 
@@ -1672,6 +1680,42 @@ Cada coluna empilha três cores:
 > Repare: a parcela paga conta no mês em que **o dinheiro saiu**, não no mês do vencimento. É isso que transforma o gráfico em fluxo de caixa de verdade.
 
 Olhando as colunas da direita, dá para ver quanto o mês que vem já está comprometido — antes de assumir compromisso novo.
+
+### Olhando um mês que já passou
+
+No canto direito do gráfico há três controles:
+
+| Controle | O que faz |
+|---|---|
+| **‹** e **›** | andam **um mês** por toque |
+| **setembro de 2026** | abre o calendário do seu aparelho e salta direto para qualquer mês |
+| **Hoje** | volta para o mês atual |
+
+**O botão "Hoje" só aparece depois que você sai do mês atual.** Botão que não faz nada
+ensina a ignorar os que fazem.
+
+**A seta ›  fica desligada quando você está em hoje.** Não dá para avançar para o mês que
+vem: ele ainda não aconteceu, e só mostraria colunas vazias — o que pareceria dado
+perdido.
+
+> **Só o gráfico muda.** Os números do topo, a rosca, a pontualidade e os rankings
+> continuam falando de hoje. Isso é de propósito: assim você compara um mês antigo com a
+> situação atual, em vez de trocar a tela inteira de época.
+
+Uma coisa que o gráfico **não** faz, e é bom saber: mudar o período não muda o que é
+"vencido". Uma parcela atrasada continua vermelha mesmo quando você olha um mês em que
+ela ainda estava em dia. Quem decide o que está vencido é **hoje**, não o mês que você
+está olhando — senão o gráfico mentiria sobre a situação atual.
+
+### No celular
+
+O gráfico mostra o nome do mês **de três em três** (jun/26, set/26, dez/26, mar/27). As
+doze barras continuam lá; só os rótulos é que saem, porque doze nomes não cabem na
+largura de um telefone.
+
+**O mês atual aparece sempre**, mesmo fora dessa contagem.
+
+Para saber o mês e o valor exatos de qualquer barra, **toque nela**.
 
 ## Composição da carteira
 
