@@ -70,6 +70,17 @@ export function Obras() {
             cada parte da obra.
             </>
           }
+          acoes={
+            podeEditar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setAberto(true)}
+              >
+                + Nova obra
+              </button>
+            )
+          }
         />
 
         {aviso && (
@@ -93,15 +104,6 @@ export function Obras() {
             Buscar
           </button>
 
-          {podeEditar && (
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setAberto(true)}
-            >
-              + Nova obra
-            </button>
-          )}
         </div>
         <FormularioObra
           key={String(aberto)}

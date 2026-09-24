@@ -832,10 +832,20 @@ const MEDIR = `(() => {
     });
   }
 
+  // Onde fica a acao principal do cabecalho.
+  //
+  // Nao e achado por si: e uma MEDIDA, comparada ENTRE telas no fim
+  // da varredura. O dono do sistema apontou que o botao azul
+  // aparecia em altura diferente em cada tela — e tinha razao: a
+  // acao ficava alinhada ao fim do bloco de texto, entao descricao
+  // de tres linhas empurrava o botao para baixo.
+  const acaoDoTopo = document.querySelector('.cabecalho__acoes .botao--principal');
+
   return JSON.stringify({
     achados,
     larguraMedida: larguraTela,
     estado: {
+      acaoY: acaoDoTopo ? Math.round(acaoDoTopo.getBoundingClientRect().top + window.scrollY) : null,
       vazio: !!document.querySelector('.estado'),
       linhas: document.querySelectorAll('tbody tr').length,
       titulo: (document.querySelector('h1') || {}).textContent || '(sem h1)',
@@ -1153,6 +1163,36 @@ console.log('\n==== RESUMO (' + ESCOLHIDAS.length + ' de ' + TELAS.length + ' te
 
 if (ESCOLHIDAS.length === 0) {
   console.log('Nada mexido no frontend desde o ultimo marco: nada para medir.');
+}
+
+// ------------------------------------------------------------
+//  A acao principal esta na mesma altura em todas as telas?
+//
+//  Comparacao ENTRE telas, que nenhuma regra por tela consegue
+//  fazer. Uma tela nao sabe que o botao dela esta 40px mais baixo
+//  que o da tela ao lado — so o conjunto sabe.
+// ------------------------------------------------------------
+{
+  const alturas = relatorio
+    .filter((t) => typeof t.estado?.acaoY === 'number')
+    .map((t) => ({ tela: t.tela, y: t.estado.acaoY }));
+
+  if (alturas.length > 1) {
+    const menor = Math.min(...alturas.map((a) => a.y));
+    const maior = Math.max(...alturas.map((a) => a.y));
+
+    // 8px de folga: arredondamento de fonte e selo ao lado do
+    // titulo mexem um fio, e cobrar pixel exato seria ruido.
+    if (maior - menor > 8) {
+      const fora = alturas.filter((a) => a.y !== menor);
+      console.log('ACAO EM ALTURA DIFERENTE'.padEnd(32),
+        (maior - menor) + 'px entre a mais alta e a mais baixa:',
+        fora.slice(0, 5).map((a) => a.tela + '(' + a.y + ')').join(', '));
+    } else {
+      console.log('acao principal'.padEnd(32),
+        alturas.length + ' tela(s) com o botao na mesma altura (' + menor + 'px)');
+    }
+  }
 }
 
 const naoMedidas = relatorio.filter((t) => t.erro);

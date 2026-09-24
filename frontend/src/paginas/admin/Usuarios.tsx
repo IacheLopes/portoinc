@@ -101,6 +101,15 @@ export function Usuarios() {
             Comprador <em>e</em> Solicitante tem o que as duas funções liberam.
             </>
           }
+          acoes={
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => setFormAberto(true)}
+            >
+              + Novo usuário
+            </button>
+          }
         />
 
         <div className="barra-acoes">
@@ -115,20 +124,19 @@ export function Usuarios() {
           />
 
           <button
+
             type="button"
+
             className="botao botao--secundario"
+
             onClick={() => void carregar(busca)}
+
           >
+
             Buscar
+
           </button>
 
-          <button
-            type="button"
-            className="botao botao--principal"
-            onClick={() => setFormAberto(true)}
-          >
-            + Novo usuário
-          </button>
         </div>
 
         {aviso && (

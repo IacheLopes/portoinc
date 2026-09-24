@@ -70,6 +70,15 @@ export function ListaCotacoes() {
             de uma vez para todos os fornecedores da família correspondente.
             </>
           }
+          acoes={
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => setCriando(true)}
+            >
+              + Novo pacote de cotação
+            </button>
+          }
         />
 
         <div className="grade">
@@ -104,20 +113,19 @@ export function ListaCotacoes() {
           />
 
           <button
+
             type="button"
+
             className="botao botao--secundario"
+
             onClick={() => void carregar(situacao)}
+
           >
+
             Filtrar
+
           </button>
 
-          <button
-            type="button"
-            className="botao botao--principal"
-            onClick={() => setCriando(true)}
-          >
-            + Novo pacote de cotação
-          </button>
         </div>
 
         <NovaCotacao

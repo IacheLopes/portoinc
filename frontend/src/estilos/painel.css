@@ -758,7 +758,9 @@ a.atalho:hover {
    relação ao título. */
 .cabecalho__linha {
   display: flex;
-  align-items: flex-end;
+  /* CENTRO, e nao a base: a acao anda com a linha do titulo, e assim
+     fica sempre a mesma distancia do topo em todas as telas. */
+  align-items: center;
   justify-content: space-between;
   gap: var(--esp-4);
   flex-wrap: wrap;

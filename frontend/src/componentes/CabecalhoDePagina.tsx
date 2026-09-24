@@ -89,6 +89,13 @@ export function CabecalhoDePagina({ titulo, marcadores, descricao, acoes }: Prop
         </div>
       )}
 
+      {/* A ação anda com o TÍTULO, não com o bloco de texto inteiro.
+
+          Antes ela ficava alinhada ao fim do bloco — título mais
+          descrição. Numa tela de descrição curta o botão subia, numa
+          de três linhas ele descia, e ele nunca estava na mesma
+          altura duas telas seguidas. Preso à linha do título, ele
+          fica sempre à mesma distância do topo. */}
       <div className="cabecalho__linha">
         <div className="cabecalho__texto">
           {marcadores ? (
@@ -99,12 +106,12 @@ export function CabecalhoDePagina({ titulo, marcadores, descricao, acoes }: Prop
           ) : (
             <h1>{titulo}</h1>
           )}
-
-          {descricao && <p className="cabecalho__descricao">{descricao}</p>}
         </div>
 
         {acoes && <div className="cabecalho__acoes">{acoes}</div>}
       </div>
+
+      {descricao && <p className="cabecalho__descricao">{descricao}</p>}
     </header>
   );
 }

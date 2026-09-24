@@ -81,6 +81,17 @@ export function Materiais() {
               O catálogo da Porto Inc. Serviço não tem código de barras e não entra no estoque.
             </>
           }
+          acoes={
+            podeEditar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setAberto(true)}
+              >
+                + Novo item
+              </button>
+            )
+          }
         />
 
         {aviso && (
@@ -125,15 +136,6 @@ export function Materiais() {
             Filtrar
           </button>
 
-          {podeEditar && (
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setAberto(true)}
-            >
-              + Novo item
-            </button>
-          )}
         </div>
         <FormularioMaterial
           key={String(aberto)}

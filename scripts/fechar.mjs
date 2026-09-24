@@ -97,7 +97,16 @@ function resumir(bruto) {
   if (r.nome.startsWith('Alinhamento')) {
     // A régua imprime o resumo no fim; vazio embaixo dele = nada achado.
     const depois = r.saida.split(/==== RESUMO[^=]*====/)[1] ?? '';
-    const linhas = depois.split('\n').map((l) => l.trim()).filter(Boolean);
+    // Achado tem nome em MAIUSCULA (`TEXTO_ESTOURANDO`, `CONTRASTE_FRACO`).
+    // O resumo tambem traz MEDIDAS em minuscula — "acao principal: 12
+    // telas com o botao na mesma altura" —, que sao informacao e nao
+    // defeito. Contar as duas juntas fazia o fechamento acusar achado
+    // onde so havia relatorio.
+    const linhas = depois
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .filter((l) => /^[A-Z][A-Z_]{4,}/.test(l));
 
     const cabecalho = r.saida.match(/==== RESUMO \((\d+) de (\d+) telas/);
     const quantas = cabecalho ? cabecalho[1] + '/' + cabecalho[2] + ' telas, ' : '';

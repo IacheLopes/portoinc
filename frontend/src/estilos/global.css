@@ -996,6 +996,14 @@ a.indicador--clicavel:focus-visible {
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+
+  /* O recorte TAMBEM sai.
+
+     `.cartao` tem `overflow: hidden` para o conteudo nao vazar pelo
+     canto arredondado. Sem canto, nao ha o que proteger — e o
+     recorte passa a cortar o ANEL DE FOCO, que e desenhado por fora
+     da borda do campo. O anel aparecia faltando um pedaco. */
+  overflow: visible;
 }
 
 .modal .cartao__corpo {

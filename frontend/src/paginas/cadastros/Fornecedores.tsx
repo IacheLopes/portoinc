@@ -78,6 +78,17 @@ export function Fornecedores() {
             exatamente como o fluxo da Porto Inc. determina.
             </>
           }
+          acoes={
+            podeEditar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setAberto(true)}
+              >
+                + Novo fornecedor
+              </button>
+            )
+          }
         />
 
         {aviso && (
@@ -110,15 +121,6 @@ export function Fornecedores() {
             Filtrar
           </button>
 
-          {podeEditar && (
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setAberto(true)}
-            >
-              + Novo fornecedor
-            </button>
-          )}
         </div>
         <FormularioFornecedor
           key={String(aberto)}

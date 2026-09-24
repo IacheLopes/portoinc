@@ -246,6 +246,17 @@ export function PainelLocacao() {
           ele não volta. Esta tela mostra o que está parado além do combinado.
             </>
           }
+          acoes={
+            podeGerenciar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => void abrirContrato()}
+              >
+                + Nova locação
+              </button>
+            )
+          }
         />
 
       {aviso && (
@@ -292,16 +303,6 @@ export function PainelLocacao() {
           semMarcaOpcional
           opcoes={FILTROS_DE_ALERTA.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
         />
-
-        {podeGerenciar && !contratando && (
-          <button
-            type="button"
-            className="botao botao--principal"
-            onClick={() => void abrirContrato()}
-          >
-            + Nova locação
-          </button>
-        )}
 
         <BotaoBaixar
           aoEscolher={(f) => void baixar(f)}
@@ -705,10 +706,10 @@ export function PainelLocacao() {
                             type="button"
                             className="botao botao--secundario"
                             onClick={() => {
-                              setDevolvendo(c);
-                              setCancelando(null);
-                              setMotivo('');
-                              setDataDevolucao(hojeIso());
+                            setDevolvendo(c);
+                            setCancelando(null);
+                            setMotivo('');
+                            setDataDevolucao(hojeIso());
                             }}
                           >
                             Devolver
@@ -717,9 +718,9 @@ export function PainelLocacao() {
                             type="button"
                             className="botao botao--link"
                             onClick={() => {
-                              setCancelando(c);
-                              setDevolvendo(null);
-                              setMotivo('');
+                            setCancelando(c);
+                            setDevolvendo(null);
+                            setMotivo('');
                             }}
                           >
                             Cancelar

@@ -86,6 +86,17 @@ export function Alcadas() {
             abaixo são um ponto de partida e podem ser mudados a qualquer momento.
             </>
           }
+          acoes={
+            podeEditar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setAberto(true)}
+              >
+                + Nova faixa
+              </button>
+            )
+          }
         />
 
         {avisos.length > 0 && (
@@ -118,13 +129,7 @@ export function Alcadas() {
 
         {podeEditar && (
           <div className="barra-acoes">
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setAberto(true)}
-            >
-              + Nova faixa
-            </button>
+
           </div>
         )}
         <FormularioFaixa
@@ -270,8 +275,8 @@ function Simulador() {
                 type="button"
                 className="botao botao--discreto"
                 onClick={() => {
-                  setValor(String(v));
-                  void consultar(v);
+                setValor(String(v));
+                void consultar(v);
                 }}
               >
                 {dinheiro(v)}

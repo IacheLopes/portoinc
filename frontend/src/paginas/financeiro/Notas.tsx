@@ -326,20 +326,24 @@ export function NotasFiscais() {
             parcelas a pagar.
             </>
           }
+          acoes={
+            podeGerenciar && (
+              <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => {
+              limparFormulario();
+              setAberto(true);
+              }}
+              >
+              Lançar nota
+              </button>
+            )
+          }
         />
 
         {podeGerenciar && (
           <div className="barra-acoes">
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => {
-                limparFormulario();
-                setAberto(true);
-              }}
-            >
-              Lançar nota
-            </button>
 
             <label className="botao botao--secundario rotulo-arquivo">
               Importar XML
@@ -382,24 +386,24 @@ export function NotasFiscais() {
           temAlteracao={Boolean(numero || valorTotal || pedidoId)}
           acoes={
             <>
-              <button
-                type="button"
-                className="botao botao--discreto"
-                onClick={() => {
-                  setAberto(false);
-                  limparFormulario();
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => void lancar()}
-                disabled={ocupado}
-              >
-                {ocupado ? 'Lançando...' : 'Lançar nota'}
-              </button>
+            <button
+            type="button"
+            className="botao botao--discreto"
+            onClick={() => {
+            setAberto(false);
+            limparFormulario();
+            }}
+            >
+            Cancelar
+            </button>
+            <button
+            type="button"
+            className="botao botao--principal"
+            onClick={() => void lancar()}
+            disabled={ocupado}
+            >
+            {ocupado ? 'Lançando...' : 'Lançar nota'}
+            </button>
             </>
           }
         >
@@ -720,22 +724,22 @@ export function NotasFiscais() {
           descricao="Cancelar uma nota fiscal não se desfaz. Ela some das contas a pagar e deixa de contar no orçamento da obra."
           acoes={
             <>
-              <button
-                type="button"
-                className="botao botao--secundario"
-                onClick={() => setParaCancelar(null)}
-                disabled={ocupado}
-              >
-                Voltar sem cancelar
-              </button>
-              <button
-                type="button"
-                className="botao botao--perigo"
-                onClick={() => paraCancelar && void cancelar(paraCancelar)}
-                disabled={ocupado}
-              >
-                {ocupado ? 'Cancelando...' : 'Sim, cancelar a nota'}
-              </button>
+            <button
+            type="button"
+            className="botao botao--secundario"
+            onClick={() => setParaCancelar(null)}
+            disabled={ocupado}
+            >
+            Voltar sem cancelar
+            </button>
+            <button
+            type="button"
+            className="botao botao--perigo"
+            onClick={() => paraCancelar && void cancelar(paraCancelar)}
+            disabled={ocupado}
+            >
+            {ocupado ? 'Cancelando...' : 'Sim, cancelar a nota'}
+            </button>
             </>
           }
         >

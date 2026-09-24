@@ -57,6 +57,17 @@ export function Familias() {
             uma cotação — um BID de elétrica só vai para quem vende elétrica.
             </>
           }
+          acoes={
+            podeEditar && (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => setAberto(true)}
+              >
+                + Nova família
+              </button>
+            )
+          }
         />
 
         {aviso && (
@@ -67,13 +78,7 @@ export function Familias() {
 
         {podeEditar && (
           <div className="barra-acoes">
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setAberto(true)}
-            >
-              + Nova família
-            </button>
+
           </div>
         )}
 
