@@ -33,7 +33,7 @@ const ALTURA = 1000;
 const PORTA = 9340 + (LARGURA % 7) + (Date.now() % 40) * 10;
 
 const OBRA = '83fbfc58-1d58-46d7-add8-48270ebdf663';
-const SOLICITACAO = 'da72ade4-0c9d-4bec-8348-f911bc04606f';
+const SOLICITACAO = '21c990c3-54f7-4cd6-a7d8-3f9fb7007a2d';
 const COTACAO = 'f5c04aad-add6-4e56-8ff2-fe166f0098be';
 const PEDIDO = '17';
 
@@ -178,7 +178,31 @@ function telasParaMedir() {
   return escolhidas;
 }
 
-const ESCOLHIDAS = telasParaMedir();
+// ------------------------------------------------------------
+//  `--so-esta <nome>`: mede UMA tela
+//
+//  A regua foi feita para o `admin`, que abre tudo. Rodando com uma
+//  conta de menos permissoes — para ver um painel que so aparece
+//  para quem assina, por exemplo — ela gasta o orcamento de espera
+//  em cada tela que aquela pessoa nao pode abrir: 8 telas em varios
+//  minutos, contra 34 em 45s.
+//
+//  Quando o que interessa e uma tela so, medir 34 e desperdicio.
+// ------------------------------------------------------------
+const SO_ESTA = (() => {
+  const i = process.argv.indexOf('--so-esta');
+  return i >= 0 ? process.argv[i + 1] : null;
+})();
+
+const ESCOLHIDAS = SO_ESTA
+  ? TELAS.filter(([, nome]) => nome === SO_ESTA)
+  : telasParaMedir();
+
+if (SO_ESTA && ESCOLHIDAS.length === 0) {
+  console.log('  Nao existe tela chamada "' + SO_ESTA + '".');
+  console.log('  Nomes: ' + TELAS.map(([, n]) => n).join(', '));
+  process.exit(1);
+}
 
 // Nada para medir: nem abre o navegador. Subir o Edge e fazer login
 // custava 8s para depois nao olhar tela nenhuma.

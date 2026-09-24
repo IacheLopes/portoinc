@@ -392,7 +392,9 @@ input[type='file'].campo__entrada {
 .decisoes {
   display: grid;
   gap: var(--esp-3);
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  /* `min(230px, 100%)`: quando sobra menos que 230 a coluna para de
+     exigir os 230 e passa a caber, em vez de vazar. */
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
   margin-top: var(--esp-2);
 }
 

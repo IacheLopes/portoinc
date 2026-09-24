@@ -188,6 +188,7 @@ export function DetalheSolicitacao() {
           />
           <Indicador
             titulo="Quem aprova"
+            largura="cheia"
             valor={<span className="indicador__texto">{aprovacao?.explicacao ?? '—'}</span>}
             detalhe="Calculado pelo valor total e pelas faixas de alçada"
           />

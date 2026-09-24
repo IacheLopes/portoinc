@@ -14,6 +14,7 @@ import { decidir, nomeDaFuncao, type Decisao, type EstadoAprovacao } from '../se
 import { ErroApi } from '../servicos/api';
 import { Selo } from './Selo';
 import { Icone } from './Icone';
+import { Cartao } from './Cartao';
 
 interface Props {
   solicitacaoId: string;
@@ -63,8 +64,7 @@ export function PainelDecisao({
   }
 
   return (
-    <div className="cartao painel-decisao">
-      <h2 className="formulario__titulo">Sua decisão</h2>
+    <Cartao titulo="Sua decisão" nivel={2} className="painel-decisao">
 
       <p className="painel-decisao__estado">
         {exigeTodas ? (
@@ -234,6 +234,6 @@ export function PainelDecisao({
           </div>
         </>
       )}
-    </div>
+    </Cartao>
   );
 }

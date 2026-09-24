@@ -38,10 +38,20 @@ interface Props {
    */
   para?: string;
   tom?: TomDoIndicador;
+  /**
+   * Ocupa a linha inteira no celular.
+   *
+   * Este componente e para NUMERO. Quando o valor e uma frase — "Basta
+   * a assinatura de uma destas funcoes: Gestor de obra" — em duas
+   * colunas sobram ~165px e ela quebra em seis linhas, com meia tela
+   * vazia do lado. Medido em 393px, 2026-09-24.
+   */
+  largura?: 'cheia';
 }
 
-export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro' }: Props) {
+export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro', largura }: Props) {
   const classes = 'indicador'
+    + (largura === 'cheia' ? ' indicador--cheio' : '')
     + (tom !== 'neutro' ? ' indicador--' + tom : '')
     + (para ? ' indicador--clicavel' : '');
 

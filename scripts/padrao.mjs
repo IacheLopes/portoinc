@@ -47,6 +47,13 @@ function arquivos(pasta, filtro) {
 
 const ehTeste = (n) => n.includes('.test.');
 const telas = arquivos(join(FRONT, 'paginas'), (n) => n.endsWith('.tsx') && !ehTeste(n));
+
+// Cartao a mao tambem se esconde em componentes/. A regra olhava so
+// as telas, e por isso disse "divida zero" enquanto o PainelDecisao
+// desenhava um a mao — e ele quebrou quando o padding do .cartao saiu
+// para o .cartao__corpo, no Design 6. Achado pelo dono do sistema em
+// 2026-09-24, com o titulo "Sua decisao" cortado no topo.
+const componentes = arquivos(join(FRONT, 'componentes'), (n) => n.endsWith('.tsx') && !ehTeste(n));
 const fontes = arquivos(FRONT, (n) => (n.endsWith('.ts') || n.endsWith('.tsx')) && !ehTeste(n));
 const estilos = arquivos(join(FRONT, 'estilos'), (n) => n.endsWith('.css'));
 
@@ -94,10 +101,15 @@ regra(
   'Cartões escritos à mão',
   'Cartão é um componente só. Escrito à mão, cada tela ganha uma versão que envelhece sozinha.',
   () =>
-    telas
+    [...telas, ...componentes]
+      // O proprio Cartao.tsx escreve `className="cartao"`: ele E o
+      // cartao. Acusa-lo seria acusar a definicao de nao ser o uso.
+      .filter((c) => !c.endsWith('Cartao.tsx'))
       .map((c) => ({
         c,
-        n: (readFileSync(c, 'utf8').match(/className="cartao(?![a-z-])/g) ?? []).length,
+        n: (readFileSync(c, 'utf8')// `_` entra na excecao: sem ele a regra casava `cartao__corpo`,
+        // que e parte da anatomia oficial e nao cartao a mao.
+        .match(/className="cartao(?![a-z_-])/g) ?? []).length,
       }))
       .filter((x) => x.n > 0)
       .map((x) => curto(x.c) + ' (' + x.n + ')'),

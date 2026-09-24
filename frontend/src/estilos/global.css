@@ -887,3 +887,55 @@ a.indicador--clicavel:focus-visible {
     font-size: var(--txt-lg);
   }
 }
+
+@media (max-width: 640px) {
+  /* Indicador que carrega FRASE, e não número, ocupa a linha inteira.
+
+     Em duas colunas sobram ~165px: "Basta a assinatura de uma destas
+     funções: Gestor de obra" quebrava em seis linhas, com meia tela
+     vazia ao lado. Quem declara isso é a tela, com `largura="cheia"`,
+     porque só ela sabe o que vai dentro. */
+  .grade > .indicador--cheio {
+    grid-column: 1 / -1;
+  }
+
+  /* ----------------------------------------------------------
+     O rodapé da tabela no modo cartão
+
+     `tfoot` não tinha regra nenhuma aqui: enquanto as linhas viravam
+     cartão, ele continuava tabela e saía como uma caixinha torta,
+     encostada à esquerda, com o total dentro.
+
+     Vira uma faixa de fecho: rótulo à esquerda, valor à direita —
+     que é como se lê um total. */
+  .tabela-area--cartoes .tabela tfoot {
+    display: block;
+  }
+
+  .tabela-area--cartoes .tabela tfoot tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--esp-2);
+    margin-top: var(--esp-3);
+    padding: var(--esp-3) var(--esp-4);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-lg);
+    background: var(--fundo-suave);
+  }
+
+  .tabela-area--cartoes .tabela tfoot th,
+  .tabela-area--cartoes .tabela tfoot td {
+    display: block;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  /* A célula vazia de alinhamento não ocupa espaço no celular. */
+  .tabela-area--cartoes .tabela tfoot td:empty,
+  .tabela-area--cartoes .tabela tfoot th:empty {
+    display: none;
+  }
+}
