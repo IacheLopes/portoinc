@@ -107,7 +107,31 @@ export async function criarApp(): Promise<FastifyInstance> {
   );
 
   // Cabeçalhos de segurança no navegador.
-  await app.register(helmet, { contentSecurityPolicy: false });
+  // ----------------------------------------------------------
+  //  HSTS só quando há HTTPS de verdade
+  //
+  //  O `helmet` manda por padrão:
+  //
+  //    strict-transport-security: max-age=15552000; includeSubDomains
+  //
+  //  Que quer dizer: "nunca mais use HTTP neste endereço, por 180
+  //  dias". Servido por HTTPS isso é proteção. Servido por HTTP —
+  //  que é como o sistema roda em desenvolvimento, e como o dono
+  //  abre no celular pelo IP da rede — é um tiro no pé: o navegador
+  //  passa a forçar `https://192.168.1.109:5173`, que não existe, e
+  //  a página simplesmente para de abrir.
+  //
+  //  Foi exatamente o que aconteceu em 24/09/2026: funcionou na
+  //  primeira visita (a página carregou antes de a API responder) e
+  //  nunca mais. No computador seguia funcionando, porque Chrome e
+  //  Edge IGNORAM HSTS para endereço IP; o Safari do iPhone não.
+  //
+  //  Em produção, atrás de HTTPS, ele volta a valer.
+  // ----------------------------------------------------------
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    hsts: ambiente.NODE_ENV === 'production',
+  });
 
   // Limite de requisições: barra força bruta e sobrecarga.
   // Nos testes ele é desligado, senão o próprio teste seria bloqueado
