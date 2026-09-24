@@ -9,9 +9,22 @@
 
 # Para que serve o sistema
 
-A Porto Inc. compra material e equipamento para as obras. Antes, isso vivia em WhatsApp,
-planilha e papel. **O sistema é o caminho oficial dessa compra**, do pedido da obra até a
-nota fiscal paga.
+A **Porto Inc. é uma construtora**: ela levanta obra. Hoje tem três cadastradas — um
+residencial em São Paulo, um edifício em Santos e um galpão logístico em Cajamar. Umas
+são para clientes, outra é para a incorporadora do próprio grupo.
+
+**Este sistema não é a construtora — é uma parte dela.** Ele cuida de uma coisa só:
+**comprar o material e o equipamento que a obra consome, e controlar o almoxarifado.**
+
+Comprar não é o negócio da Porto Inc.; é o que faz o negócio andar. E era justamente a
+parte que vivia em WhatsApp, planilha e papel — ninguém sabia ao certo o que tinha sido
+pedido, quanto custou da última vez, nem se o material chegou.
+
+O sistema é **o caminho oficial dessa compra**, do pedido da obra até a nota fiscal paga.
+
+> **Se for apresentar, comece por aqui:** *"a Porto Inc. constrói; este sistema cuida de
+> abastecer as obras dela"*. Sem essa frase, quem assiste acha que está vendo um sistema
+> de compras genérico — e aí o resto perde o sentido.
 
 ## O caminho de uma compra
 
