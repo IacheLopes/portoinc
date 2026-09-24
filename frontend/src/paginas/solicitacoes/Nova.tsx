@@ -32,6 +32,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { chaveLocal } from '../../servicos/identificador';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -121,7 +122,7 @@ export function NovaSolicitacao() {
     setItens((atual) => [
       ...atual,
       {
-        chave: crypto.randomUUID(),
+        chave: chaveLocal(),
         material: materialEscolhido,
         materialId: materialEscolhido.id,
         quantidade: Number(quantidade),

@@ -17,6 +17,8 @@ import {
   MODULO_COMPLETO,
   menuAgrupado,
   oQueFalta,
+  trilhaDe,
+  voltarDe,
   type Modulo,
 } from './navegacao';
 
@@ -109,5 +111,39 @@ describe('o aviso de andamento', () => {
     expect(ETAPAS.map((e) => e.numero)).toEqual(
       Array.from({ length: ETAPAS.length }, (_, i) => i + 1),
     );
+  });
+});
+
+// ------------------------------------------------------------
+//  De onde a pessoa veio vence a hierarquia fixa
+//
+//  A solicitação mora debaixo de Solicitações. Mas chega-se a ela
+//  também pela fila de Aprovações — e aí a migalha anunciava
+//  "Início › Solicitações", como se o sistema a tivesse jogado para
+//  outro lugar. Relatado pelo dono do sistema em 24/09/2026.
+// ------------------------------------------------------------
+describe('A trilha respeita o caminho que a pessoa fez', () => {
+  const ID = '/solicitacoes/21c990c3-54f7-4cd6-a7d8-3f9fb7007a2d';
+
+  it('sem origem, a trilha é a de sempre', () => {
+    const t = trilhaDe(ID).map((d) => d.titulo);
+    expect(t).toContain('Solicitações');
+    expect(t).not.toContain('Aprovações');
+  });
+
+  it('vindo de Aprovações, o degrau do meio é Aprovações', () => {
+    const t = trilhaDe(ID, '/aprovacoes').map((d) => d.titulo);
+    expect(t).toContain('Aprovações');
+    expect(t).not.toContain('Solicitações');
+  });
+
+  it('o Voltar leva de volta para onde a pessoa estava', () => {
+    expect(voltarDe(ID)?.para).toBe('/solicitacoes');
+    expect(voltarDe(ID, '/aprovacoes')?.para).toBe('/aprovacoes');
+  });
+
+  it('origem igual ao destino não muda nada', () => {
+    const t = trilhaDe(ID, ID).map((d) => d.titulo);
+    expect(t).toContain('Solicitações');
   });
 });

@@ -91,11 +91,79 @@ async function interpretarErro(resposta: Response): Promise<never> {
     /* resposta sem JSON */
   }
 
+  // ----------------------------------------------------------
+  //  A mensagem já sai dizendo QUAL campo está errado
+  //
+  //  O servidor manda "Dados inválidos" e, ao lado, a lista de
+  //  campos com o problema de cada um. Só que 18 das 34 telas
+  //  mostravam apenas `e.message` e jogavam a lista fora: a pessoa
+  //  lia "Dados inválidos" e ficava adivinhando qual campo era.
+  //  Foi o que aconteceu ao registrar uma locação, em 2026-09-24.
+  //
+  //  Juntar aqui conserta as 18 de uma vez, e as 16 que já mostram
+  //  os detalhes continuam funcionando — elas leem `detalhes`, que
+  //  segue intacto.
+  // ----------------------------------------------------------
   throw new ErroApi(
-    corpo.erro ?? 'O servidor respondeu com erro ' + resposta.status + '.',
+    comCampos(corpo.erro ?? 'O servidor respondeu com erro ' + resposta.status + '.', corpo.detalhes),
     resposta.status,
     corpo.detalhes,
   );
+}
+
+/**
+ * "Dados inválidos" vira
+ * "Dados inválidos — Fornecedor: campo obrigatório; Obra: campo
+ * obrigatório; e mais 6 campos".
+ */
+function comCampos(mensagem: string, detalhes?: DetalheErro[] | string[]): string {
+  if (!detalhes?.length) return mensagem;
+
+  const partes = detalhes
+    .map((d) => {
+      if (typeof d === 'string') return d;
+      if (!d.mensagem) return '';
+      // O nome técnico do campo vira gente: `previsaoDevolucao` →
+      // "Previsão devolução" não sai perfeito em português, mas diz
+      // MUITO mais do que oito vezes "Campo obrigatório".
+      // Sem o ponto final: elas são unidas por ponto e vírgula, e
+      // "obrigatório.;" fica com cara de defeito.
+      const frase = d.mensagem.replace(/\.$/, '');
+      const rotulo = humanizarCampo(d.campo);
+      return rotulo ? rotulo + ': ' + minuscula(frase) : frase;
+    })
+    .filter(Boolean);
+
+  if (partes.length === 0) return mensagem;
+
+  // Três bastam. Listar oito numa linha só ninguém lê, e a tela
+  // ainda mostra a lista inteira quando sabe fazer isso.
+  const TETO = 3;
+  const mostradas = partes.slice(0, TETO).join('; ');
+  const resto = partes.length - TETO;
+
+  return mensagem.replace(/[.:]$/, '')
+    + ' — ' + mostradas
+    + (resto > 0 ? '; e mais ' + resto + (resto === 1 ? ' campo' : ' campos') : '');
+}
+
+/** `previsaoDevolucao` → "Previsão devolução"; `obraId` → "Obra". */
+function humanizarCampo(campo?: string): string {
+  if (!campo) return '';
+  const limpo = campo
+    .split('.')
+    .at(-1)!
+    .replace(/Id$/, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .trim();
+  if (!limpo) return '';
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1).toLowerCase();
+}
+
+/** "Campo obrigatório." depois de dois-pontos vira minúscula. */
+function minuscula(frase: string): string {
+  return frase.charAt(0).toLowerCase() + frase.slice(1);
 }
 
 export interface Opcoes {

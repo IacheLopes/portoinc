@@ -236,6 +236,7 @@ export function FilaAprovacao() {
                             + (s.esperaMinhaAssinatura ? 'botao--principal' : 'botao--secundario')
                           }
                           to={'/solicitacoes/' + s.id}
+                          state={{ veioDe: '/aprovacoes' }}
                           title={s.motivoBloqueio ?? undefined}
                         >
                           {s.esperaMinhaAssinatura ? 'Analisar' : 'Ver'}

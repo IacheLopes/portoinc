@@ -71,19 +71,42 @@ export function Inicio() {
   const urgentes = resumo?.urgentes ?? [];
   const acompanhar = resumo?.acompanhar ?? [];
 
+  // As funções que uma PESSOA da empresa pode ter. `FORNECEDOR` fica
+  // de fora: fornecedor não entra no sistema, responde por um link.
+  //
+  // Quem carrega todas as sete não é gente: é a conta de
+  // desenvolvimento, e a tela tem de dizer isso com todas as letras.
+  const FUNCOES_DE_PESSOA = [
+    'ADMINISTRADOR', 'FUNDADOR', 'GESTOR_OBRA', 'ENGENHEIRO',
+    'COMPRADOR', 'SOLICITANTE', 'ALMOXARIFE',
+  ];
+  const temTodasAsFuncoes = FUNCOES_DE_PESSOA.every((f) => usuario?.funcoes.includes(f));
+
   return (
     <>
       <section className="secao">
         <CabecalhoDePagina
           titulo={saudacao() + ', ' + primeiroNome}
           descricao={
-            <>
-              Você está no sistema como{' '}
-              <strong>
-                {usuario?.funcoes.map((f) => f.replace(/_/g, ' ').toLowerCase()).join(' e ')}
-              </strong>
-              .
-            </>
+            /* Quem acumula TODAS as funções não é uma pessoa da
+               empresa: é a conta de desenvolvimento. Listar as sete
+               ("administrador e fundador e gestor obra e...") não
+               diz nada — pior, faz parecer que existe alguém com
+               todos esses cargos. */
+            temTodasAsFuncoes ? (
+              <>
+                Você está no sistema com a conta de{' '}
+                <strong>Desenvolvedor</strong>: enxerga tudo, em todas as telas.
+              </>
+            ) : (
+              <>
+                Você está no sistema como{' '}
+                <strong>
+                  {usuario?.funcoes.map((f) => f.replace(/_/g, ' ').toLowerCase()).join(' e ')}
+                </strong>
+                .
+              </>
+            )
           }
         />
       </section>

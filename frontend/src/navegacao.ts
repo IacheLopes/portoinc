@@ -395,12 +395,35 @@ export function enderecoReal(rota: string, atual: string): string {
  *
  * Devolve os endereços já resolvidos, prontos para virar link.
  */
-export function trilhaDe(caminho: string): Array<{ titulo: string; para: string }> {
+export function trilhaDe(
+  caminho: string,
+  veioDe?: string,
+): Array<{ titulo: string; para: string }> {
   const atual = paginaDe(caminho);
   if (!atual) return [];
 
   const trilha: Array<{ titulo: string; para: string }> = [];
   let passo: Pagina | undefined = atual;
+
+  // ----------------------------------------------------------
+  //  De onde a pessoa veio vence a hierarquia fixa
+  //
+  //  A solicitação mora debaixo de Solicitações, e é isso que a
+  //  trilha diz. Só que chega-se a ela também pela fila de
+  //  Aprovações — e aí a pessoa clica em "Analisar", cai na tela, e
+  //  a migalha anuncia "Início › Solicitações". Parece que o sistema
+  //  a jogou para outro lugar. Foi o que o dono do sistema relatou
+  //  em 2026-09-24.
+  //
+  //  Com "veioDe", o degrau do meio passa a ser o caminho REAL que
+  //  ela fez. Sem ele, nada muda.
+  // ----------------------------------------------------------
+  const origem = veioDe && veioDe !== caminho ? paginaDe(veioDe) : undefined;
+
+  if (origem) {
+    trilha.unshift({ titulo: atual.titulo, para: enderecoReal(atual.rota, caminho) });
+    passo = origem;
+  }
   // Trava contra hierarquia circular: uma mãe apontando de volta
   // para a filha travaria a tela inteira num laço infinito.
   let voltas = 0;
@@ -423,7 +446,17 @@ export function trilhaDe(caminho: string): Array<{ titulo: string; para: string 
  *
  * Null só no Início, que não tem mãe.
  */
-export function voltarDe(caminho: string): { titulo: string; para: string } | null {
+export function voltarDe(
+  caminho: string,
+  veioDe?: string,
+): { titulo: string; para: string } | null {
+  // O Voltar segue o mesmo caminho da trilha: leva de volta para
+  // ONDE A PESSOA ESTAVA, e não para onde a tela mora.
+  const origem = veioDe && veioDe !== caminho ? paginaDe(veioDe) : undefined;
+  if (origem) {
+    return { titulo: origem.titulo, para: enderecoReal(origem.rota, veioDe!) };
+  }
+
   const atual = paginaDe(caminho);
   if (!atual?.mae) return null;
 

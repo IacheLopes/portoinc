@@ -41,8 +41,13 @@ interface Props {
 export function CabecalhoDePagina({ titulo, marcadores, descricao, acoes }: Props) {
   const local = useLocation();
 
-  const trilha = trilhaDe(local.pathname);
-  const voltar = voltarDe(local.pathname);
+  // "veioDe` chega pelo estado da navegação, não pela URL: é
+  // conforto de leitura, não endereço. Quem recarrega a página cai na
+  // trilha padrão, que continua correta.
+  const veioDe = (local.state as { veioDe?: string } | null)?.veioDe;
+
+  const trilha = trilhaDe(local.pathname, veioDe);
+  const voltar = voltarDe(local.pathname, veioDe);
 
   return (
     <header className="cabecalho">

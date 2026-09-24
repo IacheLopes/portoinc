@@ -12,6 +12,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 
 import { ambiente } from './config/ambiente.js';
+import { ligarMensagensEmPortugues } from './servicos/erros-em-portugues.js';
 import { pluginAutenticacao } from './plugins/autenticacao.js';
 import { rotasSaude } from './rotas/saude.js';
 import { rotasInicio } from './rotas/inicio.js';
@@ -60,6 +61,10 @@ export function excessoDeRequisicoes(): { statusCode: number; erro: string } {
 }
 
 export async function criarApp(): Promise<FastifyInstance> {
+  // O Zod fala ingles de programador por padrao, e essas frases
+  // chegavam a tela do usuario. Ligado antes de qualquer rota.
+  ligarMensagensEmPortugues();
+
   const app = Fastify({
     logger: ehTeste
       ? false

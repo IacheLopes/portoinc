@@ -51,13 +51,15 @@ export function ListaSolicitacoes() {
     [],
   );
 
+  // Recarrega ao ESCOLHER, sem botão.
+  //
+  // Antes havia um "Filtrar" ao lado: a pessoa trocava a situação, a
+  // lista não mexia, e parecia que o filtro estava quebrado. Botão que
+  // existe só para confirmar o que já foi escolhido é trabalho a mais
+  // para quem usa — a tela já sabe o que ele quer.
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
-
-  function aplicar() {
     void carregar({ situacao: situacao || undefined, apenasMinhas });
-  }
+  }, [carregar, situacao, apenasMinhas]);
 
   if (carregando && solicitacoes.length === 0) {
     return <Carregando mensagem="Carregando solicitações..." />;
@@ -77,6 +79,13 @@ export function ListaSolicitacoes() {
               ? 'Você enxerga as solicitações de toda a empresa.'
               : 'Você enxerga apenas as solicitações que você mesmo abriu.'}
             </>
+          }
+          acoes={
+            podeCriar && (
+              <Link to="/solicitacoes/nova" className="botao botao--principal">
+                + Nova solicitação
+              </Link>
+            )
           }
         />
 
@@ -104,15 +113,6 @@ export function ListaSolicitacoes() {
             </label>
           )}
 
-          <button type="button" className="botao botao--secundario" onClick={aplicar}>
-            Filtrar
-          </button>
-
-          {podeCriar && (
-            <Link to="/solicitacoes/nova" className="botao botao--principal botao--link-cheio">
-              + Nova solicitação
-            </Link>
-          )}
         </div>
       </section>
 
