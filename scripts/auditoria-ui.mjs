@@ -488,33 +488,72 @@ const MEDIR = `(() => {
   const andou = window.scrollX;
   window.scrollTo(antesDoEmpurrao, window.scrollY);
 
-  if (andou > 0) {
-    // So conta como culpado quem NAO esta dentro de uma caixa que
-    // rola ou recorta: la dentro, passar da largura e o combinado.
-    const contido = (el) => {
-      let n = el.parentElement;
-      while (n && n !== document.body) {
-        const o = getComputedStyle(n).overflowX;
-        if (o === 'auto' || o === 'scroll' || o === 'hidden' || o === 'clip') return true;
-        n = n.parentElement;
-      }
-      return false;
-    };
+  // So conta como culpado quem NAO esta dentro de uma caixa que
+  // rola ou recorta: la dentro, passar da largura e o combinado.
+  const contido = (el) => {
+    let n = el.parentElement;
+    while (n && n !== document.body) {
+      const o = getComputedStyle(n).overflowX;
+      if (o === 'auto' || o === 'scroll' || o === 'hidden' || o === 'clip') return true;
+      n = n.parentElement;
+    }
+    return false;
+  };
 
-    const culpados = [...document.querySelectorAll('body *')]
-      .filter((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.right <= larguraTela + 1) return false;
-        if (getComputedStyle(el).position === 'fixed') return false;
-        return !contido(el);
-      })
-      .slice(0, 4)
-      .map((el) => nomear(el) + ' (vai ate ' + Math.round(el.getBoundingClientRect().right) + 'px)');
+  const passamDaTela = [...document.querySelectorAll('body *')]
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.right <= larguraTela + 1) return false;
+      if (getComputedStyle(el).position === 'fixed') return false;
+      return !contido(el);
+    });
+
+  const nomearCulpados = (lista) => lista
+    .slice(0, 4)
+    .map((el) => nomear(el) + ' (vai ate ' + Math.round(el.getBoundingClientRect().right) + 'px)');
+
+  if (andou > 0) {
+    // Se o filtro de "nao contido" nao sobrou ninguem, a pagina ainda
+    // assim anda — entao o culpado E um dos contidos, ou a propria
+    // caixa que recorta. Melhor mostrar os mais largos do que devolver
+    // uma acusacao sem reu: regua que diz "ha defeito" e nao diz onde
+    // faz perder mais tempo do que ajuda.
+    const paraMostrar = passamDaTela.length > 0
+      ? passamDaTela
+      : [...document.querySelectorAll('body *')]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.right > larguraTela + 1
+              && getComputedStyle(el).position !== 'fixed';
+          })
+          .sort((a, b) => b.getBoundingClientRect().right - a.getBoundingClientRect().right);
 
     achados.push({
       tipo: 'ROLAGEM_HORIZONTAL',
-      detalhe: 'a pagina anda ' + andou + 'px para o lado numa tela de ' + larguraTela + 'px',
-      culpados,
+      detalhe: 'a pagina anda ' + andou + 'px para o lado numa tela de ' + larguraTela + 'px'
+        + (passamDaTela.length === 0 ? ' (todos os largos estao dentro de caixa que recorta)' : ''),
+      culpados: nomearCulpados(paraMostrar),
+    });
+  } else if (passamDaTela.length > 0) {
+    // A pagina NAO anda, mas tem coisa passando da tela.
+    //
+    // Parece inofensivo e nao e. No celular o navegador monta o
+    // layout viewport pelo conteudo: se ele mede 574 numa tela de
+    // 393, da para AFASTAR o zoom ate caber tudo — e sobra uma
+    // faixa vazia do lado direito. Foi assim que o usuario achou
+    // isto no iPhone dele, em 2026-09-24, na tela do Financeiro.
+    //
+    // O Design 7 tirou a comparacao com o scrollWidth porque ela
+    // acusava 16 telas sadias. A licao era descartar o SCROLLWIDTH
+    // (que soma o conteudo de caixas que rolam por dentro), nao
+    // descartar a pergunta. Aqui a conta e outra: elemento cuja
+    // borda direita passa da tela e que ninguem recorta.
+    achados.push({
+      tipo: 'MAIS_LARGO_QUE_A_TELA',
+      detalhe: passamDaTela.length
+        + ' elemento(s) passam de ' + larguraTela + 'px sem a pagina rolar'
+        + ' — no celular isso libera o zoom para fora',
+      culpados: nomearCulpados(passamDaTela),
     });
   }
 

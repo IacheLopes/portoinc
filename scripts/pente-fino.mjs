@@ -174,6 +174,39 @@ for (const arq of arquivosCss) {
 }
 
 // ------------------------------------------------------------
+//  2c. A tecnica de "so para leitor de tela" aplicada num <table>
+//
+//  `.apenas-leitor-tela` encolhe a caixa para 1px e recorta o
+//  resto. Num <table> nao funciona: a largura MINIMA do conteudo
+//  vence o `width: 1px`, e a tabela fica com a largura real —
+//  invisivel, mas empurrando a pagina.
+//
+//  Medido em 2026-09-24: 574px numa tela de 393, em 4 telas. O
+//  celular disfarcava encolhendo a pagina inteira para caber; so
+//  apareceu depois que `minimum-scale=1` proibiu o encolhimento.
+//
+//  A correcao e por a classe num <div> em volta.
+// ------------------------------------------------------------
+{
+  const tsx = [];
+  (function anda(dir) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const f = join(dir, e.name);
+      if (e.isDirectory()) anda(f);
+      else if (/\.tsx$/.test(e.name) && !/\.test\./.test(e.name)) tsx.push(f);
+    }
+  })(FONTE);
+
+  for (const f of tsx) {
+    const s = readFileSync(f, 'utf8');
+    for (const m of s.matchAll(/<table[^>]*className=["'{][^>]*apenas-leitor-tela/g)) {
+      achar('ESCONDER_TABELA_PELA_CLASSE', f, s.slice(0, m.index).split('\n').length,
+        '<table> nao obedece width:1px — ponha a classe num <div> em volta');
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  3. Emoji fazendo papel de icone
 // ------------------------------------------------------------
 const EMOJI = /\p{Extended_Pictographic}/gu;

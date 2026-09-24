@@ -912,7 +912,13 @@ function AbaTempos() {
               ))}
             </ol>
 
-            <table className="apenas-leitor-tela">
+            {/* A classe de esconder vai no <div>, não no <table>: a
+                largura mínima do conteúdo vence o `width: 1px` de uma
+                tabela, e ela empurrava a página 65px para o lado num
+                celular de 393. Mesma correção de `TabelaEquivalente`
+                em Graficos.tsx. */}
+            <div className="apenas-leitor-tela">
+            <table>
               <caption>Média de dias por etapa do processo de compra.</caption>
               <thead>
                 <tr>
@@ -931,6 +937,7 @@ function AbaTempos() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Cartao>
         </>
       )}

@@ -342,7 +342,18 @@ export function GraficoFluxo({
     <figure className="gr">
       <figcaption className="gr__titulo">{titulo}</figcaption>
 
-      {periodo && (
+      {/* Legenda e período dividem a MESMA fileira: são os dois
+          controles do gráfico, e empilhados viravam duas tiras de
+          coisas pequenas entre o título e as barras. No celular a
+          fileira quebra sozinha. */}
+      <div className="gr__controles">
+        <div className="gr__legenda">
+          <span className="gr__chave"><i style={{ background: TONS.sucesso }} /> Pago</span>
+          <span className="gr__chave"><i style={{ background: TONS.erro }} /> Vencido</span>
+          <span className="gr__chave"><i style={{ background: TONS.atencao }} /> A vencer</span>
+        </div>
+
+        {periodo && (
         <div className="fluxo__periodo">
           {/* Meia janela por toque: andando 12 de uma vez, nenhum mês
               da tela anterior continua à vista e some a referência. */}
@@ -393,12 +404,7 @@ export function GraficoFluxo({
             {periodo.carregando ? 'Carregando...' : ''}
           </span>
         </div>
-      )}
-
-      <div className="gr__legenda">
-        <span className="gr__chave"><i style={{ background: TONS.sucesso }} /> Pago</span>
-        <span className="gr__chave"><i style={{ background: TONS.erro }} /> Vencido</span>
-        <span className="gr__chave"><i style={{ background: TONS.atencao }} /> A vencer</span>
+        )}
       </div>
 
       <div className="fluxo" ref={area}>
@@ -802,8 +808,20 @@ function TabelaEquivalente({
   colunas: string[];
   linhas: ReactNode[][];
 }) {
+  // A classe de esconder vai num <div>, e NAO no <table>.
+  //
+  // `.apenas-leitor-tela` encolhe a caixa para 1px e recorta o resto.
+  // Num `<table>` isso nao funciona: a largura minima do conteudo
+  // vence o `width: 1px`, e a tabela fica com a largura real —
+  // invisivel, mas empurrando a pagina. Media em 2026-09-24: 574px
+  // numa tela de 393. O celular disfarcava encolhendo a pagina
+  // inteira para caber, e o usuario via a pagina pequena com faixa
+  // vazia do lado ao afastar o zoom.
+  //
+  // Um <div> obedece `width: 1px` e recorta a tabela de dentro.
   return (
-    <table className="apenas-leitor-tela">
+    <div className="apenas-leitor-tela">
+      <table>
       <caption>{titulo}</caption>
       <thead>
         <tr>
@@ -825,6 +843,7 @@ function TabelaEquivalente({
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   );
 }

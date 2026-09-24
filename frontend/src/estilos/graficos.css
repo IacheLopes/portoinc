@@ -717,9 +717,19 @@
   justify-content: center;
 }
 
-/* Largura do conteúdo: cabe "set/2026" e mais nada. */
+/* O campo estica entre as duas setas, e nunca sai da linha delas.
+
+   Tinha teto de 11rem e o próprio navegador cortava o texto:
+   "setembro de 202▦". O mês por extenso em português é longo, e quem
+   desenha esse campo é o sistema operacional — não dá para apertar. */
+.fluxo__periodo-campo {
+  flex: 1 1 11rem;
+  min-width: 0;
+  max-width: 15rem;
+}
+
 .fluxo__periodo-campo .campo__entrada {
-  max-width: 11rem;
+  width: 100%;
 }
 
 .fluxo__periodo-estado {
@@ -755,14 +765,38 @@
     display: none;
   }
 
-  /* O campo de mês ocupa a linha inteira: espremido entre as duas
-     setas ele ficava com menos de 100px. */
-  .fluxo__periodo-campo {
-    flex: 1 1 100%;
-    order: -1;
-  }
+  /* Uma linha só, também no celular.
 
-  .fluxo__periodo-campo .campo__entrada {
+     Antes o campo tomava a linha inteira e as duas setas caíam soltas
+     embaixo, encostadas à esquerda: parecia defeito. Em 393px sobram
+     ~257px para o campo depois das duas setas de 44 — espaço de sobra
+     para "setembro de 2026". */
+  .fluxo__periodo-campo {
     max-width: none;
+  }
+}
+
+/* Legenda à esquerda, período à direita: são os dois controles do
+   gráfico e pertencem à mesma fileira. Empilhados, viravam duas tiras
+   de coisas pequenas entre o título e as barras. */
+.gr__controles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-3);
+}
+
+.gr__controles .gr__legenda,
+.gr__controles .fluxo__periodo {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  /* Quebrada a fileira, o período ocupa a linha inteira em vez de
+     ficar encolhido num canto. */
+  .gr__controles .fluxo__periodo {
+    flex: 1 1 100%;
   }
 }

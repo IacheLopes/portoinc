@@ -2,7 +2,15 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- minimum-scale=1: o dedo pode APROXIMAR o quanto quiser, mas nao
+             consegue mais afastar abaixo de 100% e deixar a pagina pequena
+             no meio da tela com faixa vazia do lado. Sem isso, todo
+             navegador de celular permite afastar por padrao.
+    
+             Nao entra `maximum-scale` nem `user-scalable=no`: quem precisa
+             aumentar para ler TEM de conseguir. Bloquear isso e das piores
+             faltas de acessibilidade que uma tela pode ter. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
     <meta name="description" content="Sistema de compras e almoxarifado da Porto Inc." />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
