@@ -722,6 +722,20 @@ a.indicador--clicavel:focus-visible {
 .modal__corpo {
   padding: var(--esp-5);
   overflow-y: auto;
+
+  /* `flex: 1` + `min-height: 0`: os dois juntos, sempre.
+
+     A caixa é uma coluna flex de altura fixa, com o rodapé de ações
+     depois do corpo. Sem `flex: 1` o corpo não ocupa o espaço que
+     sobra; sem `min-height: 0` ele SE RECUSA A ENCOLHER — um filho
+     de flex tem tamanho mínimo automático igual ao conteúdo, e aí o
+     `overflow-y: auto` nunca entra em ação: em vez de rolar por
+     dentro, o corpo cresce e empurra o rodapé para fora da tela.
+
+     É o que decide se um formulário de nove campos funciona no
+     celular ou se o botão "Registrar" fica inalcançável. */
+  flex: 1;
+  min-height: 0;
 }
 
 .modal__acoes {

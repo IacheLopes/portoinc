@@ -31,7 +31,6 @@ import { CartaoIndicador } from '../../componentes/Graficos';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
-import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
@@ -352,15 +351,38 @@ export function PainelLocacao() {
       {/* ------------------------------------------------------
           Contratar
           ------------------------------------------------------ */}
-      {contratando && (
-        <Cartao className="painel-movimento">
-          <div className="secao__cabecalho">
-            <h2>Nova locação</h2>
-            <p className="secao__descricao">
-              Se o equipamento veio de um pedido de compra, escolha-o abaixo e o
-              resto se preenche sozinho.
-            </p>
-          </div>
+      {/* Modal, e nao painel na pagina.
+
+          O painel nascia DEPOIS da tabela de contratos: quem clicava
+          em "+ Nova locacao" no topo nao via nada acontecer, e ainda
+          tinha de rolar a tela inteira para achar o formulario. No
+          celular era pior.
+
+          O modal interrompe, que e o que um formulario de criacao
+          faz: ate terminar ou desistir, nao ha outra coisa para
+          fazer ali. */}
+      <Modal
+        aberto={contratando}
+        aoFechar={limparFormulario}
+        titulo="Nova locação"
+        descricao="Se o equipamento veio de um pedido de compra, escolha-o abaixo e o resto se preenche sozinho."
+        temAlteracao={Boolean(fornecedorId || obraDoContrato || descricao || valorPeriodo)}
+        acoes={
+          <>
+            <button type="button" className="botao botao--discreto" onClick={limparFormulario}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => void confirmarContrato()}
+              disabled={ocupado || !fornecedorId || !obraDoContrato || !descricao || !valorPeriodo}
+            >
+              {ocupado ? 'Registrando...' : 'Registrar locação'}
+            </button>
+          </>
+        }
+      >
 
           {comprados.length > 0 && (
             <Selecao
@@ -472,21 +494,7 @@ export function PainelLocacao() {
             />
           </div>
 
-          <div className="formulario__acoes formulario__acoes--fim">
-            <button type="button" className="botao botao--discreto" onClick={limparFormulario}>
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => void confirmarContrato()}
-              disabled={ocupado || !fornecedorId || !obraDoContrato || !descricao || !valorPeriodo}
-            >
-              {ocupado ? 'Registrando...' : 'Registrar locação'}
-            </button>
-          </div>
-        </Cartao>
-      )}
+      </Modal>
 
       {/* ------------------------------------------------------
           Devolver

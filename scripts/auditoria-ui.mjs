@@ -194,6 +194,12 @@ const SO_ESTA = (() => {
   return i >= 0 ? process.argv[i + 1] : null;
 })();
 
+/** `--abrir "Nova locacao"`: clica no botao antes de medir. */
+const ABRIR = (() => {
+  const i = process.argv.indexOf('--abrir');
+  return i >= 0 ? process.argv[i + 1] : null;
+})();
+
 const ESCOLHIDAS = SO_ESTA
   ? TELAS.filter(([, nome]) => nome === SO_ESTA)
   : telasParaMedir();
@@ -1001,6 +1007,36 @@ for (const [caminho, nome] of ESCOLHIDAS) {
       });
       console.log(nome.padEnd(28), 'NAO CARREGOU -', JSON.stringify(retrato));
       continue;
+    }
+
+    // ----------------------------------------------------------
+    //  `--abrir <texto do botao>`: mede com o modal ABERTO
+    //
+    //  Os formularios de criacao passaram a morar dentro de modal, e
+    //  ate agora nenhuma regua entrava la: media-se a tela de tras e
+    //  dizia-se que estava tudo certo. Verde sobre o que nao se
+    //  mediu e pior que vermelho.
+    //
+    //  O texto e o do proprio botao, como a pessoa le: `--abrir
+    //  "Nova locacao"`.
+    // ----------------------------------------------------------
+    if (ABRIR) {
+      const clicou = await js(`(() => {
+        const alvo = [...document.querySelectorAll('button, a')]
+          .find((b) => (b.textContent || '').trim().includes(${JSON.stringify(ABRIR)}));
+        if (!alvo) return 'nao achei o botao';
+        alvo.click();
+        return 'ok';
+      })()`);
+
+      if (clicou !== 'ok') {
+        console.log(nome.padEnd(28), 'NAO ABRIU - ' + clicou);
+        continue;
+      }
+
+      // O <dialog> anima ao abrir; medir antes disso le geometria
+      // que nunca fica na tela.
+      await esperarAcalmar(5000);
     }
 
     const achados = [];
