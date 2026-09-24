@@ -145,6 +145,35 @@ for (const arq of arquivosCss) {
 }
 
 // ------------------------------------------------------------
+//  2b. Cor de linha pintada nas CELULAS, sem contrapartida no
+//      modo cartao.
+//
+//  `.linha-vencida > * { background }` e o certo enquanto a linha
+//  e linha. No celular a linha vira cartao e as celulas ficam
+//  recuadas pelo padding dele: a cor virava retangulos soltos com
+//  moldura branca em volta. Visto no iPhone em 2026-09-24 — a
+//  regua de telas nao pega, porque nada transborda nem rola.
+//
+//  A regra cobra que exista, em algum lugar, uma regra com
+//  `.tabela-area--cartoes` citando a mesma classe.
+// ------------------------------------------------------------
+{
+  const todoCss = arquivosCss.map((f) => semComentario(readFileSync(f, 'utf8'))).join('\n');
+
+  for (const arq of arquivosCss) {
+    const css = semComentario(readFileSync(arq, 'utf8'));
+    for (const m of css.matchAll(/(\.[\w-]+)\s*>\s*\*\s*\{([^}]*)\}/g)) {
+      if (!/background\s*:/.test(m[2])) continue;
+      const classe = m[1];
+      const temCartao = new RegExp('\\.tabela-area--cartoes[^{}]*\\' + classe + '\\b').test(todoCss);
+      if (temCartao) continue;
+      achar('COR_DE_LINHA_SEM_MODO_CARTAO', arq, linhaDe(css, m.index),
+        `${classe} > * pinta a celula, e nada repinta o cartao no celular`);
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  3. Emoji fazendo papel de icone
 // ------------------------------------------------------------
 const EMOJI = /\p{Extended_Pictographic}/gu;

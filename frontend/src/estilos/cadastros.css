@@ -923,6 +923,38 @@ input[type='file'].campo__entrada {
   background: var(--erro-leve);
 }
 
+/* ------------------------------------------------------------
+   A cor da situação no modo cartão
+
+   Pintar `> *` é o certo ENQUANTO a linha é linha: a célula tem
+   fundo próprio e cobriria o do `<tr>`.
+
+   No celular a linha VIRA o cartão, e as células ficam recuadas
+   pelo padding dele. O resultado eram retângulos de cor soltos,
+   com moldura branca em volta e um vão branco embaixo do título —
+   o cartão parecia quebrado. Visto no iPhone em 24/09/2026; a
+   régua não pega isso, porque nada transborda nem rola.
+
+   Aqui a cor volta para o cartão inteiro, e a célula fica limpa.
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .tabela-area--cartoes .tabela tbody tr.linha-destacada { background: var(--info-leve); }
+  .tabela-area--cartoes .tabela tbody tr.linha-atencao   { background: var(--atencao-leve); }
+  .tabela-area--cartoes .tabela tbody tr.linha-vencida   { background: var(--erro-leve); }
+
+  .tabela-area--cartoes .tabela tbody tr.linha-destacada > *,
+  .tabela-area--cartoes .tabela tbody tr.linha-atencao > *,
+  .tabela-area--cartoes .tabela tbody tr.linha-vencida > * {
+    background: transparent;
+  }
+
+  /* A borda acompanha, para o cartão não ficar com cor por dentro
+     e moldura cinza por fora. */
+  .tabela-area--cartoes .tabela tbody tr.linha-destacada { border-color: var(--info-texto); }
+  .tabela-area--cartoes .tabela tbody tr.linha-atencao   { border-color: var(--atencao-texto); }
+  .tabela-area--cartoes .tabela tbody tr.linha-vencida   { border-color: var(--erro-texto); }
+}
+
 /* Um <label> que se comporta como botão, para o campo de
    arquivo do XML ficar com a mesma aparência dos outros. */
 .rotulo-arquivo {
