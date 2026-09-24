@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  buscarPainel, listarTitulos, pagarTitulo, exportarContas,
+  buscarPainel, buscarFluxo, listarTitulos, pagarTitulo, exportarContas,
   ROTULO_TITULO, COR_TITULO,
   type PainelFinanceiro as Dados, type Titulo,
 } from '../../servicos/fiscal';
@@ -57,6 +57,12 @@ function mesDeHoje(): string {
   return MESES[d.getMonth()] + '/' + String(d.getFullYear()).slice(-2);
 }
 
+/** O mês de hoje como AAAA-MM, que é o formato que o filtro usa. */
+function chaveDeHoje(): string {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 export function PainelFinanceiro() {
   const { pode } = useAutenticacao();
   const podeGerenciar = pode('financeiro.gerenciar');
@@ -69,6 +75,41 @@ export function PainelFinanceiro() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+
+  // ----------------------------------------------------------
+  //  Filtro de período do gráfico de fluxo
+  //
+  //  Vive aqui, e não dentro do gráfico, porque quem busca dado é a
+  //  tela. O gráfico só recebe onde está e avisa quando querem mudar.
+  //
+  //  `fluxoDoPeriodo` fica nulo enquanto ninguém mexeu: aí vale o
+  //  fluxo que veio junto com o painel, e não há uma segunda ida ao
+  //  servidor para mostrar o mesmo que já está na mão.
+  // ----------------------------------------------------------
+  const [refFluxo, setRefFluxo] = useState(chaveDeHoje());
+  const [fluxoDoPeriodo, setFluxoDoPeriodo] = useState<Dados['fluxo'] | null>(null);
+  const [fluxoCarregando, setFluxoCarregando] = useState(false);
+  const [fluxoErro, setFluxoErro] = useState<string | null>(null);
+
+  const trocarPeriodo = useCallback(async (nova: string) => {
+    setRefFluxo(nova);
+    setFluxoErro(null);
+
+    if (nova === chaveDeHoje()) {
+      setFluxoDoPeriodo(null);
+      return;
+    }
+
+    setFluxoCarregando(true);
+    try {
+      const r = await buscarFluxo(nova);
+      setFluxoDoPeriodo(r.fluxo);
+    } catch (e) {
+      setFluxoErro(e instanceof ErroApi ? e.message : 'Falha ao buscar o período.');
+    } finally {
+      setFluxoCarregando(false);
+    }
+  }, []);
 
   const [pagando, setPagando] = useState<Titulo | null>(null);
   const [dataPagamento, setDataPagamento] = useState(hojeIso());
@@ -301,10 +342,21 @@ export function PainelFinanceiro() {
             <>
               <Cartao className="col-cheia">
                 <GraficoFluxo
-                  colunas={fluxo}
+                  colunas={fluxoDoPeriodo ?? fluxo}
                   titulo="Fluxo de caixa: o que já saiu e o que vem por aí"
                   destacar={mesDeHoje()}
+                  periodo={{
+                    referencia: refFluxo,
+                    hoje: chaveDeHoje(),
+                    aoMudar: (r) => void trocarPeriodo(r),
+                    carregando: fluxoCarregando,
+                  }}
                 />
+                {fluxoErro && (
+                  <p className="aviso aviso--erro" role="alert">
+                    <Icone nome="alerta" /> {fluxoErro}
+                  </p>
+                )}
               </Cartao>
 
               <Cartao className="col-meia">

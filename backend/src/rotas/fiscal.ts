@@ -656,6 +656,65 @@ export async function rotasFiscal(app: FastifyInstance) {
   );
 
   // --------------------------------------------------------
+  //  Só o fluxo de caixa, numa janela de 12 meses escolhida
+  //
+  //  Rota própria, e não um parâmetro no painel, porque mudar o
+  //  período move SÓ o gráfico. A consulta do painel carrega
+  //  fornecedor, nota, pedido e obra para os rankings; refazer
+  //  tudo aquilo a cada toque na seta seria caro à toa.
+  //
+  //  `referencia` é o centro da janela, no formato AAAA-MM. Sem
+  //  ela, o mês de hoje — que é o que o painel já devolve.
+  // --------------------------------------------------------
+  app.get(
+    '/api/financeiro/fluxo',
+    { preHandler: app.exigirPermissao('financeiro.ver') },
+    async (req, res) => {
+      const { referencia } = req.query as { referencia?: string };
+
+      const hoje = new Date();
+      let alvo = hoje;
+
+      if (referencia !== undefined) {
+        const casa = /^(\d{4})-(\d{2})$/.exec(referencia);
+        if (!casa) {
+          return res.status(400).send({ erro: 'Período inválido. Use AAAA-MM.' });
+        }
+        const ano = Number(casa[1]);
+        const mes = Number(casa[2]);
+        if (mes < 1 || mes > 12 || ano < 2000 || ano > 2100) {
+          return res.status(400).send({ erro: 'Período fora do intervalo aceito.' });
+        }
+        alvo = new Date(ano, mes - 1, 1);
+      }
+
+      const titulos = await banco.contaPagar.findMany({
+        select: {
+          valor: true,
+          vencimento: true,
+          situacao: true,
+          pagoEm: true,
+          valorPago: true,
+        },
+      });
+
+      const parcelas = titulos.map((t) => ({
+        valor: numero(t.valor) ?? 0,
+        vencimento: t.vencimento,
+        situacao: t.situacao,
+        pagoEm: t.pagoEm,
+        valorPago: numero(t.valorPago),
+      }));
+
+      return {
+        fluxo: montarFluxo(parcelas, hoje, 3, 8, alvo),
+        referencia:
+          alvo.getFullYear() + '-' + String(alvo.getMonth() + 1).padStart(2, '0'),
+      };
+    },
+  );
+
+  // --------------------------------------------------------
   //  Baixar as contas a pagar
   //
   //  Sai em PDF ou em Word, à escolha de quem baixa — a mesma

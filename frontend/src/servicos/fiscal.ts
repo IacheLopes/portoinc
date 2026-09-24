@@ -388,3 +388,18 @@ export interface PainelFinanceiro {
 export function buscarPainel() {
   return chamar<PainelFinanceiro>('/api/financeiro/painel');
 }
+
+/**
+ * Só o fluxo de caixa, numa janela de 12 meses centrada em `referencia`.
+ *
+ * Rota separada de propósito: mudar o período move só o gráfico, e a
+ * consulta do painel inteiro é cara (carrega fornecedor, nota, pedido
+ * e obra para os rankings).
+ *
+ * @param referencia mês no formato AAAA-MM
+ */
+export function buscarFluxo(referencia: string) {
+  return chamar<{ fluxo: PainelFinanceiro['fluxo']; referencia: string }>(
+    '/api/financeiro/fluxo?referencia=' + encodeURIComponent(referencia),
+  );
+}

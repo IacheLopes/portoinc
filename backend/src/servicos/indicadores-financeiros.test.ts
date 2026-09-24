@@ -188,6 +188,45 @@ describe('Fluxo de caixa por mês', () => {
 
     assert.equal(f.reduce((s, m) => s + m.total, 0), 0);
   });
+
+  // ----------------------------------------------------------
+  //  O filtro de período
+  // ----------------------------------------------------------
+
+  it('a referência move a janela sem mexer em hoje', () => {
+    const f = montarFluxo([], HOJE, 3, 8, dia('2025-03-15'));
+
+    assert.equal(f[0].chave, '2024-12');
+    assert.equal(f[3].chave, '2025-03', 'a referência fica na posição 4');
+    assert.equal(f[11].chave, '2025-11');
+  });
+
+  it('sem referência, a janela continua sendo a de hoje', () => {
+    const comPadrao = montarFluxo([], HOJE, 3, 8);
+    const explicita = montarFluxo([], HOJE, 3, 8, HOJE);
+
+    assert.deepEqual(
+      comPadrao.map((m) => m.chave),
+      explicita.map((m) => m.chave),
+    );
+  });
+
+  // Este é o teste que justifica separar os dois parâmetros.
+  //
+  // Olhando dezembro de 2025, uma parcela vencida em 2026 continua
+  // VENCIDA — porque quem decide isso é hoje, não o mês que está
+  // sendo olhado. Se os dois fossem o mesmo parâmetro, o passado
+  // mostraria tudo como "a vencer" e o gráfico mentiria.
+  it('mudar o período NÃO faz o vencido voltar a ser a vencer', () => {
+    const atrasada = parcela({ valor: 300, vencimento: dia('2026-09-01') });
+
+    const naJanelaDeHoje = montarFluxo([atrasada], HOJE, 3, 8);
+    const olhandoOutroAno = montarFluxo([atrasada], HOJE, 3, 8, dia('2026-11-15'));
+
+    assert.equal(naJanelaDeHoje.find((m) => m.chave === '2026-09')?.vencido, 300);
+    assert.equal(olhandoOutroAno.find((m) => m.chave === '2026-09')?.vencido, 300);
+    assert.equal(olhandoOutroAno.find((m) => m.chave === '2026-09')?.aVencer, 0);
+  });
 });
 
 describe('Rankings', () => {

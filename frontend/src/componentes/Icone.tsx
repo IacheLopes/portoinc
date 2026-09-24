@@ -63,6 +63,8 @@ const CAMINHOS = {
       <path d="M9.5 20v-6h5v6" />
     </>
   ),
+  anterior: <path d="m14.5 5-6.5 7 6.5 7" />,
+  proximo: <path d="m9.5 5 6.5 7-6.5 7" />,
   certo: <path d="m4.5 12.5 5 5 10-11" />,
   errado: <path d="M6 6l12 12M18 6 6 18" />,
 

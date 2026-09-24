@@ -692,3 +692,77 @@
   .rosca { width: 160px; height: 160px; margin: 0 auto; }
   .dica { min-width: 160px; }
 }
+
+/* ------------------------------------------------------------
+   Período do fluxo de caixa
+
+   Fica DENTRO do cartão do gráfico, e não no topo da tela, porque
+   ele move só esta janela: indicadores, rosca e rankings continuam
+   falando de hoje.
+   ------------------------------------------------------------ */
+.fluxo__periodo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-3);
+}
+
+/* Quadrado, como o gatilho do menu de ações: o botão é só a seta,
+   e 44px continua sendo alvo de dedo. */
+.fluxo__passo {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Largura do conteúdo: cabe "set/2026" e mais nada. */
+.fluxo__periodo-campo .campo__entrada {
+  max-width: 11rem;
+}
+
+.fluxo__periodo-estado {
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   O fluxo no celular
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  /* Rótulo de três em três meses.
+
+     Doze meses em ~330px dão 27px por coluna, e "jun/26" precisa de
+     uns 40: os rótulos se atropelavam e viravam uma tira só —
+     "jun/26jul/26ago/26set/26" —, com o último cortado no meio.
+     De três em três sobram quatro rótulos com ~80px cada.
+
+     `visibility` e não `display`: a coluna precisa continuar
+     ocupando o lugar dela, senão as barras se desalinham dos
+     rótulos que ficaram.
+
+     O mês de hoje aparece SEMPRE, mesmo fora do ritmo: ele é a
+     âncora de leitura do gráfico. */
+  .fluxo__mes:not(:nth-child(3n + 1)):not(.fluxo__mes--hoje) .fluxo__rotulo {
+    visibility: hidden;
+  }
+
+  /* O valor embaixo da barra é uma segunda linha que não cabe em
+     27px. O toque na barra já mostra mês, valor e situação — e a
+     tabela equivalente, logo abaixo, tem tudo por escrito. */
+  .fluxo__rotulo small {
+    display: none;
+  }
+
+  /* O campo de mês ocupa a linha inteira: espremido entre as duas
+     setas ele ficava com menos de 100px. */
+  .fluxo__periodo-campo {
+    flex: 1 1 100%;
+    order: -1;
+  }
+
+  .fluxo__periodo-campo .campo__entrada {
+    max-width: none;
+  }
+}

@@ -25,6 +25,7 @@ import {
 } from 'react';
 import { dinheiro } from '../servicos/cadastros';
 import { dinheiroCurto } from '../servicos/texto';
+import { Icone } from './Icone';
 
 const TONS = {
   erro: 'var(--erro-texto)',
@@ -300,14 +301,39 @@ export interface ColunaDoFluxo {
   total: number;
 }
 
+/**
+ * O controle de período do gráfico.
+ *
+ * Fica dentro do cartão do gráfico, e não no topo da tela, porque ele
+ * move SÓ esta janela: os indicadores, a rosca e os rankings continuam
+ * falando de hoje.
+ */
+export interface PeriodoDoFluxo {
+  /** Centro da janela, no formato AAAA-MM. */
+  referencia: string;
+  /** O mês de hoje, também AAAA-MM. Serve para saber quando oferecer o "Hoje". */
+  hoje: string;
+  aoMudar: (referencia: string) => void;
+  carregando?: boolean;
+}
+
+/** Anda `passos` meses a partir de um AAAA-MM, virando o ano sozinho. */
+export function andarMeses(referencia: string, passos: number): string {
+  const [ano, mes] = referencia.split('-').map(Number);
+  const d = new Date(ano, mes - 1 + passos, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 export function GraficoFluxo({
   colunas,
   titulo,
   destacar,
+  periodo,
 }: {
   colunas: ColunaDoFluxo[];
   titulo: string;
   destacar?: string;
+  periodo?: PeriodoDoFluxo;
 }) {
   const { area, dica, ligar } = useDica();
   const maior = Math.max(...colunas.map((c) => c.total), 1);
@@ -315,6 +341,59 @@ export function GraficoFluxo({
   return (
     <figure className="gr">
       <figcaption className="gr__titulo">{titulo}</figcaption>
+
+      {periodo && (
+        <div className="fluxo__periodo">
+          {/* Meia janela por toque: andando 12 de uma vez, nenhum mês
+              da tela anterior continua à vista e some a referência. */}
+          <button
+            type="button"
+            className="botao botao--secundario fluxo__passo"
+            aria-label="Seis meses para trás"
+            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, -6))}
+          >
+            <Icone nome="anterior" />
+          </button>
+
+          {/* `type="month"` é nativo: no iPhone abre a rodinha do iOS e
+              no computador o calendário do navegador. Um seletor próprio
+              seria mais código e pior em ambos. */}
+          <label className="fluxo__periodo-campo">
+            <span className="apenas-leitor-tela">Mês no centro do gráfico</span>
+            <input
+              type="month"
+              className="campo__entrada"
+              value={periodo.referencia}
+              onChange={(e) => e.target.value && periodo.aoMudar(e.target.value)}
+            />
+          </label>
+
+          <button
+            type="button"
+            className="botao botao--secundario fluxo__passo"
+            aria-label="Seis meses para frente"
+            onClick={() => periodo.aoMudar(andarMeses(periodo.referencia, 6))}
+          >
+            <Icone nome="proximo" />
+          </button>
+
+          {/* Só aparece quando há para onde voltar: botão que não faz
+              nada ensina a ignorar os que fazem. */}
+          {periodo.referencia !== periodo.hoje && (
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => periodo.aoMudar(periodo.hoje)}
+            >
+              Hoje
+            </button>
+          )}
+
+          <span className="fluxo__periodo-estado" role="status">
+            {periodo.carregando ? 'Carregando...' : ''}
+          </span>
+        </div>
+      )}
 
       <div className="gr__legenda">
         <span className="gr__chave"><i style={{ background: TONS.sucesso }} /> Pago</span>

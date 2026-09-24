@@ -147,22 +147,39 @@ export interface MesDoFluxo {
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
+/** O fluxo só precisa disto de cada parcela — não do fornecedor nem da obra. */
+export type ParcelaDoFluxo = Pick<
+  ParcelaParaIndicador,
+  'valor' | 'vencimento' | 'situacao' | 'pagoEm' | 'valorPago'
+>;
+
 /**
  * Doze meses: os 3 anteriores e os 9 seguintes.
  *
  * O passado mostra o que já saiu; o futuro mostra o que vem.
  * Sem o passado, não dá para comparar o mês que vem com nada.
+ *
+ * `hoje` e `referencia` são coisas DIFERENTES, e essa separação é o
+ * que permite o filtro de período:
+ *
+ *   - `referencia` decide QUAIS meses aparecem no gráfico;
+ *   - `hoje` decide o que é vencido e o que ainda vai vencer.
+ *
+ * Juntos num parâmetro só, olhar dezembro de 2025 faria toda parcela
+ * em aberto parecer "a vencer" — porque em dezembro ela ainda estava.
+ * O gráfico mentiria sobre o presente para poder mostrar o passado.
  */
 export function montarFluxo(
-  parcelas: ParcelaParaIndicador[],
+  parcelas: ParcelaDoFluxo[],
   hoje = new Date(),
   mesesAntes = 3,
   mesesDepois = 8,
+  referencia = hoje,
 ): MesDoFluxo[] {
   const meses: MesDoFluxo[] = [];
 
   for (let i = -mesesAntes; i <= mesesDepois; i++) {
-    const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    const data = new Date(referencia.getFullYear(), referencia.getMonth() + i, 1);
     const chave =
       data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0');
 
