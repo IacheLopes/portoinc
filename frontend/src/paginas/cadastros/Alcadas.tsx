@@ -22,6 +22,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 interface FuncaoItem {
   id: string;
@@ -146,7 +147,7 @@ export function Alcadas() {
               descricao="Sem faixa, nenhuma solicitação sabe quem precisa assinar. Use “+ Nova faixa” para criar a primeira."
             />
           ) : (
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Faixas de valor e quem aprova cada uma
@@ -192,7 +193,7 @@ export function Alcadas() {
                 ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           )}
         </Cartao>
       </section>

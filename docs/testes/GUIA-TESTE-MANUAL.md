@@ -1,4 +1,4 @@
-<!-- versao: 0.24.0 -->
+<!-- versao: 0.25.0 -->
 
 # 1. Como usar este guia
 
@@ -3785,6 +3785,52 @@ duas linhas e a outra uma.
 
 ---
 
+## CT-276 · No celular, a tabela vira cartão
+
+Use o celular de verdade, ou apenas estreite a janela do navegador até uns 400px de largura.
+
+1. Entre como **Comprador** (`washington@portoinc.com.br`) e abra **Pedidos**
+
+**Esperado:** cada pedido é um **cartão**, com o número em cima e os campos embaixo —
+Fornecedor, Origem, Itens, Total, Pagamento, Situação e as Ações. **Nenhum campo fica**
+**escondido**, e você não precisa arrastar a tabela para o lado.
+
+2. Tente arrastar a página para o lado
+
+**Esperado:** ela não anda. Nada fica fora da tela.
+
+3. Olhe o rótulo de cada campo
+
+**Esperado:** aparece acima do valor, em letra menor e maiúscula — e é o **mesmo texto** do
+cabeçalho da tabela no computador.
+
+4. Abra a mesma tela no computador
+
+**Esperado:** volta a ser tabela, igual a antes.
+
+5. Abra **Cotações → uma cotação → Equalização** no celular
+
+**Esperado:** aqui a tabela **continua** rolando de lado, de propósito: é a tela de comparar
+fornecedor com fornecedor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-277 · Os números no celular
+
+1. Ainda no celular, olhe o topo de **Pedidos**
+
+**Esperado:** os cartões de número aparecem **dois por linha**.
+
+2. Confira o maior valor da tela (por exemplo "R$ 86.796,00")
+
+**Esperado:** ele cabe inteiro dentro do cartão. Nenhum número cortado ou vazando.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4166,8 +4212,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-273 | O campo tem o tamanho do que recebe |  |
 | CT-274 | Alçadas sem faixa configurada |  |
 | CT-275 | Os cartões de lista estão alinhados por dentro |  |
+| CT-276 | No celular, a tabela vira cartão |  |
+| CT-277 | Os números no celular |  |
 
-**Total: 275 casos** · Etapas cobertas: 0 a 12
+**Total: 277 casos** · Etapas cobertas: 0 a 12
 
 ---
 

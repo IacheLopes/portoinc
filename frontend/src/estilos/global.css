@@ -60,7 +60,8 @@ p { margin: 0; }
 }
 
 /* Texto visivel apenas para leitores de tela. */
-.apenas-leitor-tela {
+.apenas-leitor-tela,
+.tabela-area--cartoes .tabela thead {
   position: absolute;
   width: 1px; height: 1px;
   padding: 0; margin: -1px;
@@ -727,5 +728,129 @@ a.indicador--clicavel:hover {
 
   .modal__acoes > * {
     width: 100%;
+  }
+}
+
+
+/* ------------------------------------------------------------
+   No celular, cada linha da tabela vira um cartão
+
+   O motivo não é transbordo: a tabela já rolava dentro da própria
+   caixa, e a página não anda um pixel. É que, rolando, o telefone
+   mostra 4 das 8 colunas de Pedidos e esconde Total, Situação e
+   Ações — sem nenhum sinal de que existe mais coisa à direita.
+
+   O nome da coluna vem do `data-rotulo`, que o componente
+   `TabelaArea` copia do `<thead>`. Escrito à mão em cada célula,
+   ele mentiria no dia em que um cabeçalho mudasse.
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .tabela-area--cartoes .tabela,
+  .tabela-area--cartoes .tabela tbody,
+  .tabela-area--cartoes .tabela tr,
+  .tabela-area--cartoes .tabela td,
+  .tabela-area--cartoes .tabela th {
+    display: block;
+    width: auto;
+  }
+
+  /* O cabeçalho sai de VISTA, não da página.
+
+     Não é `display: none`: o rótulo passou a viver ao lado de
+     cada valor, mas o leitor de tela continua usando a relação
+     cabeçalho-célula para anunciar "Fornecedor, Marquilip".
+
+     A técnica é a mesma do `.apenas-leitor-tela`, então a regra
+     vai junto com ela — assim a régua, que já sabe pular texto
+     escondido desse jeito, não acusa "Número" de estourar uma
+     caixa de 1px. */
+
+  .tabela-area--cartoes .tabela tbody tr {
+    margin-bottom: var(--esp-3);
+    padding: var(--esp-4);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-lg);
+    background: var(--fundo-elevado);
+  }
+
+  .tabela-area--cartoes .tabela tbody tr:last-child { margin-bottom: 0; }
+
+  /* A primeira célula é o nome da linha: vira o título do cartão. */
+  .tabela-area--cartoes .tabela tbody th[scope='row'] {
+    padding: 0 0 var(--esp-3);
+    margin-bottom: var(--esp-3);
+    border-bottom: 1px solid var(--borda);
+    font-size: var(--txt-md);
+    text-align: left;
+  }
+
+  .tabela-area--cartoes .tabela tbody td {
+    display: block;
+    padding: var(--esp-2) 0;
+    border: 0;
+    text-align: left;
+  }
+
+  /* O rotulo vai EM CIMA do valor, e nao ao lado.
+
+     Ao lado, em 420px, sobram uns 180px para o valor — e
+     "BID-00015 · Cimento — ultima etapa" quebrava em cinco linhas,
+     cortando no meio da palavra. Medido: o valor encolhia ate o
+     tamanho da maior palavra.
+
+     Em cima, o valor tem a largura inteira do cartao. Custa uma
+     linha por campo e paga em legibilidade. */
+  .tabela-area--cartoes .tabela tbody td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    display: block;
+    margin-bottom: 2px;
+    font-size: var(--txt-xs);
+    font-weight: var(--peso-forte);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-secundario);
+  }
+
+
+  /* A célula de ações não tem rótulo e ganha a linha inteira, com
+     um traço separando do resto. */
+  .tabela-area--cartoes .tabela tbody td.celula-acoes {
+    margin-top: var(--esp-3);
+    padding-top: var(--esp-3);
+    border-top: 1px solid var(--borda);
+    white-space: normal;
+  }
+
+  .tabela-area--cartoes .tabela tbody td.celula-acoes .formulario__acoes {
+    justify-content: flex-start;
+  }
+
+  /* A legenda continua só para leitor de tela; o título da seção já
+     diz do que é a tabela. */
+  .tabela-area--cartoes .tabela caption { display: none; }
+
+  /* Sem cartão dentro de cartão: a linha JÁ é o cartão. */
+  .cartao--sem-espaco .tabela-area--cartoes { padding: var(--esp-4); }
+}
+
+/* ------------------------------------------------------------
+   Indicadores em dupla no celular
+
+   Um número por linha faz a tela inicial ter três telas de altura
+   antes de chegar no que importa. Eles são curtos: cabem dois.
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .grade:has(> .indicador),
+  .grade:has(> .indicador-area) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--esp-3);
+  }
+
+  /* Em dupla, a caixa tem ~138px — e "R$ 86.796,00" pedia 178 no
+     tamanho do computador. Ou o numero encolhe, ou ele vaza.
+     Medido antes de escolher o degrau. */
+  .grade:has(> .indicador) .indicador__valor,
+  .grade:has(> .indicador-area) .indicador-grafico__valor {
+    font-size: var(--txt-lg);
   }
 }

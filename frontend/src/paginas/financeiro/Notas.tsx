@@ -29,6 +29,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -506,7 +507,7 @@ export function NotasFiscais() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Notas fiscais lançadas</caption>
                 <thead>
@@ -698,7 +699,7 @@ export function NotasFiscais() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
 

@@ -20,6 +20,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 /** Quantos dias faltam até a data em que o material é necessário. */
 function diasAte(iso: string | null): number | null {
@@ -123,7 +124,7 @@ export function FilaAprovacao() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
                   Solicitações aguardando a sua aprovação
@@ -184,7 +185,7 @@ export function FilaAprovacao() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

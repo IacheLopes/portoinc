@@ -28,6 +28,7 @@ import { Campo } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
@@ -214,7 +215,7 @@ export function ConfiguracaoEmail() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Endereços autorizados a receber</caption>
                 <thead>
@@ -254,7 +255,7 @@ export function ConfiguracaoEmail() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>
@@ -317,7 +318,7 @@ export function ConfiguracaoEmail() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
                   Histórico de e-mails enviados e bloqueados
@@ -358,7 +359,7 @@ export function ConfiguracaoEmail() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

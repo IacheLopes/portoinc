@@ -17,6 +17,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 function formatarTempo(segundos: number): string {
   if (segundos < 60) return segundos + ' s';
@@ -125,7 +126,7 @@ export function StatusSistema() {
         </div>
 
         <Cartao semEspaco>
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Situação de cada integração externa do sistema
@@ -155,7 +156,7 @@ export function StatusSistema() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelaArea>
         </Cartao>
       </section>
 

@@ -119,7 +119,7 @@ export function Layout() {
               </span>
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.24.0</p>
+            <p className="menu__versao">versão 0.25.0</p>
           </div>
         </nav>
 

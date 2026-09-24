@@ -29,6 +29,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -313,7 +314,7 @@ export function DetalheCotacao() {
           ) : (
             <>
               <Cartao semEspaco>
-                <div className="tabela-area">
+                <TabelaArea>
                   <table className="tabela">
                     <caption className="apenas-leitor-tela">
                       Fornecedores que atendem as famílias do pacote
@@ -373,7 +374,7 @@ export function DetalheCotacao() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TabelaArea>
               </Cartao>
 
               <div className="barra-acoes" style={{ marginTop: 'var(--esp-3)' }}>
@@ -404,7 +405,7 @@ export function DetalheCotacao() {
           </div>
 
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Fornecedores convidados</caption>
                 <thead>
@@ -480,7 +481,7 @@ export function DetalheCotacao() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
 
           {aberto && (
@@ -506,7 +507,7 @@ export function DetalheCotacao() {
         </div>
 
         <Cartao semEspaco>
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela">
               <caption className="apenas-leitor-tela">Itens a cotar</caption>
               <thead>
@@ -545,7 +546,7 @@ export function DetalheCotacao() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelaArea>
         </Cartao>
       </section>
     </>

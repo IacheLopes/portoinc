@@ -27,6 +27,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -440,7 +441,7 @@ export function PainelEstoque() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Saldo por material</caption>
                 <thead>
@@ -503,7 +504,7 @@ export function PainelEstoque() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

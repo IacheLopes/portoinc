@@ -19,6 +19,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function MovimentosEstoque() {
   const [movimentos, setMovimentos] = useState<Movimento[]>([]);
@@ -96,7 +97,7 @@ export function MovimentosEstoque() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Movimentos de estoque</caption>
                 <thead>
@@ -151,7 +152,7 @@ export function MovimentosEstoque() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

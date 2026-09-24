@@ -17,6 +17,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
@@ -136,7 +137,7 @@ export function ListaCotacoes() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pacotes de cotação</caption>
                 <thead>
@@ -193,7 +194,7 @@ export function ListaCotacoes() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

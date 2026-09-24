@@ -42,6 +42,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 // ------------------------------------------------------------
 //  Abas
@@ -365,7 +366,7 @@ function AbaOrcamento() {
               descricao="Cadastre as linhas do orçamento na tela da obra para acompanhar o gasto."
             />
           ) : (
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
                   Orçado contra realizado, linha a linha, da obra {dados.obra?.nome}.
@@ -418,7 +419,7 @@ function AbaOrcamento() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           )}
         </>
       )}
@@ -548,7 +549,7 @@ function AbaEconomia() {
         )}
       </div>
 
-      <div className="tabela-area">
+      <TabelaArea>
         <table className="tabela">
           <caption className="apenas-leitor-tela">
             Economia por cotação encerrada no período.
@@ -585,7 +586,7 @@ function AbaEconomia() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TabelaArea>
     </>
   );
 }
@@ -690,7 +691,7 @@ function AbaFornecedores() {
         </Cartao>
       </div>
 
-      <div className="tabela-area">
+      <TabelaArea>
         <table className="tabela">
           <caption className="apenas-leitor-tela">
             Desempenho de cada fornecedor: resposta, pontualidade e qualidade.
@@ -753,7 +754,7 @@ function AbaFornecedores() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TabelaArea>
 
       {comEntrega.length === 0 && (
         <p className="texto-fraco">
@@ -1032,7 +1033,7 @@ function AbaConsumo() {
             </Cartao>
           </div>
 
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Consumo por família de material no período.
@@ -1058,11 +1059,11 @@ function AbaConsumo() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelaArea>
 
           <h2 className="secao__subtitulo">Os itens mais comprados</h2>
 
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Os materiais com maior valor comprado no período.
@@ -1094,7 +1095,7 @@ function AbaConsumo() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelaArea>
         </>
       )}
     </>

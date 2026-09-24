@@ -21,6 +21,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 interface FuncaoItem {
   id: string;
@@ -155,7 +156,7 @@ export function Usuarios() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
                   Lista de usuários com suas funções e situação
@@ -207,7 +208,7 @@ export function Usuarios() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

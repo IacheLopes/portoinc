@@ -1,4 +1,4 @@
-<!-- versao: 0.24.0 -->
+<!-- versao: 0.25.0 -->
 
 # 1. Antes de começar
 
@@ -2312,6 +2312,32 @@ O sistema registra o que **teria** enviado, para você conferir. Risco zero.
 ---
 
 # 41.9. O menu de três pontinhos, e as confirmações
+
+## No celular, cada linha vira um cartão
+
+Nas telas de lista — Pedidos, Notas fiscais, Solicitações, Estoque e as outras — a tabela
+muda de forma no telefone: **cada linha vira um cartão**, com o nome da coluna em cima de
+cada valor.
+
+> No computador continua tabela. É a mesma informação, na forma que cabe em cada tela.
+
+Antes a tabela rolava de lado dentro da própria caixa, e o telefone mostrava **quatro das
+oito colunas** de Pedidos — Total, Situação e Ações ficavam escondidas à direita, sem
+nenhum sinal de que existiam.
+
+### A exceção: a equalização
+
+Na **Equalização de cotação** a tabela continua rolando de lado, inclusive no celular. Ali o
+trabalho é comparar o mesmo item entre fornecedores — virar cartão desmontaria justamente o
+que você abriu a tela para ver.
+
+## Os números ficam lado a lado
+
+Os cartões de número (Pedidos, Valor total, Fornecedores...) aparecem **dois por linha** no
+celular, em vez de um. Um por linha fazia a tela ter três alturas de tela antes de chegar na
+lista.
+
+---
 
 ## Alçadas: quando não há faixa nenhuma
 

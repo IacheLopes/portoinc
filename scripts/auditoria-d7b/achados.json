@@ -1,0 +1,673 @@
+[
+  {
+    "tela": "inicio",
+    "caminho": "/",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Boa noite, Administrador"
+    },
+    "achados": []
+  },
+  {
+    "tela": "solicitacoes-lista",
+    "caminho": "/solicitacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 18,
+      "titulo": "Solicitações de compra"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Número\" (72 > 32)",
+          "th \"Obra\" (51 > 32)",
+          "th \"Solicitante\" (96 > 32)",
+          "th \"Itens\" (52 > 32)",
+          "th.numero \"Total estimado\" (124 > 32)",
+          "th \"Precisa até\" (94 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "solicitacoes-nova",
+    "caminho": "/solicitacoes/nova",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Nova solicitação de compra"
+    },
+    "achados": []
+  },
+  {
+    "tela": "solicitacoes-detalhe",
+    "caminho": "/solicitacoes/da72ade4-0c9d-4bec-8348-f911bc04606f",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "SOL-00015"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Quem\" (54 > 32)",
+          "th \"Função\" (68 > 32)",
+          "th \"Decisão\" (70 > 32)",
+          "th \"Observação\" (99 > 32)",
+          "th \"Quando\" (72 > 32)",
+          "th \"Código\" (65 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "aprovacoes",
+    "caminho": "/aprovacoes",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Aprovações"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-lista",
+    "caminho": "/cotacoes",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Cotações"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Número\" (72 > 32)",
+          "th \"Título\" (60 > 32)",
+          "th.numero \"Itens\" (52 > 32)",
+          "th.numero \"Convidados\" (100 > 32)",
+          "th.numero \"Respostas\" (86 > 32)",
+          "th \"Prazo\" (59 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-nova",
+    "caminho": "/cotacoes/nova",
+    "estado": {
+      "vazio": true,
+      "linhas": 0,
+      "titulo": "Novo pacote de cotação"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cotacoes-detalhe",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "BID-00015"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Fornecedor\" (100 > 32)",
+          "th \"Abriu o link\" (101 > 32)",
+          "th \"Respondeu\" (91 > 32)",
+          "th.numero \"Total cotado\" (110 > 32)",
+          "th \"Pagamento\" (95 > 32)",
+          "th \"Código\" (65 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cotacoes-equalizacao",
+    "caminho": "/cotacoes/f5c04aad-add6-4e56-8ff2-fe166f0098be/equalizacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Equalização"
+    },
+    "achados": []
+  },
+  {
+    "tela": "pedidos",
+    "caminho": "/pedidos",
+    "estado": {
+      "vazio": false,
+      "linhas": 17,
+      "titulo": "Pedidos de compra"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Número\" (72 > 32)",
+          "th \"Fornecedor\" (100 > 32)",
+          "th \"Origem\" (66 > 32)",
+          "th.numero \"Itens\" (52 > 32)",
+          "th.numero \"Total\" (54 > 32)",
+          "th \"Pagamento\" (95 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "recebimento",
+    "caminho": "/recebimento",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Recebimento"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Pedido\" (63 > 32)",
+          "th \"Fornecedor\" (100 > 32)",
+          "th \"Obra\" (51 > 32)",
+          "th.numero \"Itens a chegar\" (119 > 32)",
+          "th \"Situação\" (79 > 32)",
+          "th \"Recebimento\" (104 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "recebimento-conferir",
+    "caminho": "/recebimento/17",
+    "estado": {
+      "vazio": false,
+      "linhas": 1,
+      "titulo": "Conferir PC-00017"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Item\" (47 > 32)",
+          "th.numero \"Pedido\" (63 > 32)",
+          "th.numero \"Já recebido\" (96 > 32)",
+          "th.numero \"Saldo\" (58 > 32)",
+          "th.numero \"Recebido agora\" (126 > 32)",
+          "th.numero \"Devolvido\" (88 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "estoque",
+    "caminho": "/estoque",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Estoque"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "5 elemento(s)",
+        "culpados": [
+          "th \"Material\" (79 > 32)",
+          "th.numero \"Saldo\" (58 > 32)",
+          "th.numero \"Mínimo\" (68 > 32)",
+          "th.numero \"Custo médio\" (103 > 32)",
+          "th.numero \"Valor parado\" (113 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "estoque-movimentos",
+    "caminho": "/estoque/movimentos",
+    "estado": {
+      "vazio": false,
+      "linhas": 28,
+      "titulo": "Extrato do estoque"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Movimento\" (96 > 32)",
+          "th \"Material\" (79 > 32)",
+          "th \"O que foi\" (79 > 32)",
+          "th.numero \"Quantidade\" (99 > 32)",
+          "th.numero \"Saldo depois\" (107 > 32)",
+          "th \"Quem / para onde\" (140 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "locacao",
+    "caminho": "/locacao",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Locação de equipamentos"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Contrato\" (84 > 32)",
+          "th \"Equipamento\" (107 > 32)",
+          "th \"Obra\" (51 > 32)",
+          "th \"Cobrança\" (86 > 32)",
+          "th \"Devolução\" (92 > 32)",
+          "th.celula-valor \"Já custou\" (82 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "financeiro",
+    "caminho": "/financeiro",
+    "estado": {
+      "vazio": false,
+      "linhas": 29,
+      "titulo": "Financeiro"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Título\" (60 > 32)",
+          "th \"Fornecedor\" (100 > 32)",
+          "th \"Origem\" (66 > 32)",
+          "th.numero \"Valor\" (57 > 32)",
+          "th \"Vencimento\" (99 > 32)",
+          "th \"Situação\" (79 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "financeiro-notas",
+    "caminho": "/financeiro/notas",
+    "estado": {
+      "vazio": false,
+      "linhas": 4,
+      "titulo": "Notas fiscais"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Nota\" (51 > 32)",
+          "th \"Fornecedor\" (100 > 32)",
+          "th \"Pedido\" (63 > 32)",
+          "th.numero \"Valor\" (57 > 32)",
+          "th \"Situação\" (79 > 32)",
+          "th \"Parcelas\" (78 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-orcamento",
+    "caminho": "/relatorios",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Linha\" (55 > 32)",
+          "th.celula-valor \"Previsto\" (73 > 32)",
+          "th.celula-valor \"Comprado\" (88 > 32)",
+          "th.celula-valor \"Saldo\" (57 > 32)",
+          "th \"Consumo\" (81 > 32)",
+          "th \"Situação\" (79 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-economia",
+    "caminho": "/relatorios?ver=economia",
+    "estado": {
+      "vazio": false,
+      "linhas": 21,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Cotação\" (75 > 32)",
+          "th.celula-valor \"Respostas\" (84 > 32)",
+          "th.celula-valor \"Estimado\" (80 > 32)",
+          "th.celula-valor \"Fechado\" (74 > 32)",
+          "th.celula-valor \"Economia\" (83 > 32)",
+          "th.celula-valor \"Ganho na disputa\" (139 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-fornecedores",
+    "caminho": "/relatorios?ver=fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 15,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Fornecedor\" (100 > 32)",
+          "th.celula-valor \"Comprado\" (88 > 32)",
+          "th.celula-valor \"Respostas\" (84 > 32)",
+          "th.celula-valor \"Entregas\" (79 > 32)",
+          "th \"Pontualidade\" (114 > 32)",
+          "th \"Qualidade\" (89 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "relatorios-tempos",
+    "caminho": "/relatorios?ver=tempos",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Relatórios"
+    },
+    "achados": []
+  },
+  {
+    "tela": "relatorios-consumo",
+    "caminho": "/relatorios?ver=consumo",
+    "estado": {
+      "vazio": false,
+      "linhas": 33,
+      "titulo": "Relatórios"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Família\" (67 > 32)",
+          "th.celula-valor \"Itens diferentes\" (126 > 32)",
+          "th.celula-valor \"Valor\" (56 > 32)",
+          "th \"Participação\" (107 > 32)",
+          "th \"Item\" (47 > 32)",
+          "th.celula-valor \"Quantidade\" (97 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-indice",
+    "caminho": "/cadastros",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Cadastros"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-familias",
+    "caminho": "/cadastros/familias",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Famílias de material"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-materiais",
+    "caminho": "/cadastros/materiais",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Materiais e serviços"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Cód. Porto\" (92 > 32)",
+          "th \"Descrição\" (86 > 32)",
+          "th \"Família\" (67 > 32)",
+          "th \"Un.\" (39 > 32)",
+          "th \"Cód. de barras\" (119 > 32)",
+          "th \"Norma\" (65 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-fornecedores",
+    "caminho": "/cadastros/fornecedores",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Fornecedores"
+    },
+    "achados": []
+  },
+  {
+    "tela": "cadastros-obras",
+    "caminho": "/cadastros/obras",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Obras"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Código\" (65 > 32)",
+          "th \"Obra\" (51 > 32)",
+          "th \"Cliente\" (66 > 32)",
+          "th \"Local\" (55 > 32)",
+          "th \"Situação\" (79 > 32)",
+          "th \"Orçamento\" (96 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-obra-detalhe",
+    "caminho": "/cadastros/obras/83fbfc58-1d58-46d7-add8-48270ebdf663",
+    "estado": {
+      "vazio": false,
+      "linhas": 20,
+      "titulo": "Residencial Porto Belo"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Código\" (65 > 32)",
+          "th \"Descrição\" (86 > 32)",
+          "th \"Un.\" (39 > 32)",
+          "th.numero \"Qtd. prevista\" (108 > 32)",
+          "th.numero \"Valor unitário\" (122 > 32)",
+          "th.numero \"Total previsto\" (118 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "cadastros-alcadas",
+    "caminho": "/cadastros/alcadas",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Limites de alçada"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "5 elemento(s)",
+        "culpados": [
+          "th \"Faixa de valor\" (117 > 32)",
+          "th \"Descrição\" (86 > 32)",
+          "th \"Quem aprova\" (109 > 32)",
+          "th \"Regra\" (57 > 32)",
+          "th \"Situação\" (79 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "admin-usuarios",
+    "caminho": "/admin/usuarios",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Usuários"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "5 elemento(s)",
+        "culpados": [
+          "th \"Nome\" (54 > 32)",
+          "th \"E-mail\" (60 > 32)",
+          "th \"Funções\" (73 > 32)",
+          "th \"Último acesso\" (116 > 32)",
+          "th \"Situação\" (79 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "admin-avisos-whatsapp",
+    "caminho": "/admin/avisos?ver=whatsapp",
+    "estado": {
+      "vazio": false,
+      "linhas": 7,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"Número\" (72 > 32)",
+          "th \"De quem é\" (84 > 32)",
+          "th \"Observação\" (99 > 32)",
+          "th \"Liberado por\" (108 > 32)",
+          "th \"Quando\" (72 > 32)",
+          "th \"Para\" (49 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "admin-avisos-email",
+    "caminho": "/admin/avisos?ver=email",
+    "estado": {
+      "vazio": false,
+      "linhas": 3,
+      "titulo": "Avisos ao fornecedor"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "6 elemento(s)",
+        "culpados": [
+          "th \"E-mail\" (60 > 32)",
+          "th \"De quem é\" (84 > 32)",
+          "th \"Observação\" (99 > 32)",
+          "th \"Liberado por\" (108 > 32)",
+          "th \"Quando\" (72 > 32)",
+          "th \"Para\" (49 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "admin-status",
+    "caminho": "/admin/status",
+    "estado": {
+      "vazio": false,
+      "linhas": 5,
+      "titulo": "Status do sistema"
+    },
+    "achados": [
+      {
+        "tipo": "TEXTO_ESTOURANDO",
+        "detalhe": "4 elemento(s)",
+        "culpados": [
+          "th \"Área\" (49 > 32)",
+          "th \"Para que serve\" (120 > 32)",
+          "th \"Ligado em\" (86 > 32)",
+          "th \"Situação\" (79 > 32)"
+        ],
+        "largura": 420
+      }
+    ]
+  },
+  {
+    "tela": "minha-senha",
+    "caminho": "/minha-senha",
+    "estado": {
+      "vazio": false,
+      "linhas": 0,
+      "titulo": "Trocar minha senha"
+    },
+    "achados": []
+  }
+]

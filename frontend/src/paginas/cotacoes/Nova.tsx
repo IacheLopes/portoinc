@@ -19,6 +19,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 /** Daqui a N dias, no formato que o campo de data aceita. */
 function daquiADias(dias: number): string {
@@ -238,7 +239,7 @@ export function NovaCotacao() {
             </div>
 
             <Cartao semEspaco>
-              <div className="tabela-area">
+              <TabelaArea>
                 <table className="tabela">
                   <caption className="apenas-leitor-tela">
                     Itens aprovados disponíveis para cotação
@@ -298,7 +299,7 @@ export function NovaCotacao() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TabelaArea>
             </Cartao>
           </>
         )}

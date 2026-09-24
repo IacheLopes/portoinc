@@ -29,6 +29,7 @@ import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
@@ -338,7 +339,7 @@ export function ConfiguracaoWhatsApp() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Números autorizados a receber</caption>
                 <thead>
@@ -383,7 +384,7 @@ export function ConfiguracaoWhatsApp() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>
@@ -440,7 +441,7 @@ export function ConfiguracaoWhatsApp() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Mensagens enviadas pelo sistema</caption>
                 <thead>
@@ -480,7 +481,7 @@ export function ConfiguracaoWhatsApp() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

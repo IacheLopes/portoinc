@@ -15,6 +15,7 @@ import { Selo, type TipoSelo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -118,7 +119,7 @@ export function Obras() {
           <Vazio titulo="Nenhuma obra cadastrada" descricao="Cadastre a primeira obra para começar." />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Obras da Porto Inc.</caption>
                 <thead>
@@ -165,7 +166,7 @@ export function Obras() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

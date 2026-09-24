@@ -24,6 +24,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 /** O que o almoxarife preencheu em cada linha da tabela. */
 interface Linha {
@@ -313,7 +314,7 @@ export function ConferirRecebimento() {
         </div>
 
         <Cartao semEspaco>
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela tabela--conferencia">
               <caption className="apenas-leitor-tela">
                 Itens do pedido, com saldo e quantidade recebida
@@ -417,7 +418,7 @@ export function ConferirRecebimento() {
                 })}
               </tbody>
             </table>
-          </div>
+          </TabelaArea>
 
           <div className="rodape-da-tabela">
             <p>

@@ -29,6 +29,7 @@ import { Carregando, Erro } from '../../componentes/Estado';
 import { PainelDecisao } from '../../componentes/PainelDecisao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function DetalheSolicitacao() {
   const { id = '' } = useParams();
@@ -259,7 +260,7 @@ export function DetalheSolicitacao() {
           </div>
 
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Decisões registradas</caption>
                 <thead>
@@ -295,7 +296,7 @@ export function DetalheSolicitacao() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         </section>
       )}
@@ -307,7 +308,7 @@ export function DetalheSolicitacao() {
         </div>
 
         <Cartao semEspaco>
-          <div className="tabela-area">
+          <TabelaArea>
             <table className="tabela">
               <caption className="apenas-leitor-tela">
                 Itens da solicitação {dados.numeroFormatado}
@@ -367,7 +368,7 @@ export function DetalheSolicitacao() {
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </TabelaArea>
         </Cartao>
 
         {dados.itens.some((i) => i.especificacaoTecnica) && (

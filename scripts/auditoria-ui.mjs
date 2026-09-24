@@ -464,18 +464,54 @@ const MEDIR = `(() => {
     return el.tagName.toLowerCase() + (classe ? '.' + classe : '') + (texto ? ' "' + texto + '"' : '');
   };
 
-  // 1. Rolagem horizontal da página inteira.
-  const largura = document.documentElement.scrollWidth;
-  if (largura > larguraTela + 1) {
-    const culpados = [...document.querySelectorAll('main *')]
+  // 1. A pagina desliza para o lado?
+  //
+  //  NAO e comparar o scrollWidth com a largura da tela. Essa conta
+  //  acusou 16 das 34 telas, e nenhuma delas estava quebrada:
+  //
+  //    /pedidos a 420px  ->  scrollWidth 830, e a pagina nao andava
+  //                          um pixel
+  //
+  //  A tabela rola dentro da propria caixa (overflow-x: auto), que
+  //  e como ela foi construida. O scrollWidth do documento soma o
+  //  conteudo de dentro dessa caixa — contabilidade interna do
+  //  navegador, nao algo que a pessoa ve.
+  //
+  //  A pergunta certa e a que a pessoa faz com o dedo: EMPURRO a
+  //  pagina para a direita e ela anda? Se nao anda, nao ha defeito.
+  const antesDoEmpurrao = window.scrollX;
+  window.scrollTo(99999, window.scrollY);
+  const andou = window.scrollX;
+  window.scrollTo(antesDoEmpurrao, window.scrollY);
+
+  if (andou > 0) {
+    // So conta como culpado quem NAO esta dentro de uma caixa que
+    // rola ou recorta: la dentro, passar da largura e o combinado.
+    const contido = (el) => {
+      let n = el.parentElement;
+      while (n && n !== document.body) {
+        const o = getComputedStyle(n).overflowX;
+        if (o === 'auto' || o === 'scroll' || o === 'hidden' || o === 'clip') return true;
+        n = n.parentElement;
+      }
+      return false;
+    };
+
+    const culpados = [...document.querySelectorAll('body *')]
       .filter((el) => {
         const r = el.getBoundingClientRect();
-        return r.width > 0 && r.right > larguraTela + 1;
+        if (r.width === 0 || r.right <= larguraTela + 1) return false;
+        if (getComputedStyle(el).position === 'fixed') return false;
+        return !contido(el);
       })
       .slice(0, 4)
       .map((el) => nomear(el) + ' (vai ate ' + Math.round(el.getBoundingClientRect().right) + 'px)');
 
-    achados.push({ tipo: 'ROLAGEM_HORIZONTAL', detalhe: largura + 'px numa tela de ' + larguraTela + 'px', culpados });
+    achados.push({
+      tipo: 'ROLAGEM_HORIZONTAL',
+      detalhe: 'a pagina anda ' + andou + 'px para o lado numa tela de ' + larguraTela + 'px',
+      culpados,
+    });
   }
 
   // 2. Barra de ações: controles com bases diferentes.
@@ -532,6 +568,22 @@ const MEDIR = `(() => {
       // SVG nao recorta texto, e scrollWidth ali nao quer dizer nada.
       if (el.ownerSVGElement || el.closest('svg')) return false;
       if (el.closest('.apenas-leitor-tela') || el.classList.contains('apenas-leitor-tela')) return false;
+      // Dentro de uma caixa de 1px com recorte, o texto esta
+      // ESCONDIDO de proposito — e a tecnica de so-para-leitor-de-
+      // tela. Acusar que ele nao cabe ali e acusar que ele esta
+      // escondido, que e justamente o ponto.
+      //
+      // Olho os PAIS, e nao o proprio elemento: o cabecalho da
+      // tabela em modo cartao tem 1px, mas cada <th> dentro dele
+      // ainda mede 32. A guarda so funciona subindo.
+      let acima = el;
+      let escondido = false;
+      while (acima && acima !== document.body) {
+        const c = acima.getBoundingClientRect();
+        if (c.width <= 2 || c.height <= 2) { escondido = true; break; }
+        acima = acima.parentElement;
+      }
+      if (escondido) return false;
       const estilo = getComputedStyle(el);
       if (estilo.overflowX !== 'visible' && estilo.overflowX !== 'clip') return false;
       return el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0;

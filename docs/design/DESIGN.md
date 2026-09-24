@@ -1,4 +1,4 @@
-<!-- versao: 0.24.0 -->
+<!-- versao: 0.25.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -967,6 +967,92 @@ a correção do Design 3. Ele contava como violação.
 > Regra que pune quem documenta a correção ensina a não documentar. Agora ela tira os
 > comentários antes de olhar, e respeita a dispensa declarada, como as outras.
 
+## Design 7 — Celular
+
+### Primeiro: as 16 telas quebradas não estavam quebradas
+
+A régua acusava **16 das 34 telas** com rolagem horizontal a 420px. Era o item **D5** da
+lista, e a etapa inteira estava planejada em cima dele.
+
+Antes de reescrever 16 telas, fui medir de onde vinha. A cadeia toda estava contida:
+
+```
+div.tabela-area       largura 386   rolagem interna 1068   overflow-x: auto
+div.cartao__corpo     largura 386   rolagem      386
+section.cartao        largura 388   rolagem      386       overflow-x: hidden
+main                  largura 420   rolagem      420
+body                  largura 420   rolagem      420
+```
+
+A tabela rolava dentro da própria caixa, que é como ela foi construída. E o teste decisivo:
+**empurrei a página para a direita e ela não andou um pixel**, em nenhuma das telas.
+
+| Tela | `scrollWidth` do documento | Andou para o lado |
+|---|---|---|
+| /pedidos | 830px | **0px** |
+| /financeiro/notas | 872px | **0px** |
+| /solicitacoes | 819px | **0px** |
+| /estoque | 546px | **0px** |
+
+O `scrollWidth` do documento soma o conteúdo de dentro das caixas que rolam — contabilidade
+interna do navegador, não algo que a pessoa vê. A regra passou a perguntar o que a pessoa
+pergunta com o dedo: **a tela desliza?**
+
+> Sétima vez que o "defeito" era a medição, e a mais cara: esta teria custado a reescrita de
+> 16 telas para consertar algo que não estava quebrado.
+
+### E então: o que ESTAVA errado no celular
+
+Régua limpa não é celular bom — ela só mede o que foi ensinado. Olhando a tela:
+
+A tabela rolando dentro da caixa mostrava **4 das 8 colunas** de Pedidos. Total, Situação e
+Ações ficavam à direita, **sem nenhum sinal de que existiam**. Ninguém arrasta uma tabela
+que não parece arrastável.
+
+### Cada linha vira um cartão
+
+Abaixo de 640px a tabela muda de forma: cada linha é um cartão, com o nome da coluna acima
+de cada valor.
+
+De onde vêm os rótulos: **do próprio `<thead>`**, lidos em tempo de montagem pelo componente
+`TabelaArea`. A alternativa seria escrever `data-rotulo="Fornecedor"` em cada uma das
+centenas de células do sistema — e no dia em que um cabeçalho mudasse, metade ficaria
+mentindo.
+
+O `<thead>` some de vista, mas **não da página**: ele usa a mesma técnica do
+`.apenas-leitor-tela`, porque o leitor de tela continua usando a relação cabeçalho-célula
+para anunciar "Fornecedor, Marquilip".
+
+**A exceção declarada:** a Equalização continua rolando de lado. É tabela de COMPARAÇÃO — a
+mesma linha em várias colunas de fornecedor. Virar cartão desmonta o que a pessoa foi ver.
+Está no código como `<TabelaArea rolar>`, com o motivo escrito ao lado.
+
+### O rótulo ficou em cima, e não ao lado
+
+A primeira tentativa pôs o rótulo à esquerda do valor. Medido a 420px: sobravam ~180px para
+o valor, e "BID-00015 · Cimento — última etapa" quebrava em **cinco linhas**, cortando no
+meio da palavra.
+
+Em cima, o valor tem a largura inteira do cartão. Custa uma linha por campo e paga em
+legibilidade.
+
+### Números em dupla, e o que isso quebrou
+
+Os cartões de número passaram a dois por linha no celular — um por linha fazia a tela ter
+três alturas de tela antes de chegar na lista.
+
+Aí a régua acusou, com razão: `R$ 86.796,00` pedia **178px** numa caixa que passou a ter
+**138**. O número encolheu um degrau na escala, e a medição confirmou que passou a caber.
+
+### E a régua acusou o próprio esconderijo
+
+Com o `<thead>` escondido em 1px, cada `<th>` dentro dele virou "texto estourando a caixa" —
+em 24 telas. Mas texto dentro de uma caixa de 1px com recorte **está escondido de
+propósito**; acusar que ele não cabe ali é acusar que ele está escondido.
+
+A régua passou a subir pelos pais procurando esse recorte. Ela olhava só o próprio elemento,
+e o `<th>` mede 32px mesmo dentro de um cabeçalho de 1px — a guarda só funciona subindo.
+
 ---
 
 # Parte 3 — A lista de desalinhamentos
@@ -981,7 +1067,7 @@ destino: a etapa em que será corrigido. A lista some quando zerar.
 | ~~D3~~ | ✅ **RESOLVIDO no Design 4.** A dica flutuante cobria o cartão vizinho. No Financeiro, a explicação de "Vencem em 7 dias" abre por cima do cartão ao lado e esconde o número dele | Financeiro | **Design 4** — telas de número |
 | ~~D4~~ | ✅ **RESOLVIDO no Design 5.** Campo de busca largo demais. No Recebimento o campo do número do pedido ocupa quase a tela inteira para receber 8 caracteres. Campo deve ter a largura do que ele recebe | Recebimento | **Design 5** |
 | ~~D6~~ | ✅ **RESOLVIDO no Design 6.** Dois botões principais na mesma tela. Em Alçadas, "Simular" e "+ Nova faixa" disputam: quando dois competem, nenhum é o próximo passo | Alçadas | **Design 6** — cadastros |
-| D5 | **18 telas transbordam a largura do celular.** A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
+| ~~D5~~ | ⚠️ **NÃO ERA DEFEITO.** Apurado no Design 7: as telas não transbordavam. A tabela rolava dentro da própria caixa e a página não andava um pixel — o que a régua media era o `scrollWidth` do documento, que soma o conteúdo de dentro das caixas que rolam. O defeito de verdade era outro, e está descrito no Design 7. Texto original: 18 telas transbordam a largura do celular. A 420px o conteúdo passa da caixa e o telefone afasta o zoom para caber. Em Pedidos a tabela mede 1068px numa caixa de 420px | Solicitações, Cotações, Pedidos, Recebimento, Estoque, Financeiro, Relatórios, Cadastros/obras, Admin | **Design 7** — celular |
 
 ## O que já foi medido e está certo
 

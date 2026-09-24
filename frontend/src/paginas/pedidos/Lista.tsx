@@ -22,6 +22,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { MenuDeAcoes } from '../../componentes/MenuDeAcoes';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function ListaPedidos() {
   const [pedidos, setPedidos] = useState<PedidoResumo[]>([]);
@@ -158,7 +159,7 @@ export function ListaPedidos() {
             descricao={pedidos.length + " pedido(s) · " + dinheiro(total) + " no total"}
             semEspaco
           >
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pedidos de compra emitidos</caption>
                 <thead>
@@ -236,7 +237,7 @@ export function ListaPedidos() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
 

@@ -23,6 +23,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 function daquiADias(dias: number): string {
   const d = new Date();
@@ -308,7 +309,10 @@ export function Equalizacao() {
         )}
 
         <Cartao semEspaco>
-          <div className="tabela-area">
+          {/* `rolar`: aqui a tabela e de COMPARACAO — a mesma linha em
+                                varias colunas de fornecedor. Virar cartao desmonta
+                                justamente o que a pessoa abriu a tela para ver. */}
+                            <TabelaArea rolar>
             <table className="tabela mapa">
               <caption className="apenas-leitor-tela">
                 Comparativo de preços por item e fornecedor
@@ -416,7 +420,7 @@ export function Equalizacao() {
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </TabelaArea>
         </Cartao>
       </section>
 

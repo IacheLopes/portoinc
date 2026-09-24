@@ -21,6 +21,7 @@ import { Selecao } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function ListaSolicitacoes() {
   const { pode } = useAutenticacao();
@@ -127,7 +128,7 @@ export function ListaSolicitacoes() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Solicitações de compra</caption>
                 <thead>
@@ -175,7 +176,7 @@ export function ListaSolicitacoes() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
 

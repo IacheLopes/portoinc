@@ -30,6 +30,7 @@ import { Carregando, Erro } from '../../componentes/Estado';
 import { Selo } from '../../componentes/Selo';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -335,7 +336,7 @@ export function NovaSolicitacao() {
       {itens.length > 0 && (
         <section className="secao">
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Itens desta solicitação</caption>
                 <thead>
@@ -391,7 +392,7 @@ export function NovaSolicitacao() {
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         </section>
       )}

@@ -33,6 +33,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
 
@@ -614,7 +615,7 @@ export function PainelLocacao() {
           }
         />
       ) : (
-        <div className="tabela-area">
+        <TabelaArea>
           <table className="tabela">
             <caption className="apenas-leitor-tela">
               Equipamentos alugados, com o que já custaram e quando precisam voltar.
@@ -724,7 +725,7 @@ export function PainelLocacao() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabelaArea>
       )}
 
       {contratos.some((c) => c.alerta === 'ATRASADA' || c.alerta === 'PERTO') && (

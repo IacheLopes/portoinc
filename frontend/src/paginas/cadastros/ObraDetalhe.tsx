@@ -21,6 +21,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -173,7 +174,7 @@ export function ObraDetalhe() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
                   Linhas do orçamento da obra {obra.nome}
@@ -228,7 +229,7 @@ export function ObraDetalhe() {
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

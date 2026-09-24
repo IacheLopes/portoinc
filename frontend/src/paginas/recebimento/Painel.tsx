@@ -23,6 +23,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 export function PainelRecebimento() {
   const navegar = useNavigate();
@@ -151,7 +152,7 @@ export function PainelRecebimento() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pedidos aguardando entrega</caption>
                 <thead>
@@ -195,7 +196,7 @@ export function PainelRecebimento() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>
@@ -212,7 +213,7 @@ export function PainelRecebimento() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Entregas já conferidas</caption>
                 <thead>
@@ -250,7 +251,7 @@ export function PainelRecebimento() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>

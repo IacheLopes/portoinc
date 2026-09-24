@@ -36,6 +36,7 @@ import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixa
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
+import { TabelaArea } from '../../componentes/TabelaArea';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -490,7 +491,7 @@ export function PainelFinanceiro() {
           />
         ) : (
           <Cartao semEspaco>
-            <div className="tabela-area">
+            <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Parcelas a pagar</caption>
                 <thead>
@@ -558,7 +559,7 @@ export function PainelFinanceiro() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelaArea>
           </Cartao>
         )}
       </section>
