@@ -248,6 +248,14 @@ export function simularAlcada(valor: number) {
   }>('/api/alcadas/simular?valor=' + valor);
 }
 
+/** Corrige uma faixa ja criada. */
+export function editarAlcada(id: string, dados: Record<string, unknown>) {
+  return chamar<{ regra: RegraAlcada }>('/api/alcadas/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
+}
+
 export function criarAlcada(dados: Record<string, unknown>) {
   return chamar<{ regra: RegraAlcada }>('/api/alcadas', { metodo: 'POST', corpo: dados });
 }

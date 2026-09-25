@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
-  listarAlcadas, criarAlcada, simularAlcada, dinheiro,
+  listarAlcadas, criarAlcada, editarAlcada, simularAlcada, dinheiro,
   type RegraAlcada,
 } from '../../servicos/cadastros';
 import { listarFuncoes, ErroApi } from '../../servicos/api';
@@ -51,6 +51,8 @@ export function Alcadas() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  // `null` = criando. Com faixa dentro = corrigindo aquela.
+  const [editando, setEditando] = useState<RegraAlcada | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
@@ -139,14 +141,21 @@ export function Alcadas() {
 
           </div>
         )}
+        {/* A `key` troca junto com o alvo, senao o formulario nasceria
+            com os valores da faixa anterior. */}
         <FormularioFaixa
-          key={String(aberto)}
+          key={editando?.id ?? String(aberto)}
           aberto={aberto}
-          aoFechar={() => setAberto(false)}
-          funcoes={funcoes}
-          aoSalvar={async (descricao) => {
+          faixa={editando}
+          aoFechar={() => {
             setAberto(false);
-            setAviso('Faixa "' + descricao + '" criada.');
+            setEditando(null);
+          }}
+          funcoes={funcoes}
+          aoSalvar={async (descricao, corrigiu) => {
+            setAberto(false);
+            setEditando(null);
+            setAviso('Faixa "' + descricao + (corrigiu ? '" corrigida.' : '" criada.'));
             await carregar();
           }}
         />
@@ -170,6 +179,9 @@ export function Alcadas() {
                   <th scope="col">Quem aprova</th>
                   <th scope="col">Regra</th>
                   <th scope="col">Situação</th>
+                  <th scope="col">
+                    <span className="apenas-leitor-tela">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -198,6 +210,20 @@ export function Alcadas() {
                         <Selo tipo="sucesso">Ativa</Selo>
                       ) : (
                         <Selo tipo="erro">Inativa</Selo>
+                      )}
+                    </td>
+                    <td className="celula-acoes">
+                      {podeEditar && (
+                        <button
+                          type="button"
+                          className="botao botao--discreto"
+                          onClick={() => {
+                            setEditando(r);
+                            setAberto(true);
+                          }}
+                        >
+                          Editar
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -324,22 +350,29 @@ function Simulador() {
 // ------------------------------------------------------------
 function FormularioFaixa({
   aberto,
+  faixa,
   aoFechar,
   funcoes,
   aoSalvar,
 }: {
   aberto: boolean;
+  /** Preenchida = corrigindo. Vazia = criando uma faixa nova. */
+  faixa: RegraAlcada | null;
   aoFechar: () => void;
   funcoes: FuncaoItem[];
-  aoSalvar: (descricao: string) => Promise<void>;
+  aoSalvar: (descricao: string, corrigiu: boolean) => Promise<void>;
 }) {
   const idForm = useId();
-  const [descricao, setDescricao] = useState('');
-  const [valorMinimo, setValorMinimo] = useState('');
-  const [valorMaximo, setValorMaximo] = useState('');
-  const [semTeto, setSemTeto] = useState(false);
-  const [exigeTodas, setExigeTodas] = useState(false);
-  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const corrigindo = faixa !== null;
+
+  const [descricao, setDescricao] = useState(faixa?.descricao ?? '');
+  const [valorMinimo, setValorMinimo] = useState(dinheiroParaCampo(faixa?.valorMinimo));
+  const [valorMaximo, setValorMaximo] = useState(dinheiroParaCampo(faixa?.valorMaximo));
+  const [semTeto, setSemTeto] = useState(corrigindo && faixa.valorMaximo === null);
+  const [exigeTodas, setExigeTodas] = useState(faixa?.exigeTodas ?? false);
+  const [selecionadas, setSelecionadas] = useState<string[]>(
+    faixa?.funcoes.map((f) => f.codigo) ?? [],
+  );
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -357,14 +390,18 @@ function FormularioFaixa({
     setEnviando(true);
 
     try {
-      await criarAlcada({
+      const campos = {
         descricao,
         valorMinimo: lerDinheiro(valorMinimo) ?? 0,
         valorMaximo: semTeto ? null : lerDinheiro(valorMaximo) ?? 0,
         exigeTodas,
         funcoes: selecionadas,
-      });
-      await aoSalvar(descricao);
+      };
+
+      if (faixa) await editarAlcada(faixa.id, campos);
+      else await criarAlcada(campos);
+
+      await aoSalvar(descricao, corrigindo);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
@@ -383,9 +420,17 @@ function FormularioFaixa({
     <Modal
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo="Nova faixa de alçada"
+      titulo={corrigindo ? 'Editar faixa de alçada' : 'Nova faixa de alçada'}
       descricao="A faixa diz quem precisa assinar uma compra, conforme o valor dela."
-      temAlteracao={Boolean(descricao || valorMinimo || selecionadas.length > 0)}
+      temAlteracao={
+        corrigindo
+          ? descricao !== faixa.descricao
+            || lerDinheiro(valorMinimo) !== faixa.valorMinimo
+            || (semTeto ? null : lerDinheiro(valorMaximo)) !== faixa.valorMaximo
+            || exigeTodas !== faixa.exigeTodas
+            || selecionadas.length !== faixa.funcoes.length
+          : Boolean(descricao || valorMinimo || selecionadas.length > 0)
+      }
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -397,7 +442,7 @@ function FormularioFaixa({
             className="botao botao--principal"
             disabled={enviando || !descricao || selecionadas.length === 0}
           >
-            {enviando ? 'Salvando...' : 'Criar faixa'}
+            {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Criar faixa'}
           </button>
         </>
       }
