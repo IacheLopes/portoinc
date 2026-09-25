@@ -36,7 +36,16 @@ interface FuncaoItem {
 }
 
 function faixaTexto(r: RegraAlcada): string {
-  if (r.valorMaximo === null) return 'Acima de ' + dinheiro(r.valorMinimo);
+  // "De ... em diante", e não "Acima de".
+  //
+  // "Acima de R$ 50.000,00" quer dizer MAIOR que cinquenta mil — e a
+  // faixa inclui os cinquenta mil. O rótulo dizia o contrário do que
+  // o sistema faz, justamente no valor da fronteira.
+  //
+  // Os outros dois ficam como estão: "Até R$ 5.000,00" numa faixa que
+  // para em R$ 4.999,99 é como todo mundo fala de uma compra de
+  // quatro mil e novecentos.
+  if (r.valorMaximo === null) return 'De ' + dinheiro(r.valorMinimo) + ' em diante';
   if (r.valorMinimo === 0) return 'Até ' + dinheiro(r.valorMaximo);
   return dinheiro(r.valorMinimo) + ' a ' + dinheiro(r.valorMaximo);
 }
