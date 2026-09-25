@@ -770,6 +770,29 @@ a.atalho:hover {
   min-width: 0;
 }
 
+/* ------------------------------------------------------------
+   Titulo com selo de situacao
+
+   Esta classe era USADA pelo CabecalhoDePagina e nunca tinha sido
+   escrita aqui. Sem ela o <div> nao e flex, o <h1> toma a linha
+   inteira e o selo desaba para baixo do titulo.
+
+   Em "Conferir PC-00001 [Recebido em parte]" o selo e parte da
+   identidade do que se esta olhando; separado por uma quebra de
+   linha ele vira informacao solta. Vale nas 5 telas de detalhe.
+   ------------------------------------------------------------ */
+.cabecalho__titulo-com-selos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-3);
+  min-width: 0;
+}
+
+.cabecalho__titulo-com-selos h1 {
+  margin: 0;
+}
+
 .cabecalho__descricao {
   margin-top: var(--esp-1);
   /* Linha longa demais faz o olho perder a volta. */

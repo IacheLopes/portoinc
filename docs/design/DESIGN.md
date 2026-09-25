@@ -1,4 +1,4 @@
-<!-- versao: 0.35.0 -->
+<!-- versao: 0.36.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -1449,6 +1449,99 @@ maiúsculas.
 | `<table>` escondida pela classe | 2 | **0** |
 | Telas rolando de lado a 393px | 4 | **0** |
 | Fonte escolhida | não | **sim** |
+
+---
+
+## Revisão 2 — 24/09/2026: o Recebimento, no computador e no telefone
+
+> *"essa tela de conferência em recebimento no celular está boa, mas no Desktop está
+> estranha"* — e, meia hora depois: *"acabei de ver no celular também, a mesma tela
+> está ruim"*.
+
+Duas fotos, uma de cada aparelho. Nenhuma régua do projeto tinha acusado coisa alguma
+nessa tela: nada transbordava, nada rolava de lado, o contraste estava certo. Ela estava
+**feia e confusa**, que é outra categoria.
+
+### As quatro causas
+
+Nenhum dos defeitos era da tela de Conferência. Todos os quatro eram de peças de baixo,
+e por isso apareciam em mais lugares do que o dono tinha visto.
+
+**1. Uma classe que ninguém escreveu.**
+
+O `CabecalhoDePagina` põe o título e o selo de situação dentro de um
+`<div className="cabecalho__titulo-com-selos">`, contando com um `display: flex`. Esse
+estilo **nunca foi escrito**. Sem ele o `<div>` é bloco comum, o `<h1>` toma a linha
+inteira, e o selo desaba para baixo do título — nas **cinco** telas de detalhe do sistema,
+não só nesta.
+
+Não aparecia em teste (o jsdom não lê folha de estilo e a marcação estava certa), nem na
+régua (nada transborda), nem no build (para o TypeScript é uma string qualquer).
+
+**2. O botão alinhado ao fim do bloco errado.**
+
+`.busca-pedido` era `display: flex` com `align-items: flex-end`. O "fim" que o flex
+enxerga é o fim do `.campo` **inteiro** — rótulo, campo e duas linhas de ajuda. O botão
+"Localizar" ia parar a 380px do campo e 40px abaixo dele, encostado no texto de ajuda,
+como se fosse botão da explicação.
+
+Virou grade de três faixas. A ajuda desce para uma linha só dela, atravessando as colunas;
+o botão volta para o lado de quem ele serve.
+
+**3. Sete colunas de peso igual.**
+
+Item · Pedido · Já recebido · Saldo · Recebido agora · Devolvido · Como chegou. Três delas
+são **consulta** e ocupavam tanto quanto a coluna onde a pessoa digita. O olho não tinha
+para onde ir.
+
+"Pedido" e "Já recebido" viraram uma linha miúda embaixo do saldo:
+
+```
+    Saldo
+      4
+Pedido 40 · Recebido 36
+```
+
+A conta inteira num lugar só, ao lado de onde se vai digitar. Cinco colunas no computador
+— e, no celular, **quatro blocos por item no lugar de sete**. Era esse o defeito do
+telefone: um único item passava de uma tela inteira de rolagem.
+
+**4. A fonte de programador no código do material.**
+
+`.mono` usava Cascadia Code, que corta o zero de propósito — serve para não confundir
+com a letra O em código-fonte. Em `00068` os três cortes se emendam e o número parece
+rasurado. O trabalho do `.mono` aqui nunca foi parecer código-fonte: era alinhar o dígito
+na coluna. `font-variant-numeric: tabular-nums` faz isso na fonte do sistema, sem o corte.
+
+### A régua nova: classe sem estilo
+
+A causa nº 1 é de uma categoria que o projeto não sabia procurar — e que pode voltar a
+qualquer momento, em silêncio, em qualquer tela. Virou regra no pente-fino:
+
+```
+CLASSE_SEM_ESTILO  — nome usado no TSX que não existe em nenhum .css
+```
+
+Provada nos dois sentidos, como toda regra daqui: contra o código de antes ela aponta
+`cabecalho__titulo-com-selos`; contra o de depois, silencia. Varre 282 classes usadas
+contra 339 definidas em 0,1s.
+
+Ela achou um segundo caso no mesmo instante: `<li className="etapa">` em Relatórios, um
+nome prometendo um estilo que nunca existiu. Não fazia mal — o pai `.etapas` é quem faz
+o layout — mas saiu, para a régua ficar em zero. Régua que mostra sempre um achado ensina
+a ignorá-la.
+
+### O saldo
+
+| | Antes | Depois |
+|---|---|---|
+| Navegações empilhadas na Conferência | 2 | **1** |
+| Telas com o selo caindo abaixo do título | 5 | **0** |
+| Distância do botão "Localizar" até o campo | 380px | **12px** |
+| Colunas na tabela de conferência | 7 | **5** |
+| Blocos por item no celular | 7 | **4** |
+| Respiro do rodapé dentro do cartão | 0 | **16px nos quatro lados** |
+| Classe usada e nunca escrita | 2 | **0** |
 
 ---
 # Parte 3 — A lista de desalinhamentos

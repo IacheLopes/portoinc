@@ -880,9 +880,13 @@ function AbaTempos() {
           <Cartao>
             <h2 className="gr__titulo">Onde o tempo se perde</h2>
 
+            {/* O <li> vai sem className: o layout vem do pai
+                `.etapas`, e os filhos `.etapa__*` carregam o resto.
+                `class="etapa"` era um nome prometendo um estilo que
+                nunca chegou a existir em nenhum .css. */}
             <ol className="etapas">
               {etapas.map((e) => (
-                <li key={e.etapa} className="etapa">
+                <li key={e.etapa}>
                   <div className="etapa__topo">
                     <span className="etapa__nome">{e.etapa}</span>
                     <span className="etapa__dias">

@@ -224,6 +224,62 @@ const arquivosComEmoji = [];
 })(FONTE);
 
 // ------------------------------------------------------------
+//  3b. Classe usada no TSX que NINGUEM escreveu no CSS
+//
+//  Nasceu de um defeito de 24/09/2026. O CabecalhoDePagina punha
+//  o titulo e o selo de situacao dentro de um
+//  <div className="cabecalho__titulo-com-selos">, contando com um
+//  `display: flex` que nunca chegou a ser escrito. Sem ele o <div>
+//  e bloco comum, o <h1> toma a linha inteira e o selo desaba para
+//  baixo do titulo — em TODAS as 5 telas de detalhe do sistema.
+//
+//  Nao aparecia em teste: o jsdom nao le folha de estilo, e a
+//  marcacao estava certa. Nao aparecia na regua de tela: nada
+//  transborda nem rola, so fica feio. E nao aparecia no build: para
+//  o TypeScript e uma string qualquer.
+//
+//  Uma classe sem estilo e uma promessa que ninguem cumpriu. Custa
+//  0,1s conferir todas.
+// ------------------------------------------------------------
+{
+  const definidas = new Set();
+  for (const arq of arquivosCss) {
+    // Com comentario mesmo: um seletor comentado ainda documenta
+    // que o nome existe, e o que eu quero pegar e o nome ORFAO.
+    for (const m of readFileSync(arq, 'utf8').matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) {
+      definidas.add(m[1]);
+    }
+  }
+
+  const tsx = [];
+  (function anda(dir) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const f = join(dir, e.name);
+      if (e.isDirectory()) anda(f);
+      else if (/\.tsx$/.test(e.name) && !/\.test\./.test(e.name)) tsx.push(f);
+    }
+  })(FONTE);
+
+  for (const f of tsx) {
+    const s = readFileSync(f, 'utf8');
+
+    // className="a b"  ·  className={'a b'}  ·  className={`a b`}
+    for (const m of s.matchAll(/className=(?:"([^"]*)"|\{'([^']*)'|\{`([^`$]*)`)/g)) {
+      for (const nome of (m[1] ?? m[2] ?? m[3]).split(/\s+/)) {
+        if (!nome || definidas.has(nome)) continue;
+
+        // `'selo--' + tipo` deixa "selo--" solto no texto: e o
+        // comeco de um nome montado na hora, nao uma classe orfa.
+        if (/(--|__)$/.test(nome)) continue;
+
+        achar('CLASSE_SEM_ESTILO', f, s.slice(0, m.index).split('\n').length,
+          '.' + nome + ' — usada aqui, nao existe em nenhum .css');
+      }
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  4 a 8. Os sinais de design generico, da skill frontend-design
 // ------------------------------------------------------------
 const usoDeRaio = {};

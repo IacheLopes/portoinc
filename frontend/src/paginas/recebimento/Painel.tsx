@@ -107,16 +107,21 @@ export function PainelRecebimento() {
               placeholder="PC-00001"
               autoComplete="off"
               inputMode="text"
+              aria-describedby="ajuda-numero"
             />
-            <p className="campo__ajuda">
-              Pode digitar só o número (1), o número completo (PC-00001) ou usar o
-              leitor de código de barras.
-            </p>
           </div>
 
           <button type="submit" className="botao botao--principal">
             Abrir conferência
           </button>
+
+          {/* Fora do `.campo` para ocupar a linha inteira da grade.
+              Dentro dele, era esta ajuda que definia onde o botão
+              ficava — e o botão ia parar ao lado dela. */}
+          <p className="campo__ajuda busca-pedido__ajuda" id="ajuda-numero">
+            Pode digitar só o número (1), o número completo (PC-00001) ou usar o
+            leitor de código de barras.
+          </p>
         </form>
       </section>
 
@@ -184,7 +189,10 @@ export function PainelRecebimento() {
                           {ROTULO_SITUACAO_PEDIDO[p.situacao]}
                         </Selo>
                       </td>
-                      <td>
+                      {/* `celula-acoes`: no celular o botão ganha a
+                          linha inteira, separado do resto por um traço —
+                          como nas outras tabelas do sistema. */}
+                      <td className="celula-acoes">
                         <Link
                           className="botao botao--discreto"
                           to={'/recebimento/' + p.numeroFormatado}

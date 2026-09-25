@@ -778,24 +778,51 @@ input[type='file'].campo__entrada {
    campos de busca são maiores que os do resto do sistema: a
    pessoa está com pressa, com luva, e às vezes no celular.
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   O botão ao lado do CAMPO, não ao lado da ajuda
+
+   Era `display: flex` com `align-items: flex-end`. O "fim" que o
+   flex enxerga é o fim do bloco `.campo` INTEIRO — rótulo, campo e
+   duas linhas de ajuda. Resultado no computador: "Localizar" a
+   380px do campo e 40px abaixo dele, encostado no texto de ajuda,
+   como se fosse botão da explicação.
+
+   Em grade a ajuda desce para uma linha só dela, atravessando as
+   duas colunas, e o botão volta para o lado de quem ele serve.
+   ------------------------------------------------------------ */
 .busca-pedido {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--esp-3);
-  flex-wrap: wrap;
+  display: grid;
+  /* A terceira faixa existe só para absorver a sobra da linha.
+
+     Sem ela a grade inteira tem a largura de campo + botão, e a
+     ajuda — mesmo atravessando as colunas — quebra em duas linhas
+     com meia tela vazia ao lado. */
+  grid-template-columns: max-content max-content 1fr;
+  align-items: end;
+  gap: var(--esp-2) var(--esp-3);
   margin-bottom: var(--esp-4);
 }
 
-.busca-pedido .campo {
-  /* Não cresce mais para ocupar a linha inteira: o campo recebe um
-     número de pedido, e é o texto de ajuda embaixo que pede largura. */
-  flex: 0 1 46ch;
-  margin-bottom: 0;
+.busca-pedido .campo { margin-bottom: 0; }
+
+.busca-pedido__ajuda {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-width: 64ch;
 }
 
-/* Oito caracteres em fonte mono, com folga para o leitor de código
+/* "PC-00001" são oito caracteres, com folga para o leitor de código
    de barras colar algo maior. Era 969px — o D4 da lista. */
-.busca-pedido .campo__entrada { max-width: 14ch; }
+.busca-pedido .campo__entrada { max-width: 16ch; }
+
+/* A Conferência aceita código de barras (13 dígitos) além do código
+   Porto. Mesmo componente, campo maior — sem isto o texto de dentro
+   aparecia cortado em "Código de b".
+
+   26ch, e não 24: o `ch` conta o dígito, e o campo ainda gasta o
+   próprio padding nas laterais. Com 24 sobrava espaço para 21
+   caracteres, e o exemplo de dentro tem 22. */
+.busca-pedido--codigo .campo__entrada { max-width: 26ch; }
 
 .campo__entrada--destaque {
   font-size: var(--txt-lg);
@@ -831,7 +858,13 @@ input[type='file'].campo__entrada {
   align-items: center;
   justify-content: space-between;
   gap: var(--esp-3);
-  padding-top: var(--esp-4);
+  /* Padding nos QUATRO lados, e não só em cima.
+
+     Ele mora dentro de um `Cartao semEspaco`, que zera o padding do
+     corpo para a tabela encostar na borda. A tabela tem espaçamento
+     próprio nas células; o rodapé não tinha nenhum, e por isso o
+     "0 itens marcados" nascia colado na moldura do cartão. */
+  padding: var(--esp-4);
   border-top: 1px solid var(--borda);
 }
 
@@ -848,6 +881,31 @@ input[type='file'].campo__entrada {
 
 .tabela--conferencia select.campo__entrada {
   min-width: 11rem;
+}
+
+/* ------------------------------------------------------------
+   A largura diz onde se trabalha
+
+   As sete colunas tinham o mesmo peso: "Pedido", "Já recebido" e
+   "Saldo" — que são consulta — ocupavam tanto quanto "Recebido
+   agora", que é onde a pessoa digita. O olho não tinha para onde ir.
+
+   Agora a consulta virou UMA coluna só (o saldo, com a origem dele
+   numa linha miúda embaixo). São cinco colunas no lugar de sete — e,
+   no celular, quatro blocos por item no lugar de sete.
+
+   Sem largura declarada de propósito: três das cinco colunas são
+   campos de tamanho fixo, então o navegador já entrega o que sobra
+   para a coluna do item. Largura presa em célula é o defeito que a
+   régua procura — ela sobrevive ao modo cartão do celular, onde a
+   célula vira bloco.
+   ------------------------------------------------------------ */
+
+/* O saldo é o número contra o qual a pessoa confere. Ele lidera. */
+.celula-saldo .destaque-saldo {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
 }
 
 .linha-motivo {
@@ -878,8 +936,28 @@ input[type='file'].campo__entrada {
 }
 
 @media (max-width: 640px) {
-  .busca-pedido .campo { flex-basis: 100%; }
-  .campo__entrada--celula { width: 5.5rem; }
+  /* Uma coluna: campo, botão e ajuda, cada um na sua linha. */
+  .busca-pedido { grid-template-columns: minmax(0, 1fr); }
+  .busca-pedido .campo__entrada,
+  .busca-pedido--codigo .campo__entrada { max-width: 100%; }
+  .busca-pedido .botao { width: 100%; }
+
+  /* ----------------------------------------------------------
+     A caixa de quantidade do tamanho do dedo
+
+     Era `width: 5.5rem` também no celular: uma caixinha de 88px
+     alinhada à direita, logo acima de um `select` de largura
+     inteira. Duas medidas diferentes na mesma pilha, e um alvo
+     pequeno demais para quem está de luva no portão.
+
+     À esquerda porque, numa caixa de largura inteira, o dígito
+     alinhado à direita nasce longe de onde o polegar tocou.
+     ---------------------------------------------------------- */
+  .tabela-area--cartoes .campo__entrada--celula {
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+  }
 }
 
 /* ------------------------------------------------------------

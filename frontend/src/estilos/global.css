@@ -546,7 +546,26 @@ a.indicador--clicavel:focus-visible {
   color: var(--texto-secundario);
 }
 
-.mono { font-family: var(--fonte-mono); }
+/* ------------------------------------------------------------
+   Codigo alinhado, sem o zero cortado
+
+   Era `var(--fonte-mono)` = Cascadia Code, que e fonte de
+   PROGRAMADOR: o zero vem com um corte de proposito, para nao se
+   confundir com a letra O no meio de um codigo-fonte.
+
+   Num codigo de material isso sai caro: "00068" tem tres zeros
+   seguidos, os tres cortes se emendam e o numero parece riscado.
+   Visto na tela de Conferencia em 24/09/2026.
+
+   O trabalho do `.mono` aqui nunca foi parecer codigo-fonte: era
+   deixar o digito com largura fixa para a coluna alinhar de cima
+   para baixo. `tabular-nums` faz exatamente isso na fonte do
+   sistema, e sem o corte.
+   ------------------------------------------------------------ */
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
 
 /* ------------------------------------------------------------
    Celular

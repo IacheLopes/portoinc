@@ -229,12 +229,10 @@ export function ConferirRecebimento() {
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/recebimento">Recebimento</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">{pedido.numeroFormatado}</span>
-        </nav>
-
+        {/* A trilha e o "Voltar" saem do CabecalhoDePagina, que os
+            monta a partir de `navegacao.ts`. Havia uma segunda trilha
+            escrita à mão logo acima dele, e a tela abria com duas
+            navegações empilhadas dizendo a mesma coisa. */}
         <CabecalhoDePagina
           titulo={'Conferir ' + pedido.numeroFormatado}
           marcadores={
@@ -278,29 +276,38 @@ export function ConferirRecebimento() {
             descricao="Não há saldo para conferir. Se chegou material a mais, fale com o comprador."
           />
         ) : (
-          <form className="busca-pedido" onSubmit={procurarCodigo}>
+          <form className="busca-pedido busca-pedido--codigo" onSubmit={procurarCodigo}>
             <div className="campo">
               <label className="campo__rotulo" htmlFor="codigo-item">
                 Bipar ou digitar o código do material
               </label>
+              {/* Mostra as duas formas em vez de descrevê-las. O texto
+                  anterior — "Código de barras ou COD PORTO" — não cabia
+                  no campo e aparecia cortado em "Código de b". */}
               <input
                 id="codigo-item"
                 ref={campoCodigo}
                 className="campo__entrada campo__entrada--destaque"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Código de barras ou COD PORTO"
+                placeholder="00068 ou 7891234567895"
                 autoComplete="off"
+                aria-describedby="ajuda-codigo"
               />
-              <p className="campo__ajuda">
-                O sistema acha a linha e já preenche o saldo. Depois é só corrigir a
-                quantidade, se tiver vindo menos.
-              </p>
             </div>
 
             <button type="submit" className="botao botao--secundario">
               Localizar
             </button>
+
+            {/* Fora do `.campo` para atravessar as duas colunas da
+                grade — dentro dele, era a ajuda que empurrava o botão
+                para longe. O `aria-describedby` mantém a ligação com o
+                campo para quem usa leitor de tela. */}
+            <p className="campo__ajuda busca-pedido__ajuda" id="ajuda-codigo">
+              O sistema acha a linha e já preenche o saldo. Depois é só corrigir a
+              quantidade, se tiver vindo menos.
+            </p>
           </form>
         )}
       </section>
@@ -323,8 +330,11 @@ export function ConferirRecebimento() {
               <thead>
                 <tr>
                   <th scope="col">Item</th>
-                  <th scope="col" className="numero">Pedido</th>
-                  <th scope="col" className="numero">Já recebido</th>
+                  {/* "Pedido" e "Já recebido" eram duas colunas de
+                      consulta com o mesmo peso da coluna onde se
+                      trabalha. Viraram a linha miúda embaixo do saldo:
+                      a conta inteira num lugar só, ao lado de onde a
+                      pessoa vai digitar. */}
                   <th scope="col" className="numero">Saldo</th>
                   <th scope="col" className="numero">Recebido agora</th>
                   <th scope="col" className="numero">Devolvido</th>
@@ -352,14 +362,16 @@ export function ConferirRecebimento() {
                           {item.unidadeMedida}
                         </small>
                       </th>
-                      <td className="numero">{qtdBr(item.quantidadePedida)}</td>
-                      <td className="numero">{qtdBr(item.quantidadeJaRecebida)}</td>
-                      <td className="numero destaque">
+                      <td className="numero celula-saldo">
                         {item.concluido ? (
                           <Selo tipo="sucesso">Completo</Selo>
                         ) : (
-                          qtdBr(item.saldo)
+                          <span className="destaque-saldo">{qtdBr(item.saldo)}</span>
                         )}
+                        <small className="linha-extra">
+                          Pedido {qtdBr(item.quantidadePedida)} · Recebido{' '}
+                          {qtdBr(item.quantidadeJaRecebida)}
+                        </small>
                       </td>
                       <td className="numero">
                         <input

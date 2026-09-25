@@ -1,4 +1,4 @@
-<!-- versao: 0.35.0 -->
+<!-- versao: 0.36.0 -->
 
 # 1. Como usar este guia
 
@@ -4101,6 +4101,93 @@ a tela mostrava três números sem dizer o que era cada um.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+
+## CT-292 · A Conferência tem uma navegação, não duas
+
+**No computador**, abra **Recebimento** e clique em **Conferir** num pedido.
+
+**Esperado:** no topo aparece **uma** linha de caminho — `Início › Recebimento ›
+Conferência` — e o **← Voltar para Recebimento** à direita dela.
+
+> Até 24/09/2026 havia duas barras empilhadas: a tela escrevia a própria trilha
+logo acima da que o sistema já monta sozinho.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-293 · O selo de situação fica ao lado do título
+
+**No computador**, abra estas quatro telas e olhe o topo de cada uma:
+
+- **Recebimento → Conferir** (selo *Recebido em parte* ou *Enviado*)
+- **Solicitações →** abra uma
+- **Cotações →** abra um pacote
+- **Cadastros → Obras →** abra uma obra
+
+**Esperado:** em todas, o selo fica **na mesma linha** do título, logo à direita
+dele. Nunca numa linha abaixo.
+
+> `cabecalho__titulo-com-selos` era usada pelo sistema e nunca tinha sido escrita
+na folha de estilo. Sem ela o título ocupava a linha inteira e o selo desabava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-294 · O botão de buscar fica colado no campo
+
+**No computador**, abra **Recebimento**, e depois **Conferir** num pedido.
+
+**Esperado:** nas duas telas, o botão (**Abrir conferência** / **Localizar**) fica
+**ao lado do campo**, na mesma altura. O texto de ajuda fica **embaixo dos dois**.
+O que está escrito dentro do campo aparece inteiro, sem corte.
+
+> Antes o botão era empurrado para o fim do bloco inteiro — que incluía duas
+linhas de ajuda — e ia parar a 380px do campo, uma linha abaixo, como se fosse
+botão da explicação.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-295 · O saldo traz a conta inteira
+
+**No computador**, abra **Recebimento → Conferir** num pedido já recebido em parte.
+
+**Esperado:** a tabela tem **cinco** colunas — Item, Saldo, Recebido agora,
+Devolvido, Como chegou. Na coluna **Saldo** o número aparece grande, e embaixo
+dele, miúdo, `Pedido 40 · Recebido 36`.
+
+**No celular** (F12 → ícone de celular, ou no seu telefone), a mesma tela:
+
+**Esperado:** cada item vira um cartão com **quatro** blocos, e o item inteiro
+cabe em cerca de uma tela. Os campos de quantidade ocupam a largura toda e são
+grandes o bastante para o dedo.
+
+> Eram sete colunas de peso igual: três só de consulta valiam tanto quanto a
+coluna onde se digita. No celular viravam sete blocos, e um único item passava de
+uma tela inteira de rolagem.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-296 · Os códigos não parecem riscados
+
+**No computador**, abra **Recebimento** e olhe a coluna **Pedido**; depois abra
+**Conferir** e olhe o código na frente de cada material.
+
+**Esperado:** `PC-00001`, `REC-00014`, `00068` — os zeros são zeros, redondos.
+Nenhum número parece ter um traço em cima.
+
+> Os códigos usavam Cascadia Code, que é fonte de programador: ela corta o zero de
+propósito, para não confundir com a letra O em código-fonte. Em `00068` os três
+cortes se emendavam e o número parecia rasurado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4498,6 +4585,11 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-289 | O filtro vale na hora, sem botão |  |
 | CT-290 | Vindo de Aprovações, o caminho diz Aprovações |  |
 | CT-291 | Toda tabela tem nome nas colunas |  |
+| CT-292 | A Conferência tem uma navegação, não duas |  |
+| CT-293 | O selo de situação fica ao lado do título |  |
+| CT-294 | O botão de buscar fica colado no campo |  |
+| CT-295 | O saldo traz a conta inteira |  |
+| CT-296 | Os códigos não parecem riscados |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

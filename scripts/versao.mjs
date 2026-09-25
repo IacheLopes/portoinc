@@ -83,6 +83,9 @@ const trabalho = [
   ['docs/tutorial/TUTORIAL.md', subirDoc],
   ['docs/testes/GUIA-TESTE-MANUAL.md', subirDoc],
   ['docs/design/DESIGN.md', subirDoc],
+  // Nasceu depois e nunca foi cadastrado aqui: ficou para tras em
+  // todo bump de versao desde que existe. Visto em 24/09/2026.
+  ['docs/navegacao/GUIA-NAVEGACAO.md', subirDoc],
 ];
 
 console.log('');
