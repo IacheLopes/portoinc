@@ -88,14 +88,16 @@ export function conferirCobertura(
       break;
     }
 
-    if (proxima.valorMinimo > atual.valorMaximo + 0.01) {
+    // Encostadas e o certo agora: o teto de uma e o piso da outra.
+    // So ha vao se a proxima comecar DEPOIS do teto da anterior.
+    if (proxima.valorMinimo > atual.valorMaximo) {
       avisos.push(
         'Há um vão entre ' + reaisBr(atual.valorMaximo) +
         ' e ' + reaisBr(proxima.valorMinimo) + ': nada seria aprovado nessa faixa.',
       );
     }
 
-    if (proxima.valorMinimo <= atual.valorMaximo) {
+    if (proxima.valorMinimo < atual.valorMaximo) {
       // "MAIOR", e não "menor", como este aviso dizia até 25/09/2026.
       //
       // Quem decide é `acharFaixa`, que ordena por mínimo decrescente
@@ -170,7 +172,10 @@ export async function rotasAlcadas(app: FastifyInstance) {
       where: {
         ativa: true,
         valorMinimo: { lte: valor },
-        OR: [{ valorMaximo: null }, { valorMaximo: { gte: valor } }],
+        // `gt`, e nao `gte`: o teto nao entra na faixa. Tem de casar
+        // com `acharFaixa`, senao o simulador prometeria um aprovador
+        // e a solicitacao exigiria outro.
+        OR: [{ valorMaximo: null }, { valorMaximo: { gt: valor } }],
       },
       include: INCLUIR,
       orderBy: { valorMinimo: 'desc' },

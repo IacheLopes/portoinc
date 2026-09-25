@@ -113,9 +113,22 @@ export interface FaixaAlcada {
 }
 
 /** Acha a faixa de alçada que cobre o valor. */
+/**
+ * A faixa que manda num valor de compra.
+ *
+ * O minimo ENTRA na faixa; o maximo NAO. "De 0 a 5.000" cobre de
+ * R$ 0,00 a R$ 4.999,99, e R$ 5.000,00 ja e da proxima.
+ *
+ * Era `<=` dos dois lados, e por isso o valor do teto caia em duas
+ * faixas ao mesmo tempo. Para contornar, quem configurava tinha de
+ * escrever "5.000" numa e "5.000,01" na outra — o dono do sistema
+ * tropecou nisso em 25/09/2026 e perguntou por que precisava do
+ * centavo. Nao precisa: faixa de imposto e tabela de frete funcionam
+ * assim, com o teto de uma sendo o piso da seguinte.
+ */
 export function acharFaixa(valor: number, faixas: FaixaAlcada[]): FaixaAlcada | null {
   const candidatas = faixas.filter(
-    (f) => valor >= f.valorMinimo && (f.valorMaximo === null || valor <= f.valorMaximo),
+    (f) => valor >= f.valorMinimo && (f.valorMaximo === null || valor < f.valorMaximo),
   );
 
   if (candidatas.length === 0) return null;

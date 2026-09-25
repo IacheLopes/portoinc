@@ -74,7 +74,9 @@ describe('Faixas de alçada — corrigir', () => {
   beforeEach(() => {
     vi.mocked(listarAlcadas).mockResolvedValue({ regras: [faixa()], avisos: [] });
     vi.mocked(listarFuncoes).mockResolvedValue({
-      funcoes: [GESTOR, ENGENHEIRO, FUNDADOR].map((f) => ({ ...f, descricao: null })),
+      funcoes: [GESTOR, ENGENHEIRO, FUNDADOR].map((f) => ({
+        ...f, descricao: null, sistema: false, usuarios: 0, permissoes: [],
+      })),
     });
     vi.mocked(simularAlcada).mockResolvedValue({
       valor: 7500, encontrada: false, mensagem: 'sem faixa',

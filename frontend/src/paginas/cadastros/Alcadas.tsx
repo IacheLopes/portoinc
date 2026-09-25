@@ -143,10 +143,21 @@ export function Alcadas() {
         )}
         {/* A `key` troca junto com o alvo, senao o formulario nasceria
             com os valores da faixa anterior. */}
+        {/* O teto mais alto que ja existe. A faixa nova comeca nele,
+            e assim encaixa sem ninguem pensar no assunto. Faixa sem
+            teto nao serve de referencia: nao ha o que vir depois. */}
         <FormularioFaixa
           key={editando?.id ?? String(aberto)}
           aberto={aberto}
           faixa={editando}
+          tetoMaisAlto={
+            regras
+              .filter((r) => r.ativa && r.valorMaximo !== null)
+              .reduce<number | null>(
+                (maior, r) => (maior === null || r.valorMaximo! > maior ? r.valorMaximo! : maior),
+                null,
+              )
+          }
           aoFechar={() => {
             setAberto(false);
             setEditando(null);
@@ -351,6 +362,7 @@ function Simulador() {
 function FormularioFaixa({
   aberto,
   faixa,
+  tetoMaisAlto,
   aoFechar,
   funcoes,
   aoSalvar,
@@ -358,6 +370,8 @@ function FormularioFaixa({
   aberto: boolean;
   /** Preenchida = corrigindo. Vazia = criando uma faixa nova. */
   faixa: RegraAlcada | null;
+  /** O teto da faixa mais alta que já existe, para sugerir o começo. */
+  tetoMaisAlto: number | null;
   aoFechar: () => void;
   funcoes: FuncaoItem[];
   aoSalvar: (descricao: string, corrigiu: boolean) => Promise<void>;
@@ -366,7 +380,11 @@ function FormularioFaixa({
   const corrigindo = faixa !== null;
 
   const [descricao, setDescricao] = useState(faixa?.descricao ?? '');
-  const [valorMinimo, setValorMinimo] = useState(dinheiroParaCampo(faixa?.valorMinimo));
+  // Criando: começa onde a faixa mais alta termina. Corrigindo:
+  // mostra o que está salvo. É sugestão — dá para apagar e trocar.
+  const [valorMinimo, setValorMinimo] = useState(
+    dinheiroParaCampo(corrigindo ? faixa.valorMinimo : tetoMaisAlto),
+  );
   const [valorMaximo, setValorMaximo] = useState(dinheiroParaCampo(faixa?.valorMaximo));
   const [semTeto, setSemTeto] = useState(corrigindo && faixa.valorMaximo === null);
   const [exigeTodas, setExigeTodas] = useState(faixa?.exigeTodas ?? false);
@@ -472,6 +490,11 @@ function FormularioFaixa({
             modoTeclado="decimal"
             exemplo="R$ 2.000,00"
             obrigatorio
+            ajuda={
+              !corrigindo && tetoMaisAlto !== null
+                ? 'Começa onde a faixa mais alta termina. Mude se quiser.'
+                : undefined
+            }
           />
           <Campo
             rotulo="Valor máximo (R$)"
@@ -481,7 +504,13 @@ function FormularioFaixa({
             modoTeclado="decimal"
             exemplo="R$ 15.000,00"
             desabilitado={semTeto}
-            ajuda="A última faixa deve ficar sem teto."
+            ajuda={
+              <>
+                O teto não entra na faixa: escrevendo <strong>R$ 5.000,00</strong>, ela vai
+              até R$ 4.999,99 e a próxima começa em R$ 5.000,00. A última faixa deve ficar
+              sem teto.
+              </>
+            }
           />
         </div>
 

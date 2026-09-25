@@ -151,7 +151,7 @@ describe('Escolha da faixa de alçada', () => {
       exigeTodas: false, funcoes: [{ codigo: 'GESTOR_OBRA', nome: 'Gestor de obra' }],
     },
     {
-      id: '2', descricao: 'Médio', valorMinimo: 2000.01, valorMaximo: 15000,
+      id: '2', descricao: 'Médio', valorMinimo: 2000, valorMaximo: 15000,
       exigeTodas: true,
       funcoes: [
         { codigo: 'GESTOR_OBRA', nome: 'Gestor de obra' },
@@ -159,7 +159,7 @@ describe('Escolha da faixa de alçada', () => {
       ],
     },
     {
-      id: '3', descricao: 'Elevado', valorMinimo: 15000.01, valorMaximo: null,
+      id: '3', descricao: 'Elevado', valorMinimo: 15000, valorMaximo: null,
       exigeTodas: false, funcoes: [{ codigo: 'FUNDADOR', nome: 'Fundador' }],
     },
   ];
@@ -170,12 +170,18 @@ describe('Escolha da faixa de alçada', () => {
     assert.equal(acharFaixa(42000, FAIXAS)?.id, '3');
   });
 
-  it('trata as fronteiras exatas', () => {
+  it('o teto NÃO entra na faixa; o piso entra', () => {
+    // Mudado em 25/09/2026. Antes o teto entrava, e por isso o valor
+    // exato caía em duas faixas — quem configurava tinha de escrever
+    // "2.000" numa e "2.000,01" na outra.
+    //
+    // Agora o teto de uma é o piso da seguinte, como em faixa de
+    // imposto de renda. Ninguém digita centavo.
     assert.equal(acharFaixa(0, FAIXAS)?.id, '1');
-    assert.equal(acharFaixa(2000, FAIXAS)?.id, '1');
-    assert.equal(acharFaixa(2000.01, FAIXAS)?.id, '2');
-    assert.equal(acharFaixa(15000, FAIXAS)?.id, '2');
-    assert.equal(acharFaixa(15000.01, FAIXAS)?.id, '3');
+    assert.equal(acharFaixa(1999.99, FAIXAS)?.id, '1');
+    assert.equal(acharFaixa(2000, FAIXAS)?.id, '2', 'o teto pertence à faixa de cima');
+    assert.equal(acharFaixa(14999.99, FAIXAS)?.id, '2');
+    assert.equal(acharFaixa(15000, FAIXAS)?.id, '3');
   });
 
   it('não acha faixa quando nenhuma cobre o valor', () => {
