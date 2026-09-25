@@ -3,7 +3,9 @@
 // ============================================================
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
-import { listarFamilias, criarFamilia, type Familia } from '../../servicos/cadastros';
+import {
+  listarFamilias, criarFamilia, editarFamilia, type Familia,
+} from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
@@ -22,6 +24,8 @@ export function Familias() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  // `null` = criando uma nova. Com familia dentro = corrigindo aquela.
+  const [editando, setEditando] = useState<Familia | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
@@ -76,18 +80,22 @@ export function Familias() {
           </p>
         )}
 
-        {podeEditar && (
-          <div className="barra-acoes">
-
-          </div>
-        )}
-
+        {/* O modal e um so para criar e para corrigir: mesmos campos.
+            A `key` remonta o formulario quando troca o alvo, para ele
+            nascer com os valores certos em vez de guardar os do
+            anterior. */}
         <FormularioFamilia
+          key={editando?.id ?? 'nova'}
           aberto={aberto}
-          aoFechar={() => setAberto(false)}
-          aoSalvar={async (nome) => {
+          familia={editando}
+          aoFechar={() => {
             setAberto(false);
-            setAviso('Família "' + nome + '" cadastrada.');
+            setEditando(null);
+          }}
+          aoSalvar={async (nome, corrigiu) => {
+            setAberto(false);
+            setEditando(null);
+            setAviso('Família "' + nome + (corrigiu ? '" corrigida.' : '" cadastrada.'));
             await carregar();
           }}
         />
@@ -111,6 +119,20 @@ export function Familias() {
                   </>
                 }
                 descricao={f.descricao}
+                acoes={
+                  podeEditar && (
+                    <button
+                      type="button"
+                      className="botao botao--discreto"
+                      onClick={() => {
+                        setEditando(f);
+                        setAberto(true);
+                      }}
+                    >
+                      Editar
+                    </button>
+                  )
+                }
               >
                 <p className="linha-de-resumo">
                   <strong>{plural(f.materiais, 'item', 'itens')}</strong> ·{' '}
@@ -127,17 +149,22 @@ export function Familias() {
 
 function FormularioFamilia({
   aberto,
+  familia,
   aoFechar,
   aoSalvar,
 }: {
   aberto: boolean;
+  /** Preenchida = corrigindo. Vazia = cadastrando uma nova. */
+  familia: Familia | null;
   aoFechar: () => void;
-  aoSalvar: (nome: string) => Promise<void>;
+  aoSalvar: (nome: string, corrigiu: boolean) => Promise<void>;
 }) {
   const idForm = useId();
-  const [codigo, setCodigo] = useState('');
-  const [nome, setNome] = useState('');
-  const [descricao, setDescricao] = useState('');
+  const corrigindo = familia !== null;
+
+  const [codigo, setCodigo] = useState(familia?.codigo ?? '');
+  const [nome, setNome] = useState(familia?.nome ?? '');
+  const [descricao, setDescricao] = useState(familia?.descricao ?? '');
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -148,24 +175,30 @@ function FormularioFamilia({
     setDetalhes([]);
     setEnviando(true);
 
+    const campos = { codigo, nome, descricao: descricao || undefined };
+
     try {
-      await criarFamilia({ codigo, nome, descricao: descricao || undefined });
-      await aoSalvar(nome);
+      if (familia) await editarFamilia(familia.id, campos);
+      else await criarFamilia(campos);
+
+      await aoSalvar(nome, corrigindo);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
         setDetalhes((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
       } else {
-        setErro('Não foi possível cadastrar.');
+        setErro(corrigindo ? 'Não foi possível salvar.' : 'Não foi possível cadastrar.');
       }
       setEnviando(false);
     }
   }
 
   function fechar() {
-    setCodigo('');
-    setNome('');
-    setDescricao('');
+    // Volta ao que a familia tinha, e nao a vazio: quem abriu para
+    // corrigir e desistiu nao quis apagar o cadastro.
+    setCodigo(familia?.codigo ?? '');
+    setNome(familia?.nome ?? '');
+    setDescricao(familia?.descricao ?? '');
     setErro(null);
     setDetalhes([]);
     aoFechar();
@@ -180,9 +213,19 @@ function FormularioFamilia({
     <Modal
       aberto={aberto}
       aoFechar={fechar}
-      titulo="Nova família"
-      descricao="A família agrupa material do mesmo tipo, e é por ela que o sistema sugere fornecedor."
-      temAlteracao={Boolean(codigo || nome || descricao)}
+      titulo={corrigindo ? 'Editar família' : 'Nova família'}
+      descricao={
+        corrigindo
+          ? 'O código aparece em filtro e em relatório. Trocar aqui troca em todo lugar.'
+          : 'A família agrupa material do mesmo tipo, e é por ela que o sistema sugere fornecedor.'
+      }
+      temAlteracao={
+        corrigindo
+          ? codigo !== familia.codigo
+            || nome !== familia.nome
+            || descricao !== (familia.descricao ?? '')
+          : Boolean(codigo || nome || descricao)
+      }
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={fechar}>
@@ -194,7 +237,7 @@ function FormularioFamilia({
             className="botao botao--principal"
             disabled={enviando || !codigo || !nome}
           >
-            {enviando ? 'Salvando...' : 'Cadastrar família'}
+            {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Cadastrar família'}
           </button>
         </>
       }

@@ -151,6 +151,20 @@ export function criarFamilia(dados: Record<string, unknown>) {
   return chamar<{ familia: Familia }>('/api/familias', { metodo: 'POST', corpo: dados });
 }
 
+/**
+ * Corrige uma familia ja cadastrada.
+ *
+ * O servidor aceitava isto desde sempre; faltava a tela. Quem errava o
+ * codigo ou o nome no cadastro ficava com o erro para sempre — e o
+ * codigo aparece em filtro, em relatorio e na tela de material.
+ */
+export function editarFamilia(id: string, dados: Record<string, unknown>) {
+  return chamar<{ familia: Familia }>('/api/familias/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
+}
+
 // ------------------------------------------------------------
 //  Materiais
 // ------------------------------------------------------------
@@ -170,6 +184,14 @@ export function listarMateriais(filtros: {
 
 export function criarMaterial(dados: Record<string, unknown>) {
   return chamar<{ material: Material }>('/api/materiais', { metodo: 'POST', corpo: dados });
+}
+
+/** Corrige um item do catalogo. Mesma historia da familia. */
+export function editarMaterial(id: string, dados: Record<string, unknown>) {
+  return chamar<{ material: Material }>('/api/materiais/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
 }
 
 export function biparCodigo(gtin: string) {

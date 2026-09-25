@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
-  listarMateriais, listarFamilias, criarMaterial, biparCodigo,
+  listarMateriais, listarFamilias, criarMaterial, editarMaterial, biparCodigo,
   quantidade, opcoesDeUnidade,
   type Material, type Familia, type TipoItem,
 } from '../../servicos/cadastros';
@@ -26,6 +26,8 @@ import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 export function Materiais() {
   const { pode } = useAutenticacao();
   const podeEditar = pode('materiais.gerenciar');
+  // `null` = cadastrando um item novo. Com item dentro = corrigindo.
+  const [editando, setEditando] = useState<Material | null>(null);
 
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
@@ -134,14 +136,23 @@ export function Materiais() {
           />
 
         </div>
+        {/* Um modal so para cadastrar e para corrigir: sao os mesmos
+            doze campos, e manter dois formularios iguais garantiria que
+            um dia eles ficariam diferentes. A `key` remonta quando o
+            alvo muda, para o formulario nascer com os valores certos. */}
         <FormularioMaterial
-          key={String(aberto)}
+          key={editando?.id ?? String(aberto)}
           aberto={aberto}
-          aoFechar={() => setAberto(false)}
-          familias={familias}
-          aoSalvar={async (descricao) => {
+          item={editando}
+          aoFechar={() => {
             setAberto(false);
-            setAviso('"' + descricao + '" cadastrado no catálogo.');
+            setEditando(null);
+          }}
+          familias={familias}
+          aoSalvar={async (descricao, corrigiu) => {
+            setAberto(false);
+            setEditando(null);
+            setAviso('"' + descricao + (corrigiu ? '" corrigido.' : '" cadastrado no catálogo.'));
             void carregar({ busca: busca || undefined, familiaId: familiaId || undefined, tipo: tipo || undefined });
           }}
         />
@@ -169,6 +180,9 @@ export function Materiais() {
                     <th scope="col">Cód. de barras</th>
                     <th scope="col">Norma</th>
                     <th scope="col" className="numero">Ponto de pedido</th>
+                    <th scope="col">
+                      <span className="apenas-leitor-tela">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,6 +210,20 @@ export function Materiais() {
                       <td className="numero">
                         {m.pontoPedido !== null ? quantidade(m.pontoPedido) : '—'}
                       </td>
+                      <td className="celula-acoes">
+                        {podeEditar && (
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => {
+                              setEditando(m);
+                              setAberto(true);
+                            }}
+                          >
+                            Editar
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -217,26 +245,33 @@ export function Materiais() {
 // ------------------------------------------------------------
 function FormularioMaterial({
   aberto,
+  item,
   aoFechar,
   familias,
   aoSalvar,
 }: {
   aberto: boolean;
+  /** Preenchido = corrigindo. Vazio = cadastrando um item novo. */
+  item: Material | null;
   aoFechar: () => void;
   familias: Familia[];
-  aoSalvar: (descricao: string) => Promise<void>;
+  aoSalvar: (descricao: string, corrigiu: boolean) => Promise<void>;
 }) {
   const idForm = useId();
-  const [familiaId, setFamiliaId] = useState('');
-  const [codigoInterno, setCodigoInterno] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [tipo, setTipo] = useState<TipoItem>('MATERIAL');
-  const [marca, setMarca] = useState('');
-  const [gtin, setGtin] = useState('');
-  const [normaTecnica, setNormaTecnica] = useState('');
-  const [unidadeMedida, setUnidadeMedida] = useState('UN');
-  const [pontoPedido, setPontoPedido] = useState('');
-  const [codigoLinhaPadrao, setCodigoLinhaPadrao] = useState('');
+  const corrigindo = item !== null;
+
+  const [familiaId, setFamiliaId] = useState(item?.familia.id ?? '');
+  const [codigoInterno, setCodigoInterno] = useState(item?.codigoInterno ?? '');
+  const [descricao, setDescricao] = useState(item?.descricao ?? '');
+  const [tipo, setTipo] = useState<TipoItem>(item?.tipo ?? 'MATERIAL');
+  const [marca, setMarca] = useState(item?.marca ?? '');
+  const [gtin, setGtin] = useState(item?.gtin ?? '');
+  const [normaTecnica, setNormaTecnica] = useState(item?.normaTecnica ?? '');
+  const [unidadeMedida, setUnidadeMedida] = useState(item?.unidadeMedida ?? 'UN');
+  const [pontoPedido, setPontoPedido] = useState(
+    item?.pontoPedido !== null && item?.pontoPedido !== undefined ? String(item.pontoPedido) : '',
+  );
+  const [codigoLinhaPadrao, setCodigoLinhaPadrao] = useState(item?.codigoLinhaPadrao ?? '');
 
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
@@ -252,7 +287,9 @@ function FormularioMaterial({
 
     try {
       const r = await biparCodigo(gtin.trim());
-      if (r.encontrado) {
+      // Corrigindo, o proprio item aparece na busca pelo seu codigo de
+      // barras. Acusar "ja esta cadastrado" nele mesmo seria mentira.
+      if (r.encontrado && r.material.id !== item?.id) {
         setAvisoGtin('Este código já está cadastrado em "' + r.material.descricao + '".');
       }
     } catch {
@@ -266,26 +303,30 @@ function FormularioMaterial({
     setDetalhes([]);
     setEnviando(true);
 
+    const campos = {
+      familiaId,
+      codigoInterno,
+      descricao,
+      tipo,
+      marca: marca || undefined,
+      gtin: ehServico ? undefined : gtin || undefined,
+      normaTecnica: normaTecnica || undefined,
+      unidadeMedida,
+      pontoPedido: pontoPedido ? Number(pontoPedido) : undefined,
+      codigoLinhaPadrao: codigoLinhaPadrao || undefined,
+    };
+
     try {
-      await criarMaterial({
-        familiaId,
-        codigoInterno,
-        descricao,
-        tipo,
-        marca: marca || undefined,
-        gtin: ehServico ? undefined : gtin || undefined,
-        normaTecnica: normaTecnica || undefined,
-        unidadeMedida,
-        pontoPedido: pontoPedido ? Number(pontoPedido) : undefined,
-        codigoLinhaPadrao: codigoLinhaPadrao || undefined,
-      });
-      await aoSalvar(descricao);
+      if (item) await editarMaterial(item.id, campos);
+      else await criarMaterial(campos);
+
+      await aoSalvar(descricao, corrigindo);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
         setDetalhes((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
       } else {
-        setErro('Não foi possível cadastrar.');
+        setErro(corrigindo ? 'Não foi possível salvar.' : 'Não foi possível cadastrar.');
       }
       setEnviando(false);
     }
@@ -299,9 +340,26 @@ function FormularioMaterial({
     <Modal
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo="Novo item de catálogo"
-      descricao="É deste catálogo que a solicitação escolhe o que pedir."
-      temAlteracao={Boolean(familiaId || codigoInterno || descricao)}
+      titulo={corrigindo ? 'Editar item do catálogo' : 'Novo item de catálogo'}
+      descricao={
+        corrigindo
+          ? 'A unidade e o código aparecem no pedido e na nota. Trocar aqui troca em todo lugar.'
+          : 'É deste catálogo que a solicitação escolhe o que pedir.'
+      }
+      temAlteracao={
+        corrigindo
+          ? familiaId !== item.familia.id
+            || codigoInterno !== item.codigoInterno
+            || descricao !== item.descricao
+            || tipo !== item.tipo
+            || marca !== (item.marca ?? '')
+            || gtin !== (item.gtin ?? '')
+            || normaTecnica !== (item.normaTecnica ?? '')
+            || unidadeMedida !== item.unidadeMedida
+            || codigoLinhaPadrao !== (item.codigoLinhaPadrao ?? '')
+            || pontoPedido !== (item.pontoPedido !== null ? String(item.pontoPedido) : '')
+          : Boolean(familiaId || codigoInterno || descricao)
+      }
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -313,7 +371,7 @@ function FormularioMaterial({
             className="botao botao--principal"
             disabled={enviando || !familiaId || !codigoInterno || !descricao}
           >
-            {enviando ? 'Salvando...' : 'Cadastrar item'}
+            {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Cadastrar item'}
           </button>
         </>
       }
