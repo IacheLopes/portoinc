@@ -21,6 +21,7 @@ import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 import { CampoCidade } from '../../componentes/CampoCidade';
+import { editarObra } from '../../servicos/cadastros';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -38,6 +39,8 @@ export function Obras() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  // `null` = criando. Com obra dentro = corrigindo aquela.
+  const [editando, setEditando] = useState<Obra | null>(null);
   const [busca, setBusca] = useState('');
 
   const carregar = useCallback(async (termo = '') => {
@@ -108,13 +111,25 @@ export function Obras() {
           />
 
         </div>
+        {/* A `key` troca junto com o alvo: sem isso o formulario
+            guardaria os valores da obra anterior e a pessoa corrigiria
+            a obra errada sem perceber. */}
         <FormularioObra
-          key={String(aberto)}
+          key={editando?.id ?? String(aberto)}
           aberto={aberto}
-          aoFechar={() => setAberto(false)}
-          aoSalvar={async (nome) => {
+          obra={editando}
+          aoFechar={() => {
             setAberto(false);
-            setAviso('Obra "' + nome + '" criada, já com o almoxarifado dela.');
+            setEditando(null);
+          }}
+          aoSalvar={async (nome, corrigiu) => {
+            setAberto(false);
+            setEditando(null);
+            setAviso(
+              corrigiu
+                ? 'Obra "' + nome + '" corrigida. O almoxarifado foi renomeado junto.'
+                : 'Obra "' + nome + '" criada, já com o almoxarifado dela.',
+            );
             await carregar();
           }}
         />
@@ -163,10 +178,22 @@ export function Obras() {
                           o.linhas + ' linhas'
                         )}
                       </td>
-                      <td>
+                      <td className="celula-acoes">
                         <Link className="botao botao--discreto botao--link" to={'/cadastros/obras/' + o.id}>
                           Abrir
                         </Link>
+                        {podeEditar && (
+                          <button
+                            type="button"
+                            className="botao botao--discreto"
+                            onClick={() => {
+                              setEditando(o);
+                              setAberto(true);
+                            }}
+                          >
+                            Editar
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -185,21 +212,26 @@ export function Obras() {
 // ------------------------------------------------------------
 function FormularioObra({
   aberto,
+  obra,
   aoFechar,
   aoSalvar,
 }: {
   aberto: boolean;
+  /** Preenchida = corrigindo. Vazia = criando uma obra nova. */
+  obra: Obra | null;
   aoFechar: () => void;
-  aoSalvar: (nome: string) => Promise<void>;
+  aoSalvar: (nome: string, corrigiu: boolean) => Promise<void>;
 }) {
   const idForm = useId();
-  const [codigo, setCodigo] = useState('');
-  const [nome, setNome] = useState('');
-  const [cliente, setCliente] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [uf, setUf] = useState('');
-  const [situacao, setSituacao] = useState<SituacaoObra>('PLANEJAMENTO');
-  const [dataInicio, setDataInicio] = useState('');
+  const corrigindo = obra !== null;
+
+  const [codigo, setCodigo] = useState(obra?.codigo ?? '');
+  const [nome, setNome] = useState(obra?.nome ?? '');
+  const [cliente, setCliente] = useState(obra?.cliente ?? '');
+  const [cidade, setCidade] = useState(obra?.cidade ?? '');
+  const [uf, setUf] = useState(obra?.uf ?? '');
+  const [situacao, setSituacao] = useState<SituacaoObra>(obra?.situacao ?? 'PLANEJAMENTO');
+  const [dataInicio, setDataInicio] = useState(obra?.dataInicio?.slice(0, 10) ?? '');
 
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
@@ -212,7 +244,7 @@ function FormularioObra({
     setEnviando(true);
 
     try {
-      await criarObra({
+      const campos = {
         codigo,
         nome,
         cliente: cliente || undefined,
@@ -220,14 +252,18 @@ function FormularioObra({
         uf: uf || undefined,
         situacao,
         dataInicio: dataInicio || undefined,
-      });
-      await aoSalvar(nome);
+      };
+
+      if (obra) await editarObra(obra.id, campos);
+      else await criarObra(campos);
+
+      await aoSalvar(nome, corrigindo);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
         setDetalhes((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
       } else {
-        setErro('Não foi possível criar a obra.');
+        setErro(corrigindo ? 'Não foi possível salvar.' : 'Não foi possível criar a obra.');
       }
       setEnviando(false);
     }
@@ -241,9 +277,23 @@ function FormularioObra({
     <Modal
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo="Nova obra"
-      descricao="Cada obra ganha um almoxarifado próprio, criado junto com ela."
-      temAlteracao={Boolean(codigo || nome || cliente || cidade)}
+      titulo={corrigindo ? 'Editar obra' : 'Nova obra'}
+      descricao={
+        corrigindo
+          ? 'O almoxarifado da obra é renomeado junto, para os dois não ficarem com nomes diferentes.'
+          : 'Cada obra ganha um almoxarifado próprio, criado junto com ela.'
+      }
+      temAlteracao={
+        corrigindo
+          ? codigo !== obra.codigo
+            || nome !== obra.nome
+            || cliente !== (obra.cliente ?? '')
+            || cidade !== (obra.cidade ?? '')
+            || uf !== (obra.uf ?? '')
+            || situacao !== obra.situacao
+            || dataInicio !== (obra.dataInicio?.slice(0, 10) ?? '')
+          : Boolean(codigo || nome || cliente || cidade)
+      }
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -255,22 +305,23 @@ function FormularioObra({
             className="botao botao--principal"
             disabled={enviando || !codigo || !nome}
           >
-            {enviando ? 'Salvando...' : 'Criar obra'}
+            {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Criar obra'}
           </button>
         </>
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
-        {/* Obras ainda nao tem edicao: este modal so cria. */}
         {/* O texto anterior dizia que corrigir a obra depois NAO
             renomeava o almoxarifado. Era verdade ate 25/09/2026, e
             deixou de ser no mesmo dia: agora o almoxarifado acompanha.
             Aviso que mente e pior que aviso nenhum. */}
+        {!corrigindo && (
         <AvisoDeCriacao>
           A obra nasce com o <strong>almoxarifado dela</strong>, batizado a partir deste
           nome e deste código. Os dois acompanham se você corrigir depois — mas o
           <strong> código</strong> aparece em todo pedido e relatório da obra.
         </AvisoDeCriacao>
+        )}
 
         <div className="formulario__linha">
           <Campo

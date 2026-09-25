@@ -114,6 +114,11 @@ export function buscarObra(id: string) {
   return chamar<{ obra: ObraDetalhe }>('/api/obras/' + id);
 }
 
+/** Corrige uma obra. Renomear aqui renomeia o almoxarifado dela. */
+export function editarObra(id: string, dados: Record<string, unknown>) {
+  return chamar<{ obra: Obra }>('/api/obras/' + id, { metodo: 'PATCH', corpo: dados });
+}
+
 export function criarObra(dados: Record<string, unknown>) {
   return chamar<{ obra: Obra }>('/api/obras', { metodo: 'POST', corpo: dados });
 }
@@ -209,6 +214,14 @@ export function listarFornecedores(filtros: { busca?: string; familiaId?: string
   return chamar<{ fornecedores: Fornecedor[] }>(
     '/api/fornecedores' + (partes.length ? '?' + partes.join('&') : ''),
   );
+}
+
+/** Corrige um fornecedor ja cadastrado. */
+export function editarFornecedor(id: string, dados: Record<string, unknown>) {
+  return chamar<{ fornecedor: Fornecedor }>('/api/fornecedores/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
 }
 
 export function criarFornecedor(dados: Record<string, unknown>) {

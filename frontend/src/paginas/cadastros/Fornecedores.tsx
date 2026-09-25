@@ -22,6 +22,7 @@ import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 import { CampoCidade } from '../../componentes/CampoCidade';
+import { editarFornecedor } from '../../servicos/cadastros';
 import { mascaraCnpj, mascaraTelefone, telefoneParaGuardar, telefoneCompleto } from '../../servicos/mascaras';
 import { sugerirNomeFantasia } from '../../servicos/municipios';
 
@@ -35,6 +36,8 @@ export function Fornecedores() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  // `null` = cadastrando. Com fornecedor dentro = corrigindo aquele.
+  const [editando, setEditando] = useState<Fornecedor | null>(null);
 
   const [busca, setBusca] = useState('');
   const [familiaId, setFamiliaId] = useState('');
@@ -123,14 +126,21 @@ export function Fornecedores() {
           />
 
         </div>
+        {/* A `key` troca junto com o alvo, senao o formulario nasceria
+            com os dados do fornecedor anterior. */}
         <FormularioFornecedor
-          key={String(aberto)}
+          key={editando?.id ?? String(aberto)}
           aberto={aberto}
-          aoFechar={() => setAberto(false)}
-          familias={familias}
-          aoSalvar={async (nome) => {
+          fornecedor={editando}
+          aoFechar={() => {
             setAberto(false);
-            setAviso('"' + nome + '" cadastrado.');
+            setEditando(null);
+          }}
+          familias={familias}
+          aoSalvar={async (nome, corrigiu) => {
+            setAberto(false);
+            setEditando(null);
+            setAviso('"' + nome + (corrigiu ? '" corrigido.' : '" cadastrado.'));
             void carregar({ busca: busca || undefined, familiaId: familiaId || undefined });
           }}
         />
@@ -160,6 +170,20 @@ export function Fornecedores() {
                   </>
                 }
                 descricao={f.razaoSocial}
+                acoes={
+                  podeEditar && (
+                    <button
+                      type="button"
+                      className="botao botao--discreto"
+                      onClick={() => {
+                        setEditando(f);
+                        setAberto(true);
+                      }}
+                    >
+                      Editar
+                    </button>
+                  )
+                }
               >
 
                 <dl className="dados">
@@ -216,28 +240,39 @@ export function Fornecedores() {
 // ------------------------------------------------------------
 function FormularioFornecedor({
   aberto,
+  fornecedor,
   aoFechar,
   familias,
   aoSalvar,
 }: {
   aberto: boolean;
+  /** Preenchido = corrigindo. Vazio = cadastrando um novo. */
+  fornecedor: Fornecedor | null;
   aoFechar: () => void;
   familias: Familia[];
-  aoSalvar: (nome: string) => Promise<void>;
+  aoSalvar: (nome: string, corrigiu: boolean) => Promise<void>;
 }) {
   const idForm = useId();
-  const [razaoSocial, setRazaoSocial] = useState('');
-  const [nomeFantasia, setNomeFantasia] = useState('');
+  const corrigindo = fornecedor !== null;
+
+  const [razaoSocial, setRazaoSocial] = useState(fornecedor?.razaoSocial ?? '');
+  const [nomeFantasia, setNomeFantasia] = useState(fornecedor?.nomeFantasia ?? '');
   // Assim que alguem escreve no nome fantasia, a sugestao para de
   // mandar nele. Sem isto, voltar para corrigir a razao social
   // apagaria o que a pessoa tinha escrito.
-  const [fantasiaTocada, setFantasiaTocada] = useState(false);
-  const [cnpj, setCnpj] = useState('');
-  const [email, setEmail] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [uf, setUf] = useState('');
-  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  //
+  // Corrigindo, ele JA nasce tocado: o nome fantasia veio do banco, e
+  // mexer na razao social nao pode apagar o que ja estava salvo.
+  const [fantasiaTocada, setFantasiaTocada] = useState(corrigindo);
+
+  const [cnpj, setCnpj] = useState(mascaraCnpj(fornecedor?.cnpj ?? ''));
+  const [email, setEmail] = useState(fornecedor?.email ?? '');
+  const [whatsapp, setWhatsapp] = useState(mascaraTelefone(fornecedor?.whatsapp ?? ''));
+  const [cidade, setCidade] = useState(fornecedor?.cidade ?? '');
+  const [uf, setUf] = useState(fornecedor?.uf ?? '');
+  const [selecionadas, setSelecionadas] = useState<string[]>(
+    fornecedor?.familias.map((f) => f.id) ?? [],
+  );
 
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
@@ -256,7 +291,7 @@ function FormularioFornecedor({
     setEnviando(true);
 
     try {
-      await criarFornecedor({
+      const campos = {
         razaoSocial,
         nomeFantasia: nomeFantasia || undefined,
         cnpj,
@@ -265,8 +300,11 @@ function FormularioFornecedor({
         cidade: cidade || undefined,
         uf: uf || undefined,
         familias: selecionadas,
-      });
-      await aoSalvar(nomeFantasia || razaoSocial);
+      };
+
+      if (fornecedor) await editarFornecedor(fornecedor.id, campos);
+      else await criarFornecedor(campos);
+      await aoSalvar(nomeFantasia || razaoSocial, corrigindo);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
@@ -286,9 +324,20 @@ function FormularioFornecedor({
     <Modal
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo="Novo fornecedor"
+      titulo={corrigindo ? 'Editar fornecedor' : 'Novo fornecedor'}
       descricao="As famílias que ele atende decidem em quais cotações ele será sugerido."
-      temAlteracao={Boolean(razaoSocial || nomeFantasia || cnpj)}
+      temAlteracao={
+        corrigindo
+          ? razaoSocial !== fornecedor.razaoSocial
+            || nomeFantasia !== (fornecedor.nomeFantasia ?? '')
+            || cnpj !== mascaraCnpj(fornecedor.cnpj)
+            || email !== (fornecedor.email ?? '')
+            || whatsapp !== mascaraTelefone(fornecedor.whatsapp ?? '')
+            || cidade !== (fornecedor.cidade ?? '')
+            || uf !== (fornecedor.uf ?? '')
+            || selecionadas.length !== fornecedor.familias.length
+          : Boolean(razaoSocial || nomeFantasia || cnpj)
+      }
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -300,17 +349,18 @@ function FormularioFornecedor({
             className="botao botao--principal"
             disabled={enviando || !razaoSocial || !cnpj}
           >
-            {enviando ? 'Salvando...' : 'Cadastrar fornecedor'}
+            {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Cadastrar fornecedor'}
           </button>
         </>
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
-        {/* Fornecedores ainda nao tem edicao: este modal so cria. */}
+        {!corrigindo && (
         <AvisoDeCriacao>
           O <strong>CNPJ</strong> é o que liga a nota fiscal a este cadastro. O sistema
           checa os dígitos, mas não sabe se é a empresa certa.
         </AvisoDeCriacao>
+        )}
 
         <div className="formulario__linha">
           <Campo
