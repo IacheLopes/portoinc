@@ -261,10 +261,14 @@ function FormularioObra({
     >
       <form id={idForm} onSubmit={enviar} noValidate>
         {/* Obras ainda nao tem edicao: este modal so cria. */}
+        {/* O texto anterior dizia que corrigir a obra depois NAO
+            renomeava o almoxarifado. Era verdade ate 25/09/2026, e
+            deixou de ser no mesmo dia: agora o almoxarifado acompanha.
+            Aviso que mente e pior que aviso nenhum. */}
         <AvisoDeCriacao>
-          O <strong>código</strong> batiza o almoxarifado da obra, que nasce junto como
-          <strong> {'<código>'}-ALM</strong>. Corrigir a obra depois não renomeia o
-          almoxarifado.
+          A obra nasce com o <strong>almoxarifado dela</strong>, batizado a partir deste
+          nome e deste código. Os dois acompanham se você corrigir depois — mas o
+          <strong> código</strong> aparece em todo pedido e relatório da obra.
         </AvisoDeCriacao>
 
         <div className="formulario__linha">
