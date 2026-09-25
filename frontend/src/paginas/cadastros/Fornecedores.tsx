@@ -21,6 +21,9 @@ import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
+import { CampoCidade } from '../../componentes/CampoCidade';
+import { mascaraCnpj, mascaraTelefone, telefoneParaGuardar, telefoneCompleto } from '../../servicos/mascaras';
+import { sugerirNomeFantasia } from '../../servicos/municipios';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -182,7 +185,7 @@ export function Fornecedores() {
                   {f.whatsapp && (
                     <div>
                       <dt>WhatsApp</dt>
-                      <dd className="mono">{f.whatsapp}</dd>
+                      <dd className="mono">{telefoneCompleto(f.whatsapp)}</dd>
                     </div>
                   )}
                 </dl>
@@ -225,6 +228,10 @@ function FormularioFornecedor({
   const idForm = useId();
   const [razaoSocial, setRazaoSocial] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
+  // Assim que alguem escreve no nome fantasia, a sugestao para de
+  // mandar nele. Sem isto, voltar para corrigir a razao social
+  // apagaria o que a pessoa tinha escrito.
+  const [fantasiaTocada, setFantasiaTocada] = useState(false);
   const [cnpj, setCnpj] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -254,7 +261,7 @@ function FormularioFornecedor({
         nomeFantasia: nomeFantasia || undefined,
         cnpj,
         email: email || undefined,
-        whatsapp: whatsapp || undefined,
+        whatsapp: telefoneParaGuardar(whatsapp) || undefined,
         cidade: cidade || undefined,
         uf: uf || undefined,
         familias: selecionadas,
@@ -301,23 +308,35 @@ function FormularioFornecedor({
       <form id={idForm} onSubmit={enviar} noValidate>
         {/* Fornecedores ainda nao tem edicao: este modal so cria. */}
         <AvisoDeCriacao>
-          O <strong>CNPJ</strong> é o que liga a nota fiscal a este cadastro. Confira
-          antes de salvar — o sistema checa os dígitos, mas não sabe se é a empresa certa.
+          O <strong>CNPJ</strong> é o que liga a nota fiscal a este cadastro. O sistema
+          checa os dígitos, mas não sabe se é a empresa certa.
         </AvisoDeCriacao>
 
         <div className="formulario__linha">
           <Campo
             rotulo="Razão social"
             valor={razaoSocial}
-            aoMudar={setRazaoSocial}
+            aoMudar={(v) => {
+              setRazaoSocial(v);
+
+              // A sugestão só entra enquanto NINGUÉM mexeu no nome
+              // fantasia. Sobrescrever o que a pessoa digitou é o
+              // defeito clássico deste recurso — ela escreve, volta
+              // para corrigir a razão social, e perde o que escreveu.
+              if (!fantasiaTocada) setNomeFantasia(sugerirNomeFantasia(v));
+            }}
             exemplo="Marquilip Comércio e Representação Ltda"
             obrigatorio
           />
           <Campo
             rotulo="Nome fantasia"
             valor={nomeFantasia}
-            aoMudar={setNomeFantasia}
+            aoMudar={(v) => {
+              setFantasiaTocada(true);
+              setNomeFantasia(v);
+            }}
             exemplo="Marquilip"
+            ajuda="Sugerido a partir da razão social. Apague e escreva outro se quiser."
           />
         </div>
 
@@ -325,7 +344,7 @@ function FormularioFornecedor({
           <Campo
             rotulo="CNPJ"
             valor={cnpj}
-            aoMudar={setCnpj}
+            aoMudar={(v) => setCnpj(mascaraCnpj(v))}
             exemplo="19.131.243/0001-97"
             ajuda="O sistema confere o dígito verificador. CNPJ errado só apareceria quando a nota fiscal não batesse."
             obrigatorio
@@ -337,12 +356,20 @@ function FormularioFornecedor({
           <Campo
             rotulo="WhatsApp"
             valor={whatsapp}
-            aoMudar={setWhatsapp}
+            aoMudar={(v) => setWhatsapp(mascaraTelefone(v))}
             tipo="tel"
-            exemplo="5511988887777"
-            ajuda="Com DDI e DDD. Usado para mandar a cotação na Etapa 10."
+            exemplo="(11) 98888-7777"
+            ajuda="O +55 do Brasil já entra sozinho ao salvar. Digite só DDD e número."
           />
-          <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
+
+          {/* Escolhendo da lista, a UF vem junto. Digitar continua
+              valendo, para municipio novo ou distrito que nao e
+              municipio — a lista sugere, mas nao prende. */}
+          <CampoCidade
+            cidade={cidade}
+            aoMudarCidade={setCidade}
+            aoEscolherUf={setUf}
+          />
         </div>
 
         <Selecao

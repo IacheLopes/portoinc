@@ -20,6 +20,7 @@ import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
+import { CampoCidade } from '../../componentes/CampoCidade';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -301,7 +302,9 @@ function FormularioObra({
         </div>
 
         <div className="formulario__linha">
-          <Campo rotulo="Cidade" valor={cidade} aoMudar={setCidade} exemplo="São Paulo" />
+          {/* Mesma escolha de Fornecedores: a lista do IBGE sugere,
+              a UF vem junto, e digitar fora da lista continua valendo. */}
+          <CampoCidade cidade={cidade} aoMudarCidade={setCidade} aoEscolherUf={setUf} />
           <Selecao
             rotulo="UF"
             valor={uf}

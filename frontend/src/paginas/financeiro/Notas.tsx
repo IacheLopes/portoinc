@@ -31,6 +31,7 @@ import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { mascaraChaveAcesso } from '../../servicos/mascaras';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -126,7 +127,7 @@ export function NotasFiscais() {
       setDoXml(true);
       setNumero(r.nota.numero);
       setSerie(r.nota.serie);
-      setChave(r.nota.chaveAcesso ?? '');
+      setChave(mascaraChaveAcesso(r.nota.chaveAcesso ?? ''));
       setValorTotal(String(r.nota.valorTotal));
       setValorFrete(r.nota.valorFrete ? String(r.nota.valorFrete) : '');
       setItens(r.nota.itens);
@@ -467,7 +468,10 @@ export function NotasFiscais() {
             <Campo
               rotulo="Chave de acesso"
               valor={chave}
-              aoMudar={setChave}
+              // Em grupos de quatro. Conferir 44 digitos colados
+              // contra um DANFE e tarefa para quem nao tem mais nada
+              // a fazer — e e justamente onde o erro se esconde.
+              aoMudar={(v) => setChave(mascaraChaveAcesso(v))}
               maximo={60}
               ajuda="Os 44 dígitos do DANFE. O sistema confere o dígito verificador, o CNPJ e o número da nota."
             />

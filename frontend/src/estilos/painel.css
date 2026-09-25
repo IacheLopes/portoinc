@@ -907,3 +907,66 @@ a.atalho:hover {
   margin-bottom: var(--esp-4);
   font-size: var(--txt-sm);
 }
+
+/* ------------------------------------------------------------
+   Escolher a cidade de uma lista
+
+   A lista flutua sobre o que vem depois, então precisa de posição
+   relativa no campo e de estar acima na pilha — dentro de um modal
+   ela disputa espaço com o rodapé de botões.
+   ------------------------------------------------------------ */
+.campo-cidade {
+  position: relative;
+}
+
+.campo-cidade__lista {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 2px 0 0;
+  padding: var(--esp-1);
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2);
+}
+
+.campo-cidade__opcao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  /* 44px: alvo de dedo. A lista também é usada no celular. */
+  min-height: 44px;
+  padding: var(--esp-2) var(--esp-3);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Uma marcação só, para teclado e mouse: assim a seta do teclado e o
+   ponteiro nunca acendem duas linhas ao mesmo tempo. */
+.campo-cidade__opcao--marcada {
+  background: var(--info-leve);
+  color: var(--info-texto);
+}
+
+.campo-cidade__uf {
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-forte);
+  color: var(--texto-secundario);
+}
+
+.campo-cidade__opcao--marcada .campo-cidade__uf {
+  color: inherit;
+}

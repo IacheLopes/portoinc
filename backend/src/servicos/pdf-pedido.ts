@@ -9,6 +9,7 @@
 
 import PDFDocument from 'pdfkit';
 import { dataBr, geradoEm } from './data-br.js';
+import { formatarTelefone } from './util.js';
 import { formatarNumeroPedido } from './equalizacao.js';
 import { formatarCnpj } from './util.js';
 
@@ -116,7 +117,7 @@ export function gerarPdfPedido(dados: DadosPedido): Promise<Buffer> {
 
     doc.text('CNPJ ' + formatarCnpj(dados.fornecedor.cnpj), 45, y + 37);
 
-    const contato = [dados.fornecedor.email, dados.fornecedor.telefone]
+    const contato = [dados.fornecedor.email, formatarTelefone(dados.fornecedor.telefone)]
       .filter(Boolean)
       .join(' · ');
 

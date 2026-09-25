@@ -113,3 +113,30 @@ export const UFS = [
   'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
   'SP', 'SE', 'TO',
 ] as const;
+
+/**
+ * +55 (11) 94444-3333
+ *
+ * O telefone e guardado em digitos puros, porque e o que a integracao
+ * do WhatsApp exige. Num documento isso saia assim:
+ *
+ *   vendas@segurancatotal.com.br · 5511944443333
+ *
+ * Treze digitos colados no pedido de compra que vai para o
+ * fornecedor. A pontuacao e so leitura — o dado nao muda.
+ */
+export function formatarTelefone(valor: string | null | undefined): string {
+  const d = String(valor ?? '').replace(/\D/g, '');
+  if (d === '') return '';
+
+  const nacional = d.startsWith('55') && (d.length === 12 || d.length === 13)
+    ? d.slice(2)
+    : d;
+
+  if (nacional.length < 10 || nacional.length > 11) return String(valor);
+
+  const corte = nacional.length === 10 ? 6 : 7;
+
+  return '+55 (' + nacional.slice(0, 2) + ') '
+    + nacional.slice(2, corte) + '-' + nacional.slice(corte);
+}
