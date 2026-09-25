@@ -177,9 +177,9 @@ sequência**. Saber isso já resolve metade da confusão.
 
 | Botão | O que faz |
 |---|---|
-| **Situação** + **Filtrar** | mostra só os pacotes naquele estado |
+| **Situação** | escolha o estado e a lista filtra na hora — não tem botão de confirmar |
 | **Abrir** | vai para a tela de convidar |
-| **+ Novo pacote de cotação** | abre a tela de criar |
+| **+ Novo pacote de cotação** | abre a janela de criar |
 
 ---
 
