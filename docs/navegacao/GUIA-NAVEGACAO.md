@@ -27,11 +27,14 @@ Tudo que aparece na tela foi criado para você treinar. **Nada disso existe de v
 
 | É de verdade | Foi inventado |
 |---|---|
-| As pessoas: Bras, Gilson, Neilma, Andre, Washington | As obras, os materiais e os fornecedores |
-| O jeito como a compra anda | As notas, os valores e os prazos |
+| O jeito como a compra anda, do pedido ao pagamento | As obras, os materiais e os fornecedores |
+| As regras: quem aprova o quê, conforme o valor | As pessoas, as notas, os valores e os prazos |
 
 > **Se for apresentar, fale isso na primeira frase.** Algo como: *"os dados são de
 > exemplo, só para o sistema ter o que mostrar"*.
+
+> **Sistema recém-instalado vem vazio.** Se as telas estiverem sem nada, não está
+> quebrado: falta cadastrar. O **Guia de Como Encher o Sistema** mostra a ordem.
 
 ## Como uma compra anda
 
@@ -52,13 +55,12 @@ Abra **http://localhost:5173** e use uma destas contas:
 
 | Conta | Senha | Quem é |
 |---|---|---|
-| **`porto@dev.com`** | **`admin123`** | **Vê tudo. Use esta para explorar** |
+| **`porto@dev.com`** | **`admin123`** | **Tem os sete papéis. Use esta para explorar** |
 | `admin@portoinc.com.br` | `Porto@2026` | Cuida do sistema |
-| `bras@portoinc.com.br` | `Porto@2026` | Pede material e aprova |
-| `andre@portoinc.com.br` | `Porto@2026` | Compra |
-| `gilson@portoinc.com.br` | `Porto@2026` | Recebe e guarda o material |
-| `neilma@portoinc.com.br` | `Porto@2026` | Compra e paga |
-| `washington@portoinc.com.br` | `Porto@2026` | O dono. Aprova compra grande |
+
+> **São só estas duas.** As contas com nome de pessoa saíram junto com os dados de
+> exemplo. Para testar permissão de verdade — se o almoxarife realmente não consegue
+> aprovar, por exemplo — crie contas de um papel só em **Usuários**.
 
 > **O menu muda conforme quem entrou.** Se um botão não aparece, não está quebrado: é que
 > aquela pessoa não faz aquilo.

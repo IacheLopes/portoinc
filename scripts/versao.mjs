@@ -86,6 +86,7 @@ const trabalho = [
   // Nasceu depois e nunca foi cadastrado aqui: ficou para tras em
   // todo bump de versao desde que existe. Visto em 24/09/2026.
   ['docs/navegacao/GUIA-NAVEGACAO.md', subirDoc],
+  ['docs/navegacao/GUIA-ALIMENTAR.md', subirDoc],
 ];
 
 console.log('');

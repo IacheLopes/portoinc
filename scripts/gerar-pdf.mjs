@@ -51,6 +51,17 @@ const DOCUMENTOS = {
       'Guia curto, para aprender a mexer e para apresentar. O detalhe de cada campo está no <strong>Manual do Sistema</strong>.',
   },
 
+  alimentar: {
+    entrada: join(RAIZ, 'docs', 'navegacao', 'GUIA-ALIMENTAR.md'),
+    saida: join(RAIZ, 'docs', 'navegacao', 'Guia-Alimentar-PortoInc.pdf'),
+    compacto: true,
+    titulo: 'Como Encher o Sistema',
+    subtitulo: 'Porto Inc. — o que cadastrar, nesta ordem, num sistema novo',
+    aviso:
+      'Sistema novo chega vazio. Este guia leva do nada até a primeira compra completa. ' +
+      'Para saber o que cada tela faz, veja o <strong>Guia de Navegação</strong>.',
+  },
+
   'guia-testes': {
     entrada: join(RAIZ, 'docs', 'testes', 'GUIA-TESTE-MANUAL.md'),
     saida: join(RAIZ, 'docs', 'testes', 'Guia-Teste-Manual-PortoInc.pdf'),
