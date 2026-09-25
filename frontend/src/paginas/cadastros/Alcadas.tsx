@@ -370,8 +370,14 @@ function FormularioFaixa({
   const [valorMaximo, setValorMaximo] = useState(dinheiroParaCampo(faixa?.valorMaximo));
   const [semTeto, setSemTeto] = useState(corrigindo && faixa.valorMaximo === null);
   const [exigeTodas, setExigeTodas] = useState(faixa?.exigeTodas ?? false);
+  // `f.id`, e não `f.codigo`.
+  //
+  // As caixas são marcadas comparando com o id da função. Eu havia
+  // inicializado com o código ("GESTOR_OBRA"), então nada casava:
+  // quem abria para corrigir encontrava todas as caixas vazias e, se
+  // salvasse, apagava os aprovadores da faixa sem perceber.
   const [selecionadas, setSelecionadas] = useState<string[]>(
-    faixa?.funcoes.map((f) => f.codigo) ?? [],
+    faixa?.funcoes.map((f) => f.id) ?? [],
   );
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
@@ -428,7 +434,7 @@ function FormularioFaixa({
             || lerDinheiro(valorMinimo) !== faixa.valorMinimo
             || (semTeto ? null : lerDinheiro(valorMaximo)) !== faixa.valorMaximo
             || exigeTodas !== faixa.exigeTodas
-            || selecionadas.length !== faixa.funcoes.length
+            || selecionadas.slice().sort().join() !== faixa.funcoes.map((f) => f.id).sort().join()
           : Boolean(descricao || valorMinimo || selecionadas.length > 0)
       }
       acoes={

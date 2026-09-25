@@ -335,7 +335,7 @@ function FormularioFornecedor({
             || whatsapp !== mascaraTelefone(fornecedor.whatsapp ?? '')
             || cidade !== (fornecedor.cidade ?? '')
             || uf !== (fornecedor.uf ?? '')
-            || selecionadas.length !== fornecedor.familias.length
+            || selecionadas.slice().sort().join() !== fornecedor.familias.map((f) => f.id).sort().join()
           : Boolean(razaoSocial || nomeFantasia || cnpj)
       }
       acoes={
