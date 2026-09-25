@@ -6,6 +6,8 @@
 //  em vez de fechar tudo com um fornecedor só?"
 // ============================================================
 
+import { dataBr } from './data-br.js';
+
 export interface RespostaDeFornecedor {
   bidFornecedorId: string;
   fornecedorNome: string;
@@ -247,7 +249,7 @@ export function mensagemUltimaChamada(
       'Porto Inc. — ' + numeroBid + '\n' +
       'Sua proposta está com o melhor preço em todos os itens. ' +
       'Se quiser revisar algo, o prazo foi estendido até ' +
-      novoPrazo.toLocaleDateString('pt-BR') + '.'
+      dataBr(novoPrazo) + '.'
     );
   }
 
@@ -264,7 +266,7 @@ export function mensagemUltimaChamada(
     'Recebemos propostas melhores nos itens abaixo:\n' +
     lista + resto + '\n' +
     'Se puder rever seu preço, atualize pelo mesmo link até ' +
-    novoPrazo.toLocaleDateString('pt-BR') + '.'
+    dataBr(novoPrazo) + '.'
   );
 }
 

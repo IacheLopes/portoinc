@@ -1,4 +1,4 @@
-<!-- versao: 0.36.0 -->
+<!-- versao: 0.37.0 -->
 
 # 1. Como usar este guia
 
@@ -4188,6 +4188,71 @@ cortes se emendavam e o número parecia rasurado.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+
+## CT-297 · O documento sai com a data de hoje, mesmo à noite
+
+**Depois das 21h** (é a faixa onde o defeito aparecia; antes disso ele some), baixe em
+**Pedidos → abra um pedido → Baixar PDF**.
+
+**Esperado:** a data do cabeçalho (**Emitido em**) e a do rodapé (**Gerado pelo sistema em**)
+são do **mesmo dia**, e esse dia é hoje.
+
+> O container roda em UTC, três horas à frente de Brasília. Até 25/09/2026 o mesmo papel
+trazia 24/09 em cima e 25/09 embaixo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-298 · Nenhum rótulo em CAIXA ALTA nos arquivos
+
+Baixe em **PDF** e abra: **Relatórios → Orçado × realizado**, **Financeiro → Contas a
+pagar**, e um **Pedido de compra**.
+
+**Esperado:** todo rótulo e todo cabeçalho de coluna em caixa normal — *Obra*, *Previsto*,
+*Fornecedor*, *Total do pedido*, *Código*, *Descrição*. Nada de "OBRA" nem "TOTAL DO PEDIDO".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-299 · O rodapé diz de quantas folhas o papel é
+
+Baixe **Relatórios → Consumo por família e material** em **PDF** (ele passa de uma folha).
+
+**Esperado:** o rodapé de cada folha diz **"Página 1 de 2"**, **"Página 2 de 2"** — e não só
+"Página 1". O cabeçalho da tabela se repete em toda folha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-300 · Contas a pagar: CNPJ e situação legíveis
+
+Baixe **Financeiro → Contas a pagar** em **PDF** e em **Word**.
+
+**Esperado:** o CNPJ sai pontuado (**47.960.950/0001-21**), e a coluna **Situação** diz
+*Paga* e *Aberta* — não "PAGA" nem "ABERTA".
+
+> Os dois eram o valor do banco chegando cru ao papel. A tela já traduzia; o arquivo não.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-301 · O espelho da nota avisa que não é a nota
+
+Em **Financeiro → Notas fiscais**, abra uma nota e baixe o **espelho em PDF**.
+
+**Esperado:** logo abaixo do **Total da nota** há uma faixa avisando, em vermelho, que o
+documento **não é a nota fiscal, não substitui o DANFE e não tem valor fiscal**.
+
+> Antes esse aviso ficava em letra cinza miúda no pé da folha. É a informação mais
+importante do papel.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4590,6 +4655,11 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-294 | O botão de buscar fica colado no campo |  |
 | CT-295 | O saldo traz a conta inteira |  |
 | CT-296 | Os códigos não parecem riscados |  |
+| CT-297 | O documento sai com a data de hoje, mesmo à noite |  |
+| CT-298 | Nenhum rótulo em CAIXA ALTA nos arquivos |  |
+| CT-299 | O rodapé diz de quantas folhas o papel é |  |
+| CT-300 | Contas a pagar: CNPJ e situação legíveis |  |
+| CT-301 | O espelho da nota avisa que não é a nota |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

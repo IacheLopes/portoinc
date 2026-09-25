@@ -9,6 +9,7 @@
 // ============================================================
 
 import PDFDocument from 'pdfkit';
+import { dataBr, geradoEm } from './data-br.js';
 import { formatarNumero, ROTULO_SITUACAO, type Situacao } from './solicitacao.js';
 
 const MARINHO = '#0f2942';
@@ -42,10 +43,8 @@ export interface DadosPdf {
   totalEstimado: number;
 }
 
-function data(valor: Date | null): string {
-  if (!valor) return '—';
-  return valor.toLocaleDateString('pt-BR');
-}
+// O fuso agora e dito em voz alta, em data-br.ts.
+const data = dataBr;
 
 function dinheiro(valor: number): string {
   return 'R$ ' + valor.toLocaleString('pt-BR', {
@@ -78,16 +77,18 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
     const larguraUtil = doc.page.width - 90;
 
     // ---------- Cabeçalho ----------
-    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(20).text('Porto Inc', 45, 45, {
-      continued: true,
-    });
+    // A marca em 20pt negrito competia de igual para igual com o
+    // titulo do documento, na mesma linha. Dois blocos escuros, nenhum
+    // ganhando. Quem abre quer saber primeiro O QUE e o papel.
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(14)
+      .text('Porto Inc', 45, 46, { continued: true });
     doc.fillColor(AZUL).text('.');
 
-    doc.fillColor(CINZA).font('Helvetica').fontSize(9)
-      .text('Compras e Almoxarifado', 45, 70);
+    doc.fillColor(CINZA).font('Helvetica').fontSize(8)
+      .text('Compras e Almoxarifado', 45, 64);
 
-    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(16)
-      .text('Solicitação de Compra', 45, 45, { width: larguraUtil, align: 'right' });
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(18)
+      .text('Solicitação de compra', 45, 43, { width: larguraUtil, align: 'right' });
 
     doc.fillColor(AZUL).fontSize(13)
       .text(formatarNumero(dados.numero), 45, 66, { width: larguraUtil, align: 'right' });
@@ -101,7 +102,7 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
     let y = 122;
 
     const campo = (rotulo: string, valor: string, x: number, largura: number) => {
-      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text(rotulo.toUpperCase(), x, y);
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text(rotulo, x, y);
       doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(10)
         .text(valor, x, y + 10, { width: largura });
     };
@@ -121,7 +122,7 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
     }
 
     if (dados.justificativa) {
-      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('JUSTIFICATIVA', 45, y);
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Justificativa', 45, y);
       doc.fillColor('#16202b').font('Helvetica').fontSize(9.5)
         .text(dados.justificativa, 45, y + 11, { width: larguraUtil });
       y = doc.y + 12;
@@ -262,8 +263,8 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
 
     // ---------- Rodapé ----------
     doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text(
-      'Porto Inc. · Sistema de Compras e Almoxarifado · documento gerado em ' +
-        new Date().toLocaleString('pt-BR'),
+      'Porto Inc. · Solicitação ' + formatarNumero(dados.numero) + ' · ' +
+        geradoEm().toLowerCase(),
       45,
       linhaRodape,
       { width: larguraUtil, align: 'center', lineBreak: false },

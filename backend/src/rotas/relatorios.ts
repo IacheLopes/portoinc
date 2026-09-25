@@ -17,6 +17,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { banco } from '../plugins/banco.js';
 import { numero } from '../servicos/util.js';
+import { dataBr, isoBr } from '../servicos/data-br.js';
 import {
   diasEntre,
   compararOrcamento, resumirOrcamento,
@@ -64,10 +65,9 @@ function faixa(q: Filtro): { de: Date; ate: Date; deTexto: string; ateTexto: str
   const de = q.de ? new Date(q.de + 'T00:00:00') : padraoDe;
   const ate = q.ate ? new Date(q.ate + 'T23:59:59') : hoje;
 
-  const iso = (d: Date) =>
-    d.getFullYear() +
-    '-' + String(d.getMonth() + 1).padStart(2, '0') +
-    '-' + String(d.getDate()).padStart(2, '0');
+  // No fuso de Brasília, e não no do container: às nove da noite os
+  // dois discordam, e o rótulo do relatório dizia cobrir até amanhã.
+  const iso = isoBr;
 
   return { de, ate, deTexto: iso(de), ateTexto: iso(ate) };
 }
@@ -103,8 +103,18 @@ function dinheiro(v: number): string {
   });
 }
 
+/**
+ * Uma casa decimal SEMPRE, inclusive quando é zero.
+ *
+ * Sem `minimumFractionDigits` a mesma coluna saía "5%", "5,2%",
+ * "4,9%": a vírgula de cada linha num lugar diferente, e o olho
+ * perdendo a referência ao descer a coluna.
+ */
 function pct(v: number): string {
-  return v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+  return v.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }) + '%';
 }
 
 function qtd(v: number): string {
@@ -115,7 +125,7 @@ function dia(v: Date | string | null): string {
   if (!v) return '—';
 
   const d = v instanceof Date ? v : new Date(v + 'T12:00:00');
-  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('pt-BR');
+  return Number.isNaN(d.getTime()) ? String(v) : dataBr(d);
 }
 
 function periodo(de: string, ate: string): string {
@@ -154,6 +164,24 @@ const SITUACAO_EM_TEXTO: Record<string, string> = {
   ESTOUROU: 'Estourou',
   SEM_PREVISAO: 'Sem previsão',
 };
+
+/**
+ * "1 estourada e 2 em atenção" — e não "1 estourada(s), 2 em atenção".
+ *
+ * O "(s)" é a saída preguiçosa de quem não quis contar: sobra escrito
+ * no papel que vai para a diretoria, e quando o número é 1 está
+ * simplesmente errado. Contar custa três linhas.
+ */
+function alerta(estouradas: number, emAtencao: number): string {
+  const partes: string[] = [];
+
+  if (estouradas > 0) {
+    partes.push(estouradas + (estouradas === 1 ? ' estourada' : ' estouradas'));
+  }
+  if (emAtencao > 0) partes.push(emAtencao + ' em atenção');
+
+  return partes.length === 0 ? 'Nenhuma' : partes.join(' e ');
+}
 
 const RECUSA_DE_FORMATO = {
   erro: 'Formato não suportado. Escolha "pdf" ou "docx".',
@@ -267,8 +295,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
           { rotulo: 'Consumido', valor: pct(resumo.consumido) },
           {
             rotulo: 'Linhas em alerta',
-            valor: resumo.linhasEstouradas + ' estourada(s), ' +
-              resumo.linhasEmAtencao + ' em atenção',
+            valor: alerta(resumo.linhasEstouradas, resumo.linhasEmAtencao),
           },
         ],
         tabelas: [{

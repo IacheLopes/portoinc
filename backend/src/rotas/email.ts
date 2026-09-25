@@ -14,6 +14,7 @@ import { integracoes } from '../integracoes/index.js';
 import { erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
 import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
+import { dataBr } from '../servicos/data-br.js';
 import {
   enviarPorEmail, modoTeste, mascararEmail, normalizarEmail,
 } from '../servicos/email.js';
@@ -51,7 +52,7 @@ export function textoConviteCotacaoEmail(dados: {
       (dados.quantidadeItens === 1 ? ' item' : ' itens') + ' e gostaria da sua proposta.',
     '',
     'Cotação: ' + dados.numeroBid + ' — ' + dados.titulo,
-    'Prazo para responder: ' + dados.prazo.toLocaleDateString('pt-BR'),
+    'Prazo para responder: ' + dataBr(dados.prazo),
     '',
     'Responda pelo link abaixo:',
     dados.link,

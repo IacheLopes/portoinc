@@ -16,6 +16,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
+import { dataBr } from '../servicos/data-br.js';
 import {
   custoAcumulado, custoPrevisto, custoDoAtraso, diasDeAtraso, diasDeUso,
   periodosCobrados, alertaDe, lerContrato, resumirLocacoes,
@@ -396,9 +397,7 @@ function reais(v: number): string {
   });
 }
 
-function dataBr(v: Date | null): string {
-  return v ? v.toLocaleDateString('pt-BR') : '—';
-}
+// O `dataBr` local, sem fuso, saiu: quem responde agora e data-br.ts.
 
 async function entregarArquivo(
   reply: FastifyReply,

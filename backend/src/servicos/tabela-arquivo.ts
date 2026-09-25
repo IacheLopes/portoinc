@@ -20,6 +20,7 @@
 // ============================================================
 
 import PDFDocument from 'pdfkit';
+import { geradoEm } from './data-br.js';
 import {
   Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun,
   AlignmentType, BorderStyle, HeadingLevel, PageOrientation, WidthType,
@@ -29,14 +30,12 @@ const MARINHO = '#0f2942';
 const AZUL = '#2f6fed';
 const CINZA = '#5a6b7d';
 const BORDA = '#dde4ec';
-const ZEBRA = '#f5f8fc';
 
 /** As mesmas cores, sem o "#", que é como o Word as espera. */
 const W_MARINHO = '0F2942';
 const W_AZUL = '2F6FED';
 const W_CINZA = '5A6B7D';
 const W_BORDA = 'DDE4EC';
-const W_ZEBRA = 'F5F8FC';
 
 export type FormatoArquivo = 'pdf' | 'docx';
 
@@ -88,12 +87,7 @@ function texto(linha: object, campo: string): string {
   return String(v);
 }
 
-function agora(): string {
-  return new Date().toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
+
 
 // ============================================================
 //  PDF
@@ -119,7 +113,13 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
       margins: { top: 45, bottom: 50, left: 40, right: 40 },
     };
 
-    const doc = new PDFDocument({ ...pagina, info: { Title: t.titulo, Author: 'Porto Inc.' } });
+    const doc = new PDFDocument({
+      ...pagina,
+      // Guarda as folhas em vez de fechar cada uma: sem isso nao da
+      // para voltar e escrever "de quantas" no rodape.
+      bufferPages: true,
+      info: { Title: t.titulo, Author: 'Porto Inc.' },
+    });
 
     const pedacos: Buffer[] = [];
     doc.on('data', (p: Buffer) => pedacos.push(p));
@@ -130,40 +130,59 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
     const larguraUtil = doc.page.width - 80;
     const rodapeY = doc.page.height - 38;
 
-    let numeroDaPagina = 0;
-
+    /**
+     * A marca fala baixo.
+     *
+     * Ela vinha em 16pt em negrito, do mesmo peso do titulo do
+     * documento e na mesma linha que ele: dois blocos escuros
+     * disputando o olho, e nenhum ganhando. Quem abre o arquivo quer
+     * saber PRIMEIRO o que ele e; de quem ele e vem logo depois, e
+     * nao precisa gritar para isso.
+     */
     function marca() {
-      doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(16)
-        .text('Porto Inc', ESQ, 40, { continued: true });
+      doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(12)
+        .text('Porto Inc', ESQ, 42, { continued: true });
       doc.fillColor(AZUL).text('.');
 
       doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
-        .text('Compras e Almoxarifado', ESQ, 60);
+        .text('Compras e Almoxarifado', ESQ, 58);
     }
 
-    function rodape() {
-      numeroDaPagina += 1;
+    /**
+     * "Página 2 de 5", e nao "Página 2".
+     *
+     * Num relatorio impresso e grampeado, "Página 2" sozinha nao
+     * responde a unica pergunta que se faz ao folhear: esta inteiro?
+     * O total so existe quando o documento termina, por isso os
+     * rodapes sao escritos no fim, sobre as folhas ja montadas
+     * (`bufferPages`).
+     */
+    function escreverRodapes() {
+      const faixa = doc.bufferedPageRange();
 
-      // O rodapé fica ABAIXO da margem de baixo, e o PDFKit reage a
-      // isso abrindo uma folha nova — uma em branco por rodapé. Zerar
-      // a margem enquanto escrevemos evita a folha fantasma.
-      const margemDeBaixo = doc.page.margins.bottom;
-      doc.page.margins.bottom = 0;
+      for (let i = 0; i < faixa.count; i += 1) {
+        doc.switchToPage(faixa.start + i);
 
-      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
-        .text('Gerado pelo sistema em ' + agora(), ESQ, rodapeY, {
-          width: larguraUtil / 2, lineBreak: false,
-        });
+        // Escrever abaixo da margem de baixo faz o PDFKit abrir uma
+        // folha nova sozinho. Zeramos enquanto escrevemos.
+        const margemDeBaixo = doc.page.margins.bottom;
+        doc.page.margins.bottom = 0;
 
-      doc.text('Página ' + numeroDaPagina, ESQ + larguraUtil / 2, rodapeY, {
-        width: larguraUtil / 2, align: 'right', lineBreak: false,
-      });
+        doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
+          .text(geradoEm(), ESQ, rodapeY, {
+            width: larguraUtil / 2, lineBreak: false,
+          });
 
-      doc.page.margins.bottom = margemDeBaixo;
+        doc.text('Página ' + (i + 1) + ' de ' + faixa.count,
+          ESQ + larguraUtil / 2, rodapeY, {
+            width: larguraUtil / 2, align: 'right', lineBreak: false,
+          });
+
+        doc.page.margins.bottom = margemDeBaixo;
+      }
     }
 
     function novaPagina(): number {
-      rodape();
       doc.addPage(pagina);
       marca();
       return 84;
@@ -172,8 +191,8 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
     // ---------- Primeira página ----------
     marca();
 
-    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(15)
-      .text(t.titulo, ESQ, 40, { width: larguraUtil, align: 'right' });
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(17)
+      .text(t.titulo, ESQ, 38, { width: larguraUtil, align: 'right' });
 
     if (t.subtitulo) {
       doc.fillColor(CINZA).font('Helvetica').fontSize(9)
@@ -196,8 +215,11 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
         const x = ESQ + coluna * largura;
         const topo = y + fileira * 30;
 
-        doc.fillColor(CINZA).font('Helvetica').fontSize(7)
-          .text(item.rotulo.toUpperCase(), x, topo, { width: largura - 8, lineBreak: false });
+        // Sem `toUpperCase`. Rotulo em CAIXA ALTA e o vicio mais
+        // comum de layout gerado — e o sistema nao faz isso em tela
+        // nenhuma, entao o arquivo baixado contradizia a tela.
+        doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
+          .text(item.rotulo, x, topo, { width: largura - 8, lineBreak: false });
 
         doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(10)
           .text(item.valor, x, topo + 10, { width: largura - 8, lineBreak: false });
@@ -222,13 +244,17 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
         doc.rect(ESQ, topo, larguraUtil, 20).fill(MARINHO);
 
         bloco.colunas.forEach((c, i) => {
-          const rotulo = c.titulo.toUpperCase();
+          const rotulo = c.titulo;
           const cabe = larguras[i] - 10;
 
-          // "SOLICITAÇÕES NA CONTA" não cabe em coluna estreita e
+          // "Solicitações na conta" não cabe em coluna estreita e
           // quebraria em duas linhas, passando por cima da primeira
           // fileira. Encolhe a letra até caber; abaixo de 5,5 pt
           // ninguém leria, então aí deixa quebrar.
+          //
+          // Em caixa alta isso acontecia muito mais: o mesmo texto
+          // ocupa cerca de 12% a mais de largura, e vários cabeçalhos
+          // vinham encolhidos sem precisar.
           let corpo = 7.5;
           doc.font('Helvetica-Bold').fontSize(corpo);
 
@@ -275,19 +301,22 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
           doc.font('Helvetica').fontSize(8)
             .heightOfString(texto(linha, c.campo), { width: larguras[i] - 10 }),
         );
-        const altura = Math.max(...alturas, 12) + 8;
+        const altura = Math.max(...alturas, 12) + 10;
 
         if (y + altura > rodapeY - 14) {
           y = cabecalhoDaTabela(novaPagina());
         }
 
-        if (indice % 2 === 1) {
-          doc.rect(ESQ, y, larguraUtil, altura).fill(ZEBRA);
-        }
-
+        // Sem faixa cinza alternada.
+        //
+        // Ela vinha JUNTO com um traço debaixo de cada fileira: dois
+        // separadores para o mesmo trabalho. E papel branco com faixa
+        // cinza clara sai sujo na fotocópia e gasta tinta à toa — este
+        // documento é feito para imprimir e assinar. O traço ficou, e a
+        // fileira ganhou o ar que a faixa fingia dar.
         bloco.colunas.forEach((c, i) => {
           doc.fillColor('#16202b').font('Helvetica').fontSize(8)
-            .text(texto(linha, c.campo), posicoes[i] + 5, y + 4, {
+            .text(texto(linha, c.campo), posicoes[i] + 5, y + 5, {
               width: larguras[i] - 10,
               align: c.numero ? 'right' : 'left',
             });
@@ -307,7 +336,8 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
         .text(t.nota, ESQ, y + 10, { width: larguraUtil });
     }
 
-    rodape();
+    escreverRodapes();
+    doc.flushPages();
     doc.end();
   });
 }
@@ -342,8 +372,8 @@ export async function gerarDocxDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
   const corpo: Array<Paragraph | Table> = [
     new Paragraph({
       children: [
-        new TextRun({ text: 'Porto Inc', bold: true, size: 26, color: W_MARINHO }),
-        new TextRun({ text: '.', bold: true, size: 26, color: W_AZUL }),
+        new TextRun({ text: 'Porto Inc', bold: true, size: 20, color: W_MARINHO }),
+        new TextRun({ text: '.', bold: true, size: 20, color: W_AZUL }),
         new TextRun({ text: '   Compras e Almoxarifado', size: 15, color: W_CINZA }),
       ],
     }),
@@ -411,18 +441,15 @@ export async function gerarDocxDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
           // que coluna é qual.
           tableHeader: true,
           children: tabela.colunas.map((c) =>
-            celula(c.titulo.toUpperCase(), {
+            celula(c.titulo, {
               negrito: true, branco: true, fundo: W_MARINHO, direita: c.numero,
             }),
           ),
         }),
-        ...tabela.linhas.map((linha, indice) =>
+        ...tabela.linhas.map((linha) =>
           new TableRow({
             children: tabela.colunas.map((c) =>
-              celula(texto(linha, c.campo), {
-                direita: c.numero,
-                fundo: indice % 2 === 1 ? W_ZEBRA : undefined,
-              }),
+              celula(texto(linha, c.campo), { direita: c.numero }),
             ),
           }),
         ),
@@ -439,7 +466,7 @@ export async function gerarDocxDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
 
   corpo.push(new Paragraph({
     spacing: { before: 240 },
-    children: [new TextRun({ text: 'Gerado pelo sistema em ' + agora(), size: 15, color: W_CINZA })],
+    children: [new TextRun({ text: geradoEm(), size: 15, color: W_CINZA })],
   }));
 
   const doc = new Document({

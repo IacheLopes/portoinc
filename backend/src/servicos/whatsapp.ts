@@ -14,6 +14,7 @@ import { banco } from '../plugins/banco.js';
 import { integracoes } from '../integracoes/index.js';
 import { ambiente } from '../config/ambiente.js';
 import { mascarar, normalizarTelefone } from '../integracoes/whatsapp/adaptador.baileys.js';
+import { dataBr } from './data-br.js';
 
 export { mascarar, normalizarTelefone };
 
@@ -174,7 +175,7 @@ export function textoConviteCotacao(dados: {
   link: string;
   quantidadeItens: number;
 }): string {
-  const prazo = dados.prazo.toLocaleDateString('pt-BR');
+  const prazo = dataBr(dados.prazo);
 
   return [
     'Porto Inc. — Pedido de cotação ' + dados.numeroBid,

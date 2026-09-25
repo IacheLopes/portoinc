@@ -13,6 +13,7 @@ import {
   type SituacaoBid,
 } from '../servicos/cotacao.js';
 import { integracoes } from '../integracoes/index.js';
+import { dataBr } from '../servicos/data-br.js';
 
 const esquemaBid = z.object({
   titulo: textoObrigatorio(3, 'O título'),
@@ -502,7 +503,7 @@ export async function rotasCotacoes(app: FastifyInstance) {
             'Porto Inc. — Cotação ' + formatarNumeroBid(bid.numero) + '\n' +
             bid.titulo + '\n' +
             bid.itens.length + ' item(ns) para cotar.\n' +
-            'Responda até ' + bid.prazoResposta.toLocaleDateString('pt-BR') + '.\n' +
+            'Responda até ' + dataBr(bid.prazoResposta) + '.\n' +
             'Link: /portal/' + convite.token,
         });
 

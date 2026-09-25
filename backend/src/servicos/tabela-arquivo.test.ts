@@ -146,9 +146,14 @@ describe('PDF', () => {
 
     // Cada folha carrega o cabeçalho da tabela: sem isso, da segunda
     // em diante ninguém sabe que coluna é qual.
+    //
+    // "Código", e não "CÓDIGO": o gerador deixou de passar os títulos
+    // por `toUpperCase` em 25/09/2026. Este teste pegou a mudança, que
+    // é o trabalho dele — o que ele guarda é a REPETIÇÃO do cabeçalho,
+    // não a caixa das letras.
     const texto = textoDoPdf(pdf);
     assert.equal(
-      (texto.match(/CÓDIGO/g) ?? []).length, paginas,
+      (texto.match(/Código/g) ?? []).length, paginas,
       'o cabeçalho da tabela tem de se repetir em toda folha',
     );
 
@@ -157,6 +162,20 @@ describe('PDF', () => {
       (texto.match(/Porto Inc/g) ?? []).length, paginas,
       'folha sem a marca é folha em branco',
     );
+
+    // "Página 2 de 5", e não "Página 2".
+    //
+    // Num relatório impresso e grampeado, "Página 2" sozinha não
+    // responde a única pergunta que se faz ao folhear: está inteiro?
+    // O total só existe depois que o documento termina, então os
+    // rodapés são escritos no fim, sobre as folhas já montadas.
+    for (let n = 1; n <= paginas; n += 1) {
+      assert.match(
+        texto,
+        new RegExp('Página ' + n + ' de ' + paginas),
+        'a folha ' + n + ' tem de dizer de quantas ela é',
+      );
+    }
   });
 
   it('tabela vazia não quebra', async () => {

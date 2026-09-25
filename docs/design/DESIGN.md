@@ -1,4 +1,4 @@
-<!-- versao: 0.36.0 -->
+<!-- versao: 0.37.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -1542,6 +1542,97 @@ a ignorá-la.
 | Blocos por item no celular | 7 | **4** |
 | Respiro do rodapé dentro do cartão | 0 | **16px nos quatro lados** |
 | Classe usada e nunca escrita | 2 | **0** |
+
+---
+
+## Revisão 3 — 25/09/2026: os arquivos que saem do sistema
+
+O sistema entrega **17 documentos**: cinco relatórios, locação e contas a pagar (cada um em
+PDF e em Word), mais o pedido de compra, a solicitação e o espelho da nota fiscal. Eles
+nunca tinham sido olhados como se fossem tela — e são, só que impressa, assinada e mandada
+para o fornecedor.
+
+Para olhar, baixei os 17 e fotografei cada um abrindo o PDF no mesmo navegador sem
+interface que a régua de telas usa.
+
+### O defeito que não era de visual
+
+Um pedido de compra tirado às **21h20** trazia:
+
+```
+Emitido em 24/09/2026          ← no cabeçalho
+gerado em 25/09/2026, 00:20    ← no rodapé da MESMA folha
+```
+
+`toLocaleString('pt-BR')` não escolhe fuso — escolhe **idioma**. O fuso vem do sistema
+operacional, e o container roda em UTC, três horas à frente de Brasília. Todo documento
+tirado depois das 21h saía datado do dia seguinte.
+
+A varredura achou o mesmo erro em **sete lugares**, e só três eram documento. Os outros
+quatro são a data do **prazo que o sistema diz ao fornecedor** — por e-mail, por WhatsApp e
+na prorrogação de cotação. Depois das 21h o fornecedor lia um dia a mais do que o sistema
+ia cobrar.
+
+Agora o fuso está dito em voz alta, num lugar só (`servicos/data-br.ts`), e cinco testes
+guardam isso — escritos com horas depois das 21h de propósito, que é a faixa onde o defeito
+aparece. Durante o expediente ele some, e foi por isso que durou tanto.
+
+### O que era de visual
+
+**Rótulo em CAIXA ALTA em tudo.** "OBRA", "PREVISTO", "FORNECEDOR", "TOTAL DO PEDIDO", e
+todo cabeçalho de coluna. É o vício nº 5 da lista da skill de design — e o sistema **não faz
+isso em tela nenhuma**, então o arquivo baixado contradizia a tela de onde ele saiu.
+
+Tinha um custo escondido: caixa alta ocupa ~12% mais largura, e o gerador tinha um laço que
+ia encolhendo a letra do cabeçalho até caber. Vários títulos saíam menores sem precisar.
+
+**Dois blocos escuros disputando a mesma linha.** A marca em 16–20pt negrito, o título do
+documento em 14–16pt negrito, lado a lado. Nenhum ganhava. A marca recuou para 12–14pt e o
+título subiu: quem abre o arquivo quer saber primeiro **o que ele é**.
+
+**Zebra e traço fazendo o mesmo trabalho.** A tabela tinha faixa cinza alternada *e* um
+traço debaixo de cada fileira. Dois separadores para uma separação — e faixa cinza sai suja
+na fotocópia e gasta tinta num documento feito para imprimir. A faixa saiu; a fileira ganhou
+o ar que ela fingia dar.
+
+**Três rodapés diferentes.** "Gerado pelo sistema em", "documento gerado em", "gerado em" —
+em documentos que a mesma pessoa recebe no mesmo dia. Agora é uma frase só, e ela diz de
+quantas folhas o papel é: **"Página 2 de 5"**, não "Página 2". Num relatório grampeado,
+"Página 2" sozinha não responde a única pergunta que se faz ao folhear.
+
+**O aviso legal do espelho da nota estava escondido.** Em 7,5pt cinza no pé da folha, abaixo
+de um traço. É a informação mais importante daquele papel — um espelho confundido com DANFE
+vira problema fiscal. Subiu para logo abaixo do total, em faixa, no mesmo formato do aviso
+do pedido de compra.
+
+### Erros de texto
+
+| Onde | Estava | Ficou |
+|---|---|---|
+| Orçado × realizado | `1 estourada(s), 1 em atenção` | `1 estourada e 1 em atenção` |
+| Consumo, coluna Participação | `5%` ao lado de `5,2%` | `5,0%` · a vírgula alinhada |
+| Consumo, período | `25/09/2025 a 25/09/2026` (amanhã) | a data de hoje, no fuso certo |
+| Contas a pagar, CNPJ | `47960950000121` | `47.960.950/0001-21` |
+| Contas a pagar, Situação | `PAGA`, `ABERTA` | `Paga`, `Aberta` |
+| Espelho da nota | `· digitada` | `· digitada à mão no sistema` |
+
+O `(s)` é a saída de quem não quis contar: sobra escrito no papel que vai para a diretoria,
+e quando o número é 1 está simplesmente errado. Contar custa três linhas.
+
+O CNPJ e a situação eram **valor do banco chegando cru ao papel**. A tela já traduzia os
+dois; o arquivo baixado é que não traduzia.
+
+### O saldo
+
+| | Antes | Depois |
+|---|---|---|
+| Documentos com data errada depois das 21h | 17 | **0** |
+| Lugares formatando data sem fuso | 7 | **0** |
+| Rótulos em CAIXA ALTA | todos | **0** |
+| Frases de rodapé diferentes | 3 | **1** |
+| Rodapé que diz de quantas folhas | não | **sim** |
+| Separadores por fileira de tabela | 2 | **1** |
+| Testes do gerador | 15 | **20** |
 
 ---
 # Parte 3 — A lista de desalinhamentos

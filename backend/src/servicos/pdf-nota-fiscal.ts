@@ -19,6 +19,7 @@
 // ============================================================
 
 import PDFDocument from 'pdfkit';
+import { dataBr, geradoEm } from './data-br.js';
 import { formatarCnpj } from './util.js';
 
 const MARINHO = '#0f2942';
@@ -91,15 +92,18 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     const larguraUtil = doc.page.width - 90;
 
     // ---------- Cabeçalho ----------
-    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(20)
-      .text('Porto Inc', 45, 45, { continued: true });
+    // A marca em 20pt negrito competia de igual para igual com o
+    // titulo do documento, na mesma linha. Dois blocos escuros, nenhum
+    // ganhando. Quem abre quer saber primeiro O QUE e o papel.
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(14)
+      .text('Porto Inc', 45, 46, { continued: true });
     doc.fillColor(AZUL).text('.');
 
-    doc.fillColor(CINZA).font('Helvetica').fontSize(9)
-      .text('Compras e Almoxarifado', 45, 70);
+    doc.fillColor(CINZA).font('Helvetica').fontSize(8)
+      .text('Compras e Almoxarifado', 45, 64);
 
-    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(14)
-      .text('ESPELHO DA NOTA FISCAL', 45, 45, { width: larguraUtil, align: 'right' });
+    doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(18)
+      .text('Espelho da nota fiscal', 45, 43, { width: larguraUtil, align: 'right' });
 
     doc.fillColor(AZUL).fontSize(15)
       .text('NF ' + dados.numero + ' / série ' + dados.serie, 45, 64, {
@@ -108,8 +112,10 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
 
     doc.fillColor(CINZA).font('Helvetica').fontSize(8.5)
       .text(
-        'Emitida em ' + dados.emitidaEm.toLocaleDateString('pt-BR') +
-          (dados.doXml ? ' · lida do XML' : ' · digitada'),
+        'Emitida em ' + dataBr(dados.emitidaEm) +
+          (dados.doXml
+            ? ' · lida do arquivo XML do fornecedor'
+            : ' · digitada à mão no sistema'),
         45, 85, { width: larguraUtil, align: 'right' },
       );
 
@@ -118,7 +124,7 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     // ---------- Fornecedor e pedido ----------
     let y = 122;
 
-    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('FORNECEDOR', 45, y);
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Fornecedor', 45, y);
     doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(11)
       .text(dados.fornecedor.nomeFantasia ?? dados.fornecedor.razaoSocial, 45, y + 10, {
         width: 280,
@@ -128,11 +134,11 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
       .text(dados.fornecedor.razaoSocial, 45, y + 25, { width: 280 });
     doc.text('CNPJ ' + formatarCnpj(dados.fornecedor.cnpj), 45, y + 37);
 
-    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('PEDIDO DE COMPRA', 340, y);
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Pedido de compra', 340, y);
     doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(10)
       .text(dados.pedido?.numeroFormatado ?? 'Sem pedido vinculado', 340, y + 10, { width: 175 });
 
-    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('LANÇADA POR', 340, y + 28);
+    doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Lançada por', 340, y + 28);
     doc.fillColor('#16202b').font('Helvetica').fontSize(8.5)
       .text(dados.lancadaPor, 340, y + 38, { width: 175 });
 
@@ -140,7 +146,7 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
 
     // ---------- Chave de acesso ----------
     if (dados.chaveAcesso) {
-      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('CHAVE DE ACESSO', 45, y);
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Chave de acesso', 45, y);
       doc.fillColor('#16202b').font('Courier').fontSize(9)
         .text(chaveLegivel(dados.chaveAcesso), 45, y + 10, { width: larguraUtil });
       y += 30;
@@ -226,11 +232,29 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     }
 
     doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(11)
-      .text('TOTAL DA NOTA', 300, y + 2, { width: 150, align: 'right' });
+      .text('Total da nota', 300, y + 2, { width: 150, align: 'right' });
     doc.fillColor(AZUL).fontSize(13)
       .text(dinheiro(dados.valorTotal), 455, y, { width: 95, align: 'right' });
 
     y += 28;
+
+    // ---------- Este papel NÃO é a nota ----------
+    //
+    // O aviso vivia em 7,5pt cinza no pé da folha, abaixo de um traço,
+    // onde ninguém lê. É a informação mais importante do documento: um
+    // espelho confundido com DANFE vira problema fiscal.
+    //
+    // Sobe para logo abaixo do total, em faixa, no mesmo formato do
+    // aviso do pedido de compra.
+    doc.rect(45, y, larguraUtil, 30).fill('#fdf3f2');
+    doc.fillColor('#a3261f').font('Helvetica-Bold').fontSize(8.5)
+      .text(
+        'Este documento não é a nota fiscal. É um espelho interno da Porto Inc., ' +
+          'montado com o que foi lançado no sistema — não substitui o DANFE e não tem valor fiscal.',
+        50, y + 7, { width: larguraUtil - 10 },
+      );
+
+    y += 44;
 
     // ---------- Divergências ----------
     if (dados.divergencias.length > 0) {
@@ -247,7 +271,7 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     }
 
     if (dados.observacoes) {
-      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('OBSERVAÇÕES', 45, y);
+      doc.fillColor(CINZA).font('Helvetica').fontSize(7.5).text('Observações', 45, y);
       doc.fillColor('#16202b').font('Helvetica').fontSize(8.5)
         .text(dados.observacoes, 45, y + 10, { width: larguraUtil });
     }
@@ -266,9 +290,8 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
 
     doc.fillColor(CINZA).font('Helvetica').fontSize(7.5)
       .text(
-        'Documento interno da Porto Inc., gerado a partir do que foi lançado no sistema. ' +
-          'NÃO substitui o DANFE nem tem valor fiscal.',
-        45, rodape, { width: larguraUtil },
+        'Porto Inc. · Espelho da NF ' + dados.numero + ' · ' + geradoEm().toLowerCase(),
+        45, rodape, { width: larguraUtil, align: 'center', lineBreak: false },
       );
 
     doc.page.margins.bottom = margemDeBaixo;

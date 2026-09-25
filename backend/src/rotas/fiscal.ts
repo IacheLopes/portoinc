@@ -23,6 +23,8 @@ import {
 } from '../servicos/indicadores-financeiros.js';
 import { gerarArquivoDaTabela, formatoValido } from '../servicos/tabela-arquivo.js';
 import { gerarPdfNotaFiscal } from '../servicos/pdf-nota-fiscal.js';
+import { dataBr } from '../servicos/data-br.js';
+import { formatarCnpj } from '../servicos/util.js';
 import {
   guardarArquivo, lerArquivo, apagarArquivo, tipoAceito, tamanhoLegivel,
   ErroDeArquivo, TAMANHO_MAXIMO,
@@ -778,13 +780,13 @@ export async function rotasFiscal(app: FastifyInstance) {
           linhas: titulos.map((t) => ({
             titulo: formatarNumeroConta(t.numero),
             fornecedor: t.fornecedor.nomeFantasia ?? t.fornecedor.razaoSocial,
-            cnpj: t.fornecedor.cnpj,
+            cnpj: formatarCnpj(t.fornecedor.cnpj),
             nota: t.notaFiscal.numero + '/' + t.notaFiscal.serie,
             pedido: t.notaFiscal.pedido ? formatarNumeroPedido(t.notaFiscal.pedido.numero) : '—',
             parcela: t.parcela + '/' + t.totalParcelas,
             valor: reais(numero(t.valor) ?? 0),
             vencimento: dataBr(t.vencimento),
-            situacao: t.situacao,
+            situacao: SITUACAO_DA_CONTA[t.situacao] ?? t.situacao,
             pagamento: t.pagoEm
               ? dataBr(t.pagoEm) + ' · ' + reais(numero(t.valorPago) ?? 0)
               : '—',
@@ -1169,9 +1171,20 @@ function somarDias(data: Date, dias: number): Date {
   return nova;
 }
 
-function dataBr(data: Date): string {
-  return data.toLocaleDateString('pt-BR');
-}
+// O `dataBr` local, sem fuso, virou o compartilhado de data-br.ts.
+
+/**
+ * O que o banco guarda não é o que a pessoa lê.
+ *
+ * A coluna "Situação" do documento saía "PAGA", "ABERTA" — o valor do
+ * enum, em caixa alta, no meio de uma tabela em caixa normal. A tela
+ * já traduz; o arquivo baixado é que não traduzia.
+ */
+const SITUACAO_DA_CONTA: Record<string, string> = {
+  ABERTA: 'Aberta',
+  PAGA: 'Paga',
+  CANCELADA: 'Cancelada',
+};
 
 function reais(valor: number): string {
   return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
