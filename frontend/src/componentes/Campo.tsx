@@ -48,12 +48,28 @@ interface PropsTexto extends Base {
    * montavam o input na mão e acabavam sem rótulo visível.
    */
   aoConfirmar?: () => void;
+  /**
+   * Chamado quando a pessoa SAI do campo.
+   *
+   * Existe para a máscara de dinheiro completar os centavos. Fazer
+   * isso a cada tecla faria "50" virar "R$ 50,00" no meio da
+   * digitação de "5000", e a pessoa brigaria com o campo.
+   */
+  aoSair?: () => void;
+  /**
+   * O teclado que o celular abre.
+   *
+   * Campo de dinheiro deixou de ser `type="number"` — ele nao aceita
+   * "R$ 5.000,00". Sem isto aqui, quem digita valor no telefone
+   * receberia o teclado de letras.
+   */
+  modoTeclado?: 'decimal' | 'numeric';
 }
 
 export function Campo({
   rotulo, valor, aoMudar, tipo = 'text', ajuda, erro,
   exemplo, obrigatorio, desabilitado, maximo, semMarcaOpcional, aoConfirmar,
-  largura,
+  aoSair, modoTeclado, largura,
 }: PropsTexto) {
   const id = useId();
   const idAjuda = id + '-ajuda';
@@ -101,6 +117,8 @@ export function Campo({
               }
             : undefined
         }
+        onBlur={aoSair}
+        inputMode={modoTeclado}
         placeholder={exemplo}
         maxLength={maximo}
         required={obrigatorio}

@@ -31,7 +31,9 @@ import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
-import { mascaraChaveAcesso } from '../../servicos/mascaras';
+import {
+  mascaraChaveAcesso, mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
+} from '../../servicos/mascaras';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -128,8 +130,8 @@ export function NotasFiscais() {
       setNumero(r.nota.numero);
       setSerie(r.nota.serie);
       setChave(mascaraChaveAcesso(r.nota.chaveAcesso ?? ''));
-      setValorTotal(String(r.nota.valorTotal));
-      setValorFrete(r.nota.valorFrete ? String(r.nota.valorFrete) : '');
+      setValorTotal(dinheiroParaCampo(r.nota.valorTotal));
+      setValorFrete(dinheiroParaCampo(r.nota.valorFrete));
       setItens(r.nota.itens);
 
       if (r.nota.emitidaEm) setEmitidaEm(r.nota.emitidaEm.slice(0, 10));
@@ -162,7 +164,7 @@ export function NotasFiscais() {
       return;
     }
 
-    const total = Number(valorTotal.replace(',', '.'));
+    const total = lerDinheiro(valorTotal) ?? NaN;
     if (!Number.isFinite(total) || total <= 0) {
       setErro('Informe o valor total da nota.');
       return;
@@ -180,7 +182,7 @@ export function NotasFiscais() {
         pedidoId: pedido.id,
         emitidaEm: new Date(emitidaEm + 'T12:00:00').toISOString(),
         valorTotal: total,
-        valorFrete: valorFrete ? Number(valorFrete.replace(',', '.')) : undefined,
+        valorFrete: lerDinheiro(valorFrete) ?? undefined,
         observacoes: observacoes.trim() || undefined,
         doXml,
         itens: itens.map((i) => ({
@@ -458,11 +460,19 @@ export function NotasFiscais() {
               <Campo
                 rotulo="Valor total"
                 valor={valorTotal}
-                aoMudar={setValorTotal}
+                aoMudar={(v) => setValorTotal(mascaraDinheiro(v))}
+                aoSair={() => setValorTotal(dinheiroCompleto(valorTotal))}
+                modoTeclado="decimal"
                 obrigatorio
                 ajuda="O valor final da nota, com frete e impostos."
               />
-              <Campo rotulo="Frete" valor={valorFrete} aoMudar={setValorFrete} />
+              <Campo
+                rotulo="Frete"
+                valor={valorFrete}
+                aoMudar={(v) => setValorFrete(mascaraDinheiro(v))}
+                aoSair={() => setValorFrete(dinheiroCompleto(valorFrete))}
+                modoTeclado="decimal"
+              />
             </div>
 
             <Campo

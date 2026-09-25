@@ -34,6 +34,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
 // A Locação tem lista própria: aqui a unidade é do que se aluga, e
 // entra 'SEMANA', que não existe no catálogo de materiais.
@@ -162,7 +163,7 @@ export function PainelLocacao() {
         quantidade: Number(quantidade),
         unidadeMedida: unidade,
         periodicidade,
-        valorPeriodo: Number(valorPeriodo),
+        valorPeriodo: lerDinheiro(valorPeriodo) ?? 0,
         inicioEm,
         previsaoDevolucao: previsao,
       });
@@ -472,10 +473,12 @@ export function PainelLocacao() {
             <Campo
               rotulo="Valor do período"
               valor={valorPeriodo}
-              aoMudar={setValorPeriodo}
+              aoMudar={(v) => setValorPeriodo(mascaraDinheiro(v))}
+              aoSair={() => setValorPeriodo(dinheiroCompleto(valorPeriodo))}
+              modoTeclado="decimal"
               obrigatorio
               ajuda="Quanto o fornecedor cobra por dia, semana ou mês."
-              exemplo="65"
+              exemplo="R$ 65,00"
             />
           </div>
 

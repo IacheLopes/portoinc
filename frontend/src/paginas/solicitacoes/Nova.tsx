@@ -33,6 +33,7 @@ import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { chaveLocal } from '../../servicos/identificador';
 import { Modal } from '../../componentes/Modal';
+import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
 interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
   chave: string;
@@ -136,7 +137,7 @@ export function NovaSolicitacao({
         linhaOrcamentoId: linhaId || null,
         descricaoComplementar: complemento || undefined,
         especificacaoTecnica: especificacao || undefined,
-        valorEstimado: valorEstimado ? Number(valorEstimado) : null,
+        valorEstimado: lerDinheiro(valorEstimado),
       },
     ]);
 
@@ -317,9 +318,10 @@ export function NovaSolicitacao({
                 <Campo
                   rotulo="Valor unitário estimado (R$)"
                   valor={valorEstimado}
-                  aoMudar={setValorEstimado}
-                  tipo="number"
-                  exemplo="34.00"
+                  aoMudar={(v) => setValorEstimado(mascaraDinheiro(v))}
+                  aoSair={() => setValorEstimado(dinheiroCompleto(valorEstimado))}
+                  modoTeclado="decimal"
+                  exemplo="R$ 34,00"
                   ajuda="Serve para calcular quem precisa aprovar."
                 />
               </div>

@@ -127,3 +127,96 @@ export function mascaraChaveAcesso(valor: string): string {
 
   return (d.match(/.{1,4}/g) ?? []).join(' ');
 }
+
+// ------------------------------------------------------------
+//  Dinheiro
+//
+//  Pedido do dono: "ficou 5000 corrido e não R$ 5.000,00".
+//
+//  Num sistema de compras, número de dinheiro digitado errado é o
+//  erro mais caro que existe: ele vira pedido, vira nota, vira conta
+//  a pagar. "50000" e "5000" são parecidos demais sem os pontos.
+//
+//  Enquanto se digita, a máscara agrupa o milhar e deixa a pessoa
+//  escrever a vírgula se quiser. AO SAIR do campo, ela completa os
+//  centavos. É de propósito: completar antes faria "50" virar
+//  "R$ 50,00" no meio da digitação de "5000".
+// ------------------------------------------------------------
+
+/**
+ * Separa o que é real do que é centavo.
+ *
+ * Só dígitos e UMA vírgula. O ponto que a pessoa digita vira vírgula:
+ * quem usa o teclado numérico aperta ponto sem pensar, e recusar isso
+ * seria implicância com um gesto que todo mundo tem.
+ */
+function partesDoValor(valor: string): { reais: string; centavos: string | null } {
+  let texto = String(valor ?? '').replace(/[^\d.,]/g, '');
+
+  // Ponto seguido de EXATAMENTE três dígitos e depois fim ou outro
+  // separador é ponto de milhar — foi a própria máscara que pôs.
+  //
+  // Trocar todo ponto por vírgula, que era o que eu fazia antes,
+  // fazia "R$ 5.000" virar "R$ 5,00" a cada tecla: o campo comia o
+  // próprio valor enquanto a pessoa digitava. Quem pegou foi o teste
+  // de idempotência.
+  texto = texto.replace(/\.(?=\d{3}(?:\D|$))/g, '');
+
+  // O ponto que sobrou é decimal: quem usa o teclado numérico aperta
+  // ponto sem pensar, e recusar isso é implicância com um gesto que
+  // todo mundo tem.
+  texto = texto.replace(/\./g, ',');
+
+  const [inteiro, ...resto] = texto.split(',');
+
+  return {
+    reais: inteiro.replace(/^0+(?=\d)/, ''),
+    centavos: resto.length > 0 ? resto.join('').slice(0, 2) : null,
+  };
+}
+
+/** 5000 -> "R$ 5.000". Enquanto se digita. */
+export function mascaraDinheiro(valor: string): string {
+  const { reais, centavos } = partesDoValor(valor);
+
+  if (reais === '' && centavos === null) return '';
+
+  const agrupado = (reais === '' ? '0' : reais).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  return 'R$ ' + agrupado + (centavos === null ? '' : ',' + centavos);
+}
+
+/** 5000 -> "R$ 5.000,00". Ao sair do campo. */
+export function dinheiroCompleto(valor: string): string {
+  const { reais, centavos } = partesDoValor(valor);
+
+  if (reais === '' && (centavos === null || centavos === '')) return '';
+
+  const agrupado = (reais === '' ? '0' : reais).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  return 'R$ ' + agrupado + ',' + (centavos ?? '').padEnd(2, '0');
+}
+
+/**
+ * "R$ 5.000,00" -> 5000. É o que vai para o servidor.
+ *
+ * Campo vazio devolve `null`, e não `0`: um valor não informado é
+ * diferente de um valor que é zero. Frete em branco não é frete
+ * grátis — é frete que ninguém disse.
+ */
+export function lerDinheiro(valor: string): number | null {
+  const { reais, centavos } = partesDoValor(valor);
+
+  if (reais === '' && (centavos === null || centavos === '')) return null;
+
+  const numero = Number((reais === '' ? '0' : reais) + '.' + (centavos ?? '0').padEnd(2, '0'));
+
+  return Number.isFinite(numero) ? numero : null;
+}
+
+/** O caminho de volta: 5000 do banco vira "R$ 5.000,00" no campo. */
+export function dinheiroParaCampo(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined) return '';
+
+  return dinheiroCompleto(valor.toFixed(2).replace('.', ','));
+}

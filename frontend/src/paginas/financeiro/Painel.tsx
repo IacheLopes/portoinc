@@ -38,6 +38,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -179,7 +180,7 @@ export function PainelFinanceiro() {
     setErro(null);
 
     try {
-      const valor = Number(valorPago.replace(',', '.'));
+      const valor = lerDinheiro(valorPago) ?? NaN;
 
       const r = await pagarTitulo(pagando.id, {
         pagoEm: new Date(dataPagamento + 'T12:00:00').toISOString(),
@@ -525,7 +526,9 @@ export function PainelFinanceiro() {
             <Campo
               rotulo="Valor pago"
               valor={valorPago}
-              aoMudar={setValorPago}
+              aoMudar={(v) => setValorPago(mascaraDinheiro(v))}
+              aoSair={() => setValorPago(dinheiroCompleto(valorPago))}
+              modoTeclado="decimal"
               ajuda="Mude se pagou com desconto ou juros."
             />
             <Campo

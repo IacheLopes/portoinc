@@ -25,6 +25,9 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import {
+  mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
+} from '../../servicos/mascaras';
 
 interface FuncaoItem {
   id: string;
@@ -209,7 +212,7 @@ export function Alcadas() {
 //  Simulador
 // ------------------------------------------------------------
 function Simulador() {
-  const [valor, setValor] = useState('7500');
+  const [valor, setValor] = useState(dinheiroParaCampo(7500));
   const [resposta, setResposta] = useState<string | null>(null);
   const [encontrada, setEncontrada] = useState(true);
   const [consultando, setConsultando] = useState(false);
@@ -234,8 +237,8 @@ function Simulador() {
 
   function aoEnviar(evento: FormEvent) {
     evento.preventDefault();
-    const quantia = Number(valor);
-    if (Number.isFinite(quantia) && quantia >= 0) void consultar(quantia);
+    const quantia = lerDinheiro(valor);
+    if (quantia !== null && quantia >= 0) void consultar(quantia);
   }
 
   return (
@@ -250,14 +253,17 @@ function Simulador() {
             <label className="apenas-leitor-tela" htmlFor="valor-simulacao">
               Valor da compra em reais
             </label>
+            {/* O simulador e um campo de dinheiro como os outros:
+                digitar "7500" cru aqui, ao lado dos atalhos que dizem
+                "R$ 5.000,00", faria a tela falar duas linguas. */}
             <input
               id="valor-simulacao"
-              type="number"
-              min="0"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               className="campo__entrada"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
+              onChange={(e) => setValor(mascaraDinheiro(e.target.value))}
+              onBlur={() => setValor(dinheiroCompleto(valor))}
             />
           </div>
 
@@ -275,7 +281,7 @@ function Simulador() {
                 type="button"
                 className="botao botao--discreto"
                 onClick={() => {
-                setValor(String(v));
+                setValor(dinheiroParaCampo(v));
                 void consultar(v);
                 }}
               >
@@ -338,8 +344,8 @@ function FormularioFaixa({
     try {
       await criarAlcada({
         descricao,
-        valorMinimo: Number(valorMinimo) || 0,
-        valorMaximo: semTeto ? null : Number(valorMaximo) || 0,
+        valorMinimo: lerDinheiro(valorMinimo) ?? 0,
+        valorMaximo: semTeto ? null : lerDinheiro(valorMaximo) ?? 0,
         exigeTodas,
         funcoes: selecionadas,
       });
@@ -395,17 +401,19 @@ function FormularioFaixa({
           <Campo
             rotulo="Valor mínimo (R$)"
             valor={valorMinimo}
-            aoMudar={setValorMinimo}
-            tipo="number"
-            exemplo="2000"
+            aoMudar={(v) => setValorMinimo(mascaraDinheiro(v))}
+            aoSair={() => setValorMinimo(dinheiroCompleto(valorMinimo))}
+            modoTeclado="decimal"
+            exemplo="R$ 2.000,00"
             obrigatorio
           />
           <Campo
             rotulo="Valor máximo (R$)"
             valor={semTeto ? '' : valorMaximo}
-            aoMudar={setValorMaximo}
-            tipo="number"
-            exemplo="15000"
+            aoMudar={(v) => setValorMaximo(mascaraDinheiro(v))}
+            aoSair={() => setValorMaximo(dinheiroCompleto(valorMaximo))}
+            modoTeclado="decimal"
+            exemplo="R$ 15.000,00"
             desabilitado={semTeto}
             ajuda="A última faixa deve ficar sem teto."
           />

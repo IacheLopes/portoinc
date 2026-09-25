@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 import {
   soDigitos, mascaraCnpj, mascaraCpf, mascaraTelefone,
   parteNacional, telefoneParaGuardar, telefoneCompleto, mascaraChaveAcesso,
+  mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
 } from './mascaras';
 
 describe('CNPJ', () => {
@@ -99,5 +100,67 @@ describe('Chave de acesso da nota', () => {
 
   it('para nos 44 dígitos', () => {
     expect(soDigitos(mascaraChaveAcesso('9'.repeat(60)))).toHaveLength(44);
+  });
+});
+
+describe('Dinheiro', () => {
+  it('agrupa o milhar enquanto se digita', () => {
+    expect(mascaraDinheiro('5000')).toBe('R$ 5.000');
+    expect(mascaraDinheiro('50000')).toBe('R$ 50.000');
+    expect(mascaraDinheiro('1234567')).toBe('R$ 1.234.567');
+  });
+
+  it('NÃO completa os centavos enquanto se digita', () => {
+    // Completar antes faria "50" virar "R$ 50,00" no meio da
+    // digitação de "5000", e a pessoa brigaria com o campo.
+    expect(mascaraDinheiro('50')).toBe('R$ 50');
+  });
+
+  it('completa os centavos ao sair do campo', () => {
+    expect(dinheiroCompleto('5000')).toBe('R$ 5.000,00');
+    expect(dinheiroCompleto('5000,5')).toBe('R$ 5.000,50');
+    expect(dinheiroCompleto('5000,50')).toBe('R$ 5.000,50');
+  });
+
+  it('o ponto do teclado numérico vira vírgula', () => {
+    // Quem usa o teclado numérico aperta ponto sem pensar. Recusar
+    // isso é implicância com um gesto que todo mundo tem.
+    expect(dinheiroCompleto('5000.50')).toBe('R$ 5.000,50');
+  });
+
+  it('não aceita mais de duas casas', () => {
+    expect(dinheiroCompleto('10,999')).toBe('R$ 10,99');
+  });
+
+  it('é idempotente: mascarar o que já está mascarado não muda', () => {
+    // O campo remascara a cada tecla; sem isto os pontos se
+    // multiplicariam a cada digitação.
+    expect(mascaraDinheiro('R$ 5.000')).toBe('R$ 5.000');
+    expect(dinheiroCompleto('R$ 5.000,00')).toBe('R$ 5.000,00');
+  });
+
+  it('lê de volta o número que vai para o servidor', () => {
+    expect(lerDinheiro('R$ 5.000,00')).toBe(5000);
+    expect(lerDinheiro('R$ 1.234.567,89')).toBe(1234567.89);
+    expect(lerDinheiro('R$ 0,05')).toBe(0.05);
+  });
+
+  it('campo vazio é null, e não zero', () => {
+    // Um valor não informado é diferente de um valor que é zero.
+    // Frete em branco não é frete grátis — é frete que ninguém disse.
+    expect(lerDinheiro('')).toBeNull();
+    expect(lerDinheiro('R$ ')).toBeNull();
+    expect(dinheiroCompleto('')).toBe('');
+  });
+
+  it('vai e volta sem perder valor', () => {
+    for (const n of [0.05, 34, 5000, 1234567.89]) {
+      expect(lerDinheiro(dinheiroParaCampo(n))).toBe(n);
+    }
+  });
+
+  it('zero é zero, e não vazio', () => {
+    expect(dinheiroParaCampo(0)).toBe('R$ 0,00');
+    expect(lerDinheiro('R$ 0,00')).toBe(0);
   });
 });

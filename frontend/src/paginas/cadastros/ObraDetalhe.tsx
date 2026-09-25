@@ -23,6 +23,7 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -257,7 +258,7 @@ function FormularioLinha({
   const [detalhes, setDetalhes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
 
-  const total = (Number(qtd) || 0) * (Number(valor) || 0);
+  const total = (Number(qtd) || 0) * (lerDinheiro(valor) ?? 0);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
@@ -271,7 +272,7 @@ function FormularioLinha({
         descricao,
         unidade,
         quantidadePrevista: Number(qtd) || 0,
-        valorUnitarioPrevisto: Number(valor) || 0,
+        valorUnitarioPrevisto: lerDinheiro(valor) ?? 0,
       });
       await aoSalvar(codigo);
     } catch (e) {
@@ -309,7 +310,14 @@ function FormularioLinha({
             obrigatorio
           />
           <Campo rotulo="Quantidade prevista" valor={qtd} aoMudar={setQtd} tipo="number" exemplo="1200" />
-          <Campo rotulo="Valor unitário (R$)" valor={valor} aoMudar={setValor} tipo="number" exemplo="34.00" />
+          <Campo
+            rotulo="Valor unitário (R$)"
+            valor={valor}
+            aoMudar={(v) => setValor(mascaraDinheiro(v))}
+            aoSair={() => setValor(dinheiroCompleto(valor))}
+            modoTeclado="decimal"
+            exemplo="R$ 34,00"
+          />
         </div>
 
         {total > 0 && (

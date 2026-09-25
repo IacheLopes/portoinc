@@ -30,6 +30,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
+import { mascaraDinheiro, dinheiroCompleto } from '../../servicos/mascaras';
 
 type Acao = 'SAIDA' | 'ENTRADA' | 'AJUSTE' | 'TRANSFERENCIA';
 
@@ -605,7 +606,9 @@ export function PainelEstoque() {
                 <Campo
                   rotulo="Preço unitário"
                   valor={precoEntrada}
-                  aoMudar={setPrecoEntrada}
+                  aoMudar={(v) => setPrecoEntrada(mascaraDinheiro(v))}
+                  aoSair={() => setPrecoEntrada(dinheiroCompleto(precoEntrada))}
+                  modoTeclado="decimal"
                   ajuda="Entra na conta do custo médio."
                 />
               )}
