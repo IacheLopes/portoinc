@@ -1187,6 +1187,22 @@ input[type='file'].campo__entrada {
   white-space: nowrap;
 }
 
+/* ------------------------------------------------------------
+   Respiro entre botoes soltos na celula
+
+   O espacamento acima so valia quando havia um `.formulario__acoes`
+   dentro da celula. Em Obras eu pus "Abrir" e "Editar" direto no
+   <td>, sem involucro, e os dois sairam colados — apontado pelo dono
+   em 25/09/2026.
+
+   Aqui vale para qualquer caso: dois vizinhos na celula ganham
+   espaco, com ou sem involucro. Nao e `display: flex` no <td>
+   porque isso desmancharia o comportamento de celula de tabela.
+   ------------------------------------------------------------ */
+.celula-acoes > * + * {
+  margin-left: var(--esp-2);
+}
+
 @media (max-width: 860px) {
   /* Em tela estreita a tabela já rola de lado; deixar os botões
      quebrarem aqui só espremeria a coluna. */
