@@ -120,12 +120,20 @@ describe('Dinheiro', () => {
     expect(dinheiroCompleto('5000')).toBe('R$ 5.000,00');
     expect(dinheiroCompleto('5000,5')).toBe('R$ 5.000,50');
     expect(dinheiroCompleto('5000,50')).toBe('R$ 5.000,50');
+    expect(dinheiroCompleto('1234567890')).toBe('R$ 1.234.567.890,00');
   });
 
-  it('o ponto do teclado numérico vira vírgula', () => {
-    // Quem usa o teclado numérico aperta ponto sem pensar. Recusar
-    // isso é implicância com um gesto que todo mundo tem.
-    expect(dinheiroCompleto('5000.50')).toBe('R$ 5.000,50');
+  it('o ponto AGRUPA, e não separa centavos', () => {
+    // Tentei duas vezes deixar o ponto servir de decimal, e as duas
+    // quebraram — a segunda fazia apagar um dígito de "R$ 123.456"
+    // devolver "R$ 123,45".
+    //
+    // "123.45" é ambíguo de verdade: pode ser centavo digitado no
+    // teclado numérico, ou um dígito apagado de 123.456. Apagar
+    // acontece o tempo todo; então o ponto agrupa, e quem quer
+    // centavo usa a vírgula — e vê o resultado na hora.
+    expect(dinheiroCompleto('5000.50')).toBe('R$ 500.050,00');
+    expect(mascaraDinheiro('123.45')).toBe('R$ 12.345');
   });
 
   it('não aceita mais de duas casas', () => {
@@ -162,5 +170,67 @@ describe('Dinheiro', () => {
   it('zero é zero, e não vazio', () => {
     expect(dinheiroParaCampo(0)).toBe('R$ 0,00');
     expect(lerDinheiro('R$ 0,00')).toBe(0);
+  });
+});
+
+describe('Dinheiro: digitando tecla a tecla', () => {
+  /** O que o campo faz de verdade: remascara o valor inteiro a cada tecla. */
+  function digitar(teclas: string): string[] {
+    let campo = '';
+    const passos: string[] = [];
+
+    for (const tecla of teclas) {
+      campo = mascaraDinheiro(campo + tecla);
+      passos.push(campo);
+    }
+
+    return passos;
+  }
+
+  it('o valor cresce a cada dígito, sem teto', () => {
+    // Apontado pelo dono em 25/09/2026: "se eu digito mais numeros ele
+    // vira R$ 1,00... e nao muda mais".
+    //
+    // No quinto dígito o campo travava em "R$ 1,23" e toda tecla
+    // seguinte caía nos centavos, que são cortados em dois. Dava para
+    // digitar no máximo mil e pouco — num sistema que compra material
+    // de obra, onde pedido de R$ 200.000 é rotina.
+    expect(digitar('1234567')).toEqual([
+      'R$ 1',
+      'R$ 12',
+      'R$ 123',
+      'R$ 1.234',
+      'R$ 12.345',
+      'R$ 123.456',
+      'R$ 1.234.567',
+    ]);
+  });
+
+  it('milhão e bilhão passam', () => {
+    expect(mascaraDinheiro('1000000000')).toBe('R$ 1.000.000.000');
+  });
+
+  it('a vírgula continua abrindo os centavos', () => {
+    expect(digitar('1234,56').at(-1)).toBe('R$ 1.234,56');
+  });
+
+  it('o terceiro centavo é ignorado, e não vira milhar', () => {
+    // O perigo oposto: aceitar a terceira casa faria "R$ 5.000,50"
+    // virar "R$ 5.000.500" com uma tecla a mais.
+    expect(mascaraDinheiro('5000,509')).toBe('R$ 5.000,50');
+  });
+
+  it('apagar devolve exatamente o passo anterior', () => {
+    // Apagar é o que mais se faz num campo de valor, e era onde as
+    // duas tentativas anteriores quebravam.
+    let campo = 'R$ 1.234.567';
+    const voltando: string[] = [];
+
+    for (let i = 0; i < 4; i += 1) {
+      campo = mascaraDinheiro(campo.slice(0, -1));
+      voltando.push(campo);
+    }
+
+    expect(voltando).toEqual(['R$ 123.456', 'R$ 12.345', 'R$ 1.234', 'R$ 123']);
   });
 });

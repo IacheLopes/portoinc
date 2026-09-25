@@ -151,27 +151,35 @@ export function mascaraChaveAcesso(valor: string): string {
  * seria implicância com um gesto que todo mundo tem.
  */
 function partesDoValor(valor: string): { reais: string; centavos: string | null } {
-  let texto = String(valor ?? '').replace(/[^\d.,]/g, '');
+  const texto = String(valor ?? '').replace(/[^\d.,]/g, '');
 
-  // Ponto seguido de EXATAMENTE três dígitos e depois fim ou outro
-  // separador é ponto de milhar — foi a própria máscara que pôs.
+  // Só a VÍRGULA abre centavos. O ponto agrupa milhar, sempre.
   //
-  // Trocar todo ponto por vírgula, que era o que eu fazia antes,
-  // fazia "R$ 5.000" virar "R$ 5,00" a cada tecla: o campo comia o
-  // próprio valor enquanto a pessoa digitava. Quem pegou foi o teste
-  // de idempotência.
-  texto = texto.replace(/\.(?=\d{3}(?:\D|$))/g, '');
+  // Eu tentei duas vezes deixar o ponto servir de decimal também, por
+  // causa de quem usa o teclado numérico, e as duas quebraram:
+  //
+  //   1ª  todo ponto virava vírgula, e "R$ 5.000" virava "R$ 5,00" a
+  //       cada tecla — o campo comia o próprio valor.
+  //   2ª  ponto seguido de uma ou duas casas era decimal. Aí apagar o
+  //       último dígito de "R$ 123.456" deixava "123.45", que o campo
+  //       relia como cento e vinte e três reais e quarenta e cinco.
+  //
+  // A raiz é que "123.45" é genuinamente ambíguo: pode ser alguém
+  // digitando centavos no teclado numérico, ou alguém apagando um
+  // dígito de 123.456. Olhando só a string, não dá para saber.
+  //
+  // Entre as duas, apagar acontece o tempo todo e digitar ponto é
+  // hábito de uma parte das pessoas — que vê o resultado na hora e
+  // corrige com a vírgula. Então o ponto agrupa, e pronto: a regra
+  // fica inequívoca e o campo nunca engole valor.
+  const corte = texto.lastIndexOf(',');
 
-  // O ponto que sobrou é decimal: quem usa o teclado numérico aperta
-  // ponto sem pensar, e recusar isso é implicância com um gesto que
-  // todo mundo tem.
-  texto = texto.replace(/\./g, ',');
-
-  const [inteiro, ...resto] = texto.split(',');
+  const inteiro = (corte >= 0 ? texto.slice(0, corte) : texto).replace(/\D/g, '');
+  const decimal = corte >= 0 ? texto.slice(corte + 1).replace(/\D/g, '') : null;
 
   return {
     reais: inteiro.replace(/^0+(?=\d)/, ''),
-    centavos: resto.length > 0 ? resto.join('').slice(0, 2) : null,
+    centavos: decimal === null ? null : decimal.slice(0, 2),
   };
 }
 
