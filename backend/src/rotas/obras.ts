@@ -160,21 +160,64 @@ export async function rotasObras(app: FastifyInstance) {
     const dados = esquemaObra.partial().extend({ ativa: z.boolean().optional() }).safeParse(req.body);
     if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
 
-    if (!(await banco.obra.findUnique({ where: { id } }))) {
-      return res.status(404).send({ erro: 'Obra não encontrada.' });
-    }
-
-    const obra = await banco.obra.update({
+    const antes = await banco.obra.findUnique({
       where: { id },
-      data: {
-        ...dados.data,
-        codigo: dados.data.codigo?.toUpperCase(),
-        dataInicio: dados.data.dataInicio ? new Date(dados.data.dataInicio) : undefined,
-        dataPrevisaoFim: dados.data.dataPrevisaoFim
-          ? new Date(dados.data.dataPrevisaoFim)
-          : undefined,
-      },
-      include: { _count: { select: { linhas: true, almoxarifados: true } } },
+      include: { almoxarifados: true },
+    });
+
+    if (!antes) return res.status(404).send({ erro: 'Obra não encontrada.' });
+
+    const codigoNovo = dados.data.codigo?.toUpperCase();
+
+    const obra = await banco.$transaction(async (tx) => {
+      const atualizada = await tx.obra.update({
+        where: { id },
+        data: {
+          ...dados.data,
+          codigo: codigoNovo,
+          dataInicio: dados.data.dataInicio ? new Date(dados.data.dataInicio) : undefined,
+          dataPrevisaoFim: dados.data.dataPrevisaoFim
+            ? new Date(dados.data.dataPrevisaoFim)
+            : undefined,
+        },
+        include: { _count: { select: { linhas: true, almoxarifados: true } } },
+      });
+
+      // ------------------------------------------------------
+      //  O almoxarifado acompanha o nome da obra
+      //
+      //  Ele nasce com o nome COPIADO da obra ("Almoxarifado " +
+      //  nome) e o codigo derivado dela ("<CODIGO>-ALM"). Copia
+      //  que nao acompanha a origem vira mentira: a obra passava a
+      //  se chamar "Residencial Porto Belo — Torre A" e o estoque
+      //  continuava "Almoxarifado Residencial Porto Belo", que e o
+      //  nome que aparece no Recebimento, no Estoque e no relatorio
+      //  de movimentos.
+      //
+      //  So mexe no que AINDA carrega o nome derivado. Um
+      //  almoxarifado que alguem tenha batizado de outro jeito fica
+      //  como esta — renomear a obra nao e motivo para desfazer uma
+      //  escolha que alguem fez de proposito.
+      // ------------------------------------------------------
+      for (const alm of antes.almoxarifados) {
+        const mudanca: { nome?: string; codigo?: string } = {};
+
+        if (dados.data.nome && dados.data.nome !== antes.nome
+            && alm.nome === 'Almoxarifado ' + antes.nome) {
+          mudanca.nome = 'Almoxarifado ' + dados.data.nome;
+        }
+
+        if (codigoNovo && codigoNovo !== antes.codigo
+            && alm.codigo === antes.codigo + '-ALM') {
+          mudanca.codigo = codigoNovo + '-ALM';
+        }
+
+        if (Object.keys(mudanca).length > 0) {
+          await tx.almoxarifado.update({ where: { id: alm.id }, data: mudanca });
+        }
+      }
+
+      return atualizada;
     });
 
     return { obra: formatarObra(obra) };

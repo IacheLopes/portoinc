@@ -6,6 +6,7 @@ import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar } from './ajuda.js';
+import { banco } from '../src/plugins/banco.js';
 
 let admin = '';
 let familiaEletrica = '';
@@ -307,6 +308,88 @@ describe('Obras e orçamento', () => {
     assert.equal(r.corpo.obra.almoxarifados, 1, 'a obra deveria nascer com um almoxarifado');
 
     obraId = r.corpo.obra.id;
+  });
+
+  // ----------------------------------------------------------
+  //  O almoxarifado acompanha a obra
+  //
+  //  O nome dele e uma COPIA do nome da obra, feita no momento da
+  //  criacao. Copia que nao acompanha a origem vira mentira — e esse
+  //  nome e o que aparece no Recebimento, no Estoque e no relatorio
+  //  de movimentos. Ate 25/09/2026 ele ficava para tras calado.
+  // ----------------------------------------------------------
+  it('renomear a obra renomeia o almoxarifado dela', async () => {
+    await chamar('/api/obras/' + obraId, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { nome: 'Residencial de Teste — Torre A' },
+    });
+
+    const r = await chamar('/api/obras/' + obraId, { token: admin });
+
+    assert.equal(
+      r.corpo.obra.almoxarifados[0].nome,
+      'Almoxarifado Residencial de Teste — Torre A',
+      'o estoque nao pode continuar com o nome antigo da obra',
+    );
+  });
+
+  it('trocar o codigo da obra troca o codigo do almoxarifado', async () => {
+    await chamar('/api/obras/' + obraId, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { codigo: 'ob-torre-a' },
+    });
+
+    const r = await chamar('/api/obras/' + obraId, { token: admin });
+
+    assert.equal(r.corpo.obra.codigo, 'OB-TORRE-A');
+    assert.equal(r.corpo.obra.almoxarifados[0].codigo, 'OB-TORRE-A-ALM');
+  });
+
+  it('mexer noutro campo nao encosta no almoxarifado', async () => {
+    const antes = await chamar('/api/obras/' + obraId, { token: admin });
+    const nomeDoAlmoxarifado = antes.corpo.obra.almoxarifados[0].nome;
+
+    await chamar('/api/obras/' + obraId, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { cidade: 'Santos' },
+    });
+
+    const depois = await chamar('/api/obras/' + obraId, { token: admin });
+
+    assert.equal(depois.corpo.obra.cidade, 'Santos');
+    assert.equal(depois.corpo.obra.almoxarifados[0].nome, nomeDoAlmoxarifado);
+  });
+
+  it('almoxarifado batizado a mao NAO e renomeado junto', async () => {
+    // Quem escolheu outro nome de proposito nao quis que renomear a
+    // obra desfizesse a escolha. So a copia intacta acompanha.
+    const obra = await chamar('/api/obras', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { codigo: 'OB-MANUAL', nome: 'Obra do Depósito' },
+    });
+
+    const id = obra.corpo.obra.id;
+    const detalhe = await chamar('/api/obras/' + id, { token: admin });
+    const almId = detalhe.corpo.obra.almoxarifados[0].id;
+
+    await banco.almoxarifado.update({
+      where: { id: almId },
+      data: { nome: 'Depósito da Rodovia' },
+    });
+
+    await chamar('/api/obras/' + id, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { nome: 'Obra do Depósito Central' },
+    });
+
+    const r = await chamar('/api/obras/' + id, { token: admin });
+
+    assert.equal(r.corpo.obra.almoxarifados[0].nome, 'Depósito da Rodovia');
   });
 
   it('recusa UF inexistente', async () => {
