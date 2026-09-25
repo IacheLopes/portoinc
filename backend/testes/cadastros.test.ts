@@ -528,12 +528,25 @@ describe('Limites de alçada', () => {
     }
   });
 
-  it('trata a fronteira exata entre faixas', async () => {
-    const r = await chamar('/api/alcadas/simular?valor=2000', { token: admin });
+  it('o teto não entra na faixa; o piso entra', async () => {
+    // Mudado em 25/09/2026. Antes o teto entrava, e o valor exato caía
+    // em duas faixas ao mesmo tempo — quem configurava tinha de
+    // escrever "2.000" numa e "2.000,01" na outra. Agora o teto de uma
+    // é o piso da seguinte, como em faixa de imposto de renda.
+    const antes = await chamar('/api/alcadas/simular?valor=1999.99', { token: admin });
+    const exato = await chamar('/api/alcadas/simular?valor=2000', { token: admin });
 
-    assert.equal(r.corpo.encontrada, true);
-    // R$ 2.000,00 ainda é a primeira faixa; R$ 2.000,01 já é a segunda.
-    assert.ok(!r.corpo.explicacao.includes('TODAS'));
+    assert.equal(antes.corpo.encontrada, true);
+    assert.ok(
+      !antes.corpo.explicacao.includes('TODAS'),
+      'R$ 1.999,99 é da faixa de rotina, que basta uma assinatura',
+    );
+
+    assert.equal(exato.corpo.encontrada, true, 'o teto não pode ficar sem faixa');
+    assert.ok(
+      exato.corpo.explicacao.includes('TODAS'),
+      'R$ 2.000,00 já é da faixa de valor médio, que exige todas',
+    );
   });
 
   it('recusa faixa com máximo menor que o mínimo', async () => {

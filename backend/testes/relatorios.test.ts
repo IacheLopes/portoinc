@@ -65,7 +65,11 @@ async function comprar(r: Roteiro = {}) {
   const {
     obra = obraId,
     quantidade = 10,
-    estimado = 100,
+    // 90, e nao 100: dois itens de 10 unidades dariam R$ 2.000, que é
+    // exatamente a fronteira entre a primeira e a segunda faixa de
+    // alçada. Teste de relatório não deve depender de onde a fronteira
+    // está — R$ 1.800 fica longe dela.
+    estimado = 90,
     preco = 90,
     precoDoOutro = 120,
     prazoEntrega = 7,
@@ -359,19 +363,22 @@ describe('Economia nas cotações', () => {
   it('mede a economia e o ganho contra a proposta mais cara', async () => {
     await limparCompras();
 
-    // Estimado 2 x 10 x R$ 100 = 2.000
-    // Fechado  2 x 10 x R$  80 = 1.600  -> economia 400
-    // Pior     2 x 10 x R$ 130 = 2.600  -> ganho    1.000
-    await comprar({ quantidade: 10, estimado: 100, preco: 80, precoDoOutro: 130 });
+    // Estimado 2 x 9 x R$ 100 = 1.800
+    // Fechado  2 x 9 x R$  80 = 1.440  -> economia 360
+    // Pior     2 x 9 x R$ 130 = 2.340  -> ganho    900
+    //
+    // Nove, e não dez: dez daria R$ 2.000, a fronteira entre a
+    // primeira e a segunda faixa de alçada.
+    await comprar({ quantidade: 9, estimado: 100, preco: 80, precoDoOutro: 130 });
 
     const r = await chamar('/api/relatorios/economia', { token: admin });
 
     assert.equal(r.status, 200);
     assert.equal(r.corpo.resumo.cotacoes, 1);
-    assert.equal(r.corpo.resumo.estimado, 2000);
-    assert.equal(r.corpo.resumo.fechado, 1600);
-    assert.equal(r.corpo.resumo.economia, 400);
-    assert.equal(r.corpo.resumo.ganhoNaDisputa, 1000);
+    assert.equal(r.corpo.resumo.estimado, 1800);
+    assert.equal(r.corpo.resumo.fechado, 1440);
+    assert.equal(r.corpo.resumo.economia, 360);
+    assert.equal(r.corpo.resumo.ganhoNaDisputa, 900);
   });
 
   it('quem foi convidado e não respondeu derruba a taxa de resposta', async () => {
