@@ -82,11 +82,16 @@ export function Alcadas() {
       <section className="secao">
         <CabecalhoDePagina
           titulo="Limites de alçada"
+          /* O texto anterior contava de onde o limite tinha vindo —
+             "o fluxo enviado pela Porto Inc. deixou como A definir" —
+             e prometia "valores abaixo" de exemplo que sumiram na
+             limpeza do sistema. Gastava as tres linhas de explicacao
+             com historia do projeto, sem dizer o que e alcada. */
           descricao={
             <>
-              Definem quem precisa assinar cada compra, conforme o valor. O fluxo enviado
-            pela Porto Inc. deixou esse limite como <em>"A definir"</em> — os valores
-            abaixo são um ponto de partida e podem ser mudados a qualquer momento.
+              <strong>Alçada é o poder de assinar até certo valor.</strong> Um encarregado
+            autoriza uma compra de R$ 500 sozinho; uma de R$ 200 mil sobe para o dono.
+            Aqui você escreve essas regras, em faixas de valor.
             </>
           }
           acoes={
@@ -122,7 +127,6 @@ export function Alcadas() {
           </p>
         )}
 
-        <Simulador />
       </section>
 
       <section className="secao">
@@ -204,6 +208,16 @@ export function Alcadas() {
           )}
         </Cartao>
       </section>
+
+      {/* O simulador vem DEPOIS das faixas, e nao antes.
+
+          Ele e ferramenta de conferencia, nao o assunto da tela.
+          Antes, quem chegava aqui via um alarme amarelo e uma
+          calculadora antes de ver a unica coisa que a tela mostra:
+          as faixas configuradas. */}
+      <section className="secao">
+        <Simulador />
+      </section>
     </>
   );
 }
@@ -245,7 +259,8 @@ function Simulador() {
     <form onSubmit={aoEnviar}>
       <Cartao className="simulador" nivel={2} titulo="Simulador: quem aprova?">
         <p className="campo__ajuda">
-          Digite um valor de compra e veja na hora quem precisará assinar.
+          Digite um valor de compra e veja na hora quem precisará assinar.{' '}
+          <strong>Isto não altera nada</strong> — é só para conferir.
         </p>
 
         <div className="barra-acoes">
