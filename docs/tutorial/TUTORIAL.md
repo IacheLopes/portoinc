@@ -1204,14 +1204,28 @@ O título mostra o número do pedido, o fornecedor, a cotação de origem e a ob
 
 | Coluna | O que é |
 |---|---|
-| **Pedido** | Quanto foi comprado |
-| **Já recebido** | O que entrou em entregas anteriores |
+| **Item** | O código, o nome, a marca e a unidade |
 | **Saldo** | **O que o fornecedor ainda deve** |
 | **Recebido agora** | Quanto você está contando nesta entrega |
 | **Devolvido** | O que voltou no caminhão |
 | **Como chegou** | Chegou certo, com ressalva ou devolvido |
 
 > **Saldo é a coluna que importa.** Ela responde a única pergunta que interessa no portão: *ainda falta alguma coisa?*
+
+Embaixo do saldo, em letra miúda, vem a conta que deu nele:
+
+```
+    Saldo
+      4
+Pedido 40 · Recebido 36
+```
+
+Foram pedidos 40, já entraram 36 em entregas anteriores, faltam 4.
+
+> **Por que não são três colunas separadas.** Eram, até a versão 0.36.0. Só que
+> *Pedido* e *Já recebido* são consulta — ninguém digita neles — e ocupavam tanto
+> espaço quanto a coluna onde se trabalha. No celular cada item virava sete blocos
+> empilhados, e conferir um único material dava mais de uma tela de rolagem.
 
 ## Bipar o material
 
@@ -1264,7 +1278,7 @@ Preencha só o que chegou e registre. O sistema:
 - **Mantém o resto no saldo**
 - Deixa o pedido como **Recebido em parte**
 
-Quando o restante chegar, é só abrir o mesmo pedido de novo: a coluna **Já recebido** estará preenchida e o **Saldo** mostrará o que falta.
+Quando o restante chegar, é só abrir o mesmo pedido de novo: embaixo do **Saldo** a linha miúda mostrará quanto já entrou, e o saldo em si, o que ainda falta.
 
 > Não existe limite de entregas por pedido. Areia costuma vir em cinco viagens — e as cinco entram como recebimentos do mesmo pedido.
 
