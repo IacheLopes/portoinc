@@ -140,3 +140,18 @@ export function formatarTelefone(valor: string | null | undefined): string {
   return '+55 (' + nacional.slice(0, 2) + ') '
     + nacional.slice(2, corte) + '-' + nacional.slice(corte);
 }
+
+/**
+ * R$ 5.000,00 — para texto que a pessoa le.
+ *
+ * Os avisos das faixas de alcada escreviam "R$ 5000.00": ponto
+ * americano, sem separador de milhar. Num aviso que existe justamente
+ * para a pessoa conferir um VALOR, o proprio valor saia num formato
+ * que ela nao usa.
+ */
+export function reaisBr(valor: number): string {
+  return 'R$ ' + valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}

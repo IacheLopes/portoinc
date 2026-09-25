@@ -13,6 +13,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoObrigatorio } from '../servicos/util.js';
+import { reaisBr } from '../servicos/util.js';
 
 const esquemaRegra = z.object({
   descricao: textoObrigatorio(3, 'A descrição'),
@@ -53,8 +54,15 @@ function formatar(r: RegraDoBanco) {
   };
 }
 
-/** Procura buracos e sobreposições entre as faixas. */
-function conferirCobertura(
+/**
+ * Procura buracos e sobreposições entre as faixas.
+ *
+ * Exportada para ter prova própria. O que ela devolve é TEXTO que a
+ * pessoa lê para decidir quem vai assinar uma compra — e em
+ * 25/09/2026 esse texto dizia o contrário do que o sistema fazia.
+ * Comportamento tinha teste; a frase, não.
+ */
+export function conferirCobertura(
   faixas: Array<{ valorMinimo: number; valorMaximo: number | null; descricao: string }>,
 ): string[] {
   const avisos: string[] = [];
@@ -64,7 +72,7 @@ function conferirCobertura(
 
   if (ordenadas[0].valorMinimo > 0) {
     avisos.push(
-      'Compras abaixo de R$ ' + ordenadas[0].valorMinimo.toFixed(2) +
+      'Compras abaixo de ' + reaisBr(ordenadas[0].valorMinimo) +
       ' não caem em nenhuma faixa e ficariam sem aprovador.',
     );
   }
@@ -82,15 +90,28 @@ function conferirCobertura(
 
     if (proxima.valorMinimo > atual.valorMaximo + 0.01) {
       avisos.push(
-        'Há um vão entre R$ ' + atual.valorMaximo.toFixed(2) +
-        ' e R$ ' + proxima.valorMinimo.toFixed(2) + ': nada seria aprovado nessa faixa.',
+        'Há um vão entre ' + reaisBr(atual.valorMaximo) +
+        ' e ' + reaisBr(proxima.valorMinimo) + ': nada seria aprovado nessa faixa.',
       );
     }
 
     if (proxima.valorMinimo <= atual.valorMaximo) {
+      // "MAIOR", e não "menor", como este aviso dizia até 25/09/2026.
+      //
+      // Quem decide é `acharFaixa`, que ordena por mínimo decrescente
+      // e fica com a primeira — a de maior mínimo. O aviso dizia o
+      // contrário, e o erro não era só de redação: numa compra de
+      // exatamente R$ 5.000, com faixas 0–5.000 e 5.000–50.000, ele
+      // fazia a pessoa esperar UMA assinatura quando o sistema ia
+      // exigir DUAS.
+      //
+      // A regra em si está certa: no encontro de duas faixas vale a
+      // mais exigente. Quem estava errado era o texto.
       avisos.push(
         'As faixas "' + atual.descricao + '" e "' + proxima.descricao +
-        '" se sobrepõem. Valerá a de menor valor mínimo.',
+        '" se sobrepõem em ' + reaisBr(proxima.valorMinimo) +
+        '. Nesse valor vale a faixa de MAIOR mínimo — "' + proxima.descricao +
+        '". Para não deixar dúvida, comece a próxima faixa um centavo acima.',
       );
     }
   }
