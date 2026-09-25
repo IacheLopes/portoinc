@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom';
 import {
   buscarObra, criarLinha, apagarLinha, importarOrcamento,
-  dinheiro, quantidade, ROTULO_SITUACAO, UNIDADES,
+  dinheiro, quantidade, ROTULO_SITUACAO, opcoesDeUnidade,
   type ObraDetalhe as Detalhe,
 } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
@@ -305,7 +305,7 @@ function FormularioLinha({
             rotulo="Unidade"
             valor={unidade}
             aoMudar={setUnidade}
-            opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+            opcoes={opcoesDeUnidade()}
             obrigatorio
           />
           <Campo rotulo="Quantidade prevista" valor={qtd} aoMudar={setQtd} tipo="number" exemplo="1200" />

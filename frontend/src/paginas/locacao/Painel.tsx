@@ -20,7 +20,7 @@ import {
   ROTULO_PERIODICIDADE, COR_ALERTA, FILTROS_DE_ALERTA,
   type PainelDeLocacao, type Locacao, type ItemComprado, type Periodicidade,
 } from '../../servicos/locacao';
-import { listarFornecedores, dinheiro, type Fornecedor } from '../../servicos/cadastros';
+import { listarFornecedores, dinheiro, opcoesDeUnidade, type Fornecedor } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
 import { plural } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
@@ -35,6 +35,8 @@ import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 
+// A Locação tem lista própria: aqui a unidade é do que se aluga, e
+// entra 'SEMANA', que não existe no catálogo de materiais.
 const UNIDADES = ['DIA', 'SEMANA', 'MES', 'UN', 'M', 'M2', 'M3'];
 
 function hojeIso(): string {
@@ -455,7 +457,7 @@ export function PainelLocacao() {
               valor={unidade}
               aoMudar={setUnidade}
               obrigatorio
-              opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+              opcoes={opcoesDeUnidade(UNIDADES)}
             />
             <Selecao
               rotulo="Cobrança"

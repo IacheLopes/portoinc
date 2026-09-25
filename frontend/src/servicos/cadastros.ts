@@ -257,6 +257,40 @@ export const UNIDADES = [
   'H', 'DIA', 'MES', 'VB',
 ];
 
+/**
+ * O nome por extenso de cada sigla.
+ *
+ * A lista mostrava só "SC", "FD", "GL", "VB". Quem é da construção lê
+ * de olhos fechados; quem está aprendendo o sistema fica adivinhando —
+ * e errar a unidade de um material estraga a conta de todo pedido que
+ * vier depois dele.
+ *
+ * `SEMANA` entra aqui por causa da Locação, que tem lista própria.
+ */
+export const NOME_DA_UNIDADE: Record<string, string> = {
+  UN: 'Unidade', PC: 'Peça', CX: 'Caixa', SC: 'Saco', FD: 'Fardo',
+  PAR: 'Par', JG: 'Jogo', RL: 'Rolo', GL: 'Galão', LT: 'Lata', BD: 'Balde',
+  KG: 'Quilo', TON: 'Tonelada', G: 'Grama',
+  M: 'Metro', M2: 'Metro quadrado', M3: 'Metro cúbico',
+  CM: 'Centímetro', KM: 'Quilômetro',
+  L: 'Litro', ML: 'Mililitro',
+  H: 'Hora', DIA: 'Dia', SEMANA: 'Semana', MES: 'Mês', VB: 'Verba',
+};
+
+/**
+ * As opções da lista suspensa: `SC — Saco`.
+ *
+ * A sigla vem PRIMEIRO de propósito. É ela que o sistema guarda e que
+ * aparece na tabela, no pedido e na nota — então a lista ensina a
+ * ligação no sentido em que a pessoa vai precisar dela depois.
+ */
+export function opcoesDeUnidade(lista: readonly string[] = UNIDADES) {
+  return lista.map((u) => ({
+    valor: u,
+    rotulo: NOME_DA_UNIDADE[u] ? u + ' — ' + NOME_DA_UNIDADE[u] : u,
+  }));
+}
+
 export const UFS = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
   'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',

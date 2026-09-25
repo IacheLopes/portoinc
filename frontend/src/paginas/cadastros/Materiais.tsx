@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
   listarMateriais, listarFamilias, criarMaterial, biparCodigo,
-  quantidade, UNIDADES,
+  quantidade, opcoesDeUnidade,
   type Material, type Familia, type TipoItem,
 } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
@@ -356,7 +356,7 @@ function FormularioMaterial({
             rotulo="Unidade de medida"
             valor={unidadeMedida}
             aoMudar={setUnidadeMedida}
-            opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+            opcoes={opcoesDeUnidade()}
             obrigatorio
           />
         </div>
