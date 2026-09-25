@@ -895,3 +895,15 @@ a.atalho:hover {
 .menu-acoes__icone {
   font-size: var(--txt-md);
 }
+
+/* ------------------------------------------------------------
+   "Confira antes de salvar", no topo do modal de cadastro
+
+   Ele abre o formulário, então precisa de um respiro embaixo para
+   não colar no primeiro campo — e de um pouco menos de letra que um
+   aviso de tela cheia, porque aqui ele divide espaço com o campo.
+   ------------------------------------------------------------ */
+.aviso--de-criacao {
+  margin-bottom: var(--esp-4);
+  font-size: var(--txt-sm);
+}

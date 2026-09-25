@@ -20,6 +20,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
+import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 
 export function Fornecedores() {
   const { pode } = useAutenticacao();
@@ -298,6 +299,11 @@ function FormularioFornecedor({
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
+        {/* Fornecedores ainda nao tem edicao: este modal so cria. */}
+        <AvisoDeCriacao>
+          O <strong>CNPJ</strong> é o que liga a nota fiscal a este cadastro. Confira
+          antes de salvar — o sistema checa os dígitos, mas não sabe se é a empresa certa.
+        </AvisoDeCriacao>
 
         <div className="formulario__linha">
           <Campo

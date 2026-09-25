@@ -15,6 +15,7 @@ import { plural } from '../../servicos/texto';
 import { Cartao } from '../../componentes/Cartao';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 
 export function Familias() {
   const { pode } = useAutenticacao();
@@ -243,6 +244,12 @@ function FormularioFamilia({
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
+        {!corrigindo && (
+          <AvisoDeCriacao>
+            O <strong>código</strong> vai aparecer em filtro e em relatório daqui para
+            frente. Trocar depois troca em todo lugar, sem deixar histórico.
+          </AvisoDeCriacao>
+        )}
 
         <div className="formulario__linha">
           <Campo

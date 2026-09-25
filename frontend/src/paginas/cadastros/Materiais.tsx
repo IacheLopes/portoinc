@@ -22,6 +22,7 @@ import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
+import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -377,6 +378,13 @@ function FormularioMaterial({
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
+        {!corrigindo && (
+          <AvisoDeCriacao>
+            O <strong>Código Porto</strong> e a <strong>unidade de medida</strong> saem
+            impressos no pedido de compra e na nota fiscal. Errar a unidade estraga a conta
+            de toda compra que vier deste item.
+          </AvisoDeCriacao>
+        )}
 
         <div className="formulario__linha">
           <Selecao

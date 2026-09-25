@@ -19,6 +19,7 @@ import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
+import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
 
 const COR_SITUACAO: Record<SituacaoObra, TipoSelo> = {
   PLANEJAMENTO: 'info',
@@ -259,6 +260,12 @@ function FormularioObra({
       }
     >
       <form id={idForm} onSubmit={enviar} noValidate>
+        {/* Obras ainda nao tem edicao: este modal so cria. */}
+        <AvisoDeCriacao>
+          O <strong>código</strong> batiza o almoxarifado da obra, que nasce junto como
+          <strong> {'<código>'}-ALM</strong>. Corrigir a obra depois não renomeia o
+          almoxarifado.
+        </AvisoDeCriacao>
 
         <div className="formulario__linha">
           <Campo
