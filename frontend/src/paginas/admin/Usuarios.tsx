@@ -25,6 +25,7 @@ import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
+import { mascaraTelefone, telefoneParaGuardar } from '../../servicos/mascaras';
 
 interface FuncaoItem {
   id: string;
@@ -142,7 +143,11 @@ export function Usuarios() {
           funcoes={funcoes}
           aoSalvar={async () => {
             setFormAberto(false);
-            setAviso('Usuário cadastrado. Ele criará a própria senha no primeiro acesso.');
+            // A mensagem dizia "Ele criará a própria senha no primeiro
+            // acesso" — e o formulário pede uma senha PROVISÓRIA, que
+            // alguém tem de entregar à pessoa. Quem acreditasse na
+            // frase não passaria a senha, e a pessoa não entraria.
+            setAviso('Usuário cadastrado. Passe a senha provisória para ele — o sistema vai exigir que ele troque no primeiro acesso.');
             await carregar(busca);
           }}
         />
@@ -277,7 +282,7 @@ function FormularioUsuario({
       await criarUsuario({
         nome,
         email,
-        telefone: telefone || undefined,
+        telefone: telefoneParaGuardar(telefone) || undefined,
         senha,
         funcoes: selecionadas,
       });
@@ -358,14 +363,20 @@ function FormularioUsuario({
             <label className="campo__rotulo" htmlFor="novo-telefone">
               Telefone <span className="campo__opcional">(opcional)</span>
             </label>
+            {/* Escapou da máscara porque não usa o componente Campo.
+                Era o último telefone cru do sistema. */}
             <input
               id="novo-telefone"
               className="campo__entrada"
-              placeholder="5511999998888"
+              type="tel"
+              inputMode="decimal"
+              placeholder="(11) 99999-8888"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(mascaraTelefone(e.target.value))}
             />
-            <p className="campo__ajuda">Usado para os avisos por WhatsApp na Etapa 10.</p>
+            <p className="campo__ajuda">
+              Usado para os avisos por WhatsApp na Etapa 10. O +55 entra sozinho ao salvar.
+            </p>
           </div>
 
           <div className="campo">
