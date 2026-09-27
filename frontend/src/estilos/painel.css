@@ -457,6 +457,15 @@
   cursor: pointer;
 }
 
+/* Uma opção que FILTRA a lista, e não que escolhe um valor num
+   formulário. Fica solta acima da tabela, encolhida ao próprio
+   texto — esticada na largura toda pareceria um campo a preencher. */
+.opcao--filtro {
+  display: inline-flex;
+  margin-bottom: var(--esp-3);
+  background: var(--fundo-elevado);
+}
+
 /* Foco visivel na opcao inteira.
 
    O radio de dentro recebe o anel do navegador, que o

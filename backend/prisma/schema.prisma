@@ -912,8 +912,20 @@ model NotaFiscal {
   recebimentos Recebimento[]
   arquivos     Arquivo[]
 
-  /// O mesmo fornecedor não emite duas notas com o mesmo número e série.
-  @@unique([fornecedorId, numero, serie])
+  /// O mesmo fornecedor não emite duas notas com o mesmo número e série
+  /// — mas nota CANCELADA não conta.
+  ///
+  /// A unicidade real é um índice PARCIAL, criado à mão na migração
+  /// 0017: `WHERE situacao <> 'CANCELADA'`. O Prisma não sabe
+  /// escrever índice parcial, então aqui fica só o índice de busca,
+  /// e a regra mora no banco.
+  ///
+  /// Por que parcial: cancelar serve para duas coisas que o sistema
+  /// não distingue — a nota morreu na SEFAZ, ou alguém digitou o
+  /// valor errado. No segundo caso a nota existe no mundo e precisa
+  /// voltar. Com o índice cheio, um erro de digitação matava o
+  /// número para sempre.
+  @@index([fornecedorId, numero, serie])
   @@index([pedidoId])
   @@map("notas_fiscais")
 }

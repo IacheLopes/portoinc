@@ -2045,6 +2045,50 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 ---
 
+## CT-136a · Corrigir o valor errado, sem cancelar
+
+> Continua do CT-136, com a nota pendente na tela.
+
+1. Na linha da nota, clique em **✏️ Corrigir**
+
+**Esperado:** o mesmo formulário abre com o título **"Corrigir a nota 1002"** e **tudo preenchido** — número, série, data, valor e frete.
+
+2. Troque o valor total para o que bate com o pedido e salve
+
+**Esperado:** *"Nota corrigida: agora bate com o pedido. Já pode gerar as parcelas."* e o selo vira **Conferida**. A pendência **sumiu**.
+
+3. Gere as parcelas e tente **Corrigir** de novo
+
+**Esperado:** o botão **não aparece mais**. Nota que virou conta a pagar não se edita — mudar o valor por baixo de uma parcela em aberto faria a conta divergir da nota em silêncio. Aí o caminho é cancelar e relançar, que deixa registro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-136b · Nota cancelada devolve o número
+
+> **Este era um beco sem saída.** Em 27/09/2026 o dono lançou uma nota com o valor errado, cancelou para corrigir, e descobriu que não dava para fazer mais nada: relançar o número era recusado, editar não existia, e nota fiscal ninguém apaga. O número tinha morrido por causa de um erro de digitação.
+
+1. Lance uma nota com número `2001` e um valor qualquer
+2. **Cancele** essa nota
+3. Lance **outra** nota com o **mesmo número `2001`** e série `1`, no mesmo fornecedor
+
+**Esperado:** entra normalmente. Cancelada não segura mais o número.
+
+4. Agora tente lançar uma **terceira** com o mesmo `2001`, sem cancelar a segunda
+
+**Esperado:** **recusada**. Duas notas *vivas* com o mesmo número continuam proibidas — essa é a regra fiscal de verdade, e ela não foi afrouxada.
+
+5. Olhe a lista
+
+**Esperado:** a cancelada **não aparece**, e acima da tabela há a caixa **"Mostrar as canceladas"**. Marque: ela reaparece.
+
+> Nota fiscal **não é apagada** — mesmo errada, o registro de que existiu e foi cancelada vale numa auditoria. Ela só sai da frente.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-137 · Nota abaixo é entrega parcial
 
 1. Lance uma nota com valor bem menor que o pedido
@@ -2060,6 +2104,8 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 1. Tente lançar de novo o mesmo número e série do CT-135, no mesmo fornecedor
 
 **Esperado:** *"Este fornecedor já tem a nota 1001 série 1 lançada."*
+
+> Vale para notas **vivas**. Se a de número 1001 estivesse cancelada, o número voltaria a valer — ver CT-136b.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

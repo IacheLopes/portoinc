@@ -162,8 +162,24 @@ export async function rotasFiscal(app: FastifyInstance) {
       const fornecedor = await banco.fornecedor.findUnique({ where: { id: d.fornecedorId } });
       if (!fornecedor) return res.status(404).send({ erro: 'Fornecedor não encontrado.' });
 
+      // Nota CANCELADA nao segura mais o numero.
+      //
+      // Cancelar serve para duas coisas que o sistema nao consegue
+      // distinguir: a nota morreu na SEFAZ, ou alguem digitou o
+      // valor errado aqui. No segundo caso — o mais comum de longe —
+      // a nota continua existindo no mundo e precisa voltar.
+      //
+      // Sem este filtro, um erro de digitacao matava o numero da
+      // nota para sempre: nao dava para relancar, nem editar, nem
+      // apagar. O dono caiu nisso em 27/09/2026, lancando R$ 3.200
+      // em vez de R$ 3.000 e cancelando para corrigir.
       const repetida = await banco.notaFiscal.findFirst({
-        where: { fornecedorId: d.fornecedorId, numero: d.numero, serie: d.serie ?? '1' },
+        where: {
+          fornecedorId: d.fornecedorId,
+          numero: d.numero,
+          serie: d.serie ?? '1',
+          situacao: { not: 'CANCELADA' },
+        },
       });
 
       if (repetida) {
@@ -263,6 +279,160 @@ export async function rotasFiscal(app: FastifyInstance) {
               divergencias.length +
               (divergencias.length === 1 ? ' pendência.' : ' pendências.'),
       });
+    },
+  );
+
+  // --------------------------------------------------------
+  //  Corrigir uma nota
+  //
+  //  So ENQUANTO ela nao virou dinheiro.
+  //
+  //  Depois de gerar as parcelas, a nota tem conta a pagar
+  //  pendurada nela. Mudar o valor por baixo de uma parcela em
+  //  aberto faria a conta divergir da nota em silencio, e se a
+  //  parcela ja foi paga seria reescrever um pagamento que
+  //  aconteceu. Nesse caso o caminho continua sendo cancelar e
+  //  relancar — e aí fica registrado que houve troca.
+  //
+  //  Sem isto, corrigir um valor digitado errado exigia cancelar a
+  //  nota; e a nota cancelada segurava o numero, entao nem
+  //  relancar dava. Beco sem saida, achado em 27/09/2026.
+  // --------------------------------------------------------
+  app.patch(
+    '/api/notas-fiscais/:id',
+    { preHandler: app.exigirPermissao('financeiro.gerenciar') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+      const dados = esquemaNota.partial().safeParse(req.body);
+      if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
+
+      const atual = await banco.notaFiscal.findUnique({
+        where: { id },
+        include: { titulos: true },
+      });
+
+      if (!atual) return res.status(404).send({ erro: 'Nota não encontrada.' });
+
+      if (atual.situacao === 'CANCELADA') {
+        return res.status(409).send({
+          erro: 'Esta nota está cancelada.',
+          motivo: 'Lance uma nota nova com o número dela.',
+        });
+      }
+
+      if (atual.titulos.length > 0) {
+        return res.status(409).send({
+          erro: 'Esta nota já virou conta a pagar.',
+          motivo:
+            'Corrigir o valor agora deixaria a parcela diferente da nota. '
+            + 'Cancele a nota e lance de novo — assim fica registrado que houve troca.',
+        });
+      }
+
+      const d = dados.data;
+      const numeroNovo = d.numero ?? atual.numero;
+      const serieNova = d.serie ?? atual.serie;
+      const fornecedorId = d.fornecedorId ?? atual.fornecedorId;
+
+      // Trocou de número? Ele não pode já estar em uso por outra.
+      if (numeroNovo !== atual.numero || serieNova !== atual.serie) {
+        const repetida = await banco.notaFiscal.findFirst({
+          where: {
+            fornecedorId,
+            numero: numeroNovo,
+            serie: serieNova,
+            situacao: { not: 'CANCELADA' },
+            id: { not: id },
+          },
+        });
+
+        if (repetida) {
+          return res.status(409).send({
+            erro: 'Este fornecedor já tem a nota ' + numeroNovo + ' série ' + serieNova + ' lançada.',
+          });
+        }
+      }
+
+      const emitidaEm = d.emitidaEm ? new Date(d.emitidaEm) : atual.emitidaEm;
+      if (Number.isNaN(emitidaEm.getTime())) {
+        return res.status(400).send({ erro: 'Data de emissão inválida.' });
+      }
+
+      const valorTotal = d.valorTotal ?? (numero(atual.valorTotal) ?? 0);
+      const pedidoId = d.pedidoId === undefined ? atual.pedidoId : d.pedidoId;
+
+      const fornecedor = await banco.fornecedor.findUnique({ where: { id: fornecedorId } });
+      if (!fornecedor) return res.status(404).send({ erro: 'Fornecedor não encontrado.' });
+
+      const pedido = pedidoId
+        ? await banco.pedido.findUnique({
+            where: { id: pedidoId },
+            include: {
+              itens: { select: { quantidade: true, valorUnitario: true } },
+              notasFiscais: { select: { id: true, valorTotal: true, situacao: true } },
+            },
+          })
+        : null;
+
+      if (pedidoId && !pedido) {
+        return res.status(404).send({ erro: 'Pedido não encontrado.' });
+      }
+
+      // A propria nota nao conta como "ja lancado" contra ela mesma.
+      const jaLancado = (pedido?.notasFiscais ?? [])
+        .filter((n) => n.situacao !== 'CANCELADA' && n.id !== id)
+        .reduce((s, n) => s + (numero(n.valorTotal) ?? 0), 0);
+
+      // A MESMA conferencia do lancamento. Se ela nao rodasse de
+      // novo, a nota corrigida ficaria com a divergencia antiga
+      // grudada — e o dono corrigiu justamente para tirá-la.
+      const divergencias = conferirNotaContraPedido(
+        {
+          numero: numeroNovo,
+          serie: serieNova,
+          chaveAcesso: d.chaveAcesso ? limparChave(d.chaveAcesso) : atual.chaveAcesso,
+          cnpjFornecedor: fornecedor.cnpj,
+          valorTotal,
+          emitidaEm,
+        },
+        pedido
+          ? {
+              numeroFormatado: formatarNumeroPedido(pedido.numero),
+              cnpjFornecedor: fornecedor.cnpj,
+              valorTotal: totalDoPedido(pedido),
+              jaLancado,
+            }
+          : null,
+      );
+
+      const nota = await banco.notaFiscal.update({
+        where: { id },
+        data: {
+          numero: numeroNovo,
+          serie: serieNova,
+          chaveAcesso: d.chaveAcesso ? limparChave(d.chaveAcesso) : undefined,
+          fornecedorId,
+          pedidoId,
+          emitidaEm,
+          valorTotal,
+          valorProdutos: d.valorProdutos ?? undefined,
+          valorFrete: d.valorFrete ?? undefined,
+          observacoes: d.observacoes ?? undefined,
+          situacao: divergencias.length > 0 ? 'COM_DIVERGENCIA' : 'CONFERIDA',
+          divergencias,
+        },
+        include: INCLUIR_NOTA,
+      });
+
+      return {
+        nota: formatarNota(nota),
+        mensagem:
+          divergencias.length === 0
+            ? 'Nota corrigida: agora bate com o pedido. Já pode gerar as parcelas.'
+            : 'Nota corrigida, ainda com ' +
+              divergencias.length +
+              (divergencias.length === 1 ? ' pendência.' : ' pendências.'),
+      };
     },
   );
 

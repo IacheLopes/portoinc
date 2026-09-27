@@ -13,7 +13,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  listarNotas, listarPedidosParaNota, lerXml, lancarNota, gerarTitulos, cancelarNota,
+  listarNotas, listarPedidosParaNota, lerXml, lancarNota, corrigirNota, gerarTitulos, cancelarNota,
   baixarEspelhoDaNota, listarArquivosDaNota, guardarArquivoDaNota,
   baixarArquivoGuardado, removerArquivoDaNota, lerArquivoEmBase64,
   ROTULO_NOTA, COR_NOTA, ROTULO_TIPO_ARQUIVO,
@@ -64,6 +64,22 @@ export function NotasFiscais() {
 
   // Formulário de lançamento.
   const [aberto, setAberto] = useState(false);
+  /** A nota sendo corrigida. `null` = lançando uma nova. */
+  const [corrigindo, setCorrigindo] = useState<Nota | null>(null);
+  /**
+   * Esconder as canceladas da lista.
+   *
+   * Elas NÃO são apagadas: nota fiscal é trilha, e o registro de
+   * que existiu e foi cancelada vale numa auditoria. Mas param de
+   * poluir a lista do dia a dia.
+   */
+  const [mostrarCanceladas, setMostrarCanceladas] = useState(false);
+
+  const canceladas = notas.filter((n) => n.situacao === 'CANCELADA').length;
+  /** O que a tabela mostra. As canceladas ficam guardadas atrás do filtro. */
+  const naTela = mostrarCanceladas
+    ? notas
+    : notas.filter((n) => n.situacao !== 'CANCELADA');
   const [numero, setNumero] = useState('');
   const [serie, setSerie] = useState('1');
   const [chave, setChave] = useState('');
@@ -98,7 +114,32 @@ export function NotasFiscais() {
     void carregar();
   }, [carregar]);
 
+  /**
+   * Abre o mesmo formulário com a nota dentro, para corrigir.
+   *
+   * Um valor digitado errado só se resolvia cancelando — e a nota
+   * cancelada segurava o número, então nem relançar dava. Beco sem
+   * saída, achado em 27/09/2026.
+   */
+  function abrirParaCorrigir(n: Nota) {
+    setCorrigindo(n);
+    setNumero(n.numero);
+    setSerie(n.serie);
+    setChave(n.chaveAcesso ?? '');
+    setPedidoId(n.pedidoId ?? '');
+    setEmitidaEm(n.emitidaEm.slice(0, 10));
+    setValorTotal(dinheiroParaCampo(n.valorTotal));
+    setValorFrete(dinheiroParaCampo(n.valorFrete));
+    setObservacoes(n.observacoes ?? '');
+    setItens([]);
+    setDoXml(false);
+    setFornecedorDoXml(null);
+    setErro(null);
+    setAberto(true);
+  }
+
   function limparFormulario() {
+    setCorrigindo(null);
     setNumero('');
     setSerie('1');
     setChave('');
@@ -174,7 +215,13 @@ export function NotasFiscais() {
     setErro(null);
 
     try {
-      const r = await lancarNota({
+      // Corrigindo uma nota que já existe, ou lançando uma nova?
+      // O formulário é o mesmo; muda só para onde vai.
+      const enviar = corrigindo
+        ? (d: Parameters<typeof lancarNota>[0]) => corrigirNota(corrigindo.id, d)
+        : lancarNota;
+
+      const r = await enviar({
         numero: numero.trim(),
         serie: serie.trim() || '1',
         chaveAcesso: chave.replace(/\D/g, '') || undefined,
@@ -385,7 +432,13 @@ export function NotasFiscais() {
             setAberto(false);
             limparFormulario();
           }}
-          titulo={doXml ? 'Conferir a nota lida do XML' : 'Lançar nota'}
+          titulo={
+            corrigindo
+              ? 'Corrigir a nota ' + corrigindo.numero
+              : doXml
+                ? 'Conferir a nota lida do XML'
+                : 'Lançar nota'
+          }
           temAlteracao={Boolean(numero || valorTotal || pedidoId)}
           acoes={
             <>
@@ -528,10 +581,34 @@ export function NotasFiscais() {
       )}
 
       <section className="secao">
-        {notas.length === 0 ? (
+        {/* Nota cancelada não some — é trilha. Mas sai da frente.
+
+            O dono lançou R$ 3.200 por engano, cancelou, e ficou com
+            uma linha morta na lista para sempre. Esconder resolve o
+            incômodo sem apagar história. */}
+        {canceladas > 0 && (
+          <label className="opcao opcao--filtro">
+            <input
+              type="checkbox"
+              checked={mostrarCanceladas}
+              onChange={(e) => setMostrarCanceladas(e.target.checked)}
+            />
+            <span>
+              Mostrar as {canceladas === 1 ? 'canceladas' : canceladas + ' canceladas'}
+            </span>
+          </label>
+        )}
+
+        {naTela.length === 0 ? (
           <Vazio
-            titulo="Nenhuma nota lançada"
-            descricao="Importe o XML que o fornecedor mandou ou digite os dados da nota."
+            titulo={
+              canceladas > 0 ? 'Nenhuma nota em aberto' : 'Nenhuma nota lançada'
+            }
+            descricao={
+              canceladas > 0
+                ? 'As que existem estão canceladas. Marque a caixa acima para vê-las.'
+                : 'Importe o XML que o fornecedor mandou ou digite os dados da nota.'
+            }
           />
         ) : (
           <Cartao semEspaco>
@@ -555,7 +632,7 @@ export function NotasFiscais() {
                   </tr>
                 </thead>
                 <tbody>
-                  {notas.map((n) => (
+                  {naTela.map((n) => (
                     <Fragment key={n.id}>
                     <tr>
                       <th scope="row" className="mono">
@@ -614,6 +691,24 @@ export function NotasFiscais() {
                       {podeGerenciar && (
                         <td className="celula-acoes">
                           <div className="formulario__acoes">
+                            {/* Corrigir, ENQUANTO nao virou dinheiro.
+
+                                Depois das parcelas, a nota tem conta
+                                a pagar pendurada, e mudar o valor por
+                                baixo dela faria a conta divergir em
+                                silencio. Aí o caminho é cancelar e
+                                relançar, que deixa registro. */}
+                            {!n.temTitulos && n.situacao !== 'CANCELADA' && (
+                              <button
+                                type="button"
+                                className="botao botao--discreto"
+                                onClick={() => abrirParaCorrigir(n)}
+                                disabled={ocupado}
+                              >
+                                <Icone nome="escrever" /> Corrigir
+                              </button>
+                            )}
+
                             {!n.temTitulos && n.situacao !== 'CANCELADA' && (
                               <button
                                 type="button"

@@ -206,6 +206,27 @@ export function lancarNota(dados: {
   });
 }
 
+/**
+ * Corrige uma nota que ainda não virou conta a pagar.
+ *
+ * Antes, um valor digitado errado só se resolvia cancelando — e a
+ * nota cancelada segurava o número, então nem relançar dava. Beco
+ * sem saída, achado na validação de 27/09/2026.
+ *
+ * Depois que as parcelas nascem, o servidor recusa: mudar o valor
+ * por baixo de uma parcela em aberto faria a conta divergir da
+ * nota em silêncio.
+ */
+export function corrigirNota(
+  id: string,
+  dados: Partial<Parameters<typeof lancarNota>[0]>,
+) {
+  return chamar<{ nota: Nota; mensagem: string }>('/api/notas-fiscais/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
+}
+
 export function gerarTitulos(notaId: string) {
   return chamar<{
     ok: boolean;

@@ -631,3 +631,124 @@ describe('Painel financeiro', () => {
     assert.equal(r.status, 403);
   });
 });
+
+describe('Corrigir uma nota', () => {
+  // O beco sem saida, achado na validacao de 27/09/2026: o dono
+  // lancou R$ 3.200 em vez de R$ 3.000, cancelou para corrigir, e
+  // descobriu que a nota cancelada segurava o numero — nao dava
+  // para relancar, nem editar, nem apagar.
+
+  it('nota cancelada NAO segura mais o numero', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const corpo = {
+      numero: '654321', serie: '1', fornecedorId, pedidoId: pedido.id,
+      emitidaEm: new Date().toISOString(), valorTotal: pedido.total + 200, itens: [],
+    };
+
+    const errada = await chamar('/api/notas-fiscais', { metodo: 'POST', token: comprador, corpo });
+    assert.equal(errada.status, 201);
+
+    await chamar('/api/notas-fiscais/' + errada.corpo.nota.id + '/cancelar', {
+      metodo: 'POST', token: comprador,
+    });
+
+    const certa = await chamar('/api/notas-fiscais', {
+      metodo: 'POST', token: comprador,
+      corpo: { ...corpo, valorTotal: pedido.total },
+    });
+
+    assert.equal(certa.status, 201, 'o numero volta a valer depois do cancelamento');
+  });
+
+  it('duas notas VIVAS com o mesmo numero continuam proibidas', async () => {
+    // O filtro novo nao pode ter aberto a porta para duplicata de
+    // verdade: o numero da nota e unico por fornecedor.
+    const pedido = await pedidoPronto(40, 25);
+    const corpo = {
+      numero: '654322', serie: '1', fornecedorId, pedidoId: pedido.id,
+      emitidaEm: new Date().toISOString(), valorTotal: pedido.total, itens: [],
+    };
+
+    await chamar('/api/notas-fiscais', { metodo: 'POST', token: comprador, corpo });
+    const segunda = await chamar('/api/notas-fiscais', { metodo: 'POST', token: comprador, corpo });
+
+    assert.equal(segunda.status, 409);
+  });
+
+  it('corrigir o valor tira a divergencia', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total + 200);
+
+    assert.ok(nota.corpo.nota.divergencias.length > 0, 'nasce divergente de proposito');
+
+    const r = await chamar('/api/notas-fiscais/' + nota.corpo.nota.id, {
+      metodo: 'PATCH', token: comprador,
+      corpo: { valorTotal: pedido.total },
+    });
+
+    assert.equal(r.status, 200);
+    // A conferencia roda de NOVO. Sem isso a divergencia antiga
+    // ficaria grudada, e foi para tira-la que a pessoa corrigiu.
+    assert.deepEqual(r.corpo.nota.divergencias, []);
+    assert.equal(r.corpo.nota.situacao, 'CONFERIDA');
+  });
+
+  it('nao corrige depois que virou conta a pagar', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    await chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/gerar-titulos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    const r = await chamar('/api/notas-fiscais/' + nota.corpo.nota.id, {
+      metodo: 'PATCH', token: comprador,
+      corpo: { valorTotal: 1 },
+    });
+
+    assert.equal(r.status, 409, 'mudaria a nota por baixo de uma parcela em aberto');
+  });
+
+  it('nao corrige nota cancelada', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    await chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/cancelar', {
+      metodo: 'POST', token: comprador,
+    });
+
+    const r = await chamar('/api/notas-fiscais/' + nota.corpo.nota.id, {
+      metodo: 'PATCH', token: comprador,
+      corpo: { valorTotal: 1 },
+    });
+
+    assert.equal(r.status, 409);
+  });
+
+  it('corrigir para um numero JA usado por outra viva e recusado', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const ocupada = await lancarNota(pedido.id, pedido.total, { numero: '654323' });
+    const minha = await lancarNota(pedido.id, pedido.total, { numero: '654324' });
+
+    assert.equal(ocupada.status, 201);
+
+    const r = await chamar('/api/notas-fiscais/' + minha.corpo.nota.id, {
+      metodo: 'PATCH', token: comprador,
+      corpo: { numero: '654323' },
+    });
+
+    assert.equal(r.status, 409);
+  });
+
+  it('quem so enxerga o financeiro nao corrige', async () => {
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    const r = await chamar('/api/notas-fiscais/' + nota.corpo.nota.id, {
+      metodo: 'PATCH', token: solicitante,
+      corpo: { valorTotal: 1 },
+    });
+
+    assert.equal(r.status, 403);
+  });
+});

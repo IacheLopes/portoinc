@@ -1886,11 +1886,38 @@ Botão **↓ Baixar contas**. Ele pergunta o formato antes de baixar — **PDF**
 
 O arquivo traz todas as parcelas com título, fornecedor, CNPJ, nota, pedido, parcela, valor, vencimento, situação e pagamento, além do total em aberto no cabeçalho.
 
+## Digitou errado? Corrija, não cancele
+
+Botão **✏️ Corrigir**, na linha da nota. Abre o mesmo formulário com tudo preenchido, e a conferência contra o pedido roda de novo — se o valor passa a bater, a pendência some sozinha.
+
+> **Só enquanto a nota não virou conta a pagar.** Depois de gerar as parcelas o botão some: mudar o valor por baixo de uma parcela em aberto faria a conta divergir da nota em silêncio, e se a parcela já foi paga seria reescrever um pagamento que aconteceu.
+
 ## Cancelar uma nota
 
 Na tela de notas, botão **Cancelar**. A nota e as parcelas **em aberto** são canceladas juntas.
 
 > Nota com **parcela já paga não é cancelada**. Apagar isso esconderia um pagamento que aconteceu de verdade. Se o pagamento foi errado, o conserto é no banco, não no sistema.
+
+### A nota cancelada devolve o número
+
+Cancelou por engano de digitação? **Pode lançar de novo com o mesmo número.** A regra de nota duplicada só vale entre notas vivas.
+
+Isso importa porque cancelar serve para duas coisas que o sistema não distingue:
+
+| | O que aconteceu | O número |
+|---|---|---|
+| Cancelada na SEFAZ | a nota morreu no mundo | ninguém vai reusar |
+| Cancelada aqui | **erro de digitação** | continua válido e precisa voltar |
+
+O segundo caso é o comum. Bloquear para sempre transformaria o engano mais banal num beco sem saída.
+
+> **Duas notas vivas com o mesmo número continuam proibidas** — essa é a regra fiscal de verdade, e ela não foi afrouxada.
+
+### Elas somem da lista, não do sistema
+
+Acima da tabela há a caixa **Mostrar as canceladas**. Desmarcada, elas saem da frente; marcada, voltam.
+
+**Nota fiscal não é apagada.** Mesmo errada, o registro de que existiu e foi cancelada vale numa auditoria.
 
 ---
 
