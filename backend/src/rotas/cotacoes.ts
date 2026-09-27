@@ -240,8 +240,19 @@ export async function rotasCotacoes(app: FastifyInstance) {
     '/api/cotacoes',
     { preHandler: app.exigirPermissao('cotacoes.gerenciar') },
     async (req, res) => {
+      // `.min(1)`, e nao `.default([])`.
+      //
+      // A tela ja desabilita o botao sem item escolhido, mas a regra
+      // tem de morar aqui: em 27/09/2026 uma chamada direta a API
+      // criou o BID-00002 com ZERO itens, e ele virou lixo permanente
+      // — pacote vazio nao tem familia, logo nao sugere fornecedor,
+      // logo nao abre, e nao existe rota para apagar cotacao.
       const dados = esquemaBid
-        .extend({ itens: z.array(z.string().uuid()).default([]) })
+        .extend({
+          itens: z
+            .array(z.string().uuid())
+            .min(1, 'Escolha pelo menos um item para cotar.'),
+        })
         .safeParse(req.body);
 
       if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));

@@ -198,6 +198,33 @@ describe('Montar o pacote', () => {
     assert.equal(r.corpo.cotacao.itens.length, 1);
   });
 
+  it('recusa pacote sem nenhum item', async () => {
+    // A tela já desabilita o botão, mas a regra tem de morar no
+    // servidor. Em 27/09/2026 uma chamada direta criou um pacote
+    // VAZIO, e ele virou lixo permanente: sem item não há família,
+    // sem família não há fornecedor sugerido, sem fornecedor não
+    // abre — e não existe rota para apagar cotação.
+    const r = await chamar('/api/cotacoes', {
+      metodo: 'POST',
+      token: comprador,
+      corpo: { titulo: 'Pacote vazio', prazoResposta: prazo(), itens: [] },
+    });
+
+    assert.equal(r.status, 400);
+  });
+
+  it('recusa pacote sem a lista de itens', async () => {
+    // Sem o campo, e não com o campo vazio: era `.default([])`, que
+    // transformava a ausência em lista vazia em silêncio.
+    const r = await chamar('/api/cotacoes', {
+      metodo: 'POST',
+      token: comprador,
+      corpo: { titulo: 'Sem lista', prazoResposta: prazo() },
+    });
+
+    assert.equal(r.status, 400);
+  });
+
   it('o mesmo item não entra em dois pacotes', async () => {
     const itens = await solicitacaoAprovada([{ id: materialCabo, qtd: 5 }]);
 
