@@ -1238,9 +1238,31 @@ Menu **Pedidos**. Mostra número, fornecedor, cotação de origem, quantidade de
 | **Confirmado** | O fornecedor confirmou |
 | **Cancelado** | Cancelado |
 
+## Abrir o pedido
+
+Botão **Abrir** na linha. A tela do pedido mostra tudo que o PDF mostra, e mais:
+
+**De onde veio** — a corrente inteira da compra, com os números clicáveis:
+
+```
+Alguém pediu        O mercado respondeu      Fechamos com
+SOL-00003     →     BID-00001           →    Marquilip
+                    Laje 3º pavimento         19.131.243/0001-97 · São Paulo/SP
+```
+
+É a resposta a *"por que compramos isto, deste fornecedor, por este preço"* — e esta é a única tela do sistema que fecha esse caminho. Clique em qualquer número para voltar no tempo.
+
+**Itens do pedido** — com marca, modelo, norma técnica e a obra de cada linha, mais o fecho: itens, frete, outros custos e total.
+
+**Para quem vai** — razão social, CNPJ, e-mail, WhatsApp e quando o pedido foi enviado.
+
+As ações ficam todas no topo: **Marcar como enviado**, **Baixar o PDF**, **Mandar pelo WhatsApp** e **Mandar por e-mail**.
+
 ## O PDF do pedido
 
-Botão **📄 PDF** na linha do pedido. O arquivo traz dados da Porto Inc. e do fornecedor, itens com preço e prazo, totais com frete, condição de pagamento e local de entrega.
+Botão **📄 PDF**, na linha ou dentro do pedido. O arquivo traz dados da Porto Inc. e do fornecedor, itens com preço e prazo, totais com frete, condição de pagamento e local de entrega.
+
+> A tela e o PDF leem **do mesmo lugar** no servidor. Se um mostrar um total, o outro mostra o mesmo — é o mesmo documento, e o fornecedor recebe uma cópia dele.
 
 E traz, em destaque:
 

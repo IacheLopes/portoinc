@@ -565,3 +565,86 @@ describe('Lista de pedidos', () => {
     assert.ok(p.pagamento.includes('30%'));
   });
 });
+
+describe('Um pedido inteiro', () => {
+  // A tela de detalhe nao existia: havia a lista e o PDF, e mais
+  // nada. Para ver o que tinha dentro de um pedido era preciso
+  // baixar o arquivo. O dono reparou em 27/09/2026.
+  async function primeiroPedido() {
+    const lista = await chamar('/api/pedidos', { token: comprador });
+    return lista.corpo.pedidos[0];
+  }
+
+  it('traz os itens com preço fechado', async () => {
+    const { id } = await primeiroPedido();
+    const r = await chamar('/api/pedidos/' + id, { token: comprador });
+
+    assert.equal(r.status, 200);
+    assert.ok(r.corpo.pedido.itens.length > 0);
+
+    const item = r.corpo.pedido.itens[0];
+    assert.ok(item.codigo);
+    assert.ok(item.descricao);
+    assert.ok(item.quantidade > 0);
+    assert.ok(item.valorUnitario > 0);
+    assert.ok(item.obra.codigo, 'o item diz para qual obra vai');
+  });
+
+  it('a conta do total fecha: itens + frete + outros', async () => {
+    const { id } = await primeiroPedido();
+    const { corpo } = await chamar('/api/pedidos/' + id, { token: comprador });
+    const p = corpo.pedido;
+
+    const somaDosItens = p.itens.reduce(
+      (s: number, i: { quantidade: number; valorUnitario: number }) =>
+        s + i.quantidade * i.valorUnitario,
+      0,
+    );
+
+    assert.ok(Math.abs(p.subtotal - somaDosItens) < 0.01);
+    assert.ok(Math.abs(p.total - (p.subtotal + p.frete + p.outrosCustos)) < 0.01);
+  });
+
+  it('fecha a corrente: solicitação, cotação e fornecedor', async () => {
+    // É a pergunta que só esta tela responde: por que compramos
+    // ISTO, deste fornecedor, por este preço.
+    const { id } = await primeiroPedido();
+    const { corpo } = await chamar('/api/pedidos/' + id, { token: comprador });
+    const p = corpo.pedido;
+
+    assert.ok(p.solicitacoes.length > 0);
+    assert.match(p.solicitacoes[0].numeroFormatado, /^SOL-\d{5}$/);
+    assert.match(p.cotacao.numeroFormatado, /^BID-\d{5}$/);
+    assert.ok(p.cotacao.id, 'com o id, para a tela poder linkar');
+    assert.ok(p.fornecedor.cnpj);
+    assert.ok(p.fornecedor.razaoSocial);
+  });
+
+  it('a lista e o detalhe contam a mesma coisa', async () => {
+    // Os dois saem da MESMA funcao no servidor. Se alguem separar
+    // de novo, o total da lista e o do detalhe passam a divergir —
+    // e e o mesmo documento que o fornecedor recebe.
+    const resumo = await primeiroPedido();
+    const { corpo } = await chamar('/api/pedidos/' + resumo.id, { token: comprador });
+
+    assert.equal(corpo.pedido.numeroFormatado, resumo.numeroFormatado);
+    assert.equal(corpo.pedido.total, resumo.total);
+    assert.equal(corpo.pedido.pagamento, resumo.pagamento);
+    assert.equal(corpo.pedido.itens.length, resumo.quantidadeItens);
+  });
+
+  it('pedido que não existe devolve 404, e não erro técnico', async () => {
+    const r = await chamar('/api/pedidos/00000000-0000-0000-0000-000000000000', {
+      token: comprador,
+    });
+
+    assert.equal(r.status, 404);
+  });
+
+  it('quem não cuida de compra nem de dinheiro não abre', async () => {
+    const { id } = await primeiroPedido();
+    const r = await chamar('/api/pedidos/' + id, { token: solicitante });
+
+    assert.equal(r.status, 403);
+  });
+});

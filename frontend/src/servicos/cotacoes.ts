@@ -424,8 +424,65 @@ export function gerarPedidos(id: string) {
   }>('/api/cotacoes/' + id + '/gerar-pedidos', { metodo: 'POST' });
 }
 
+/** Um item do pedido, com o preço já fechado na equalização. */
+export interface ItemDoPedido {
+  ordem: number;
+  codigo: string;
+  descricao: string;
+  normaTecnica: string | null;
+  unidadeMedida: string;
+  quantidade: number;
+  valorUnitario: number;
+  marca: string | null;
+  modelo: string | null;
+  prazoEntregaDias: number | null;
+  obra: { codigo: string; nome: string };
+}
+
+/**
+ * O pedido inteiro — o mesmo documento que sai no PDF.
+ *
+ * A tela de detalhe não existia: para ver o que havia dentro de um
+ * pedido só baixando o arquivo. O servidor monta os dois a partir
+ * da mesma função, senão papel e tela divergem.
+ */
+export interface Pedido {
+  id: string;
+  numeroFormatado: string;
+  situacao: string;
+  criadoEm: string;
+  enviadoEm: string | null;
+  confirmadoEm: string | null;
+  comprador: string;
+  /** A cotação que escolheu este fornecedor. */
+  cotacao: { id: string; numeroFormatado: string; titulo: string };
+  /** As solicitações que deram origem aos itens. */
+  solicitacoes: Array<{ id: string; numeroFormatado: string }>;
+  fornecedor: {
+    id: string;
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    cnpj: string;
+    email: string | null;
+    telefone: string | null;
+    cidade: string | null;
+    uf: string | null;
+  };
+  frete: number;
+  outrosCustos: number;
+  subtotal: number;
+  total: number;
+  pagamento: string;
+  observacoes: string | null;
+  itens: ItemDoPedido[];
+}
+
 export function listarPedidos() {
   return chamar<{ pedidos: PedidoResumo[] }>('/api/pedidos');
+}
+
+export function buscarPedido(id: string) {
+  return chamar<{ pedido: Pedido }>('/api/pedidos/' + id);
 }
 
 export function baixarPdfPedido(id: string, nome: string) {

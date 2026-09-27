@@ -848,13 +848,19 @@ a.atalho:hover {
   line-height: 1;
 }
 
+/* `fixed`, e não `absolute`.
+
+   `.tabela-area` tem `overflow-x: auto` para a tabela rolar de lado
+   no celular, e o navegador converte o `overflow-y` para `auto`
+   junto — não existe rolar num eixo e transbordar no outro. O menu
+   saía cortado pela borda do cartão.
+
+   Preso à janela, nenhum `overflow` de ancestral o alcança. O topo
+   e a direita vêm do componente, que mede o botão ao abrir e vira o
+   menu para cima quando não cabe embaixo. */
 .menu-acoes__lista {
-  position: absolute;
-  top: calc(100% + var(--esp-1));
-  /* Abre para a ESQUERDA: na coluna de ações, que fica no fim da
-     tabela, abrir para a direita jogaria o menu para fora da tela. */
-  right: 0;
-  z-index: 20;
+  position: fixed;
+  z-index: 60;
   min-width: 210px;
   padding: var(--esp-1);
   background: var(--fundo-elevado);

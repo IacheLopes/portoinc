@@ -298,6 +298,86 @@ input[type='file'].campo__entrada {
 .especificacao p { margin-top: var(--esp-1); color: var(--texto-secundario); }
 
 /* ------------------------------------------------------------
+   A corrente da compra
+
+   Só na tela do pedido. A solicitação responde "o que a obra
+   precisa", a cotação responde "quanto cobram"; o pedido responde
+   o que nenhuma das duas responde sozinha — por que compramos
+   ISTO, deste fornecedor, por este preço.
+
+   Deitada, e não em lista vertical como a linha do tempo: aquela
+   conta o que ACONTECEU, em ordem de relógio. Esta mostra o
+   caminho que o documento percorreu, e caminho se lê andando para
+   a frente. Os elos são poucos (dois ou três) e cabem lado a lado.
+   ------------------------------------------------------------ */
+.corrente {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--esp-3);
+}
+
+.corrente__elo {
+  flex: 1 1 210px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--esp-4);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  position: relative;
+}
+
+/* A seta entre um elo e o outro.
+
+   Desenhada pelo CSS e escondida do leitor de tela: é o `<ol>` que
+   diz a ordem para quem ouve, e repetir isso em texto seria ruído.
+   Some quando os elos empilham, porque aí a seta apontaria para o
+   lado errado. */
+@media (min-width: 720px) {
+  .corrente__elo + .corrente__elo::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--esp-3) * -1);
+    top: 50%;
+    width: var(--esp-3);
+    height: 2px;
+    background: var(--borda);
+  }
+}
+
+/* Onde a pessoa está agora. A borda mais forte é o "você está
+   aqui" — o último elo é este pedido, e ele não leva a lugar
+   nenhum porque já é o lugar. */
+.corrente__elo--aqui {
+  border-color: var(--azul-600);
+  background: var(--info-leve);
+}
+
+.corrente__etapa {
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.corrente__numero {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.corrente__nota {
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------
    Linha do tempo do histórico
    ------------------------------------------------------------ */
 .linha-tempo {

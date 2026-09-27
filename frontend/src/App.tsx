@@ -29,6 +29,7 @@ import { ListaCotacoes } from './paginas/cotacoes/Lista';
 import { DetalheCotacao } from './paginas/cotacoes/Detalhe';
 import { Equalizacao } from './paginas/cotacoes/Equalizacao';
 import { ListaPedidos } from './paginas/pedidos/Lista';
+import { DetalhePedido } from './paginas/pedidos/Detalhe';
 import { PainelRecebimento } from './paginas/recebimento/Painel';
 import { ConferirRecebimento } from './paginas/recebimento/Conferir';
 import { PainelEstoque } from './paginas/estoque/Painel';
@@ -153,6 +154,15 @@ function Rotas() {
           element={
             <Protegida permissoes={['pedidos.gerenciar', 'financeiro.ver']}>
               <ListaPedidos />
+            </Protegida>
+          }
+        />
+
+        <Route
+          path="pedidos/:id"
+          element={
+            <Protegida permissoes={['pedidos.gerenciar', 'financeiro.ver']}>
+              <DetalhePedido />
             </Protegida>
           }
         />

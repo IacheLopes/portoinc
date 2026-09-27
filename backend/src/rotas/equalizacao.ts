@@ -14,6 +14,9 @@ import {
   montarComparativo, mensagemUltimaChamada, conferirEscolhas, formatarNumeroPedido,
 } from '../servicos/equalizacao.js';
 import { gerarPdfPedido } from '../servicos/pdf-pedido.js';
+// Aliás porque três serviços exportam `formatarNumero`, cada um com
+// o prefixo do seu documento.
+import { formatarNumero as numeroDaSolicitacao } from '../servicos/solicitacao.js';
 import { integracoes } from '../integracoes/index.js';
 
 const INCLUIR_BID = {
@@ -32,6 +35,114 @@ const INCLUIR_BID = {
   },
   convidados: { include: { fornecedor: true } },
 } as const;
+
+/**
+ * Tudo que um pedido de compra carrega.
+ *
+ * Estava escrito duas vezes — uma na rota da lista, outra na do
+ * PDF — e a tela de detalhe ia ser a terceira. Num lugar só: o que
+ * aparece na tela e o que sai no papel não podem divergir, porque
+ * é o mesmo documento e o fornecedor recebe uma cópia dele.
+ */
+const INCLUIR_PEDIDO = {
+  fornecedor: true,
+  comprador: { select: { nome: true } },
+  bid: { select: { id: true, numero: true, titulo: true } },
+  itens: {
+    orderBy: { ordem: 'asc' },
+    include: {
+      bidItem: {
+        include: {
+          material: { select: { codigoInterno: true, descricao: true, normaTecnica: true } },
+          solicitacaoItem: {
+            select: {
+              solicitacao: {
+                select: { id: true, numero: true, obra: { select: { codigo: true, nome: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+function carregarPedido(id: string) {
+  return banco.pedido.findUnique({ where: { id }, include: INCLUIR_PEDIDO });
+}
+
+type PedidoCompleto = NonNullable<Awaited<ReturnType<typeof carregarPedido>>>;
+
+/** O pedido como o PDF e a tela precisam dele. */
+function montarPedido(p: PedidoCompleto) {
+  const itens = p.itens.map((i) => ({
+    ordem: i.ordem,
+    codigo: i.bidItem.material.codigoInterno,
+    descricao: i.bidItem.material.descricao,
+    normaTecnica: i.bidItem.material.normaTecnica,
+    unidadeMedida: i.unidadeMedida,
+    quantidade: numero(i.quantidade) ?? 0,
+    valorUnitario: numero(i.valorUnitario) ?? 0,
+    marca: i.marca,
+    modelo: i.modelo,
+    prazoEntregaDias: i.prazoEntregaDias,
+    obra: i.bidItem.solicitacaoItem.solicitacao.obra,
+  }));
+
+  const frete = numero(p.valorFrete) ?? 0;
+  const outrosCustos = numero(p.outrosCustos) ?? 0;
+  const subtotal = itens.reduce((s, i) => s + i.quantidade * i.valorUnitario, 0);
+
+  // A corrente que o pedido fecha: quem pediu, qual cotação
+  // escolheu, e este pedido. É o que responde "por que compramos
+  // isto, deste fornecedor, por este preço" — sem abrir três telas.
+  const solicitacoes = [
+    ...new Map(
+      p.itens.map((i) => {
+        const s = i.bidItem.solicitacaoItem.solicitacao;
+        return [s.id, { id: s.id, numeroFormatado: numeroDaSolicitacao(s.numero) }];
+      }),
+    ).values(),
+  ];
+
+  return {
+    id: p.id,
+    numero: p.numero,
+    numeroFormatado: formatarNumeroPedido(p.numero),
+    situacao: p.situacao,
+    criadoEm: p.criadoEm,
+    enviadoEm: p.enviadoEm,
+    confirmadoEm: p.confirmadoEm,
+    comprador: p.comprador.nome,
+    origem: formatarNumeroBid(p.bid.numero) + ' — ' + p.bid.titulo,
+    cotacao: { id: p.bid.id, numeroFormatado: formatarNumeroBid(p.bid.numero), titulo: p.bid.titulo },
+    solicitacoes,
+    fornecedor: {
+      id: p.fornecedor.id,
+      razaoSocial: p.fornecedor.razaoSocial,
+      nomeFantasia: p.fornecedor.nomeFantasia,
+      cnpj: p.fornecedor.cnpj,
+      email: p.fornecedor.email,
+      telefone: p.fornecedor.whatsapp ?? p.fornecedor.telefone,
+      cidade: p.fornecedor.cidade,
+      uf: p.fornecedor.uf,
+    },
+    frete,
+    outrosCustos,
+    subtotal,
+    total: subtotal + frete + outrosCustos,
+    percentualEntrada: numero(p.percentualEntrada),
+    quantidadeParcelas: p.quantidadeParcelas,
+    intervaloParcelasDias: p.intervaloParcelasDias,
+    pagamento: descreverPagamento(
+      numero(p.percentualEntrada),
+      p.quantidadeParcelas,
+      p.intervaloParcelasDias,
+    ),
+    observacoes: p.observacoes,
+    itens,
+  };
+}
 
 export async function rotasEqualizacao(app: FastifyInstance) {
   // --------------------------------------------------------
@@ -447,6 +558,28 @@ export async function rotasEqualizacao(app: FastifyInstance) {
   );
 
   // --------------------------------------------------------
+  //  Um pedido inteiro
+  //
+  //  O PDF ja montava esse documento; a tela nao tinha de onde ler
+  //  e por isso nunca existiu — para ver o que havia dentro de um
+  //  pedido so baixando o arquivo. Agora os dois leem do MESMO
+  //  lugar, senao o que sai no papel e o que aparece na tela
+  //  envelhecem cada um para o seu lado.
+  // --------------------------------------------------------
+  app.get(
+    '/api/pedidos/:id',
+    { preHandler: app.exigirPermissao('pedidos.gerenciar', 'financeiro.ver') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+      const pedido = await carregarPedido(id);
+
+      if (!pedido) return res.status(404).send({ erro: 'Pedido não encontrado.' });
+
+      return { pedido: montarPedido(pedido) };
+    },
+  );
+
+  // --------------------------------------------------------
   //  Listar pedidos
   // --------------------------------------------------------
   app.get(
@@ -457,40 +590,32 @@ export async function rotasEqualizacao(app: FastifyInstance) {
 
       const pedidos = await banco.pedido.findMany({
         where: situacao ? { situacao: situacao as never } : {},
-        include: {
-          fornecedor: true,
-          comprador: { select: { nome: true } },
-          bid: { select: { numero: true, titulo: true } },
-          itens: true,
-        },
+        include: INCLUIR_PEDIDO,
         orderBy: { numero: 'desc' },
         take: 200,
       });
 
+      // A lista é o mesmo documento, resumido. O total somava
+      // itens + frete + outros aqui e de novo no PDF; agora a conta
+      // mora num lugar só.
       return {
-        pedidos: pedidos.map((p) => ({
-          id: p.id,
-          numeroFormatado: formatarNumeroPedido(p.numero),
-          situacao: p.situacao,
-          fornecedor: p.fornecedor.nomeFantasia ?? p.fornecedor.razaoSocial,
-          comprador: p.comprador.nome,
-          origem: formatarNumeroBid(p.bid.numero) + ' · ' + p.bid.titulo,
-          quantidadeItens: p.itens.length,
-          total:
-            p.itens.reduce(
-              (s, i) => s + (numero(i.quantidade) ?? 0) * (numero(i.valorUnitario) ?? 0),
-              0,
-            ) +
-            (numero(p.valorFrete) ?? 0) +
-            (numero(p.outrosCustos) ?? 0),
-          pagamento: descreverPagamento(
-            numero(p.percentualEntrada),
-            p.quantidadeParcelas,
-            p.intervaloParcelasDias,
-          ),
-          criadoEm: p.criadoEm,
-          enviadoEm: p.enviadoEm,
-        })),
+        pedidos: pedidos.map((p) => {
+          const d = montarPedido(p);
+
+          return {
+            id: d.id,
+            numeroFormatado: d.numeroFormatado,
+            situacao: d.situacao,
+            fornecedor: d.fornecedor.nomeFantasia ?? d.fornecedor.razaoSocial,
+            comprador: d.comprador,
+            origem: d.cotacao.numeroFormatado + ' · ' + d.cotacao.titulo,
+            quantidadeItens: d.itens.length,
+            total: d.total,
+            pagamento: d.pagamento,
+            criadoEm: d.criadoEm,
+            enviadoEm: d.enviadoEm,
+          };
+        }),
       };
     },
   );
@@ -504,69 +629,15 @@ export async function rotasEqualizacao(app: FastifyInstance) {
     async (req, res) => {
       const { id } = req.params as { id: string };
 
-      const pedido = await banco.pedido.findUnique({
-        where: { id },
-        include: {
-          fornecedor: true,
-          comprador: { select: { nome: true } },
-          bid: { select: { numero: true, titulo: true } },
-          itens: {
-            orderBy: { ordem: 'asc' },
-            include: {
-              bidItem: {
-                include: {
-                  material: { select: { codigoInterno: true, descricao: true, normaTecnica: true } },
-                  solicitacaoItem: {
-                    select: {
-                      solicitacao: {
-                        select: { numero: true, obra: { select: { codigo: true, nome: true } } },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
+      const carregado = await carregarPedido(id);
 
-      if (!pedido) return res.status(404).send({ erro: 'Pedido não encontrado.' });
+      if (!carregado) return res.status(404).send({ erro: 'Pedido não encontrado.' });
 
-      const pdf = await gerarPdfPedido({
-        numero: pedido.numero,
-        situacao: pedido.situacao,
-        criadoEm: pedido.criadoEm,
-        comprador: pedido.comprador.nome,
-        origem: formatarNumeroBid(pedido.bid.numero) + ' — ' + pedido.bid.titulo,
-        fornecedor: {
-          razaoSocial: pedido.fornecedor.razaoSocial,
-          nomeFantasia: pedido.fornecedor.nomeFantasia,
-          cnpj: pedido.fornecedor.cnpj,
-          email: pedido.fornecedor.email,
-          telefone: pedido.fornecedor.whatsapp ?? pedido.fornecedor.telefone,
-        },
-        frete: numero(pedido.valorFrete) ?? 0,
-        outrosCustos: numero(pedido.outrosCustos) ?? 0,
-        pagamento: descreverPagamento(
-          numero(pedido.percentualEntrada),
-          pedido.quantidadeParcelas,
-          pedido.intervaloParcelasDias,
-        ),
-        observacoes: pedido.observacoes,
-        itens: pedido.itens.map((i) => ({
-          ordem: i.ordem,
-          codigo: i.bidItem.material.codigoInterno,
-          descricao: i.bidItem.material.descricao,
-          normaTecnica: i.bidItem.material.normaTecnica,
-          unidadeMedida: i.unidadeMedida,
-          quantidade: numero(i.quantidade) ?? 0,
-          valorUnitario: numero(i.valorUnitario) ?? 0,
-          marca: i.marca,
-          modelo: i.modelo,
-          prazoEntregaDias: i.prazoEntregaDias,
-          obra: i.bidItem.solicitacaoItem.solicitacao.obra,
-        })),
-      });
+      // O MESMO documento que a tela mostra. Era montado aqui de
+      // novo, campo por campo, e nada garantia que os dois
+      // continuassem iguais.
+      const pedido = montarPedido(carregado);
+      const pdf = await gerarPdfPedido(pedido);
 
       return res
         .header('Content-Type', 'application/pdf')

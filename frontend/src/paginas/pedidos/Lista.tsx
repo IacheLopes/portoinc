@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listarPedidos, baixarPdfPedido, type PedidoResumo } from '../../servicos/cotacoes';
 import {
   marcarPedidoEnviado, ROTULO_SITUACAO_PEDIDO, COR_SITUACAO_PEDIDO,
@@ -196,6 +197,20 @@ export function ListaPedidos() {
                       </td>
                       <td className="celula-acoes">
                         <div className="formulario__acoes">
+                          {/* Abrir vem PRIMEIRO.
+
+                              A tela de detalhe não existia — havia a
+                              lista e o PDF, e mais nada. Para ver o
+                              que tinha dentro de um pedido era
+                              preciso baixar o arquivo. O dono
+                              reparou em 27/09/2026. */}
+                          <Link
+                            to={'/pedidos/' + p.id}
+                            className="botao botao--discreto botao--link"
+                          >
+                            Abrir
+                          </Link>
+
                           {/* A ação que faz o pedido ANDAR fica à vista.
                               O resto é apoio e vai para o menu. */}
                           {p.situacao === 'RASCUNHO' && (

@@ -280,7 +280,13 @@ ensinaria o mercado a se alinhar, e a Porto Inc. acabaria pagando mais caro.
 - Baixar o pedido em PDF
 - Mandar de novo por WhatsApp ou e-mail
 
-**Passo:** Clique em **Pedidos** → clique no **⋮** da linha → escolha o que quer fazer.
+**Passo:** Clique em **Pedidos** → **Abrir**, na linha do pedido.
+
+Lá dentro você vê os itens com preço fechado, para quem vai, e o caminho que a compra
+percorreu — a solicitação que pediu e a cotação que escolheu o fornecedor, com os
+números clicáveis. Os botões de enviar e de baixar o PDF ficam no topo.
+
+> **Atalho:** o **⋮** na linha da lista faz as mesmas coisas sem precisar abrir.
 
 ---
 

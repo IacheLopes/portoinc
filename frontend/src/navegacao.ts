@@ -301,6 +301,7 @@ export const PAGINAS: Pagina[] = [
   { rota: '/cotacoes/:id', titulo: 'Pacote de cotação', mae: '/cotacoes' },
   { rota: '/cotacoes/:id/equalizacao', titulo: 'Equalização', mae: '/cotacoes/:id' },
   { rota: '/pedidos', titulo: 'Pedidos', mae: '/' },
+  { rota: '/pedidos/:id', titulo: 'Pedido de compra', mae: '/pedidos' },
 
   // --- Almoxarifado ---
   { rota: '/recebimento', titulo: 'Recebimento', mae: '/' },

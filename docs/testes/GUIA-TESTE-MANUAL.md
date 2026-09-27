@@ -1487,6 +1487,58 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 ---
 
+## CT-96a · Abrir o pedido
+
+> Esta tela não existia. Havia a lista e o PDF, e mais nada: para ver o que tinha dentro de um pedido era preciso baixar o arquivo. O dono reparou em 27/09/2026.
+
+1. Na linha do pedido, clique em **Abrir**
+
+**Esperado:** a tela do pedido, com o caminho **Início › Pedidos › Pedido de compra** e o **← Voltar para Pedidos** no canto.
+
+2. Olhe os três cartões do topo
+
+**Esperado:** total do pedido, condição de pagamento e prazo de entrega.
+
+3. Olhe o bloco **De onde veio**
+
+**Esperado:** a corrente da compra — *Alguém pediu* **SOL-xxxxx** → *O mercado respondeu* **BID-xxxxx** → *Fechamos com* o fornecedor, este último destacado em azul.
+
+4. Clique no número da solicitação, volte, clique no da cotação
+
+**Esperado:** os dois abrem as telas certas. É a única tela do sistema que fecha esse caminho inteiro.
+
+5. Compare o **total da tela** com o **total do PDF**
+
+**Esperado:** iguais. Os dois saem da mesma função no servidor — se divergirem, é defeito grave: é o mesmo documento, e o fornecedor recebe uma cópia dele.
+
+6. Confira o CNPJ e o WhatsApp em **Para quem vai**
+
+**Esperado:** com máscara — `19.131.243/0001-97` e `(11) 91234-5678`, não os dígitos corridos.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-96b · O menu de ações não fica cortado
+
+1. Na lista de Pedidos, clique no botão **⋮** da linha
+
+**Esperado:** o menu abre **inteiro**, com as três opções legíveis, mesmo passando por cima da borda do cartão.
+
+2. Role a página com o menu aberto
+
+**Esperado:** ele fecha. Está preso à janela; se ficasse aberto, pararia no ar enquanto a linha dele some.
+
+3. Repita com a janela baixa, de modo que o botão fique perto do rodapé
+
+**Esperado:** o menu abre **para cima**, e não para baixo cortado.
+
+> **Por que isto quebrou:** a caixa da tabela tem `overflow-x: auto` para a tabela rolar de lado no celular, e o navegador converte o eixo vertical junto — não existe rolar num eixo e transbordar no outro. O menu saía cortado pela borda do cartão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-97 · Quem não é comprador não entra
 
 1. Saia e entre como **Almoxarife** (`gilson@portoinc.com.br`)

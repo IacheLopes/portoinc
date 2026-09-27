@@ -7,7 +7,7 @@
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MenuDeAcoes } from './MenuDeAcoes';
 
@@ -125,5 +125,44 @@ describe('Fechar pelo teclado', () => {
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(botao).toHaveFocus();
+  });
+});
+
+describe('Escapar da caixa que corta', () => {
+  it('o menu se posiciona pela JANELA, não pelo botão', async () => {
+    // `.tabela-area` tem `overflow-x: auto` para a tabela rolar de
+    // lado no celular, e o navegador converte o `overflow-y` para
+    // `auto` junto — não existe rolar num eixo e transbordar no
+    // outro. Com `position: absolute` o menu saía cortado pela
+    // borda do cartão; o dono fotografou em 27/09/2026, com
+    // "Baixar o PDF" inteiro e "Mandar pelo WhatsApp" pela metade.
+    const { usuario } = montar();
+
+    await usuario.click(screen.getByRole('button', { name: /ações do pedido/i }));
+
+    const lista = screen.getByRole('menu');
+
+    // O `position: fixed` mora no CSS, que o jsdom não carrega —
+    // esse lado foi medido no navegador de verdade. O que se prova
+    // AQUI é o que o componente calcula: a posição em coordenadas
+    // da janela, medida do botão na hora de abrir. Sem esses dois
+    // números, `fixed` jogaria o menu no canto da tela.
+    expect(lista.style.top).not.toBe('');
+    expect(lista.style.right).not.toBe('');
+  });
+
+  it('rolar a página fecha o menu', async () => {
+    // Ele está preso à janela: ficaria parado no ar enquanto a
+    // linha dele some para cima.
+    const { usuario } = montar();
+
+    await usuario.click(screen.getByRole('button', { name: /ações do pedido/i }));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    // Dentro de `act`: o evento é disparado fora do React, e sem
+    // isto a tela não chega a redesenhar antes da conferência.
+    act(() => { window.dispatchEvent(new Event('scroll')); });
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });
