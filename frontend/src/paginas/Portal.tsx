@@ -20,6 +20,9 @@ import { dataBr } from '../servicos/solicitacoes';
 import { Carregando } from '../componentes/Estado';
 import { Selo } from '../componentes/Selo';
 import { Icone } from '../componentes/Icone';
+import {
+  mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
+} from '../servicos/mascaras';
 
 interface RespostaItem {
   disponivel: boolean;
@@ -35,7 +38,10 @@ function respostaInicial(item: ItemDoPortal): RespostaItem {
 
   return {
     disponivel: m?.disponivel ?? true,
-    valorUnitario: m?.valorUnitario != null ? String(m.valorUnitario) : '',
+    // Com máscara: "R$ 51,00", e não "51". Quem digita preço o dia
+    // inteiro lê o valor conferindo os pontos de milhar — sem eles,
+    // R$ 5.100 e R$ 51.000 são a mesma mancha na tela.
+    valorUnitario: dinheiroParaCampo(m?.valorUnitario),
     marca: m?.marca ?? item.marcaReferencia ?? '',
     modelo: m?.modelo ?? '',
     prazoEntregaDias: m?.prazoEntregaDias != null ? String(m.prazoEntregaDias) : '',
@@ -76,8 +82,8 @@ export function Portal() {
       setRespostas(iniciais);
 
       const c = r.cotacao.minhasCondicoes;
-      setFrete(c.valorFrete != null ? String(c.valorFrete) : '');
-      setOutros(c.outrosCustos != null ? String(c.outrosCustos) : '');
+      setFrete(dinheiroParaCampo(c.valorFrete));
+      setOutros(dinheiroParaCampo(c.outrosCustos));
       setEntrada(c.percentualEntrada != null ? String(c.percentualEntrada) : '');
       setParcelas(c.quantidadeParcelas != null ? String(c.quantidadeParcelas) : '');
       setIntervalo(c.intervaloParcelasDias != null ? String(c.intervaloParcelasDias) : '');
@@ -99,15 +105,15 @@ export function Portal() {
 
   const subtotal = (cotacao?.itens ?? []).reduce((soma, i) => {
     const r = respostas[i.id];
-    if (!r?.disponivel || !r.valorUnitario) return soma;
-    return soma + i.quantidade * Number(r.valorUnitario);
+    if (!r?.disponivel) return soma;
+    return soma + i.quantidade * (lerDinheiro(r.valorUnitario) ?? 0);
   }, 0);
 
-  const total = subtotal + (Number(frete) || 0) + (Number(outros) || 0);
+  const total = subtotal + (lerDinheiro(frete) ?? 0) + (lerDinheiro(outros) ?? 0);
 
   const faltamPrecos = (cotacao?.itens ?? []).filter((i) => {
     const r = respostas[i.id];
-    return r?.disponivel && !r.valorUnitario;
+    return r?.disponivel && lerDinheiro(r.valorUnitario) === null;
   }).length;
 
   async function enviar(evento: FormEvent) {
@@ -123,15 +129,15 @@ export function Portal() {
           return {
             bidItemId: i.id,
             disponivel: x.disponivel,
-            valorUnitario: x.disponivel && x.valorUnitario ? Number(x.valorUnitario) : null,
+            valorUnitario: x.disponivel ? lerDinheiro(x.valorUnitario) : null,
             marca: x.marca || undefined,
             modelo: x.modelo || undefined,
             prazoEntregaDias: x.prazoEntregaDias ? Number(x.prazoEntregaDias) : null,
             observacao: x.observacao || undefined,
           };
         }),
-        valorFrete: frete ? Number(frete) : null,
-        outrosCustos: outros ? Number(outros) : null,
+        valorFrete: lerDinheiro(frete),
+        outrosCustos: lerDinheiro(outros),
         percentualEntrada: entrada ? Number(entrada) : null,
         quantidadeParcelas: parcelas ? Number(parcelas) : null,
         intervaloParcelasDias: intervalo ? Number(intervalo) : null,
@@ -279,23 +285,18 @@ export function Portal() {
                 Item {indice + 1}: {item.descricao}
               </legend>
 
+              {/* O PEDIDO: só leitura. É o que a Porto Inc. quer.
+                  Separado do que o fornecedor responde por um traço,
+                  para os dois lados nunca se confundirem. */}
               <div className="item-cotacao__cabecalho">
-                <div>
-                  <p className="item-cotacao__codigo mono">{item.codigo}</p>
-                  <p className="item-cotacao__descricao">{item.descricao}</p>
-                  <p className="item-cotacao__quantidade">
-                    <strong>{qtdBr(item.quantidade)} {item.unidadeMedida}</strong>
-                  </p>
-                </div>
-
-                <label className="opcao opcao--sem-estoque">
-                  <input
-                    type="checkbox"
-                    checked={!r.disponivel}
-                    onChange={(e) => mudar(item.id, 'disponivel', !e.target.checked)}
-                  />
-                  <span>Não tenho este item</span>
-                </label>
+                <p className="item-cotacao__ordem">
+                  {indice + 1} de {cotacao.itens.length}
+                  <span className="item-cotacao__codigo mono">{item.codigo}</span>
+                </p>
+                <p className="item-cotacao__descricao">{item.descricao}</p>
+                <p className="item-cotacao__quantidade">
+                  {qtdBr(item.quantidade)} {item.unidadeMedida}
+                </p>
               </div>
 
               {(item.especificacao || item.detalhes || item.normaTecnica) && (
@@ -310,68 +311,122 @@ export function Portal() {
                 </div>
               )}
 
-              {r.disponivel && (
-                <div className="item-cotacao__campos">
-                  <div className="campo">
-                    <label className="campo__rotulo" htmlFor={'preco-' + item.id}>
-                      Preço por {item.unidadeMedida} (R$)
-                    </label>
-                    <input
-                      id={'preco-' + item.id}
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="campo__entrada"
-                      value={r.valorUnitario}
-                      onChange={(e) => mudar(item.id, 'valorUnitario', e.target.value)}
-                      aria-invalid={!r.valorUnitario}
-                    />
+              {r.disponivel ? (
+                <div className="item-cotacao__resposta">
+                  {/* O CAMPO GRANDE.
+                      Ele carrega sozinho o motivo desta tela existir.
+                      Antes era um <input type="number"> do mesmo
+                      tamanho da marca e do modelo, e a tela inteira
+                      parecia um questionário: quatro perguntas de
+                      igual peso, quando só uma importa de verdade.
+
+                      `inputmode="decimal"` abre o teclado numérico do
+                      celular; `type="number"` abriria também, mas
+                      recusa a máscara — o "R$" e os pontos fazem o
+                      campo virar inválido e o valor some. */}
+                  <label className="campo-preco" htmlFor={'preco-' + item.id}>
+                    <span className="campo-preco__rotulo">
+                      Seu preço por {item.unidadeMedida}
+                    </span>
+                    <span className="campo-preco__caixa">
+                      <span className="campo-preco__moeda" aria-hidden="true">R$</span>
+                      <input
+                        id={'preco-' + item.id}
+                        inputMode="decimal"
+                        className="campo-preco__entrada"
+                        placeholder="0,00"
+                        value={r.valorUnitario.replace(/^R\$\s*/, '')}
+                        onChange={(e) => mudar(item.id, 'valorUnitario', mascaraDinheiro(e.target.value))}
+                        onBlur={() => mudar(item.id, 'valorUnitario', dinheiroCompleto(r.valorUnitario))}
+                        aria-describedby={'conta-' + item.id}
+                      />
+                    </span>
+                  </label>
+
+                  {/* A conta em voz alta, viva.
+                      É o que transforma o formulário em orçamento: o
+                      vendedor vê o que está oferecendo enquanto
+                      digita, e erro de casa decimal salta aos olhos. */}
+                  <p className="item-cotacao__conta" id={'conta-' + item.id}>
+                    {lerDinheiro(r.valorUnitario) === null ? (
+                      <span className="item-cotacao__conta-vazia">
+                        Informe o preço de uma unidade. A conta aparece aqui.
+                      </span>
+                    ) : (
+                      <>
+                        {qtdBr(item.quantidade)} {item.unidadeMedida} ×{' '}
+                        {dinheiro(lerDinheiro(r.valorUnitario) ?? 0)} ={' '}
+                        <strong>
+                          {dinheiro(item.quantidade * (lerDinheiro(r.valorUnitario) ?? 0))}
+                        </strong>
+                      </>
+                    )}
+                  </p>
+
+                  {/* Miúdos: ajudam o comprador, não travam ninguém. */}
+                  <div className="item-cotacao__miudos">
+                    <div className="campo">
+                      <label className="campo__rotulo" htmlFor={'marca-' + item.id}>
+                        Marca <span className="campo__opcional">(opcional)</span>
+                      </label>
+                      <input
+                        id={'marca-' + item.id}
+                        className="campo__entrada"
+                        value={r.marca}
+                        onChange={(e) => mudar(item.id, 'marca', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="campo">
+                      <label className="campo__rotulo" htmlFor={'modelo-' + item.id}>
+                        Modelo <span className="campo__opcional">(opcional)</span>
+                      </label>
+                      <input
+                        id={'modelo-' + item.id}
+                        className="campo__entrada"
+                        value={r.modelo}
+                        onChange={(e) => mudar(item.id, 'modelo', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="campo">
+                      <label className="campo__rotulo" htmlFor={'prazo-' + item.id}>
+                        Entrega em <span className="campo__opcional">(dias)</span>
+                      </label>
+                      <input
+                        id={'prazo-' + item.id}
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className="campo__entrada"
+                        value={r.prazoEntregaDias}
+                        onChange={(e) => mudar(item.id, 'prazoEntregaDias', e.target.value)}
+                      />
+                    </div>
                   </div>
 
-                  <div className="campo">
-                    <label className="campo__rotulo" htmlFor={'marca-' + item.id}>
-                      Marca
-                    </label>
+                  {/* A saída fica no FIM e em voz baixa. No topo, ela
+                      competia com o preço pela atenção — e a resposta
+                      comum é o preço, não a recusa. */}
+                  <label className="opcao opcao--sem-estoque">
                     <input
-                      id={'marca-' + item.id}
-                      className="campo__entrada"
-                      value={r.marca}
-                      onChange={(e) => mudar(item.id, 'marca', e.target.value)}
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => mudar(item.id, 'disponivel', false)}
                     />
-                  </div>
-
-                  <div className="campo">
-                    <label className="campo__rotulo" htmlFor={'modelo-' + item.id}>
-                      Modelo
-                    </label>
-                    <input
-                      id={'modelo-' + item.id}
-                      className="campo__entrada"
-                      value={r.modelo}
-                      onChange={(e) => mudar(item.id, 'modelo', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="campo">
-                    <label className="campo__rotulo" htmlFor={'prazo-' + item.id}>
-                      Entrega em (dias)
-                    </label>
-                    <input
-                      id={'prazo-' + item.id}
-                      type="number"
-                      min="0"
-                      className="campo__entrada"
-                      value={r.prazoEntregaDias}
-                      onChange={(e) => mudar(item.id, 'prazoEntregaDias', e.target.value)}
-                    />
-                  </div>
-
-                  {r.valorUnitario && (
-                    <p className="item-cotacao__total">
-                      Total deste item:{' '}
-                      <strong>{dinheiro(item.quantidade * Number(r.valorUnitario))}</strong>
-                    </p>
-                  )}
+                    <span>Não trabalho com este item</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="item-cotacao__recusado">
+                  <p>Você marcou que não trabalha com este item.</p>
+                  <button
+                    type="button"
+                    className="botao botao--discreto"
+                    onClick={() => mudar(item.id, 'disponivel', true)}
+                  >
+                    Voltar a cotar
+                  </button>
                 </div>
               )}
             </fieldset>
@@ -381,82 +436,99 @@ export function Portal() {
         {/* ---------------- Condições ---------------- */}
         <h2 className="portal__secao">Condições comerciais</h2>
 
-        <div className="formulario__linha">
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="frete">
-              Frete (R$)
-            </label>
-            <input
-              id="frete"
-              type="number"
-              step="0.01"
-              min="0"
-              className="campo__entrada"
-              value={frete}
-              onChange={(e) => setFrete(e.target.value)}
-            />
-            <p className="campo__ajuda">Deixe vazio se a entrega for sem custo.</p>
-          </div>
+        {/* Eram cinco campos numéricos nus em duas fileiras: frete,
+            outros, entrada, parcelas, intervalo. A parte mais densa
+            da página, e a menos importante. Agora são DUAS perguntas
+            em português, cada uma com os seus campos dentro. */}
+        <div className="pergunta">
+          <p className="pergunta__titulo">Você cobra frete?</p>
 
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="outros">
-              Outros custos (R$)
-            </label>
-            <input
-              id="outros"
-              type="number"
-              step="0.01"
-              min="0"
-              className="campo__entrada"
-              value={outros}
-              onChange={(e) => setOutros(e.target.value)}
-            />
+          <div className="formulario__linha">
+            <div className="campo">
+              <label className="campo__rotulo" htmlFor="frete">
+                Frete <span className="campo__opcional">(deixe vazio se for grátis)</span>
+              </label>
+              <input
+                id="frete"
+                inputMode="decimal"
+                className="campo__entrada"
+                placeholder="R$ 0,00"
+                value={frete}
+                onChange={(e) => setFrete(mascaraDinheiro(e.target.value))}
+                onBlur={() => setFrete(dinheiroCompleto(frete))}
+              />
+            </div>
+
+            <div className="campo">
+              <label className="campo__rotulo" htmlFor="outros">
+                Outros custos <span className="campo__opcional">(opcional)</span>
+              </label>
+              <input
+                id="outros"
+                inputMode="decimal"
+                className="campo__entrada"
+                placeholder="R$ 0,00"
+                value={outros}
+                onChange={(e) => setOutros(mascaraDinheiro(e.target.value))}
+                onBlur={() => setOutros(dinheiroCompleto(outros))}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="formulario__linha">
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="entrada">
-              Entrada (%)
-            </label>
-            <input
-              id="entrada"
-              type="number"
-              min="0"
-              max="100"
-              className="campo__entrada"
-              value={entrada}
-              onChange={(e) => setEntrada(e.target.value)}
-            />
-          </div>
+        <div className="pergunta">
+          <p className="pergunta__titulo">Como você quer receber?</p>
+          <p className="pergunta__ajuda">
+            Deixe tudo vazio se for à vista.
+          </p>
 
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="parcelas">
-              Nº de parcelas
-            </label>
-            <input
-              id="parcelas"
-              type="number"
-              min="1"
-              className="campo__entrada"
-              value={parcelas}
-              onChange={(e) => setParcelas(e.target.value)}
-            />
-          </div>
+          <div className="formulario__linha">
+            <div className="campo">
+              <label className="campo__rotulo" htmlFor="entrada">
+                Entrada <span className="campo__opcional">(%)</span>
+              </label>
+              <input
+                id="entrada"
+                type="number"
+                min="0"
+                max="100"
+                inputMode="numeric"
+                className="campo__entrada"
+                value={entrada}
+                onChange={(e) => setEntrada(e.target.value)}
+              />
+            </div>
 
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="intervalo">
-              Intervalo (dias)
-            </label>
-            <input
-              id="intervalo"
-              type="number"
-              min="1"
-              className="campo__entrada"
-              value={intervalo}
-              onChange={(e) => setIntervalo(e.target.value)}
-            />
-            <p className="campo__ajuda">Ex.: 30 para parcelas mensais.</p>
+            <div className="campo">
+              <label className="campo__rotulo" htmlFor="parcelas">
+                Parcelas
+              </label>
+              <input
+                id="parcelas"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                className="campo__entrada"
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+              />
+            </div>
+
+            <div className="campo">
+              <label className="campo__rotulo" htmlFor="intervalo">
+                A cada <span className="campo__opcional">(dias)</span>
+              </label>
+              <input
+                id="intervalo"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                className="campo__entrada"
+                placeholder="30"
+                value={intervalo}
+                onChange={(e) => setIntervalo(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
@@ -474,43 +546,35 @@ export function Portal() {
           />
         </div>
 
-        {/* ---------------- Total e envio ---------------- */}
+        {/* ---------------- Total ---------------- */}
         <div className="portal__resumo">
           <dl className="dados">
             <div>
               <dt>Itens</dt>
               <dd>{dinheiro(subtotal)}</dd>
             </div>
-            {Number(frete) > 0 && (
+            {(lerDinheiro(frete) ?? 0) > 0 && (
               <div>
                 <dt>Frete</dt>
-                <dd>{dinheiro(Number(frete))}</dd>
+                <dd>{dinheiro(lerDinheiro(frete) ?? 0)}</dd>
               </div>
             )}
-            {Number(outros) > 0 && (
+            {(lerDinheiro(outros) ?? 0) > 0 && (
               <div>
                 <dt>Outros</dt>
-                <dd>{dinheiro(Number(outros))}</dd>
+                <dd>{dinheiro(lerDinheiro(outros) ?? 0)}</dd>
               </div>
             )}
-          </dl>
-          <p className="portal__total">
-            Total da proposta: <strong>{dinheiro(total)}</strong>
-          </p>
-        </div>
-
-        {faltamPrecos > 0 && (
-          <div className="aviso aviso--atencao">
-            <Icone nome="alerta" className="aviso__icone" />
-            <div>
-              <strong>{faltamPrecos} item(ns) sem preço.</strong>
-              <p>
-                Informe o preço, ou marque <strong>"Não tenho este item"</strong> se você
-                não trabalha com ele.
-              </p>
+            {/* A soma fecha a própria lista, em vez de repetir
+                "Total da proposta" 60px acima da barra fixa, que já
+                diz isso. Aqui a pergunta é outra: DE ONDE veio o
+                total. */}
+            <div className="portal__resumo-soma">
+              <dt>Total</dt>
+              <dd>{dinheiro(total)}</dd>
             </div>
-          </div>
-        )}
+          </dl>
+        </div>
 
         {erro && (
           <div className="aviso aviso--erro" role="alert">
@@ -528,18 +592,48 @@ export function Portal() {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="botao botao--principal botao--largo"
-          disabled={enviando || faltamPrecos > 0}
-        >
-          {enviando ? 'Enviando...' : cotacao.jaRespondeu ? 'Atualizar minha cotação' : 'Enviar cotação'}
-        </button>
-
         <p className="portal__rodape">
           Porto Inc. · Este link é pessoal e vence em{' '}
           {dataBr(prazoData.toISOString())}. Não compartilhe.
         </p>
+
+        {/* ---------------- A barra que não sai da tela ----------------
+
+            No celular, o total e o botão ficavam no fim de uma página
+            de rolagem longa: o vendedor digitava preço sem ver o que
+            estava oferecendo, e só descobria o total depois de rolar
+            tudo. Preso embaixo, o número acompanha cada tecla — que é
+            como se monta um orçamento, não um formulário.
+
+            É também onde o "falta preço" aparece agora, no lugar do
+            aviso que ficava perdido no meio da página. */}
+        <div className="portal__barra">
+          <div className="portal__barra-conta">
+            <span className="portal__barra-rotulo">Total da proposta</span>
+            <strong className="portal__barra-valor">{dinheiro(total)}</strong>
+          </div>
+
+          <button
+            type="submit"
+            className="botao botao--principal"
+            disabled={enviando || faltamPrecos > 0}
+          >
+            {enviando
+              ? 'Enviando...'
+              : cotacao.jaRespondeu
+                ? 'Atualizar minha cotação'
+                : 'Enviar cotação'}
+          </button>
+
+          {faltamPrecos > 0 && (
+            <p className="portal__barra-pendencia" role="status">
+              <Icone nome="alerta" />
+              {faltamPrecos === 1
+                ? 'Falta o preço de 1 item'
+                : 'Faltam os preços de ' + faltamPrecos + ' itens'}
+            </p>
+          )}
+        </div>
       </form>
     </div>
   );

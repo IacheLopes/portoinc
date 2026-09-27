@@ -1145,7 +1145,55 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 | O nome **do fornecedor destinatário** |
 | Quantos dias faltam, em destaque |
 | Cada item com código, quantidade, norma e especificação |
-| Campos de preço, marca, modelo e prazo |
+| Um **campo grande de preço**, com o `R$` fixo dentro dele |
+| Marca, modelo e prazo, **menores**, marcados como opcionais |
+| A barra presa no pé da tela, com o total e o botão de enviar |
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-75a · A máscara de dinheiro do portal
+
+1. No campo de preço de um item, digite `510000` sem pontuação
+
+**Esperado:** o campo escreve **510.000** enquanto você digita.
+
+2. Saia do campo (Tab)
+
+**Esperado:** vira **510.000,00** — os centavos se completam sozinhos.
+
+3. Apague e digite `26,5`, depois saia
+
+**Esperado:** **26,50**. A vírgula abre centavos; o ponto é sempre milhar.
+
+4. Olhe a linha logo abaixo do preço
+
+**Esperado:** a conta em português — *"60 SC × R$ 26,50 = R$ 1.590,00"* — e ela muda a cada tecla.
+
+5. Olhe a barra no pé da tela
+
+**Esperado:** o **total da proposta** acompanha a digitação, somando itens + frete + outros custos.
+
+> **Por que isto importa:** o campo era um `type="number"` cru. Quem digitava 5100 via "5100" e não tinha como perceber se queria dizer R$ 51,00 ou R$ 5.100,00. Numa proposta comercial, isso é a diferença entre ganhar e perder dinheiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-75b · O envio fica travado até faltar preço
+
+1. Deixe pelo menos um item sem preço
+
+**Esperado:** na barra do pé, *"Falta o preço de 1 item"*, e o botão de enviar **desligado**.
+
+2. Marque **"Não trabalho com este item"** nesse item
+
+**Esperado:** o aviso some e o botão liga. Quem não trabalha com um item não pode ficar preso na tela.
+
+3. Clique em **Voltar a cotar**
+
+**Esperado:** os campos voltam, e o aviso também.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -1263,7 +1311,17 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 
 1. Abra o link do portal no celular (ou com **F12** em modo celular)
 
-**Esperado:** os campos ficam um abaixo do outro, tudo legível, nada rola para os lados. O fornecedor consegue responder do telefone.
+**Esperado:** os campos ficam um abaixo do outro, tudo legível, **nada rola para os lados**.
+
+2. Role até o meio do formulário
+
+**Esperado:** a barra do total continua **presa no pé da tela**, com o botão de enviar em largura cheia.
+
+3. Toque no campo de preço
+
+**Esperado:** abre o **teclado numérico** do celular, não o teclado de letras.
+
+> **Este é o caso mais importante do portal.** O fornecedor responde do telefone, no meio do expediente. Em 27/09/2026 a página tinha 470px de conteúdo numa tela de 393 e rolava para os lados — um `<fieldset>` se recusa a encolher por padrão do navegador, e o portal é tela pública, fora da lista da régua automática. Só apareceu medindo à mão.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

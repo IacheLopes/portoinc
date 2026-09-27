@@ -571,6 +571,12 @@ input[type='file'].campo__entrada {
   border: 1px solid var(--borda);
   border-radius: var(--raio-md);
   background: var(--fundo);
+  /* `<fieldset>` nasce com `min-inline-size: min-content` e se
+     RECUSA a encolher: em 393px ele ficava com 470px e empurrava a
+     página inteira para o lado. O portal nunca apareceu na régua
+     porque é tela pública, fora da lista dela — medido à mão em
+     27/09/2026. */
+  min-width: 0;
 }
 
 /* Item que o fornecedor não tem fica visivelmente apagado. */
@@ -579,23 +585,36 @@ input[type='file'].campo__entrada {
   background: var(--fundo-suave);
 }
 
+/* O que a Porto Inc. PEDE. Só leitura, e é o lado esquerdo do
+   documento — separado do que o fornecedor responde. */
 .item-cotacao__cabecalho {
+  padding-bottom: var(--esp-3);
+  border-bottom: 1px solid var(--borda);
+}
+
+/* "1 de 2" — numeração porque isto É uma sequência: uma lista para
+   percorrer até o fim. Sem ela, em oito itens no celular, não dá
+   para saber quanto falta. */
+.item-cotacao__ordem {
   display: flex;
-  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  align-items: flex-start;
   gap: var(--esp-3);
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-forte);
+  color: var(--texto-secundario);
 }
 
 .item-cotacao__codigo {
-  font-size: var(--txt-xs);
+  font-weight: var(--peso-medio);
   color: var(--texto-secundario);
 }
 
 .item-cotacao__descricao {
-  font-size: var(--txt-md);
-  font-weight: var(--peso-medio);
-  margin-top: 2px;
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+  line-height: 1.25;
+  margin-top: var(--esp-2);
 }
 
 .item-cotacao__quantidade {
@@ -623,21 +642,232 @@ input[type='file'].campo__entrada {
 
 .item-cotacao__especificacao p + p { margin-top: var(--esp-2); }
 
-.item-cotacao__campos {
-  display: grid;
-  gap: var(--esp-3);
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+/* ------------------------------------------------------------
+   O que o FORNECEDOR responde
+
+   Eram quatro campos de tamanho igual numa grade —
+   preço, marca, modelo, prazo — e é isso que fazia a tela parecer
+   um formulário do Google: quatro perguntas de mesmo peso, quando
+   só uma é o motivo de a página existir.
+   ------------------------------------------------------------ */
+.item-cotacao__resposta {
   margin-top: var(--esp-4);
 }
 
-.item-cotacao__campos .campo { margin-bottom: 0; }
+/* O CAMPO GRANDE. É aqui que a ousadia desta tela foi gasta; o
+   resto fica quieto de propósito. */
+.campo-preco {
+  display: block;
+}
 
-.item-cotacao__total {
-  grid-column: 1 / -1;
-  padding-top: var(--esp-2);
-  border-top: 1px dashed var(--borda);
+.campo-preco__rotulo {
+  display: block;
   font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--esp-2);
+}
+
+/* O "R$" mora DENTRO da caixa, fixo.
+
+   Estava no rótulo, entre parênteses — "Preço por SC (R$)" —, e
+   some da vista na hora de digitar. Aqui ele fica ao lado do
+   número, e o campo inteiro é o alvo de toque. */
+.campo-preco__caixa {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+  /* Não acompanha a largura do cartão.
+     Com 660px no computador, o "R$" e o número ficavam a meio metro
+     de distância e o olho não ligava um ao outro. Em 18rem o par
+     continua sendo um par, e o alinhamento à direita continua
+     valendo — é assim que preço se lê em orçamento. */
+  max-width: 18rem;
+  padding: var(--esp-3) var(--esp-4);
+  border: 2px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo-elevado);
+  transition: border-color var(--transicao);
+}
+
+.campo-preco__caixa:focus-within {
+  border-color: var(--azul-600);
+  box-shadow: 0 0 0 3px var(--info-leve);
+}
+
+.campo-preco__moeda {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-medio);
+  color: var(--texto-secundario);
+}
+
+/* Alinhado à DIREITA e com dígitos de largura fixa: é como preço
+   se lê em qualquer orçamento, com as casas uma embaixo da outra. */
+.campo-preco__entrada {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--txt-2xl);
+  font-weight: var(--peso-forte);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.campo-preco__entrada:focus { outline: none; }
+.campo-preco__entrada::placeholder { color: var(--texto-secundario); opacity: 0.45; }
+
+/* A conta em voz alta. É o que separa orçamento de formulário: o
+   vendedor vê o que está oferecendo enquanto digita, e erro de casa
+   decimal salta aos olhos antes de virar proposta. */
+.item-cotacao__conta {
+  margin-top: var(--esp-2);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+.item-cotacao__conta strong { color: var(--texto); }
+.item-cotacao__conta-vazia { font-style: italic; opacity: 0.8; }
+
+/* Marca, modelo e prazo: ajudam o comprador, não travam ninguém.
+   Menores que o preço porque valem menos que ele. */
+.item-cotacao__miudos {
+  display: grid;
+  gap: var(--esp-3);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-top: var(--esp-4);
+}
+
+.item-cotacao__miudos .campo { margin-bottom: 0; }
+.item-cotacao__miudos .campo__rotulo { font-size: var(--txt-xs); }
+
+/* A saída, em voz baixa e no fim. No topo ela competia com o preço
+   pela atenção, e a resposta comum é o preço. */
+.item-cotacao__resposta .opcao--sem-estoque {
+  margin-top: var(--esp-4);
+  padding-left: 0;
+  background: none;
+}
+
+.item-cotacao__recusado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  margin-top: var(--esp-3);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   Condições comerciais, como PERGUNTA
+
+   Eram cinco campos numéricos nus em duas fileiras: frete, outros,
+   entrada, parcelas, intervalo. A parte mais densa da página e a
+   menos importante. Agrupados sob a pergunta que respondem, o
+   fornecedor entende o que se quer dele sem ler rótulo por rótulo.
+   ------------------------------------------------------------ */
+.pergunta {
+  margin-bottom: var(--esp-4);
+  padding: var(--esp-4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo);
+}
+
+.pergunta__titulo {
+  font-size: var(--txt-md);
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--esp-1);
+}
+
+.pergunta__ajuda {
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  margin-bottom: var(--esp-3);
+}
+
+.pergunta__titulo + .formulario__linha { margin-top: var(--esp-3); }
+.pergunta .campo { margin-bottom: 0; }
+
+/* ------------------------------------------------------------
+   A barra que não sai da tela
+
+   O total e o botão ficavam no fim de uma rolagem longa. No
+   celular, o vendedor digitava preço sem ver o que estava
+   oferecendo. Presa embaixo, a conta acompanha cada tecla.
+   ------------------------------------------------------------ */
+.portal__barra {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  /* Estoura o respiro do cartão para encostar nas bordas dele. */
+  margin: var(--esp-5) calc(var(--esp-6) * -1) calc(var(--esp-6) * -1);
+  padding: var(--esp-4) var(--esp-6);
+  /* O entalhe do iPhone come a barra inteira sem isto. */
+  padding-bottom: max(var(--esp-4), env(safe-area-inset-bottom));
+  background: var(--fundo-elevado);
+  border-top: 1px solid var(--borda);
+  border-radius: 0 0 var(--raio-lg) var(--raio-lg);
+  box-shadow: 0 -8px 24px -12px rgba(0, 0, 0, 0.18);
+}
+
+.portal__barra-conta {
+  display: flex;
+  flex-direction: column;
+}
+
+.portal__barra-rotulo {
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.portal__barra-valor {
+  font-size: var(--txt-xl);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.portal__barra .botao { flex: 0 0 auto; }
+
+/* Ocupa a fileira inteira: é o motivo de o botão estar desligado, e
+   precisa ser lido antes de a pessoa tentar clicar. */
+.portal__barra-pendencia {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--txt-sm);
+  color: var(--atencao-texto);
+}
+
+/* Mesmo ponto de quebra do respiro do cartão (mais abaixo). Se os
+   dois divergirem, a barra sobra 16px para fora do cartão de cada
+   lado — a margem negativa aqui tem de casar com o padding de lá. */
+@media (max-width: 640px) {
+  .portal__barra {
+    margin-left: calc(var(--esp-4) * -1);
+    margin-right: calc(var(--esp-4) * -1);
+    padding-left: var(--esp-4);
+    padding-right: var(--esp-4);
+  }
+}
+
+/* Botão de largura cheia embaixo do total: em 393px os dois lado a
+   lado deixam ~150px para cada, e "Atualizar minha cotação" quebra
+   em três linhas. */
+@media (max-width: 480px) {
+  .portal__barra .botao { flex: 1 0 100%; }
 }
 
 /* ------------------------------------------------------------
@@ -654,12 +884,19 @@ input[type='file'].campo__entrada {
 .portal__resumo .dados { margin: 0; }
 .portal__resumo .dados dt { flex-basis: 70px; }
 
-.portal__total {
-  margin-top: var(--esp-3);
-  padding-top: var(--esp-3);
-  border-top: 2px solid var(--borda);
-  font-size: var(--txt-lg);
-  text-align: right;
+.portal__resumo-soma {
+  margin-top: var(--esp-2);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--borda);
+  font-weight: var(--peso-forte);
+}
+
+/* O campo de texto livre usa fonte monoespaçada porque em outras
+   telas ele guarda XML e especificação técnica. Aqui quem escreve é
+   um vendedor mandando recado — texto de gente, fonte de gente. */
+.portal .campo__area {
+  font-family: var(--fonte);
+  font-size: var(--txt-md);
 }
 
 .portal__rodape {
@@ -698,7 +935,7 @@ input[type='file'].campo__entrada {
 @media (max-width: 640px) {
   .portal__cartao { padding: var(--esp-4); }
   .portal__prazo { text-align: left; }
-  .item-cotacao__campos { grid-template-columns: 1fr 1fr; }
+  .item-cotacao__miudos { grid-template-columns: 1fr 1fr; }
 }
 
 /* ============================================================

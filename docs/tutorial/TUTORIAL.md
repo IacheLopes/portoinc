@@ -1013,13 +1013,51 @@ Ele clica no link que recebeu. Não tem senha, não tem cadastro, não tem insta
 | **Cabeçalho** | Número da cotação, título e o nome da empresa dele |
 | **Prazo** | Quantos dias faltam, em destaque |
 | **Itens** | Código, descrição, quantidade, norma exigida e especificação |
-| **Condições** | Frete, outros custos, entrada, parcelas |
+| **Condições** | Duas perguntas: *"Você cobra frete?"* e *"Como você quer receber?"* |
 
-Para cada item ele informa **preço, marca, modelo e prazo de entrega**. O total aparece na hora, item a item e no fim.
+## Cada item é uma pergunta só
 
-## "Não tenho este item"
+O item mostra o que a Porto Inc. pede — código, descrição, quantidade, especificação — e embaixo **um campo grande, o preço**:
 
-Cada item tem essa caixa. Ao marcar, os campos de preço somem e o item fica visualmente apagado.
+```
+2 de 2                                        00002
+Argamassa colante AC-II saco 20kg
+60 SC
+┌──────────────────────────────────────────────────┐
+│  Argamassa AC-II, ABNT NBR 14081, saco de 20 kg  │
+└──────────────────────────────────────────────────┘
+
+Seu preço por SC
+┌────────────────────────────┐
+│ R$                   26,00 │
+└────────────────────────────┘
+60 SC × R$ 26,00 = R$ 1.560,00
+
+Marca          Modelo         Entrega em (dias)
+[Votomassa]    [        ]     [ 3 ]
+
+☐ Não trabalho com este item
+```
+
+**A conta aparece embaixo do preço enquanto ele digita.** É o que faz a tela parecer um orçamento e não um formulário — e é onde erro de casa decimal salta aos olhos antes de virar proposta.
+
+Marca, modelo e prazo são **opcionais** e ficam menores de propósito: ajudam o comprador, mas não travam ninguém.
+
+## O preço tem máscara
+
+Digitando `510000`, o campo escreve **R$ 510.000,00**. Sem os pontos de milhar, R$ 5.100 e R$ 51.000 são a mesma mancha na tela — e a diferença é a proposta inteira.
+
+A vírgula abre os centavos; o ponto é sempre milhar. Ao sair do campo, os centavos se completam sozinhos.
+
+## A barra que não sai da tela
+
+No pé da página fica preso o **total da proposta** e o botão de enviar. Ele acompanha cada tecla.
+
+Enquanto faltar o preço de algum item, o botão fica desligado e a barra diz quantos faltam.
+
+## "Não trabalho com este item"
+
+Cada item tem essa caixa, **no fim** do bloco — em voz baixa, porque a resposta comum é o preço, não a recusa. Ao marcar, os campos somem e o item fica apagado, com um botão para voltar atrás.
 
 > Sem essa opção, o fornecedor que não trabalha com um item teria que inventar um preço ou desistir da cotação inteira.
 

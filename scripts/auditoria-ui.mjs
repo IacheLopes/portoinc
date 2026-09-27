@@ -54,6 +54,20 @@ const PEDIDO = '17';
 // listados — Avisos, por exemplo, é uma casca com duas abas dentro.
 const PG = 'frontend/src/paginas/';
 
+// O QUE ESTA LISTA NAO COBRE, e por que
+//
+// `/portal/:token` — o portal do fornecedor. A regua faz login e
+// percorre rotas fixas; o portal e publico e o endereco depende de um
+// token que so existe com uma cotacao ABERTA e um convite dentro
+// dela. Nao da para cravar aqui.
+//
+// O preco disso foi cobrado em 27/09/2026: o portal rolava para os
+// lados em 393px (um `<fieldset>` com 470px de largura, porque
+// fieldset nao encolhe sozinho) e ninguem viu, porque a unica tela
+// que gente de fora usa e justamente a que a regua nao mede.
+//
+// Ate a regua saber montar uma cotacao de mentira, o portal se mede
+// A MAO — ha um caso proprio no guia de teste manual (CT-84).
 const TELAS = [
   ['/', 'inicio', [PG + 'Inicio.tsx']],
   ['/solicitacoes', 'solicitacoes-lista', [PG + 'solicitacoes/Lista.tsx']],
