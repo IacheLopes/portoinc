@@ -1208,3 +1208,136 @@ input[type='file'].campo__entrada {
      quebrarem aqui só espremeria a coluna. */
   .celula-acoes { white-space: nowrap; }
 }
+
+/* ------------------------------------------------------------
+   Montar uma solicitação de compra
+
+   O modal tinha três cartões dentro dele — caixa dentro de caixa,
+   cada uma com moldura e 40px de espaçamento. Sobrava um vão de 90px
+   entre a justificativa e os itens, e era preciso rolar uma tela
+   inteira para chegar no que importa.
+
+   Aqui dentro, um traço separa seção. A ÚNICA moldura é a da área de
+   montagem, e ela está ali de propósito: foi não enxergar que aquilo
+   é um formulário à parte que fez o dono perder um item.
+   ------------------------------------------------------------ */
+
+/* O título de seção dentro do modal não pode competir com o título
+   do modal. Era um <h2> maior que ele. */
+.modal__secao {
+  margin: var(--esp-5) 0 var(--esp-3);
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-md);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
+/* ---- Os itens já escolhidos ---- */
+.lista-de-itens {
+  list-style: none;
+  margin: 0 0 var(--esp-4);
+  padding: 0;
+  display: grid;
+  gap: var(--esp-2);
+}
+
+/* Era uma tabela de seis colunas em 535px de modal: código, item,
+   unidade, quantidade, valor e ações, tudo espremido. Como linha, o
+   nome ganha a largura que precisa e o resto vira uma linha miúda. */
+.item-pedido {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo-elevado);
+}
+
+.item-pedido__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-pedido__texto strong {
+  display: block;
+  font-weight: var(--peso-medio);
+}
+
+.item-pedido__texto small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
+.item-pedido__valor {
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- A área de montagem ---- */
+.montagem {
+  padding: var(--esp-4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  background: var(--fundo-recuado);
+}
+
+/* Quando alguém tenta salvar com um item solto aqui dentro. */
+.montagem--alerta {
+  border-color: var(--atencao-texto);
+}
+
+.montagem__titulo {
+  margin: 0 0 var(--esp-3);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  color: var(--texto-secundario);
+}
+
+/* ---- O total ---- */
+.total-da-solicitacao {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--esp-3);
+  margin: var(--esp-4) 0 var(--esp-5);
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+}
+
+.total-da-solicitacao strong {
+  font-size: var(--txt-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* No celular o item vira duas linhas: o texto em cima, valor e botão
+   embaixo. Em 420px não cabem os três lado a lado sem o nome do
+   material virar uma coluna de letras. */
+@media (max-width: 640px) {
+  .item-pedido {
+    flex-wrap: wrap;
+  }
+
+  .item-pedido__texto {
+    flex-basis: 100%;
+  }
+
+  .item-pedido__valor {
+    flex: 1;
+  }
+}
+
+/* Dentro da caixa de montagem, a coluna aperta um pouco mais.
+   
+   O padrão do sistema é 240px por coluna. Aqui sobram ~478px (o modal
+   menos o recuo da caixa), e 240 + 240 + espaço dá 496 — dois pixels
+   e meio a mais do que cabe. O par "quantidade / valor unitário"
+   quebrava em duas linhas por causa disso, deixando meia largura
+   vazia ao lado de um campo de quatro dígitos. */
+.montagem .formulario__linha {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}

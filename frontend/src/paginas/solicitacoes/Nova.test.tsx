@@ -66,7 +66,10 @@ async function preencher(usuario: ReturnType<typeof userEvent.setup>) {
   await usuario.selectOptions(await screen.findByLabelText(/obra/i), 'o1');
   await usuario.selectOptions(screen.getByLabelText(/item do catálogo/i), 'm1');
   await usuario.type(screen.getByLabelText(/quantidade/i), '10');
-  await usuario.click(screen.getByRole('button', { name: /adicionar item/i }));
+  // O botão chamava-se "+ Adicionar item à solicitação". Encurtou para
+  // "Adicionar à lista" em 27/09/2026: o que se adiciona já está dito no
+  // título da caixa ("Novo item"), e o botão passou a dizer PARA ONDE vai.
+  await usuario.click(screen.getByRole('button', { name: /adicionar à lista/i }));
 }
 
 describe('o que impede de salvar', () => {
@@ -132,5 +135,91 @@ describe('quando a API recusa', () => {
 
     expect(await screen.findByText('A obra não tem orçamento cadastrado.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /salvar como rascunho/i })).toBeEnabled();
+  });
+});
+
+// ============================================================
+//  O item digitado não pode sumir
+//
+//  Achado pelo dono em 27/09/2026, montando a primeira solicitação
+//  de verdade. Ele pediu dois itens — cimento e argamassa — e o
+//  total deu R$ 5.200 em vez de R$ 6.880.
+//
+//  A argamassa estava digitada na área de montagem, mas ele clicou
+//  em Salvar sem clicar em "Adicionar à lista" antes. O formulário
+//  salvou com um item e jogou fora o outro, em silêncio.
+//
+//  Perda de dado — e do tipo que passa despercebida: a solicitação
+//  é criada, parece certa, e o material que falta só aparece quando
+//  não chega na obra.
+//
+//  Nenhuma régua pega isto: não é aparência, é fluxo.
+// ============================================================
+describe('item começado e não adicionado', () => {
+  /** Preenche a área de montagem SEM clicar em "Adicionar à lista". */
+  async function comItemSolto(usuario: ReturnType<typeof userEvent.setup>) {
+    await usuario.selectOptions(await screen.findByLabelText(/obra/i), 'o1');
+    await usuario.selectOptions(screen.getByLabelText(/item do catálogo/i), 'm1');
+    await usuario.type(screen.getByLabelText(/quantidade/i), '60');
+  }
+
+  it('o Salvar para, em vez de jogar fora', async () => {
+    const usuario = montar();
+    await preencher(usuario);
+    await comItemSolto(usuario);
+
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+
+    expect(criarSolicitacao).not.toHaveBeenCalled();
+    expect(await screen.findByText(/ainda não está na lista/i)).toBeInTheDocument();
+  });
+
+  it('dá as duas saídas: adicionar ou descartar', async () => {
+    const usuario = montar();
+    await preencher(usuario);
+    await comItemSolto(usuario);
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+
+    // Nada é decidido pelo sistema: quem escolhe é quem digitou.
+    expect(screen.getByRole('button', { name: /adicionar à lista/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /descartar/i })).toBeEnabled();
+  });
+
+  it('adicionando pelo aviso, os DOIS itens são salvos', async () => {
+    vi.mocked(criarSolicitacao).mockResolvedValue({
+      solicitacao: { id: 's1' },
+    } as never);
+
+    const usuario = montar();
+    await preencher(usuario);
+    await comItemSolto(usuario);
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+
+    await usuario.click(screen.getByRole('button', { name: /adicionar à lista/i }));
+
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+
+    await waitFor(() => expect(criarSolicitacao).toHaveBeenCalled());
+
+    // É esta a prova: R$ 6.880 em vez de R$ 5.200.
+    const enviado = vi.mocked(criarSolicitacao).mock.calls[0][0];
+    expect(enviado.itens).toHaveLength(2);
+  });
+
+  it('descartando, salva só o que estava na lista', async () => {
+    vi.mocked(criarSolicitacao).mockResolvedValue({
+      solicitacao: { id: 's1' },
+    } as never);
+
+    const usuario = montar();
+    await preencher(usuario);
+    await comItemSolto(usuario);
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+    await usuario.click(screen.getByRole('button', { name: /descartar/i }));
+
+    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+
+    await waitFor(() => expect(criarSolicitacao).toHaveBeenCalled());
+    expect(vi.mocked(criarSolicitacao).mock.calls[0][0].itens).toHaveLength(1);
   });
 });

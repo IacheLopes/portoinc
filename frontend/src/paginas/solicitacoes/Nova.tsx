@@ -27,9 +27,6 @@ import { criarSolicitacao, type ItemParaEnviar } from '../../servicos/solicitaco
 import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro } from '../../componentes/Estado';
-import { Selo } from '../../componentes/Selo';
-import { Cartao } from '../../componentes/Cartao';
-import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { chaveLocal } from '../../servicos/identificador';
 import { Modal } from '../../componentes/Modal';
@@ -62,6 +59,8 @@ export function NovaSolicitacao({
   const [observacoes, setObservacoes] = useState('');
   const [dataDesejada, setDataDesejada] = useState('');
   const [itens, setItens] = useState<ItemNaTela[]>([]);
+  /** Ligado quando alguém tenta salvar com um item ainda solto. */
+  const [avisoDeItemSolto, setAvisoDeItemSolto] = useState(false);
 
   // Linha de montagem do próximo item
   const [materialId, setMaterialId] = useState('');
@@ -124,6 +123,30 @@ export function NovaSolicitacao({
     if (sugerida) setLinhaId(sugerida.id);
   }, [materialEscolhido, linhas]);
 
+  /**
+   * Ha um item comecado que ainda nao entrou na lista?
+   *
+   * Qualquer campo da area de montagem preenchido conta. Era isto
+   * que o Salvar ignorava: a pessoa digitava o segundo item inteiro,
+   * clicava em Salvar, e ele sumia sem aviso.
+   */
+  const temItemComecado = Boolean(
+    materialId || quantidade || linhaId || complemento || especificacao || valorEstimado,
+  );
+
+  /** O item comecado esta completo o bastante para entrar na lista? */
+  const itemComecadoServe = Boolean(materialEscolhido && quantidade && Number(quantidade) > 0);
+
+  function descartarItemComecado() {
+    setMaterialId('');
+    setQuantidade('');
+    setLinhaId('');
+    setComplemento('');
+    setEspecificacao('');
+    setValorEstimado('');
+    setAvisoDeItemSolto(false);
+  }
+
   function adicionarItem() {
     if (!materialEscolhido || !quantidade) return;
 
@@ -148,6 +171,7 @@ export function NovaSolicitacao({
     setComplemento('');
     setEspecificacao('');
     setValorEstimado('');
+    setAvisoDeItemSolto(false);
   }
 
   function removerItem(chave: string) {
@@ -158,6 +182,14 @@ export function NovaSolicitacao({
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
+
+    // Um item comecado nao pode sumir por causa de um clique no botao
+    // errado. O Salvar para aqui e pergunta o que fazer com ele.
+    if (temItemComecado) {
+      setAvisoDeItemSolto(true);
+      return;
+    }
+
     setErro(null);
     setDetalhes([]);
     setEnviando(true);
@@ -224,65 +256,145 @@ export function NovaSolicitacao({
         </>
       }
     >
+      {/* ------------------------------------------------------
+          Sem <Cartao> e sem <section className="secao"> aqui.
+
+          O modal JÁ é uma caixa. Cartão dentro dele vira caixa
+          dentro de caixa — e eram três, cada uma com moldura e
+          espaçamento próprios. Dentro de um modal, um traço separa
+          seção e custa 1px em vez de 40.
+
+          A única moldura que sobrou é a da área de montagem, e ela
+          está ali de propósito: é o que faz o olho entender que
+          aquilo é um formulário à parte, que precisa ser confirmado.
+          ------------------------------------------------------ */}
       <form id={idForm} onSubmit={enviar} noValidate>
-        <section className="secao">
-        <p className="campo__ajuda">
-          <Selo tipo="info">Nada é enviado para aprovação ainda</Selo>
-        </p>
-
-        <Cartao className="formulario" titulo="Para qual obra">
-          <div className="formulario__linha">
-            <Selecao
-              rotulo="Obra"
-              valor={obraId}
-              aoMudar={setObraId}
-              opcoes={obras.map((o) => ({ valor: o.id, rotulo: o.codigo + ' — ' + o.nome }))}
-              vazio="Escolha a obra..."
-              ajuda="Define para qual orçamento a compra será apontada."
-              obrigatorio
-            />
-            <Campo
-              rotulo="Precisa até"
-              valor={dataDesejada}
-              aoMudar={setDataDesejada}
-              tipo="date"
-              ajuda="Ajuda o comprador a priorizar."
-            />
-          </div>
-
-          <Campo
-            rotulo="Justificativa"
-            valor={justificativa}
-            aoMudar={setJustificativa}
-            exemplo="Concretagem da laje do 3º pavimento"
-            ajuda="Por que este material é necessário. Facilita muito a aprovação."
+        <div className="formulario__linha">
+          <Selecao
+            rotulo="Obra"
+            valor={obraId}
+            aoMudar={setObraId}
+            opcoes={obras.map((o) => ({ valor: o.id, rotulo: o.codigo + ' — ' + o.nome }))}
+            vazio="Escolha a obra..."
+            ajuda="Define para qual orçamento a compra será apontada."
+            obrigatorio
           />
-        </Cartao>
-      </section>
-
-      {/* ---------------- Montagem dos itens ---------------- */}
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>Itens</h2>
-          <p className="secao__descricao">
-            Escolha no catálogo. A unidade de medida e a linha de orçamento vêm
-            preenchidas automaticamente.
-          </p>
+          <Campo
+            rotulo="Precisa até"
+            valor={dataDesejada}
+            aoMudar={setDataDesejada}
+            tipo="date"
+            ajuda="Ajuda o comprador a priorizar."
+          />
         </div>
 
-        <Cartao className="formulario" titulo="Adicionar item">
+        <Campo
+          rotulo="Justificativa"
+          valor={justificativa}
+          aoMudar={setJustificativa}
+          exemplo="Concretagem da laje do 3º pavimento"
+          ajuda="Por que este material é necessário. Facilita muito a aprovação."
+        />
+
+        {/* ---------------- Itens ---------------- */}
+        <h2 className="modal__secao">Itens</h2>
+
+        {/* A lista vem ANTES da área de montagem.
+            Antes era o contrário, e quem abria o modal via um
+            formulário vazio de item sem entender que havia uma lista
+            embaixo. Assim se vê o que já tem, e depois acrescenta. */}
+        {itens.length === 0 ? (
+          <p className="campo__ajuda">Nenhum item ainda. Escolha o primeiro abaixo.</p>
+        ) : (
+          <ul className="lista-de-itens">
+            {itens.map((i) => (
+              <li key={i.chave} className="item-pedido">
+                <div className="item-pedido__texto">
+                  <strong>
+                    <span className="mono">{i.material.codigoInterno}</span>{' '}
+                    {i.material.descricao}
+                  </strong>
+                  <small>
+                    {formatarQuantidade(i.quantidade)} {i.material.unidadeMedida}
+                    {i.valorEstimado !== null && ' × ' + dinheiro(i.valorEstimado)}
+                    {i.descricaoComplementar && ' · ' + i.descricaoComplementar}
+                  </small>
+                </div>
+
+                <span className="item-pedido__valor">
+                  {i.valorEstimado !== null
+                    ? dinheiro(i.quantidade * i.valorEstimado)
+                    : '—'}
+                </span>
+
+                <button
+                  type="button"
+                  className="botao botao--discreto"
+                  onClick={() => removerItem(i.chave)}
+                  aria-label={'Remover ' + i.material.descricao}
+                >
+                  Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ---------------- Área de montagem ---------------- */}
+        <div className={'montagem' + (avisoDeItemSolto ? ' montagem--alerta' : '')}>
+          <h3 className="montagem__titulo">Novo item</h3>
+
+          {avisoDeItemSolto && (
+            <div className="aviso aviso--atencao" role="alert">
+              <Icone nome="alerta" className="aviso__icone" />
+              <div>
+                <strong>Este item ainda não está na lista.</strong>
+                <p>
+                  {itemComecadoServe
+                    ? 'Ele não será salvo assim. Adicione à lista ou descarte.'
+                    : 'Falta escolher o item e a quantidade. Complete e adicione, ou descarte.'}
+                </p>
+                <div className="formulario__acoes">
+                  <button
+                    type="button"
+                    className="botao botao--principal"
+                    onClick={adicionarItem}
+                    disabled={!itemComecadoServe}
+                  >
+                    Adicionar à lista
+                  </button>
+                  <button
+                    type="button"
+                    className="botao botao--discreto"
+                    onClick={descartarItemComecado}
+                  >
+                    Descartar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* O seletor sozinho na linha: o rótulo de um material é
+              "00119 — Cimento Portland CP-II-Z-32 saco 50kg (SC)".
+              Em meia largura ele vira reticências, e escolher às
+              cegas num catálogo é como o item errado entra no
+              pedido. */}
+          <Selecao
+            rotulo="Item do catálogo"
+            valor={materialId}
+            aoMudar={setMaterialId}
+            opcoes={materiais.map((m) => ({
+              valor: m.id,
+              rotulo: m.codigoInterno + ' — ' + m.descricao + ' (' + m.unidadeMedida + ')',
+            }))}
+            vazio="Escolha o material ou serviço..."
+            semMarcaOpcional
+          />
+
+          {/* Quantidade e preço unitário andam juntos: são a mesma
+              pergunta — quanto, e a quanto. */}
           <div className="formulario__linha">
-            <Selecao
-              rotulo="Item do catálogo"
-              valor={materialId}
-              aoMudar={setMaterialId}
-              opcoes={materiais.map((m) => ({
-                valor: m.id,
-                rotulo: m.codigoInterno + ' — ' + m.descricao + ' (' + m.unidadeMedida + ')',
-              }))}
-              vazio="Escolha o material ou serviço..."
-              semMarcaOpcional
-            />
             <Campo
               rotulo={
                 'Quantidade' + (materialEscolhido ? ' em ' + materialEscolhido.unidadeMedida : '')
@@ -293,6 +405,16 @@ export function NovaSolicitacao({
               exemplo="120"
               desabilitado={!materialId}
               semMarcaOpcional
+            />
+            <Campo
+              rotulo="Valor unitário (R$)"
+              valor={valorEstimado}
+              aoMudar={(v) => setValorEstimado(mascaraDinheiro(v))}
+              aoSair={() => setValorEstimado(dinheiroCompleto(valorEstimado))}
+              modoTeclado="decimal"
+              exemplo="R$ 34,00"
+              desabilitado={!materialId}
+              ajuda="Serve para calcular quem precisa aprovar."
             />
           </div>
 
@@ -314,15 +436,6 @@ export function NovaSolicitacao({
                       : 'Este item não tem linha sugerida no cadastro.'
                   }
                   desabilitado={!obraId}
-                />
-                <Campo
-                  rotulo="Valor unitário estimado (R$)"
-                  valor={valorEstimado}
-                  aoMudar={(v) => setValorEstimado(mascaraDinheiro(v))}
-                  aoSair={() => setValorEstimado(dinheiroCompleto(valorEstimado))}
-                  modoTeclado="decimal"
-                  exemplo="R$ 34,00"
-                  ajuda="Serve para calcular quem precisa aprovar."
                 />
               </div>
 
@@ -354,107 +467,50 @@ export function NovaSolicitacao({
             </>
           )}
 
-          <div className="formulario__acoes">
-            <button
-              type="button"
-              className="botao botao--secundario"
-              onClick={adicionarItem}
-              disabled={!materialId || !quantidade || Number(quantidade) <= 0}
-            >
-              + Adicionar item à solicitação
-            </button>
-          </div>
-        </Cartao>
-      </section>
-
-      {/* ---------------- Itens já adicionados ---------------- */}
-      {itens.length > 0 && (
-        <section className="secao">
-          <Cartao semEspaco>
-            <TabelaArea>
-              <table className="tabela">
-                <caption className="apenas-leitor-tela">Itens desta solicitação</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Código</th>
-                    <th scope="col">Item</th>
-                    <th scope="col">Un.</th>
-                    <th scope="col" className="numero">Qtd.</th>
-                    <th scope="col" className="numero">Valor estimado</th>
-                    <th scope="col">
-                      <span className="apenas-leitor-tela">Ações</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itens.map((i) => (
-                    <tr key={i.chave}>
-                      <th scope="row" className="mono">
-                        {i.material.codigoInterno}
-                      </th>
-                      <td>
-                        {i.material.descricao}
-                        {i.descricaoComplementar && (
-                          <small className="linha-extra">{i.descricaoComplementar}</small>
-                        )}
-                      </td>
-                      <td className="mono">{i.material.unidadeMedida}</td>
-                      <td className="numero">{formatarQuantidade(i.quantidade)}</td>
-                      <td className="numero">
-                        {i.valorEstimado !== null
-                          ? dinheiro(i.quantidade * i.valorEstimado)
-                          : '—'}
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="botao botao--discreto"
-                          onClick={() => removerItem(i.chave)}
-                        >
-                          Remover
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row" colSpan={4}>
-                      Total estimado
-                    </th>
-                    <td className="numero destaque">{dinheiro(total)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </TabelaArea>
-          </Cartao>
-        </section>
-      )}
-
-      <section className="secao">
-        <Cartao className="formulario" titulo="Antes de salvar">
-          <Campo
-            rotulo="Observações gerais"
-            valor={observacoes}
-            aoMudar={setObservacoes}
-            exemplo="Acesso ao canteiro apenas por caminhão pequeno"
-          />
-
-          {itens.length === 0 && (
-            <div className="aviso aviso--atencao">
-              <Icone nome="alerta" className="aviso__icone" />
-              <div>
-                <strong>Adicione pelo menos um item.</strong>
-                <p>Uma solicitação sem itens não pode ser salva.</p>
-              </div>
+          {/* Some enquanto o aviso está na tela: ele já traz o mesmo
+              botão, e dois "Adicionar à lista" a dez centímetros um do
+              outro fazem a pessoa procurar a diferença entre eles. */}
+          {!avisoDeItemSolto && (
+            <div className="formulario__acoes formulario__acoes--fim">
+              <button
+                type="button"
+                className="botao botao--secundario"
+                onClick={adicionarItem}
+                disabled={!itemComecadoServe}
+              >
+                Adicionar à lista
+              </button>
             </div>
           )}
+        </div>
 
-          {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
+        {itens.length > 0 && (
+          <p className="total-da-solicitacao">
+            <span>Total estimado</span>
+            <strong>{dinheiro(total)}</strong>
+          </p>
+        )}
 
-        </Cartao>
-        </section>
+        {/* ---------------- Antes de salvar ---------------- */}
+        <Campo
+          rotulo="Observações gerais"
+          valor={observacoes}
+          aoMudar={setObservacoes}
+          exemplo="Acesso ao canteiro apenas por caminhão pequeno"
+          ajuda="Um recado para quem vai comprar. Vale para a solicitação inteira."
+        />
+
+        {itens.length === 0 && !temItemComecado && (
+          <div className="aviso aviso--atencao">
+            <Icone nome="alerta" className="aviso__icone" />
+            <div>
+              <strong>Adicione pelo menos um item.</strong>
+              <p>Uma solicitação sem itens não pode ser salva.</p>
+            </div>
+          </div>
+        )}
+
+        {erro && <ErroFormulario mensagem={erro} detalhes={detalhes} />}
       </form>
     </Modal>
   );
