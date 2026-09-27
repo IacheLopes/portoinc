@@ -289,13 +289,16 @@ a:hover { text-decoration-thickness: 2px; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Um indicador cujo valor e TEXTO, e nao numero: "quem aprova"
-   e uma frase. Sem isto ela sairia no tamanho do numero. */
-.indicador__texto {
-  font-size: var(--txt-md);
-  font-weight: var(--peso-medio);
-  line-height: var(--linha-normal);
-}
+/* Havia aqui um `.indicador__texto`, para quando o valor do
+   indicador fosse FRASE e não número. Não funcionava e não podia
+   funcionar: encolher a letra do <span> não encolhe a altura da
+   linha, que é do bloco de fora — cada linha da frase reservava
+   49,6px (2rem × 1,55) para 24,8px de texto, e a frase saía com o
+   dobro de espaço entre as linhas.
+
+   O caso que existia era o "Quem aprova" da solicitação, e ele
+   virou componente próprio (QuemAprova.tsx). Indicador voltou a ser
+   só para número, que é para o que ele foi feito. */
 
 .indicador__rodape {
   margin-top: var(--esp-2);
@@ -949,16 +952,6 @@ a.indicador--clicavel:focus-visible {
 }
 
 @media (max-width: 640px) {
-  /* Indicador que carrega FRASE, e não número, ocupa a linha inteira.
-
-     Em duas colunas sobram ~165px: "Basta a assinatura de uma destas
-     funções: Gestor de obra" quebrava em seis linhas, com meia tela
-     vazia ao lado. Quem declara isso é a tela, com `largura="cheia"`,
-     porque só ela sabe o que vai dentro. */
-  .grade > .indicador--cheio {
-    grid-column: 1 / -1;
-  }
-
   /* ----------------------------------------------------------
      O rodapé da tabela no modo cartão
 

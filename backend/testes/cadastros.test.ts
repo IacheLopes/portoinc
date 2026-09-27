@@ -520,8 +520,9 @@ describe('Limites de alçada', () => {
         r.corpo.explicacao.includes(caso.contem),
         'R$ ' + caso.valor + ' deveria envolver ' + caso.contem,
       );
+      // Pelo CAMPO, e não pela redação da frase.
       assert.equal(
-        r.corpo.explicacao.includes('TODAS'),
+        r.corpo.regra.exigeTodas,
         caso.todas,
         'R$ ' + caso.valor + ': regra de assinatura errada',
       );
@@ -537,14 +538,16 @@ describe('Limites de alçada', () => {
     const exato = await chamar('/api/alcadas/simular?valor=2000', { token: admin });
 
     assert.equal(antes.corpo.encontrada, true);
-    assert.ok(
-      !antes.corpo.explicacao.includes('TODAS'),
+    assert.equal(
+      antes.corpo.regra.exigeTodas,
+      false,
       'R$ 1.999,99 é da faixa de rotina, que basta uma assinatura',
     );
 
     assert.equal(exato.corpo.encontrada, true, 'o teto não pode ficar sem faixa');
-    assert.ok(
-      exato.corpo.explicacao.includes('TODAS'),
+    assert.equal(
+      exato.corpo.regra.exigeTodas,
+      true,
       'R$ 2.000,00 já é da faixa de valor médio, que exige todas',
     );
   });

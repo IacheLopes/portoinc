@@ -18,7 +18,7 @@ import {
   buscarSolicitacao, enviarSolicitacao, cancelarSolicitacao, baixarPdf,
   ROTULO_SITUACAO, COR_SITUACAO, dataBr, dataHoraBr,
   ROTULO_DECISAO,
-  type Solicitacao, type SituacaoSolicitacao, type Decisao,
+  type Solicitacao, type SituacaoSolicitacao, type Decisao, type ResumoDaAlcada,
 } from '../../servicos/solicitacoes';
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
@@ -28,6 +28,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro } from '../../componentes/Estado';
 import { PainelDecisao } from '../../componentes/PainelDecisao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
+import { QuemAprova } from '../../componentes/QuemAprova';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
@@ -38,7 +39,7 @@ export function DetalheSolicitacao() {
   const { usuario, pode } = useAutenticacao();
 
   const [dados, setDados] = useState<Solicitacao | null>(null);
-  const [aprovacao, setAprovacao] = useState<{ explicacao: string } | null>(null);
+  const [aprovacao, setAprovacao] = useState<ResumoDaAlcada | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [impedimentos, setImpedimentos] = useState<string[]>([]);
@@ -116,9 +117,13 @@ export function DetalheSolicitacao() {
 
   // Funcoes que EU tenho e que esta solicitacao exige, descontando
   // as que eu ja assinei.
+  // Pelo CÓDIGO. Comparava pelo nome ("Gestor de obra") com uma
+  // lista de códigos ("GESTOR_OBRA"), então não descontava nada:
+  // quem tinha duas das funções exigidas era convidado a assinar
+  // outra vez com a que já tinha assinado.
   const jaAssineiCom = dados.aprovacoes
     .filter((a) => a.usuario === usuario?.nome)
-    .map((a) => a.funcao);
+    .map((a) => a.funcaoCodigo);
 
   const minhasFuncoesUteis = (usuario?.funcoes ?? []).filter(
     (f) => dados.funcoesExigidas.includes(f),
@@ -179,20 +184,20 @@ export function DetalheSolicitacao() {
           <Indicador
             titulo="Total estimado"
             valor={dinheiro(dados.totalEstimado)}
-            detalhe={dados.itens.length + ' item(ns)'}
+            detalhe={dados.itens.length === 1 ? '1 item' : dados.itens.length + ' itens'}
           />
           <Indicador
             titulo="Precisa até"
             valor={dataBr(dados.dataDesejada)}
             detalhe={dados.enviadaEm ? 'Enviada em ' + dataBr(dados.enviadaEm) : 'Ainda não enviada'}
           />
-          <Indicador
-            titulo="Quem aprova"
-            largura="cheia"
-            valor={<span className="indicador__texto">{aprovacao?.explicacao ?? '—'}</span>}
-            detalhe="Calculado pelo valor total e pelas faixas de alçada"
-          />
         </div>
+
+        {/* Fora da grade de indicadores de propósito: indicador é
+            NÚMERO, e isto é uma lista de gente que assina. Estava
+            dentro, herdando altura de linha de número, e a frase
+            saía com o dobro do espaço entre as linhas. */}
+        <QuemAprova alcada={aprovacao} solicitacao={dados} />
 
         {dados.justificativa && (
           <Cartao titulo="Justificativa" className="respiro-acima">

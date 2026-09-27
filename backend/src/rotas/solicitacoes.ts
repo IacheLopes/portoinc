@@ -14,7 +14,7 @@ import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
 import {
   podeEditar, podeIrPara, conferirParaEnvio, calcularTotalEstimado,
-  acharFaixa, explicarAprovacao, formatarNumero,
+  acharFaixa, explicarAprovacao, resumoDaAlcada, formatarNumero,
   type Situacao, type FaixaAlcada,
 } from '../servicos/solicitacao.js';
 import { gerarPdfSolicitacao } from '../servicos/pdf-solicitacao.js';
@@ -170,6 +170,13 @@ function formatar(s: SolicitacaoCompleta) {
       observacao: a.observacao,
       usuario: a.usuario.nome,
       funcao: a.funcao.nome,
+      // O nome é para LER; o código é para COMPARAR. Só ia o nome, e
+      // a tela comparava esse nome com a lista de funções exigidas,
+      // que é de códigos — nunca batia. Efeito: quem tem duas das
+      // funções exigidas (a conta DEV tem todas) era convidado a
+      // assinar de novo com a função que já tinha assinado, e só
+      // descobria no clique, com o servidor recusando.
+      funcaoCodigo: a.funcao.codigo,
       criadaEm: a.criadaEm,
     })),
     eventos: s.eventos.map((e) => ({
@@ -287,10 +294,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
 
       return {
         solicitacao: dados,
-        aprovacao: {
-          faixa: faixa ? faixa.descricao : null,
-          explicacao: explicarAprovacao(faixa),
-        },
+        aprovacao: resumoDaAlcada(faixa),
       };
     },
   );
@@ -570,7 +574,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
 
       return {
         solicitacao: formatar(completa),
-        aprovacao: { faixa: faixa?.descricao ?? null, explicacao: explicarAprovacao(faixa) },
+        aprovacao: resumoDaAlcada(faixa),
       };
     },
   );

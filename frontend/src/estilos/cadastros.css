@@ -298,6 +298,149 @@ input[type='file'].campo__entrada {
 .especificacao p { margin-top: var(--esp-1); color: var(--texto-secundario); }
 
 /* ------------------------------------------------------------
+   Quem aprova
+
+   Uma LISTA de funções que assinam, e não uma frase. Ver o
+   componente QuemAprova.tsx para o porquê — em resumo, isto morava
+   dentro do cartão de indicador, que reserva altura de linha para
+   número de 2rem, e a frase saía com o dobro de espaço entre as
+   linhas.
+
+   Três colunas: a marca (fixa), o nome da função (estica) e o
+   estado (o que precisar). O nome estica porque é a coluna que o
+   olho percorre; o estado fica encostado à direita, onde se lê em
+   diagonal para saber o que falta.
+   ------------------------------------------------------------ */
+.quem-aprova {
+  margin-top: var(--esp-4);
+  padding: var(--esp-5);
+  background: var(--fundo-elevado);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-xl);
+  box-shadow: var(--sombra-1);
+}
+
+.quem-aprova__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--esp-4);
+}
+
+/* Mesmo tamanho e cor do rótulo do indicador ao lado: os três
+   cartões do topo têm de parecer da mesma família, mesmo com este
+   sendo outro componente. */
+.quem-aprova__titulo {
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  color: var(--texto-secundario);
+}
+
+/* A lista NÃO acompanha a largura do cartão.
+
+   Em 1440px o cartão tem 1130px, e com o estado encostado na borda
+   direita sobravam 900px entre "Gestor de obra" e "aguardando" — o
+   olho perdia a ligação entre os dois. Medido na foto de 27/09/2026.
+   Em 36rem o par continua sendo um par, e ainda cabe o caso mais
+   comprido: "devolveu para revisão · Engenheiro Teste". */
+.quem-aprova__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 36rem;
+}
+
+.quem-aprova__linha {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto;
+  align-items: baseline;
+  gap: var(--esp-3);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.quem-aprova__linha:first-child { padding-top: 0; }
+.quem-aprova__linha:last-child { border-bottom: none; padding-bottom: 0; }
+
+.quem-aprova__marca {
+  justify-self: center;
+  line-height: 1;
+  color: var(--texto-secundario);
+}
+
+/* A cor é REFORÇO, nunca o recado: a palavra ao lado do nome já diz
+   "assinou" ou "reprovou" por extenso. */
+.quem-aprova__linha--assinou .quem-aprova__marca { color: var(--sucesso-texto); }
+.quem-aprova__linha--reprovou .quem-aprova__marca { color: var(--erro-texto); }
+.quem-aprova__linha--devolveu .quem-aprova__marca { color: var(--atencao-texto); }
+
+.quem-aprova__funcao {
+  font-size: var(--txt-md);
+  font-weight: var(--peso-medio);
+  /* O indicador aperta -0,02em, que serve para número e atrapalha
+     em nome próprio. Aqui a letra respira. */
+  letter-spacing: 0;
+}
+
+.quem-aprova__estado {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+.quem-aprova__quem {
+  color: var(--texto);
+  font-weight: var(--peso-medio);
+}
+
+.quem-aprova__criterio {
+  margin: var(--esp-4) 0 0;
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--borda);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  line-height: var(--linha-normal);
+}
+
+/* Nenhuma faixa cobre o valor: não há lista, e o problema é de
+   configuração — não desta compra. */
+.quem-aprova--sem-faixa { border-left: 4px solid var(--atencao-texto); }
+
+.quem-aprova__vazio {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0;
+  font-size: var(--txt-md);
+  color: var(--atencao-texto);
+}
+
+/* No celular a linha vira duas: nome em cima, estado embaixo. Em
+   393px, "devolveu para revisão · Engenheiro Teste" ao lado do nome
+   deixava ~90px para cada um. */
+@media (max-width: 480px) {
+  .quem-aprova {
+    padding: var(--esp-4);
+  }
+
+  .quem-aprova__linha {
+    grid-template-columns: 1.25rem 1fr;
+    gap: var(--esp-2) var(--esp-3);
+  }
+
+  .quem-aprova__estado {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+/* ------------------------------------------------------------
    Linha do tempo do histórico
    ------------------------------------------------------------ */
 .linha-tempo {

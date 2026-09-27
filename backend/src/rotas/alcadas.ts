@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoObrigatorio } from '../servicos/util.js';
 import { reaisBr } from '../servicos/util.js';
+import { explicarAprovacao } from '../servicos/solicitacao.js';
 
 const esquemaRegra = z.object({
   descricao: textoObrigatorio(3, 'A descrição'),
@@ -190,15 +191,16 @@ export async function rotasAlcadas(app: FastifyInstance) {
       };
     }
 
-    const funcoes = regra.funcoes.map((f) => f.funcao);
+    // A frase sai do MESMO lugar que a da solicitação. Estava
+    // escrita duas vezes, e o simulador ia acabar dizendo uma coisa
+    // e a solicitação outra na hora em que alguém mexesse em uma só.
+    const regraFormatada = formatar(regra);
 
     return {
       valor,
       encontrada: true,
-      regra: formatar(regra),
-      explicacao: regra.exigeTodas
-        ? 'Precisa da assinatura de TODAS estas funções: ' + funcoes.map((f) => f.nome).join(', ') + '.'
-        : 'Basta a assinatura de uma destas funções: ' + funcoes.map((f) => f.nome).join(', ') + '.',
+      regra: regraFormatada,
+      explicacao: explicarAprovacao(regraFormatada),
     };
   });
 

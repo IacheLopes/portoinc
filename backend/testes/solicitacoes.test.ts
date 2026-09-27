@@ -291,15 +291,29 @@ describe('Envio e alçada', () => {
 
     assert.equal(r.status, 200);
     assert.ok(r.corpo.aprovacao.explicacao.includes('Gestor de obra'));
-    assert.ok(!r.corpo.aprovacao.explicacao.includes('TODAS'));
+    // Pelo CAMPO, e não pela redação. Isto olhava a palavra "TODAS"
+    // na frase; quando a frase mudou, a prova caiu sem que a regra
+    // tivesse mudado nada — e, pior, teria passado se a frase
+    // continuasse certa com a regra errada.
+    assert.equal(r.corpo.aprovacao.exigeTodas, false);
+    assert.deepEqual(
+      r.corpo.aprovacao.funcoes.map((f: { codigo: string }) => f.codigo),
+      ['GESTOR_OBRA'],
+    );
   });
 
   it('compra média exige as duas assinaturas', async () => {
     const id = await criarComValor(7500);
     const r = await chamar('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST', token: bras });
 
-    assert.ok(r.corpo.aprovacao.explicacao.includes('TODAS'));
+    assert.equal(r.corpo.aprovacao.exigeTodas, true);
     assert.ok(r.corpo.aprovacao.explicacao.includes('Engenheiro'));
+
+    // A tela monta a LISTA com isto: sem código, ela não consegue
+    // marcar quem já assinou; sem nome, não tem o que escrever.
+    const funcoes = r.corpo.aprovacao.funcoes as Array<{ codigo: string; nome: string }>;
+    assert.equal(funcoes.length, 2);
+    assert.ok(funcoes.every((f) => f.codigo && f.nome));
   });
 
   it('compra alta sobe para o fundador', async () => {

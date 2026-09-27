@@ -553,9 +553,11 @@ Em vez de escolher um número e escondê-lo no código, o limite virou **configu
 
 | Valor | Resposta do sistema |
 |---|---|
-| R$ 800 | Basta a assinatura de uma destas funções: Gestor de obra |
-| R$ 7.500 | Precisa da assinatura de TODAS estas funções: Gestor de obra, Engenheiro |
-| R$ 42.000 | Basta a assinatura de uma destas funções: Fundador |
+| R$ 800 | Precisa de 1 assinatura: Gestor de obra. |
+| R$ 7.500 | Precisa de 2 assinaturas: Gestor de obra e Engenheiro. |
+| R$ 42.000 | Precisa de 1 assinatura: Fundador. |
+
+A conjunção é a regra inteira: **e** quer dizer que as duas assinam; **ou** quer dizer que qualquer uma das duas resolve.
 
 Há também botões de atalho com valores comuns.
 
@@ -706,11 +708,27 @@ Clique em **Abrir** na lista. Ela mostra:
 
 ## "Quem aprova" antes de enviar
 
-Este cartão é útil de verdade. Ele mostra, **antes** de você enviar:
+Este cartão é útil de verdade. Ele mostra, **antes** de você enviar, a lista de quem assina — uma linha por função:
 
-> *"Precisa da assinatura de TODAS estas funções: Gestor de obra, Engenheiro."*
+```
+Quem aprova                       ⓘ Todas precisam assinar
+
+○  Gestor de obra                            aguardando
+○  Engenheiro                                aguardando
+
+Pelo valor de R$ 6.880,00 — faixa "Compras de valor médio".
+```
 
 Assim você já sabe a quem cobrar, e entende por que um pedido de R$ 42 mil demora mais que um de R$ 800.
+
+Depois que a solicitação é enviada, o mesmo cartão vai marcando quem já assinou — você não precisa descer até a tabela de Assinaturas para saber o que falta:
+
+```
+✓  Gestor de obra                assinou  Marcos Teste
+○  Engenheiro                                aguardando
+```
+
+A última linha diz **por qual valor** e **por qual faixa** a conta foi feita. Se alguma coisa parecer errada na exigência de assinaturas, é ali que você descobre o motivo.
 
 ## Enviar para aprovação
 

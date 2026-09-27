@@ -608,15 +608,23 @@ codigo;descricao;unidade;quantidade;valor_unitario
 1. Abra uma solicitação com total em torno de **R$ 800**
 2. Olhe o cartão **Quem aprova**
 
-**Esperado:** *"Basta a assinatura de uma destas funções: Gestor de obra."*
+**Esperado:** uma linha com **Gestor de obra** e, ao lado, *aguardando*.
 
 3. Abra outra com total em torno de **R$ 7.500**
 
-**Esperado:** *"Precisa da assinatura de TODAS estas funções: Gestor de obra, Engenheiro."*
+**Esperado:** **duas** linhas — Gestor de obra e Engenheiro — e a etiqueta *Todas precisam assinar*.
 
 4. E outra acima de **R$ 15.000**
 
 **Esperado:** aparece o **Fundador**.
+
+5. Em todas elas, leia a última linha do cartão
+
+**Esperado:** *"Pelo valor de R$ …, faixa …"* — com o valor e o nome da faixa que pegou. Se o nome da faixa não bater com o valor, a alçada está configurada errada.
+
+6. Confira que **nenhuma palavra do cartão está em CAIXA ALTA**
+
+O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resquício de uma versão antiga.
 
 > Isso bate exatamente com o simulador do caso CT-30. Se divergir, uma das duas telas está errada.
 
@@ -686,7 +694,7 @@ codigo;descricao;unidade;quantidade;valor_unitario
 
 **Esperado:** pelo menos dois registros, do mais recente para o mais antigo:
 
-- *"Enviada para aprovação. Basta a assinatura de..."* — com seu nome e a hora
+- *"Enviada para aprovação. Precisa de ... assinatura(s): ..."* — com seu nome e a hora
 - *"Solicitação aberta como rascunho."* — com seu nome e a hora
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>

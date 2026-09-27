@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 import {
   podeIrPara, podeEditar, formatarNumero, conferirParaEnvio,
-  calcularTotalEstimado, acharFaixa, explicarAprovacao,
+  calcularTotalEstimado, acharFaixa, explicarAprovacao, resumoDaAlcada,
   type FaixaAlcada,
 } from './solicitacao.js';
 
@@ -198,9 +198,82 @@ describe('Escolha da faixa de alçada', () => {
     assert.equal(acharFaixa(4000, sobrepostas)?.id, '2');
   });
 
+  /** Uma faixa em que dá para escolher QUEM assina — precisa de 2+. */
+  const ESCOLHA: FaixaAlcada[] = [
+    {
+      id: '9', descricao: 'Qualquer diretor', valorMinimo: 0, valorMaximo: null,
+      exigeTodas: false,
+      funcoes: [
+        { codigo: 'ENGENHEIRO', nome: 'Engenheiro' },
+        { codigo: 'FUNDADOR', nome: 'Fundador' },
+      ],
+    },
+  ];
+
   it('explica em português quem precisa assinar', () => {
-    assert.ok(explicarAprovacao(acharFaixa(800, FAIXAS)).includes('Basta a assinatura'));
-    assert.ok(explicarAprovacao(acharFaixa(7500, FAIXAS)).includes('TODAS'));
+    assert.equal(
+      explicarAprovacao(acharFaixa(800, FAIXAS)),
+      'Precisa de 1 assinatura: Gestor de obra.',
+    );
+    assert.equal(
+      explicarAprovacao(acharFaixa(7500, FAIXAS)),
+      'Precisa de 2 assinaturas: Gestor de obra e Engenheiro.',
+    );
+    assert.equal(
+      explicarAprovacao(acharFaixa(800, ESCOLHA)),
+      'Basta 1 assinatura: Engenheiro ou Fundador.',
+    );
     assert.ok(explicarAprovacao(null).includes('Nenhuma faixa'));
+  });
+
+  it('não grita: a frase não tem palavra em maiúsculas', () => {
+    // "TODAS" era o único CAPS LOCK da interface. Se voltar, esta
+    // prova cai — inclusive se voltar em outra faixa qualquer.
+    for (const valor of [800, 7500, 60000]) {
+      const frase = explicarAprovacao(acharFaixa(valor, FAIXAS));
+      assert.equal(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}\b/.test(frase), false, frase);
+    }
+  });
+
+  it('usa "e" para todas e "ou" para uma só', () => {
+    // A conjunção É a regra. Trocar uma pela outra inverte o
+    // significado sem mudar mais nada na frase.
+    const todas = explicarAprovacao(acharFaixa(7500, FAIXAS));
+    assert.ok(todas.includes(' e '), todas);
+    assert.equal(todas.includes(' ou '), false, todas);
+
+    const qualquer = explicarAprovacao(acharFaixa(800, ESCOLHA));
+    assert.ok(qualquer.includes(' ou '), qualquer);
+  });
+
+  it('com uma função só, não fala em quantidade de opções', () => {
+    const umaFuncao: FaixaAlcada[] = [
+      { ...FAIXAS[0], exigeTodas: true, funcoes: [{ codigo: 'GESTOR_OBRA', nome: 'Gestor de obra' }] },
+    ];
+
+    assert.equal(
+      explicarAprovacao(acharFaixa(100, umaFuncao)),
+      'Precisa de 1 assinatura: Gestor de obra.',
+    );
+  });
+
+  it('resumoDaAlcada entrega a lista que a tela precisa', () => {
+    const r = resumoDaAlcada(acharFaixa(7500, FAIXAS));
+
+    assert.equal(r.exigeTodas, true);
+    assert.equal(r.funcoes.length, 2);
+    // Código E nome: o código casa com quem já assinou, o nome
+    // aparece na tela. Faltando um dos dois, a lista não fecha.
+    assert.ok(r.funcoes.every((f) => f.codigo && f.nome));
+    assert.ok(r.faixa);
+  });
+
+  it('resumoDaAlcada sem faixa não quebra a tela', () => {
+    const r = resumoDaAlcada(null);
+
+    assert.deepEqual(r.funcoes, []);
+    assert.equal(r.faixa, null);
+    assert.equal(r.exigeTodas, false);
+    assert.ok(r.explicacao.includes('Nenhuma faixa'));
   });
 });

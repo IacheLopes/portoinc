@@ -138,15 +138,70 @@ export function acharFaixa(valor: number, faixas: FaixaAlcada[]): FaixaAlcada | 
   return candidatas.reduce((a, b) => (b.valorMinimo > a.valorMinimo ? b : a));
 }
 
-/** Frase pronta explicando quem precisa assinar. */
+/** "a, b e c" — a última vem com a conjunção, como se fala. */
+function juntar(nomes: string[], conjuncao: 'e' | 'ou'): string {
+  if (nomes.length <= 1) return nomes[0] ?? '';
+
+  return nomes.slice(0, -1).join(', ') + ' ' + conjuncao + ' ' + nomes[nomes.length - 1];
+}
+
+/**
+ * Quem precisa assinar, em dado estruturado.
+ *
+ * A tela de detalhe monta uma LISTA de funções com isto, e risca as
+ * que já assinaram. Antes só existia a frase pronta aqui embaixo, e
+ * frase não dá para riscar: a caixa "Quem aprova" dizia a mesma coisa
+ * antes e depois da primeira assinatura.
+ *
+ * Também serve antes de enviar, quando `funcoesExigidas` na
+ * solicitação ainda está vazio — a fotografia da alçada só é tirada
+ * no envio.
+ */
+export interface ResumoDaAlcada {
+  /** Nome da faixa que pegou o valor. `null` = nenhuma cobre. */
+  faixa: string | null;
+  /** Todas as funções assinam, ou basta uma delas. */
+  exigeTodas: boolean;
+  funcoes: Array<{ codigo: string; nome: string }>;
+  /** A mesma coisa em uma frase, para onde só cabe texto. */
+  explicacao: string;
+}
+
+export function resumoDaAlcada(faixa: FaixaAlcada | null): ResumoDaAlcada {
+  return {
+    faixa: faixa ? faixa.descricao : null,
+    exigeTodas: faixa ? faixa.exigeTodas : false,
+    funcoes: faixa ? faixa.funcoes.map((f) => ({ codigo: f.codigo, nome: f.nome })) : [],
+    explicacao: explicarAprovacao(faixa),
+  };
+}
+
+/**
+ * Frase pronta explicando quem precisa assinar.
+ *
+ * Vai no histórico da solicitação e no aviso logo depois de enviar —
+ * lugares onde só cabe texto corrido.
+ *
+ * Dizia "TODAS", em maiúsculas. Era o único CAPS LOCK da interface, e
+ * maiúscula não informa: quem lê rápido vê o grito e continua sem
+ * saber quantas assinaturas são. O número e a conjunção fazem o
+ * trabalho sem gritar — "e" quer dizer as duas, "ou" quer dizer
+ * qualquer uma delas.
+ */
 export function explicarAprovacao(faixa: FaixaAlcada | null): string {
   if (!faixa) {
     return 'Nenhuma faixa de alçada cobre este valor. Avise o administrador.';
   }
 
-  const nomes = faixa.funcoes.map((f) => f.nome).join(', ');
+  const nomes = faixa.funcoes.map((f) => f.nome);
+
+  // Com uma função só, "todas" e "basta uma" querem dizer a mesma
+  // coisa. Escrever "1 de 1" ali seria burocracia.
+  if (nomes.length === 1) {
+    return 'Precisa de 1 assinatura: ' + nomes[0] + '.';
+  }
 
   return faixa.exigeTodas
-    ? 'Precisa da assinatura de TODAS estas funções: ' + nomes + '.'
-    : 'Basta a assinatura de uma destas funções: ' + nomes + '.';
+    ? 'Precisa de ' + nomes.length + ' assinaturas: ' + juntar(nomes, 'e') + '.'
+    : 'Basta 1 assinatura: ' + juntar(nomes, 'ou') + '.';
 }

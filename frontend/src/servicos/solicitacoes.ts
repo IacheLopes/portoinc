@@ -77,7 +77,10 @@ export interface Solicitacao {
     decisao: string;
     observacao: string | null;
     usuario: string;
+    /** Nome da função, para ler na tabela. */
     funcao: string;
+    /** Código da função, para comparar com `funcoesExigidas`. */
+    funcaoCodigo: string;
     criadaEm: string;
   }>;
   eventos: Array<{
@@ -112,10 +115,29 @@ export function listarSolicitacoes(filtros: {
   );
 }
 
+/**
+ * Quem precisa assinar esta compra.
+ *
+ * O servidor manda a LISTA de funções, e não só a frase pronta: a
+ * tela de detalhe risca as que já assinaram, e para isso precisa dos
+ * códigos. A frase continua vindo porque o histórico e o aviso de
+ * "enviada" só têm lugar para texto.
+ *
+ * Vale antes de enviar, quando `funcoesExigidas` na solicitação ainda
+ * está vazio — a fotografia da alçada só é tirada no envio.
+ */
+export interface ResumoDaAlcada {
+  /** Nome da faixa que pegou o valor. `null` = nenhuma cobre. */
+  faixa: string | null;
+  exigeTodas: boolean;
+  funcoes: Array<{ codigo: string; nome: string }>;
+  explicacao: string;
+}
+
 export function buscarSolicitacao(id: string) {
   return chamar<{
     solicitacao: Solicitacao;
-    aprovacao: { faixa: string | null; explicacao: string };
+    aprovacao: ResumoDaAlcada;
   }>('/api/solicitacoes/' + id);
 }
 
@@ -142,7 +164,7 @@ export function trocarItens(id: string, itens: ItemParaEnviar[]) {
 export function enviarSolicitacao(id: string) {
   return chamar<{
     solicitacao: Solicitacao;
-    aprovacao: { faixa: string | null; explicacao: string };
+    aprovacao: ResumoDaAlcada;
   }>('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST' });
 }
 

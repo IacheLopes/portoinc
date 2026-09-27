@@ -38,20 +38,17 @@ interface Props {
    */
   para?: string;
   tom?: TomDoIndicador;
-  /**
-   * Ocupa a linha inteira no celular.
-   *
-   * Este componente e para NUMERO. Quando o valor e uma frase — "Basta
-   * a assinatura de uma destas funcoes: Gestor de obra" — em duas
-   * colunas sobram ~165px e ela quebra em seis linhas, com meia tela
-   * vazia do lado. Medido em 393px, 2026-09-24.
-   */
-  largura?: 'cheia';
 }
 
-export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro', largura }: Props) {
+// Havia aqui uma prop `largura="cheia"`, para o indicador que
+// carregasse uma FRASE ocupar a linha inteira no celular. O único
+// caso era o "Quem aprova" da solicitação, e frase dentro deste
+// componente nunca ia funcionar: a altura da linha aqui é a de um
+// número de 2rem, e o texto saía com o dobro de espaço entre as
+// linhas. Virou componente próprio (QuemAprova.tsx), e este voltou a
+// ser só para número.
+export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro' }: Props) {
   const classes = 'indicador'
-    + (largura === 'cheia' ? ' indicador--cheio' : '')
     + (tom !== 'neutro' ? ' indicador--' + tom : '')
     + (para ? ' indicador--clicavel' : '');
 
