@@ -67,18 +67,19 @@ export function NotasFiscais() {
   /** A nota sendo corrigida. `null` = lançando uma nova. */
   const [corrigindo, setCorrigindo] = useState<Nota | null>(null);
   /**
-   * Esconder as canceladas da lista.
+   * Qual situação a lista mostra. Vazio = as que estão de pé.
    *
-   * Elas NÃO são apagadas: nota fiscal é trilha, e o registro de
-   * que existiu e foi cancelada vale numa auditoria. Mas param de
-   * poluir a lista do dia a dia.
+   * Nota cancelada NÃO é apagada — é trilha, e o registro de que
+   * existiu vale numa auditoria. Mas sai da frente por padrão: no
+   * dia a dia ninguém quer ver nota morta.
    */
-  const [mostrarCanceladas, setMostrarCanceladas] = useState(false);
+  const [filtroSituacao, setFiltroSituacao] = useState('');
 
   const canceladas = notas.filter((n) => n.situacao === 'CANCELADA').length;
-  /** O que a tabela mostra. As canceladas ficam guardadas atrás do filtro. */
-  const naTela = mostrarCanceladas
-    ? notas
+
+  /** O que a tabela mostra. */
+  const naTela = filtroSituacao
+    ? notas.filter((n) => n.situacao === filtroSituacao)
     : notas.filter((n) => n.situacao !== 'CANCELADA');
   const [numero, setNumero] = useState('');
   const [serie, setSerie] = useState('1');
@@ -424,18 +425,25 @@ export function NotasFiscais() {
               </>
             )}
 
-            {canceladas > 0 && (
-              <label className="opcao opcao--filtro">
-                <input
-                  type="checkbox"
-                  checked={mostrarCanceladas}
-                  onChange={(e) => setMostrarCanceladas(e.target.checked)}
-                />
-                <span>
-                  Mostrar {canceladas === 1 ? 'a cancelada' : 'as ' + canceladas + ' canceladas'}
-                </span>
-              </label>
-            )}
+            {/* O MESMO filtro das outras listas: um <Selecao> na
+                barra de ações, como em Cotações, Pedidos e
+                Solicitações.
+
+                Eu tinha inventado uma caixa de marcar aqui — um
+                controle que não existe em nenhuma outra tela do
+                sistema. O dono reparou na hora. Filtro de lista tem
+                uma cara só nesta casa. */}
+            <Selecao
+              rotulo="Situação"
+              valor={filtroSituacao}
+              aoMudar={setFiltroSituacao}
+              semMarcaOpcional
+              vazio="Em aberto"
+              opcoes={Object.entries(ROTULO_NOTA).map(([valor, rotulo]) => ({
+                valor,
+                rotulo,
+              }))}
+            />
           </div>
         )}
 
@@ -615,7 +623,7 @@ export function NotasFiscais() {
             }
             descricao={
               canceladas > 0
-                ? 'As que existem estão canceladas. Marque a caixa acima para vê-las.'
+                ? 'As que existem estão canceladas. Troque a situação acima para vê-las.'
                 : 'Importe o XML que o fornecedor mandou ou digite os dados da nota.'
             }
           />

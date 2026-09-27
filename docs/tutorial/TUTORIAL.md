@@ -1915,7 +1915,7 @@ O segundo caso é o comum. Bloquear para sempre transformaria o engano mais bana
 
 ### Elas somem da lista, não do sistema
 
-Acima da tabela há a caixa **Mostrar as canceladas**. Desmarcada, elas saem da frente; marcada, voltam.
+Na barra de ações há o filtro **Situação**, igual ao das outras listas. Ele começa em *"Em aberto"*, que esconde as canceladas; escolha **Cancelada** para vê-las.
 
 **Nota fiscal não é apagada.** Mesmo errada, o registro de que existiu e foi cancelada vale numa auditoria.
 

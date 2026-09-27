@@ -457,37 +457,12 @@
   cursor: pointer;
 }
 
-/* Uma opção que muda a VISTA, e não que escolhe um valor.
-
-   Sem moldura, e empurrada para a direita da barra de ações. Ela
-   estava com a borda do `.opcao` normal, sozinha numa linha
-   embaixo dos botões — parecia um terceiro botão que não fazia
-   nada, e comia uma altura de tela só para isso.
-
-   A POSIÇÃO diz o que ela é: ação à esquerda, vista à direita.
-   Moldura não precisa. */
-.opcao--filtro {
-  display: inline-flex;
-  margin-left: auto;
-  border: 0;
-  padding-left: 0;
-  padding-right: 0;
-  background: none;
-  color: var(--texto-secundario);
-}
-
-/* No celular a barra quebra e o `margin-left: auto` não empurra
-   nada — ela volta a ser uma linha própria, e aí ganha um traço
-   em cima para não colar nos botões. */
-@media (max-width: 560px) {
-  .opcao--filtro {
-    margin-left: 0;
-    width: 100%;
-    padding-top: var(--esp-2);
-    border-top: 1px solid var(--borda);
-    border-radius: 0;
-  }
-}
+/* Havia aqui um `.opcao--filtro`, uma caixa de marcar para
+   esconder as notas canceladas. Era um controle que NÃO EXISTE em
+   nenhuma outra tela: a casa filtra lista com `<Selecao>` dentro da
+   `.barra-acoes`, como em Cotações, Pedidos e Solicitações.
+   Inventar um segundo jeito de filtrar faz o sistema envelhecer com
+   dois vocabulários. O dono reparou na hora. */
 
 /* Foco visivel na opcao inteira.
 

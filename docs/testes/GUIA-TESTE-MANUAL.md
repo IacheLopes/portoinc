@@ -2081,7 +2081,7 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 5. Olhe a lista
 
-**Esperado:** a cancelada **não aparece**, e acima da tabela há a caixa **"Mostrar as canceladas"**. Marque: ela reaparece.
+**Esperado:** a cancelada **não aparece**, e o filtro **Situação** na barra está em *"Em aberto"*. Troque para **Cancelada**: ela aparece.
 
 > Nota fiscal **não é apagada** — mesmo errada, o registro de que existiu e foi cancelada vale numa auditoria. Ela só sai da frente.
 
