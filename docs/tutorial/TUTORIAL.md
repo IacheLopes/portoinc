@@ -637,6 +637,14 @@ Para cada item:
 
 São dois campos a menos para preencher em cada linha. Você pode trocar a linha do orçamento se aquele pedido for para outra parte da obra.
 
+### Se a obra não tiver orçamento cadastrado
+
+A lista de linhas vem vazia e o modal avisa em amarelo, logo abaixo da obra. **Leia o aviso**, porque o estrago é silencioso e definitivo:
+
+> Os itens nascem **sem vínculo** com o orçamento, e **não dá para amarrar depois** — nem corrigindo o rascunho pelo Editar, nem criando o orçamento em seguida. A compra fica fora do relatório de orçado x realizado para sempre.
+
+Dá para seguir assim: só aquele relatório fica cego a esta compra. Mas se for para vincular, alguém com perfil de **Administrador** precisa cadastrar o orçamento em **Cadastros → Obras** **antes** de você salvar a solicitação.
+
 ### Campos que ajudam o comprador
 
 | Campo | Para que serve |
@@ -708,33 +716,42 @@ Clique em **Abrir** na lista. Ela mostra:
 
 ## "Quem aprova" antes de enviar
 
-Este cartão é útil de verdade. Ele mostra, **antes** de você enviar, a lista de quem assina — uma linha por função:
+É o terceiro cartão da fileira, ao lado de *Total estimado* e *Precisa até*. Ele responde, **antes** de você enviar, quantas assinaturas a compra precisa e de quem:
 
 ```
-Quem aprova                       ⓘ Todas precisam assinar
-
-○  Gestor de obra                            aguardando
-○  Engenheiro                                aguardando
-
-Pelo valor de R$ 6.880,00 — faixa "Compras de valor médio".
+Quem aprova
+2 assinaturas
+Gestor de obra e Engenheiro
 ```
+
+A conjunção é a regra inteira: **e** quer dizer que as duas assinam; **ou** quer dizer que qualquer uma resolve.
+
+Depois de enviada, o mesmo cartão acompanha o andamento — você não precisa descer até a tabela de Assinaturas para saber o que falta:
+
+| O cartão diz | Quer dizer |
+|---|---|
+| `2 assinaturas` · Gestor de obra e Engenheiro | ninguém assinou ainda |
+| `1 de 2 assinaturas` · Falta assinar: Engenheiro | metade do caminho |
+| `Assinada` · Por Marcos Teste e Ana Teste | completo |
+| `Reprovada` · Por Ana Teste, Engenheiro | parou aqui |
+| `Devolvida` · Por Marcos Teste, Gestor de obra | voltou para revisão |
+| `Sem faixa` | **nenhuma faixa de alçada cobre este valor** — avise o administrador |
 
 Assim você já sabe a quem cobrar, e entende por que um pedido de R$ 42 mil demora mais que um de R$ 800.
 
-Depois que a solicitação é enviada, o mesmo cartão vai marcando quem já assinou — você não precisa descer até a tabela de Assinaturas para saber o que falta:
+## Corrigir um rascunho
 
-```
-✓  Gestor de obra                assinou  Marcos Teste
-○  Engenheiro                                aguardando
-```
+O botão **✏️ Editar** abre o mesmo formulário da criação, com tudo já preenchido. Dá para trocar obra, prazo, justificativa, observações e os itens.
 
-A última linha diz **por qual valor** e **por qual faixa** a conta foi feita. Se alguma coisa parecer errada na exigência de assinaturas, é ali que você descobre o motivo.
+Ele só aparece para **o autor** e só enquanto a solicitação for **rascunho ou estiver em revisão**.
+
+> **Quando você mais vai precisar dele:** o envio é recusado quando um item de primeira compra está sem especificação técnica. Corrija por aqui e envie de novo — não precisa cancelar e refazer.
 
 ## Enviar para aprovação
 
 O botão **Enviar para aprovação** só aparece para o autor, e só enquanto a solicitação for rascunho ou estiver em revisão.
 
-Depois de enviada, ela **não pode mais ser alterada**. Isso é proposital: o aprovador precisa decidir sobre um documento que não muda embaixo dele.
+Depois de enviada, ela **não pode mais ser alterada** — nem pelo Editar. Isso é proposital: o aprovador precisa decidir sobre um documento que não muda embaixo dele.
 
 ## Baixar o PDF
 
@@ -938,13 +955,19 @@ Os que ainda não foram convidados vêm **pré-marcados** — o caminho normal �
 
 > Se aparecer *"Nenhum fornecedor atende as famílias deste pacote"*, o problema está no cadastro: vá em **Cadastros → Fornecedores** e marque as famílias de cada um.
 
-## Abrir a cotação
+## São dois passos, nesta ordem
 
-O botão **📨 Abrir cotação e convidar** faz três coisas:
+**1. Convidar.** Confira as marcações e clique em **📨 Convidar 2 fornecedores** — o botão azul embaixo da tabela. Eles passam para `Já convidado` e aparecem na seção **Convidados**.
+
+**2. Abrir.** Aí o botão **🔒 Abrir cotação**, no topo, fica disponível.
+
+> Enquanto não houver ninguém convidado, o botão de abrir fica **desligado**, com o motivo escrito ao lado. Não adianta abrir uma cotação que ninguém vai responder.
+
+## O que "abrir" faz
 
 1. Gera um **link único** para cada fornecedor
 2. Marca as solicitações de origem como **Em cotação**
-3. Dispara o aviso pelo WhatsApp
+3. Libera os botões de aviso por WhatsApp e e-mail
 
 > **Enquanto a integração estiver simulada**, o aviso não sai do sistema — ele é apenas registrado. Você mesmo copia o link e manda como quiser.
 

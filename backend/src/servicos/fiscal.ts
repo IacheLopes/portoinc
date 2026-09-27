@@ -11,6 +11,8 @@
 //  não muda nada no resto do sistema.
 // ============================================================
 
+import { isoBr } from './data-br.js';
+
 const CENTAVO = 0.005;
 
 // ------------------------------------------------------------
@@ -302,11 +304,39 @@ export function situacaoVencimento(
 }
 
 /** Quantos dias faltam (negativo = já venceu). Ignora a hora. */
-export function diasAte(vencimento: Date, hoje = new Date()): number {
-  const a = Date.UTC(vencimento.getFullYear(), vencimento.getMonth(), vencimento.getDate());
-  const b = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+/**
+ * O dia que uma DATA-SÓ guarda.
+ *
+ * Vencimento não é um instante, é uma casa do calendário. Ele nasce
+ * de um `<input type="date">`, que vira meia-noite UTC — então o dia
+ * certo é o do UTC, e converter para fuso nenhum: "vence dia 22" é
+ * dia 22 em qualquer lugar do mundo.
+ */
+function diaDoVencimento(data: Date): number {
+  return Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate()) / 86400000;
+}
 
-  return Math.round((a - b) / 86400000);
+/**
+ * O dia de HOJE no calendário de quem lê a tela.
+ *
+ * Aqui é o contrário: "agora" é um instante de verdade, e o dia dele
+ * depende de onde a pessoa está. O container roda em UTC, então
+ * `getDate()` devolvia o dia de Londres.
+ *
+ * Entre 21h e meia-noite de Brasília o UTC já virou o dia seguinte,
+ * e uma conta que vencia amanhã aparecia como "vence hoje" — alarme
+ * falso toda noite, na tela que existe para avisar prazo. Os testes
+ * passavam no container (UTC) e caíam na máquina de quem desenvolve
+ * (São Paulo); foi assim que o defeito apareceu, em 27/09/2026.
+ */
+function diaDeHoje(instante: Date): number {
+  const [ano, mes, dia] = isoBr(instante).split('-').map(Number);
+
+  return Date.UTC(ano, mes - 1, dia) / 86400000;
+}
+
+export function diasAte(vencimento: Date, hoje = new Date()): number {
+  return diaDoVencimento(vencimento) - diaDeHoje(hoje);
 }
 
 /** "vence em 5 dias", "venceu há 3 dias", "vence hoje". */

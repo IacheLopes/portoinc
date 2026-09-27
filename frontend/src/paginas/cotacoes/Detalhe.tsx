@@ -167,6 +167,8 @@ export function DetalheCotacao() {
 
   const ehRascunho = dados.situacao === 'RASCUNHO';
   const aberto = dados.situacao === 'ABERTO';
+  /** Ninguém no pacote ainda: não há cotação para abrir. */
+  const semConvidados = dados.convidados.length === 0;
 
   return (
     <>
@@ -222,15 +224,33 @@ export function DetalheCotacao() {
         </div>
 
         <div className="barra-acoes" style={{ marginTop: 'var(--esp-4)' }}>
+          {/* "Abrir cotação", e não "Abrir cotação e convidar".
+
+              Ele não convida: exige que os fornecedores JÁ estejam
+              no pacote. Prometer no rótulo uma coisa que o botão não
+              faz é o que levava a pessoa a clicar aqui primeiro e
+              tomar uma recusa.
+
+              E fica desligado enquanto não houver ninguém convidado,
+              com o motivo escrito ao lado — recusar depois do clique
+              é pior que não deixar clicar. */}
           {ehRascunho && (
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => void abrir()}
-              disabled={ocupado}
-            >
-              {ocupado ? 'Abrindo...' : <><Icone nome="enviado" /> Abrir cotação e convidar</>}
-            </button>
+            <>
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => void abrir()}
+                disabled={ocupado || semConvidados}
+              >
+                {ocupado ? 'Abrindo...' : <><Icone nome="cadeado" /> Abrir cotação</>}
+              </button>
+
+              {semConvidados && (
+                <p className="campo__ajuda">
+                  Convide pelo menos um fornecedor abaixo para poder abrir.
+                </p>
+              )}
+            </>
           )}
 
           {aberto && (
@@ -378,15 +398,40 @@ export function DetalheCotacao() {
                 </TabelaArea>
               </Cartao>
 
+              {/* PRINCIPAL, e não secundário.
+
+                  Este é o primeiro passo do fluxo, e estava em botão
+                  secundário embaixo da tabela, enquanto o segundo
+                  passo ("Abrir cotação") estava em botão principal
+                  azul lá em cima. O olho vai no azul: o dono marcou
+                  os dois fornecedores, clicou em cima e levou
+                  "Convide pelo menos um fornecedor" — uma recusa que
+                  parece mentira para quem acabou de marcar dois.
+
+                  E o verbo agora é o mesmo do começo ao fim:
+                  "Convidar" na coluna, "Convidar" no botão. Dizia
+                  "Adicionar ao pacote", enquanto o botão de cima
+                  dizia "e convidar" sem convidar nada. */}
               <div className="barra-acoes" style={{ marginTop: 'var(--esp-3)' }}>
                 <button
                   type="button"
-                  className="botao botao--secundario"
+                  className="botao botao--principal"
                   onClick={() => void convidar()}
                   disabled={ocupado || marcados.length === 0}
                 >
-                  Adicionar {marcados.length} ao pacote
+                  <Icone nome="enviado" />{' '}
+                  {marcados.length === 0
+                    ? 'Convidar fornecedores'
+                    : marcados.length === 1
+                      ? 'Convidar 1 fornecedor'
+                      : 'Convidar ' + marcados.length + ' fornecedores'}
                 </button>
+
+                <p className="campo__ajuda">
+                  {marcados.length === 0
+                    ? 'Marque quem deve receber o pedido de cotação.'
+                    : 'Nada é enviado agora. Eles entram no pacote, e o envio é o passo seguinte.'}
+                </p>
               </div>
             </>
           )}

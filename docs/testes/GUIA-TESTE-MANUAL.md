@@ -603,6 +603,54 @@ codigo;descricao;unidade;quantidade;valor_unitario
 
 ---
 
+## CT-45a · Corrigir o rascunho recusado
+
+> Continua do CT-45, com o envio bloqueado na tela. **Este é o teste mais importante da tela de solicitação**: sem ele, o único caminho era cancelar e refazer tudo.
+
+1. Clique em **✏️ Editar**
+
+**Esperado:** o modal abre com o título **"Corrigir SOL-000xx"** e **tudo já preenchido** — obra, prazo, justificativa, observações e os itens na lista.
+
+2. Confira que os itens não vieram vazios nem perderam a linha de orçamento
+3. Preencha a **especificação técnica** que faltava
+4. Clique em **Salvar alterações**
+5. Clique em **Enviar para aprovação**
+
+**Esperado:** agora o envio passa.
+
+6. Depois de enviada, procure o botão **Editar**
+
+**Esperado:** ele **sumiu**. Documento em aprovação não muda embaixo de quem vai assinar.
+
+7. Entre com outra conta e abra um rascunho que não seja seu
+
+**Esperado:** sem botão **Editar** — só o autor corrige.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-45b · Obra sem orçamento avisa antes
+
+1. Em **Cadastros → Obras**, cadastre uma obra nova e **não** cadastre orçamento nela
+2. Abra uma solicitação e escolha essa obra
+
+**Esperado:** aparece um aviso amarelo logo abaixo da obra, dizendo que ela **não tem orçamento cadastrado**, que os itens ficarão **sem vínculo** e que **isso não tem volta**.
+
+3. Confira que o botão **Salvar** continua funcionando
+
+**Esperado:** é aviso, não trava. Obra sem orçamento é problema de cadastro, não desta compra — travar aqui pararia a obra inteira.
+
+4. Volte, escolha a **OB-001** (que tem orçamento)
+
+**Esperado:** o aviso some e a lista de linhas aparece preenchida.
+
+> **Por que esse aviso existe:** na validação de 27/09/2026 a solicitação foi criada antes do orçamento da obra. Os itens ficaram sem vínculo, a compra saiu do relatório de orçado x realizado, e não havia como consertar depois.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-46 · "Quem aprova" aparece antes de enviar
 
 1. Abra uma solicitação com total em torno de **R$ 800**
@@ -1038,11 +1086,17 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 
 ---
 
-## CT-72 · Bloqueio ao abrir sem fornecedor
+## CT-72 · Não dá para abrir sem convidar antes
 
-1. Num pacote em rascunho **sem nenhum convidado**, clique em **📨 Abrir cotação e convidar**
+1. Num pacote em rascunho **sem nenhum convidado**, olhe o botão **🔒 Abrir cotação**
 
-**Esperado:** o sistema recusa e explica que é preciso convidar pelo menos um fornecedor.
+**Esperado:** ele está **desligado**, com a frase *"Convide pelo menos um fornecedor abaixo para poder abrir"* ao lado.
+
+> Antes ele ficava ligado, em azul, no topo — e recusava depois do clique. O dono do sistema marcou dois fornecedores, clicou nele e levou *"Convide pelo menos um fornecedor"*, o que parecia mentira. Recusar depois do clique é pior que não deixar clicar.
+
+2. Confira os nomes dos botões
+
+**Esperado:** o verbo **convidar** aparece num lugar só — no botão azul embaixo da tabela. O botão do topo diz apenas **Abrir cotação**, sem prometer convidar ninguém.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -1050,8 +1104,9 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 
 ## CT-73 · Abrir a cotação
 
-1. Convide os fornecedores sugeridos
-2. Clique em **📨 Abrir cotação e convidar**
+1. Confira que os sugeridos já vêm **pré-marcados** e que o botão diz **📨 Convidar 2 fornecedores**
+2. Clique nele — eles passam para `Já convidado` e aparece a seção **Convidados**
+3. Agora clique em **🔒 Abrir cotação**, no topo
 
 **Esperado:**
 
@@ -1974,6 +2029,12 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 1. Olhe a coluna **Vencimento**
 
 **Esperado:** abaixo da data, uma frase em português: *vence hoje*, *vence em 30 dias*, *venceu há 3 dias*. A entrada vence **no dia da nota**.
+
+2. **Depois das 21h**, abra a tela de novo e confira uma parcela que vence **amanhã**
+
+**Esperado:** continua dizendo *vence amanhã*.
+
+> **Por que testar à noite:** o servidor roda em UTC, que às 21h de Brasília já virou o dia seguinte. A conta que vencia amanhã aparecia como *vence hoje* — alarme falso toda noite, justamente na tela que existe para avisar prazo. Corrigido em 27/09/2026; a contagem agora usa o calendário de Brasília, dito em voz alta no código.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

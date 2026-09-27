@@ -23,7 +23,10 @@ import {
   quantidade as formatarQuantidade,
   type Obra, type LinhaOrcamento, type Material,
 } from '../../servicos/cadastros';
-import { criarSolicitacao, type ItemParaEnviar } from '../../servicos/solicitacoes';
+import {
+  criarSolicitacao, editarSolicitacao, trocarItens,
+  type ItemParaEnviar, type Solicitacao,
+} from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
 import { Carregando, Erro } from '../../componentes/Estado';
@@ -41,9 +44,22 @@ interface ItemNaTela extends Omit<ItemParaEnviar, 'valorEstimado'> {
 export function NovaSolicitacao({
   aberto,
   aoFechar,
+  editando,
+  aoSalvarEdicao,
 }: {
   aberto: boolean;
   aoFechar: () => void;
+  /**
+   * O rascunho que está sendo corrigido. Ausente = solicitação nova.
+   *
+   * O mesmo modal serve para os dois porque os campos são os mesmos.
+   * Uma segunda tela de edição envelheceria em separado: quem
+   * mexesse num campo aqui esqueceria de mexer lá, e as duas telas
+   * passariam a pedir coisas diferentes para a mesma solicitação.
+   */
+  editando?: Solicitacao;
+  /** Chamado depois de salvar a edição, para a tela recarregar. */
+  aoSalvarEdicao?: () => Promise<void>;
 }) {
   const idForm = useId();
   const navegar = useNavigate();
@@ -51,6 +67,14 @@ export function NovaSolicitacao({
   const [obras, setObras] = useState<Obra[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [linhas, setLinhas] = useState<LinhaOrcamento[]>([]);
+  /**
+   * O orçamento da obra já foi buscado?
+   *
+   * Sem isto não dá para diferenciar "obra sem orçamento" de
+   * "orçamento ainda carregando", e o aviso piscaria na tela toda
+   * vez que alguém trocasse de obra.
+   */
+  const [orcamentoLido, setOrcamentoLido] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erroCarga, setErroCarga] = useState<string | null>(null);
 
@@ -92,6 +116,39 @@ export function NovaSolicitacao({
     void carregar();
   }, [carregar]);
 
+  /**
+   * Traz o rascunho para dentro do formulário.
+   *
+   * Depois do catálogo carregar, e não antes: o item da lista guarda
+   * o material COMPLETO (com a linha padrão e a família), e ele só
+   * existe depois que `materiais` chegou. Sem esperar, a lista de
+   * itens vinha pela metade e a pessoa perdia a linha de orçamento
+   * ao salvar.
+   */
+  useEffect(() => {
+    if (!editando || carregando) return;
+
+    setObraId(editando.obra.id);
+    setJustificativa(editando.justificativa ?? '');
+    setObservacoes(editando.observacoes ?? '');
+    setDataDesejada(editando.dataDesejada ? editando.dataDesejada.slice(0, 10) : '');
+
+    setItens(
+      editando.itens.map((i) => ({
+        chave: chaveLocal(),
+        // Pelo catálogo, que tem o material inteiro. O item da
+        // solicitação carrega só um recorte dele.
+        material: materiais.find((m) => m.id === i.material.id) ?? (i.material as Material),
+        materialId: i.material.id,
+        quantidade: i.quantidade,
+        linhaOrcamentoId: i.linhaOrcamento?.id ?? null,
+        descricaoComplementar: i.descricaoComplementar ?? undefined,
+        especificacaoTecnica: i.especificacaoTecnica ?? undefined,
+        valorEstimado: i.valorEstimado,
+      })),
+    );
+  }, [editando, carregando, materiais]);
+
   // Ao escolher a obra, carregamos o orçamento dela.
   useEffect(() => {
     if (!obraId) {
@@ -100,9 +157,12 @@ export function NovaSolicitacao({
     }
 
     let ativo = true;
+    setOrcamentoLido(false);
     buscarObra(obraId)
       .then((r) => {
-        if (ativo) setLinhas(r.obra.linhas);
+        if (!ativo) return;
+        setLinhas(r.obra.linhas);
+        setOrcamentoLido(true);
       })
       .catch(() => {
         if (ativo) setLinhas([]);
@@ -114,6 +174,23 @@ export function NovaSolicitacao({
   }, [obraId]);
 
   const materialEscolhido = materiais.find((m) => m.id === materialId);
+  const obraEscolhida = obras.find((o) => o.id === obraId);
+
+  /**
+   * A obra escolhida não tem NENHUMA linha de orçamento.
+   *
+   * Merece aviso de verdade, e não uma linha de ajuda miúda, porque
+   * o estrago é silencioso e não tem volta: o item nasce sem vínculo
+   * e nunca mais pode ser amarrado — nem corrigindo o rascunho
+   * depois, porque a linha não existe para ser escolhida. A compra
+   * some do relatório de orçado x realizado, e quem for ler o
+   * relatório meses depois não tem como saber que faltou isto.
+   *
+   * O dono do sistema caiu exatamente nisto em 27/09/2026: criou a
+   * solicitação antes de cadastrar o orçamento da obra, e a tela não
+   * disse nada.
+   */
+  const obraSemOrcamento = Boolean(obraId) && orcamentoLido && linhas.length === 0;
 
   // Quando o item é escolhido, sugerimos a linha de orçamento dele.
   useEffect(() => {
@@ -194,20 +271,39 @@ export function NovaSolicitacao({
     setDetalhes([]);
     setEnviando(true);
 
+    const paraEnviar = itens.map((i) => ({
+      materialId: i.materialId,
+      quantidade: i.quantidade,
+      linhaOrcamentoId: i.linhaOrcamentoId,
+      descricaoComplementar: i.descricaoComplementar,
+      especificacaoTecnica: i.especificacaoTecnica,
+      valorEstimado: i.valorEstimado,
+    }));
+
     try {
+      if (editando) {
+        // Duas chamadas porque o servidor separa cabeçalho de itens.
+        // O cabeçalho primeiro: se a obra mudou, os itens novos já
+        // entram apontando para o orçamento da obra certa.
+        await editarSolicitacao(editando.id, {
+          obraId,
+          justificativa: justificativa || undefined,
+          observacoes: observacoes || undefined,
+          dataDesejada: dataDesejada || undefined,
+        });
+
+        await trocarItens(editando.id, paraEnviar);
+        await aoSalvarEdicao?.();
+        aoFechar();
+        return;
+      }
+
       const r = await criarSolicitacao({
         obraId,
         justificativa: justificativa || undefined,
         observacoes: observacoes || undefined,
         dataDesejada: dataDesejada || undefined,
-        itens: itens.map((i) => ({
-          materialId: i.materialId,
-          quantidade: i.quantidade,
-          linhaOrcamentoId: i.linhaOrcamentoId,
-          descricaoComplementar: i.descricaoComplementar,
-          especificacaoTecnica: i.especificacaoTecnica,
-          valorEstimado: i.valorEstimado,
-        })),
+        itens: paraEnviar,
       });
 
       navegar('/solicitacoes/' + r.solicitacao.id);
@@ -216,7 +312,11 @@ export function NovaSolicitacao({
         setErro(e.message);
         setDetalhes((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
       } else {
-        setErro('Não foi possível criar a solicitação.');
+        setErro(
+          editando
+            ? 'Não foi possível salvar as alterações.'
+            : 'Não foi possível criar a solicitação.',
+        );
       }
       setEnviando(false);
     }
@@ -237,8 +337,12 @@ export function NovaSolicitacao({
     <Modal
       aberto={aberto}
       aoFechar={aoFechar}
-      titulo="Nova solicitação de compra"
-      descricao="Ela nasce como rascunho. Você revisa e só então envia para aprovação."
+      titulo={editando ? 'Corrigir ' + editando.numeroFormatado : 'Nova solicitação de compra'}
+      descricao={
+        editando
+          ? 'Ela continua como rascunho. Nada vai para aprovação até você enviar.'
+          : 'Ela nasce como rascunho. Você revisa e só então envia para aprovação.'
+      }
       temAlteracao={Boolean(obraId || itens.length > 0 || justificativa)}
       acoes={
         <>
@@ -251,7 +355,11 @@ export function NovaSolicitacao({
             className="botao botao--principal"
             disabled={enviando || !obraId || itens.length === 0}
           >
-            {enviando ? 'Salvando...' : 'Salvar como rascunho'}
+            {enviando
+              ? 'Salvando...'
+              : editando
+                ? 'Salvar alterações'
+                : 'Salvar como rascunho'}
           </button>
         </>
       }
@@ -287,6 +395,27 @@ export function NovaSolicitacao({
             ajuda="Ajuda o comprador a priorizar."
           />
         </div>
+
+        {obraSemOrcamento && (
+          <div className="aviso aviso--atencao" role="status">
+            <Icone nome="alerta" className="aviso__icone" />
+            <div>
+              <strong>
+                A obra {obraEscolhida?.codigo} não tem orçamento cadastrado.
+              </strong>
+              <p>
+                Os itens desta solicitação vão ficar <strong>sem vínculo</strong> com o
+                orçamento, e <strong>isso não tem volta</strong>: a compra não aparecerá no
+                relatório de orçado x realizado, nem depois que o orçamento for criado.
+              </p>
+              <p>
+                Dá para seguir assim — só o relatório fica cego a esta compra. Para
+                vincular, alguém com perfil de Administrador precisa cadastrar o
+                orçamento em <strong>Cadastros → Obras</strong> antes de você salvar.
+              </p>
+            </div>
+          </div>
+        )}
 
         <Campo
           rotulo="Justificativa"
@@ -431,9 +560,11 @@ export function NovaSolicitacao({
                   }))}
                   vazio={obraId ? 'Sem vínculo com o orçamento' : 'Escolha a obra primeiro'}
                   ajuda={
-                    materialEscolhido.codigoLinhaPadrao
-                      ? 'Sugerida pelo cadastro: ' + materialEscolhido.codigoLinhaPadrao
-                      : 'Este item não tem linha sugerida no cadastro.'
+                    obraSemOrcamento
+                      ? 'Esta obra não tem orçamento cadastrado.'
+                      : materialEscolhido.codigoLinhaPadrao
+                        ? 'Sugerida pelo cadastro: ' + materialEscolhido.codigoLinhaPadrao
+                        : 'Este item não tem linha sugerida no cadastro.'
                   }
                   desabilitado={!obraId}
                 />

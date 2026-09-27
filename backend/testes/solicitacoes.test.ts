@@ -348,6 +348,91 @@ describe('Envio e alçada', () => {
     assert.equal(edicao.status, 409);
   });
 
+  // ----------------------------------------------------------
+  //  Corrigir um rascunho
+  //
+  //  O servidor sabia fazer isto desde a Etapa 3 e NENHUMA tela
+  //  chamava. Quem digitasse errado só podia cancelar e refazer —
+  //  o dono do sistema refez a mesma solicitação duas vezes em
+  //  27/09/2026, por causa de uma especificação técnica em branco.
+  //
+  //  A tela agora chama, então as rotas precisam de prova própria:
+  //  se elas quebrarem, o botão volta a não existir na prática.
+  // ----------------------------------------------------------
+
+  it('o autor corrige o cabeçalho do rascunho', async () => {
+    const id = await criarComValor(500);
+
+    const r = await chamar('/api/solicitacoes/' + id, {
+      metodo: 'PATCH',
+      token: bras,
+      corpo: { justificativa: 'Corrigida depois', observacoes: 'Entrar pelo portão 2' },
+    });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.solicitacao.justificativa, 'Corrigida depois');
+    assert.equal(r.corpo.solicitacao.observacoes, 'Entrar pelo portão 2');
+  });
+
+  it('corrigir os itens é o que destrava o envio recusado', async () => {
+    // O caso real: item de primeira compra sem especificação
+    // técnica. O envio é recusado, e sem editar não havia saída.
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST',
+      token: bras,
+      corpo: { obraId, itens: [{ materialId: cimentoId, quantidade: 10 }] },
+    });
+    const id = criada.corpo.solicitacao.id;
+
+    const troca = await chamar('/api/solicitacoes/' + id + '/itens', {
+      metodo: 'POST',
+      token: bras,
+      corpo: {
+        itens: [
+          {
+            materialId: cimentoId,
+            quantidade: 10,
+            especificacaoTecnica: 'CP-II-Z-32, saco 50kg, ABNT NBR 16697.',
+          },
+        ],
+      },
+    });
+
+    assert.equal(troca.status, 200);
+
+    const envio = await chamar('/api/solicitacoes/' + id + '/enviar', {
+      metodo: 'POST',
+      token: bras,
+    });
+
+    assert.equal(envio.status, 200, 'com a especificação preenchida, o envio passa');
+  });
+
+  it('o cabeçalho também trava depois de enviada', async () => {
+    const id = await criarComValor(500);
+    await chamar('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST', token: bras });
+
+    const r = await chamar('/api/solicitacoes/' + id, {
+      metodo: 'PATCH',
+      token: bras,
+      corpo: { justificativa: 'tarde demais' },
+    });
+
+    assert.equal(r.status, 409);
+  });
+
+  it('ninguém corrige o rascunho de outra pessoa', async () => {
+    const id = await criarComValor(500);
+
+    const r = await chamar('/api/solicitacoes/' + id, {
+      metodo: 'PATCH',
+      token: gilson,
+      corpo: { justificativa: 'não é minha' },
+    });
+
+    assert.equal(r.status, 404, 'nem diz que existe');
+  });
+
   it('registra o histórico de tudo que aconteceu', async () => {
     const id = await criarComValor(300);
     await chamar('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST', token: bras });

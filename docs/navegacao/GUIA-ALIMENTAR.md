@@ -33,7 +33,7 @@ escolher. **Não está quebrado: é que ainda não existe material.**
 | 3º | Cadastros → **Fornecedores** | **2, no mínimo** |
 | 4º | Cadastros → **Obras** | 1 basta |
 | 5º | Cadastros → **Limites de alçada** | 1 faixa |
-| 6º | A obra → **Orçamento** | opcional |
+| 6º | A obra → **Orçamento** | **antes da 1ª compra** |
 
 Depois disso o sistema está pronto para uma compra de verdade.
 
@@ -178,7 +178,7 @@ nenhuma, a solicitação é criada mas **ninguém consegue aprovar**.
 
 ---
 
-## 6º · Orçamento da obra (opcional)
+## 6º · Orçamento da obra
 
 **Para que serve:** dizer quanto a obra tinha previsto gastar em cada coisa. É o que
 alimenta o relatório **Orçado × realizado**.
@@ -193,8 +193,18 @@ alimenta o relatório **Orçado × realizado**.
 | **Quantidade prevista** | `800` |
 | **Valor unitário (R$)** | `51,00` |
 
-> **Pule se estiver com pressa.** Todo o resto do sistema funciona sem orçamento. Só o
-> relatório Orçado × realizado fica vazio.
+> ⚠️ **Não pule, e faça ANTES da primeira solicitação.**
+>
+> Este passo já disse "pule se estiver com pressa", e estava errado. O item de uma
+> solicitação escolhe a linha do orçamento **na hora em que é criado**. Se a obra não
+> tiver orçamento naquele momento, ele nasce **sem vínculo** — e **não dá para amarrar
+> depois**, nem criando o orçamento em seguida, nem corrigindo o rascunho.
+>
+> Aquela compra some do relatório Orçado × realizado para sempre, e quem for ler o
+> relatório meses depois não tem como saber que faltou isto.
+>
+> O modal de solicitação avisa quando a obra está sem orçamento. O aviso existe porque
+> o defeito aconteceu de verdade, na validação de 27/09/2026.
 
 ---
 

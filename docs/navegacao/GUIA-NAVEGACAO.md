@@ -114,6 +114,10 @@ abra o pedido → **Enviar para aprovação**.
 > **Dica:** se você clicar em **Salvar como rascunho**, o pedido fica guardado e ninguém
 > vê. Ele só entra na fila quando você clica em **Enviar para aprovação**.
 
+> **Errou alguma coisa?** Abra o pedido e clique em **✏️ Editar**. Ele abre o mesmo
+> formulário com tudo já preenchido, e você corrige o que quiser. Só funciona
+> **enquanto for rascunho** — depois de enviado, não muda mais.
+
 **Se você abrir um pedido, vai ver:**
 - Os materiais e o total
 - **Quem precisa assinar** e quem já assinou

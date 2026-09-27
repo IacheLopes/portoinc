@@ -222,12 +222,56 @@ describe('Parcelas', () => {
 });
 
 describe('Vencimento', () => {
-  const hoje = new Date('2026-09-22T15:00:00');
+  // Com o Z, e não sem.
+  //
+  // "2026-09-22T15:00:00" sem fuso é lido como hora LOCAL, então o
+  // mesmo teste media coisas diferentes no container (UTC) e na
+  // máquina de quem desenvolve (São Paulo). Prova que muda de
+  // resultado conforme onde roda não prova nada.
+  //
+  // 15:00 UTC é meio-dia em Brasília: dia 22 nos dois lugares.
+  const hoje = new Date('2026-09-22T15:00:00Z');
 
-  it('conta os dias ignorando a hora', () => {
-    assert.equal(diasAte(new Date('2026-09-22T01:00:00'), hoje), 0);
-    assert.equal(diasAte(new Date('2026-09-25T23:00:00'), hoje), 3);
-    assert.equal(diasAte(new Date('2026-09-19T01:00:00'), hoje), -3);
+  it('conta os dias pela casa do calendário', () => {
+    // Vencimento é data-só: vem de um <input type="date">, que vira
+    // meia-noite UTC. É assim que ele existe no banco.
+    assert.equal(diasAte(new Date('2026-09-22'), hoje), 0);
+    assert.equal(diasAte(new Date('2026-09-25'), hoje), 3);
+    assert.equal(diasAte(new Date('2026-09-19'), hoje), -3);
+  });
+
+  it('às 22h de Brasília ainda é hoje, com o servidor em UTC', () => {
+    // O DEFEITO, travado.
+    //
+    // 21/09 às 22h em São Paulo é 22/09 às 01h em UTC. O container
+    // roda em UTC, e `hoje.getDate()` devolvia 22 — então a conta que
+    // vencia no dia 22 aparecia como "vence hoje" quando ainda
+    // faltava um dia inteiro. Alarme falso toda noite.
+    const dezEDuasDaNoiteEmBrasilia = new Date('2026-09-22T01:00:00Z');
+
+    assert.equal(
+      descreverVencimento(new Date('2026-09-22'), dezEDuasDaNoiteEmBrasilia),
+      'vence amanhã',
+    );
+    assert.equal(
+      descreverVencimento(new Date('2026-09-21'), dezEDuasDaNoiteEmBrasilia),
+      'vence hoje',
+    );
+    assert.equal(
+      situacaoVencimento(new Date('2026-09-21'), 'ABERTA', dezEDuasDaNoiteEmBrasilia),
+      'VENCE_HOJE',
+    );
+  });
+
+  it('o mesmo instante dá o mesmo dia em qualquer fuso da máquina', () => {
+    // Se alguém voltar a usar getDate() em vez do fuso declarado,
+    // esta prova cai numa das duas máquinas — e é o que a gente quer:
+    // que caia perto de quem mexeu, e não em produção.
+    const meioDiaEmBrasilia = new Date('2026-09-22T15:00:00Z');
+    const umaDaManhaEmBrasilia = new Date('2026-09-22T04:00:00Z');
+
+    assert.equal(diasAte(new Date('2026-09-22'), meioDiaEmBrasilia), 0);
+    assert.equal(diasAte(new Date('2026-09-22'), umaDaManhaEmBrasilia), 0);
   });
 
   it('classifica a parcela', () => {

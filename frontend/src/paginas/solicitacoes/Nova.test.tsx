@@ -1,9 +1,20 @@
 // ============================================================
-//  Abrir solicitação de compra
+//  O modal de solicitação
 //
-//  É a tela mais usada do sistema e a que mais dói errar: uma
-//  solicitação duplicada vira cotação duplicada, pedido duplicado
-//  e material chegando duas vezes na obra.
+//  Ele faz duas coisas: abrir solicitação nova e corrigir um
+//  rascunho. As duas passam pelo mesmo formulário de propósito —
+//  uma segunda tela só para editar envelheceria em separado.
+//
+//  O que está provado aqui saiu de defeito real, achado pelo dono
+//  do sistema na validação de 27/09/2026:
+//
+//   · Corrigir rascunho não existia na tela. O servidor sabia
+//     fazer desde a Etapa 3 e nenhum botão chamava. Um erro de
+//     digitação obrigava a cancelar e refazer do zero.
+//
+//   · A obra sem orçamento não avisava nada. Os itens nasciam sem
+//     vínculo, a compra sumia do relatório de orçado x realizado, e
+//     isso NÃO TEM VOLTA — nem criando o orçamento depois.
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -11,11 +22,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { NovaSolicitacao } from './Nova';
-import {
-  listarObras, buscarObra, listarMateriais,
-  type Obra, type ObraDetalhe, type Material,
-} from '../../servicos/cadastros';
-import { criarSolicitacao } from '../../servicos/solicitacoes';
+import { listarObras, buscarObra, listarMateriais } from '../../servicos/cadastros';
+import { editarSolicitacao, trocarItens, type Solicitacao } from '../../servicos/solicitacoes';
 
 vi.mock('../../servicos/cadastros', async (original) => ({
   ...(await original<typeof import('../../servicos/cadastros')>()),
@@ -27,199 +35,158 @@ vi.mock('../../servicos/cadastros', async (original) => ({
 vi.mock('../../servicos/solicitacoes', async (original) => ({
   ...(await original<typeof import('../../servicos/solicitacoes')>()),
   criarSolicitacao: vi.fn(),
+  editarSolicitacao: vi.fn(),
+  trocarItens: vi.fn(),
 }));
 
-const OBRA: Obra = {
-  id: 'o1', codigo: 'OB-01', nome: 'Residencial Aurora',
-  cliente: null, endereco: null, cidade: null, uf: null,
-  situacao: 'EM_ANDAMENTO', dataInicio: null, dataPrevisaoFim: null,
-  ativa: true, linhas: 1, almoxarifados: 1,
-};
+const obras = vi.mocked(listarObras);
+const obra = vi.mocked(buscarObra);
+const materiais = vi.mocked(listarMateriais);
+const editar = vi.mocked(editarSolicitacao);
+const trocar = vi.mocked(trocarItens);
 
-const MATERIAL: Material = {
-  id: 'm1', codigoInterno: 'CIM-001', descricao: 'Cimento Portland CP-II',
+const OBRA = { id: 'ob1', codigo: 'OB-001', nome: 'Torre A', ativa: true };
+
+const CIMENTO = {
+  id: 'm1', codigoInterno: '00001', descricao: 'Cimento CP-II-Z-32',
   tipo: 'MATERIAL', marca: null, gtin: null, normaTecnica: null,
-  unidadeMedida: 'SC', pontoPedido: null, codigoLinhaPadrao: null,
-  ativo: true, familia: { id: 'f1', codigo: '03', nome: 'Estrutura' },
+  unidadeMedida: 'SC', pontoPedido: null, codigoLinhaPadrao: null, ativo: true,
+  familia: { id: 'f1', codigo: 'CIM', nome: 'Cimento' },
 };
 
-const OBRA_DETALHE = { ...OBRA, linhas: [], almoxarifados: [] } as unknown as ObraDetalhe;
+const LINHA = { id: 'l1', codigo: '03.01.001', descricao: 'Cimento Portland' };
 
-beforeEach(() => {
-  vi.mocked(listarObras).mockReset().mockResolvedValue({ obras: [OBRA] });
-  vi.mocked(listarMateriais).mockReset().mockResolvedValue({ materiais: [MATERIAL] });
-  vi.mocked(buscarObra).mockReset().mockResolvedValue({ obra: OBRA_DETALHE });
-  vi.mocked(criarSolicitacao).mockReset();
-});
+/** Um rascunho pronto para ser corrigido. */
+function rascunho(): Solicitacao {
+  return {
+    id: 's1',
+    numeroFormatado: 'SOL-00007',
+    situacao: 'RASCUNHO',
+    obra: { id: 'ob1', codigo: 'OB-001', nome: 'Torre A', cliente: null },
+    justificativa: 'Laje do 3º pavimento',
+    observacoes: 'Portão 2',
+    dataDesejada: '2026-10-10T00:00:00.000Z',
+    totalEstimado: 520,
+    funcoesExigidas: [],
+    exigeTodas: false,
+    aprovacoes: [],
+    itens: [
+      {
+        id: 'i1', ordem: 1,
+        material: CIMENTO,
+        linhaOrcamento: LINHA,
+        quantidade: 10,
+        unidadeMedida: 'SC',
+        descricaoComplementar: null,
+        especificacaoTecnica: null,
+        primeiraCompra: true,
+        valorEstimado: 52,
+        valorTotal: 520,
+      },
+    ],
+  } as unknown as Solicitacao;
+}
 
-function montar() {
+function montar(props: Partial<Parameters<typeof NovaSolicitacao>[0]> = {}) {
   render(
     <MemoryRouter>
-      <NovaSolicitacao aberto aoFechar={() => {}} />
+      <NovaSolicitacao aberto aoFechar={() => {}} {...props} />
     </MemoryRouter>,
   );
-  return userEvent.setup();
 }
 
-/** Preenche o mínimo para a solicitação poder ser salva. */
-async function preencher(usuario: ReturnType<typeof userEvent.setup>) {
-  await usuario.selectOptions(await screen.findByLabelText(/obra/i), 'o1');
-  await usuario.selectOptions(screen.getByLabelText(/item do catálogo/i), 'm1');
-  await usuario.type(screen.getByLabelText(/quantidade/i), '10');
-  // O botão chamava-se "+ Adicionar item à solicitação". Encurtou para
-  // "Adicionar à lista" em 27/09/2026: o que se adiciona já está dito no
-  // título da caixa ("Novo item"), e o botão passou a dizer PARA ONDE vai.
-  await usuario.click(screen.getByRole('button', { name: /adicionar à lista/i }));
-}
+beforeEach(() => {
+  vi.clearAllMocks();
+  obras.mockResolvedValue({ obras: [OBRA] } as never);
+  materiais.mockResolvedValue({ materiais: [CIMENTO] } as never);
+  obra.mockResolvedValue({ obra: { ...OBRA, linhas: [LINHA] } } as never);
+  editar.mockResolvedValue({} as never);
+  trocar.mockResolvedValue({} as never);
+});
 
-describe('o que impede de salvar', () => {
-  it('sem obra e sem item, o botão de salvar fica travado', async () => {
+describe('Corrigir um rascunho', () => {
+  it('abre com o que já estava preenchido', async () => {
+    montar({ editando: rascunho() });
+
+    expect(await screen.findByDisplayValue('Laje do 3º pavimento')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Portão 2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2026-10-10')).toBeInTheDocument();
+  });
+
+  it('traz os itens que já estavam na lista', async () => {
+    montar({ editando: rascunho() });
+
+    // Sem isto a correção apagaria os itens: o formulário abriria
+    // vazio e o Salvar mandaria uma lista vazia para o servidor.
+    expect(await screen.findByText(/Cimento CP-II-Z-32/)).toBeInTheDocument();
+  });
+
+  it('o título e o botão dizem que é correção, não criação', async () => {
+    montar({ editando: rascunho() });
+
+    expect(await screen.findByText(/Corrigir SOL-00007/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument();
+  });
+
+  it('salva o cabeçalho e os itens, e avisa a tela', async () => {
+    const aoSalvarEdicao = vi.fn().mockResolvedValue(undefined);
+    montar({ editando: rascunho(), aoSalvarEdicao });
+
+    await screen.findByDisplayValue('Laje do 3º pavimento');
+    await userEvent.click(screen.getByRole('button', { name: /Salvar alterações/ }));
+
+    await waitFor(() => expect(editar).toHaveBeenCalledWith('s1', expect.objectContaining({
+      obraId: 'ob1',
+      justificativa: 'Laje do 3º pavimento',
+    })));
+
+    // O item volta COM a linha de orçamento. Perder isso aqui seria
+    // reintroduzir o "Sem vínculo" pela porta dos fundos.
+    expect(trocar).toHaveBeenCalledWith('s1', [
+      expect.objectContaining({ materialId: 'm1', quantidade: 10, linhaOrcamentoId: 'l1' }),
+    ]);
+
+    expect(aoSalvarEdicao).toHaveBeenCalled();
+  });
+
+  it('sem rascunho, é criação: nada de "Corrigir"', async () => {
     montar();
 
-    const salvar = await screen.findByRole('button', { name: /salvar como rascunho/i });
-    expect(salvar).toBeDisabled();
-  });
-
-  it('só com a obra escolhida ainda não dá para salvar: falta o item', async () => {
-    const usuario = montar();
-
-    await usuario.selectOptions(await screen.findByLabelText(/obra/i), 'o1');
-
-    expect(screen.getByRole('button', { name: /salvar como rascunho/i })).toBeDisabled();
-  });
-
-  it('com obra e um item, libera', async () => {
-    const usuario = montar();
-    await preencher(usuario);
-
-    expect(screen.getByRole('button', { name: /salvar como rascunho/i })).toBeEnabled();
+    expect(await screen.findByText(/Nova solicitação de compra/)).toBeInTheDocument();
+    expect(screen.queryByText(/Corrigir/)).not.toBeInTheDocument();
   });
 });
 
-describe('clicar duas vezes', () => {
-  it('não cria duas solicitações', async () => {
-    // O clique duplo no canteiro de obras não é hipótese: é rotina.
-    let liberar = () => {};
-    vi.mocked(criarSolicitacao).mockReturnValue(
-      new Promise((ok) => {
-        liberar = () => ok({ solicitacao: { id: 'nova' } } as never);
-      }),
-    );
+describe('Obra sem orçamento', () => {
+  it('avisa, e diz que não tem volta', async () => {
+    obra.mockResolvedValue({ obra: { ...OBRA, linhas: [] } } as never);
+    montar({ editando: rascunho() });
 
-    const usuario = montar();
-    await preencher(usuario);
-
-    const salvar = screen.getByRole('button', { name: /salvar como rascunho/i });
-    await usuario.click(salvar);
-
-    // Enquanto salva, o botão avisa e não aceita outro clique.
-    await waitFor(() => expect(screen.getByRole('button', { name: /salvando/i })).toBeDisabled());
-    await usuario.click(screen.getByRole('button', { name: /salvando/i }));
-
-    expect(criarSolicitacao).toHaveBeenCalledTimes(1);
-
-    liberar();
-  });
-});
-
-describe('quando a API recusa', () => {
-  it('mostra o motivo e destrava o botão para tentar de novo', async () => {
-    const { ErroApi } = await import('../../servicos/api');
-    vi.mocked(criarSolicitacao).mockRejectedValue(
-      new ErroApi('A obra não tem orçamento cadastrado.'),
-    );
-
-    const usuario = montar();
-    await preencher(usuario);
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-
-    expect(await screen.findByText('A obra não tem orçamento cadastrado.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /salvar como rascunho/i })).toBeEnabled();
-  });
-});
-
-// ============================================================
-//  O item digitado não pode sumir
-//
-//  Achado pelo dono em 27/09/2026, montando a primeira solicitação
-//  de verdade. Ele pediu dois itens — cimento e argamassa — e o
-//  total deu R$ 5.200 em vez de R$ 6.880.
-//
-//  A argamassa estava digitada na área de montagem, mas ele clicou
-//  em Salvar sem clicar em "Adicionar à lista" antes. O formulário
-//  salvou com um item e jogou fora o outro, em silêncio.
-//
-//  Perda de dado — e do tipo que passa despercebida: a solicitação
-//  é criada, parece certa, e o material que falta só aparece quando
-//  não chega na obra.
-//
-//  Nenhuma régua pega isto: não é aparência, é fluxo.
-// ============================================================
-describe('item começado e não adicionado', () => {
-  /** Preenche a área de montagem SEM clicar em "Adicionar à lista". */
-  async function comItemSolto(usuario: ReturnType<typeof userEvent.setup>) {
-    await usuario.selectOptions(await screen.findByLabelText(/obra/i), 'o1');
-    await usuario.selectOptions(screen.getByLabelText(/item do catálogo/i), 'm1');
-    await usuario.type(screen.getByLabelText(/quantidade/i), '60');
-  }
-
-  it('o Salvar para, em vez de jogar fora', async () => {
-    const usuario = montar();
-    await preencher(usuario);
-    await comItemSolto(usuario);
-
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-
-    expect(criarSolicitacao).not.toHaveBeenCalled();
-    expect(await screen.findByText(/ainda não está na lista/i)).toBeInTheDocument();
+    expect(await screen.findByText(/não tem orçamento cadastrado/)).toBeInTheDocument();
+    expect(screen.getByText(/não tem volta/)).toBeInTheDocument();
   });
 
-  it('dá as duas saídas: adicionar ou descartar', async () => {
-    const usuario = montar();
-    await preencher(usuario);
-    await comItemSolto(usuario);
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
+  it('não avisa quando a obra TEM orçamento', async () => {
+    montar({ editando: rascunho() });
 
-    // Nada é decidido pelo sistema: quem escolhe é quem digitou.
-    expect(screen.getByRole('button', { name: /adicionar à lista/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /descartar/i })).toBeEnabled();
+    await screen.findByDisplayValue('Laje do 3º pavimento');
+    expect(screen.queryByText(/não tem orçamento cadastrado/)).not.toBeInTheDocument();
   });
 
-  it('adicionando pelo aviso, os DOIS itens são salvos', async () => {
-    vi.mocked(criarSolicitacao).mockResolvedValue({
-      solicitacao: { id: 's1' },
-    } as never);
+  it('não avisa antes de escolher a obra', async () => {
+    montar();
 
-    const usuario = montar();
-    await preencher(usuario);
-    await comItemSolto(usuario);
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-
-    await usuario.click(screen.getByRole('button', { name: /adicionar à lista/i }));
-
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-
-    await waitFor(() => expect(criarSolicitacao).toHaveBeenCalled());
-
-    // É esta a prova: R$ 6.880 em vez de R$ 5.200.
-    const enviado = vi.mocked(criarSolicitacao).mock.calls[0][0];
-    expect(enviado.itens).toHaveLength(2);
+    await screen.findByText(/Nova solicitação de compra/);
+    expect(screen.queryByText(/não tem orçamento cadastrado/)).not.toBeInTheDocument();
   });
 
-  it('descartando, salva só o que estava na lista', async () => {
-    vi.mocked(criarSolicitacao).mockResolvedValue({
-      solicitacao: { id: 's1' },
-    } as never);
+  it('avisar não impede salvar: é aviso, não trava', async () => {
+    // Obra sem orçamento é um problema de cadastro, não desta
+    // compra. Travar aqui deixaria a obra inteira parada.
+    obra.mockResolvedValue({ obra: { ...OBRA, linhas: [] } } as never);
+    montar({ editando: rascunho(), aoSalvarEdicao: vi.fn().mockResolvedValue(undefined) });
 
-    const usuario = montar();
-    await preencher(usuario);
-    await comItemSolto(usuario);
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-    await usuario.click(screen.getByRole('button', { name: /descartar/i }));
-
-    await usuario.click(screen.getByRole('button', { name: /salvar como rascunho/i }));
-
-    await waitFor(() => expect(criarSolicitacao).toHaveBeenCalled());
-    expect(vi.mocked(criarSolicitacao).mock.calls[0][0].itens).toHaveLength(1);
+    await screen.findByText(/não tem orçamento cadastrado/);
+    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeEnabled();
   });
 });

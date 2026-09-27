@@ -26,6 +26,12 @@ const LARGURA = Number(process.argv[3] ?? 1440);
 // `--sem-print` caía nessa posição e virava o e-mail do login.
 const QUARTO = process.argv[4];
 const CONTA = QUARTO && !QUARTO.startsWith('--') ? QUARTO : 'admin@portoinc.com.br';
+// A senha estava cravada aqui dentro. Em 27/09/2026 o dono trocou a
+// senha do admin durante a validacao e a regua parou de entrar, sem
+// dizer por que: ela so reclamava que o menu nao apareceu.
+//
+//   SENHA_AUDITORIA=... node auditoria-ui.mjs <pasta> <largura> [conta]
+const SENHA = process.env.SENHA_AUDITORIA ?? 'Porto@2026';
 // Medir sem fotografar: o print e a parte cara, e so serve quando
 // eu vou OLHAR o resultado.
 const SEM_PRINT = process.argv.includes('--sem-print');
@@ -483,7 +489,7 @@ await js([
   "const email = campos.find(c => c.type === 'email') || campos[0];",
   "const senha = campos.find(c => c.type === 'password') || campos[1];",
   'set.call(email, ' + JSON.stringify(CONTA) + '); email.dispatchEvent(new Event("input", { bubbles: true }));',
-  "set.call(senha, 'Porto@2026'); senha.dispatchEvent(new Event('input', { bubbles: true }));",
+  'set.call(senha, ' + JSON.stringify(SENHA) + '); senha.dispatchEvent(new Event("input", { bubbles: true }));',
   "document.querySelector('form').requestSubmit();",
   '})()',
 ].join('\n'));
@@ -495,6 +501,8 @@ await esperarPor('.menu__lista');
 const entrou = await js('JSON.stringify({ rota: location.pathname, temMenu: !!document.querySelector(".menu__lista") })');
 if (!JSON.parse(entrou).temMenu) {
   console.error('RECUSADO: nao consegui entrar no sistema. Sem sessao, a auditoria mediria a tela de login 33 vezes.');
+  console.error('  conta: ' + CONTA);
+  console.error('  a senha vem de SENHA_AUDITORIA (padrao: a de fabrica das contas de teste).');
   await fecharNavegador();
   process.exit(1);
 }

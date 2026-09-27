@@ -29,6 +29,7 @@ import { Carregando, Erro } from '../../componentes/Estado';
 import { PainelDecisao } from '../../componentes/PainelDecisao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { QuemAprova } from '../../componentes/QuemAprova';
+import { NovaSolicitacao } from './Nova';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
@@ -45,6 +46,8 @@ export function DetalheSolicitacao() {
   const [impedimentos, setImpedimentos] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  /** Modal de correção do rascunho aberto. */
+  const [editando, setEditando] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -218,6 +221,25 @@ export function DetalheSolicitacao() {
             </button>
           )}
 
+          {/* Editar existia só no servidor.
+
+              A regra `podeEditar` e as rotas de alterar o cabeçalho e
+              trocar os itens estavam prontas desde a Etapa 3, e
+              nenhuma tela chamava. Quem digitasse errado num rascunho
+              só podia CANCELAR e refazer do zero — inclusive quando o
+              envio era recusado por falta de especificação técnica,
+              que é o caso mais comum de todos. */}
+          {souOAutor && ehRascunho && (
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => setEditando(true)}
+              disabled={ocupado}
+            >
+              <Icone nome="escrever" /> Editar
+            </button>
+          )}
+
           <button
             type="button"
             className="botao botao--secundario"
@@ -238,6 +260,21 @@ export function DetalheSolicitacao() {
             </button>
           )}
         </div>
+
+        {/* `key` para o modal nascer zerado a cada abertura: sem ela,
+            quem fechasse sem salvar voltaria com o que digitou antes. */}
+        {souOAutor && ehRascunho && (
+          <NovaSolicitacao
+            key={editando ? 'editando' : 'fechado'}
+            aberto={editando}
+            editando={dados}
+            aoFechar={() => setEditando(false)}
+            aoSalvarEdicao={async () => {
+              setAviso('Alterações salvas. A solicitação continua como rascunho.');
+              await carregar();
+            }}
+          />
+        )}
       </section>
 
       {possoAssinar && (

@@ -154,6 +154,31 @@ export function criarSolicitacao(dados: {
   });
 }
 
+/**
+ * Muda o cabeçalho de um rascunho: obra, prazo, justificativa,
+ * observações.
+ *
+ * O servidor já fazia isto desde a Etapa 3, e a rota nunca foi
+ * chamada por tela nenhuma. Resultado: um rascunho com erro de
+ * digitação só podia ser CANCELADO e refeito do zero — o dono do
+ * sistema tropeçou nisso duas vezes em 27/09/2026, com uma
+ * solicitação de dois itens.
+ */
+export function editarSolicitacao(
+  id: string,
+  dados: {
+    obraId?: string;
+    justificativa?: string;
+    observacoes?: string;
+    dataDesejada?: string;
+  },
+) {
+  return chamar<{ solicitacao: Solicitacao }>('/api/solicitacoes/' + id, {
+    metodo: 'PATCH',
+    corpo: dados,
+  });
+}
+
 export function trocarItens(id: string, itens: ItemParaEnviar[]) {
   return chamar<{ solicitacao: Solicitacao }>('/api/solicitacoes/' + id + '/itens', {
     metodo: 'POST',
