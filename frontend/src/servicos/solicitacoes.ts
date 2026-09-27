@@ -5,11 +5,26 @@
 import { chamar, baixarArquivo } from './api';
 import type { Material } from './cadastros';
 
+/**
+ * As situações que a solicitação pode ter.
+ *
+ * `EM_COTACAO` faltava aqui. O servidor tem ela desde sempre — é
+ * para onde a solicitação vai quando entra num pacote de cotação —,
+ * mas a tela não conhecia o nome, e o selo saía VAZIO: a linha
+ * aparecia na lista sem situação nenhuma, como se estivesse em
+ * lugar nenhum. O dono reparou em 27/09/2026, com a SOL-00003 e a
+ * SOL-00006 mudas na tabela.
+ *
+ * O TypeScript não pegou porque o valor vem da API como texto e é
+ * convertido para este tipo na fronteira — mentir aqui não custa
+ * erro de compilação, custa selo em branco na tela.
+ */
 export type SituacaoSolicitacao =
   | 'RASCUNHO'
   | 'AGUARDANDO_APROVACAO'
   | 'EM_REVISAO'
   | 'APROVADA'
+  | 'EM_COTACAO'
   | 'REPROVADA'
   | 'CANCELADA';
 
@@ -18,6 +33,7 @@ export const ROTULO_SITUACAO: Record<SituacaoSolicitacao, string> = {
   AGUARDANDO_APROVACAO: 'Aguardando aprovação',
   EM_REVISAO: 'Em revisão',
   APROVADA: 'Aprovada',
+  EM_COTACAO: 'Em cotação',
   REPROVADA: 'Reprovada',
   CANCELADA: 'Cancelada',
 };
@@ -27,6 +43,9 @@ export const COR_SITUACAO: Record<SituacaoSolicitacao, 'info' | 'atencao' | 'suc
   AGUARDANDO_APROVACAO: 'atencao',
   EM_REVISAO: 'atencao',
   APROVADA: 'sucesso',
+  // `info`, e não `sucesso`: estar em cotação não é um desfecho, é
+  // uma etapa andando. Verde ali faria a pessoa parar de esperar.
+  EM_COTACAO: 'info',
   REPROVADA: 'erro',
   CANCELADA: 'erro',
 };

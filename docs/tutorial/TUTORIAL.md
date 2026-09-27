@@ -690,7 +690,7 @@ A frase no alto da tela diz qual dos dois casos é o seu, para ninguém achar qu
 
 > Este é o pedido literal da ata: *"cada usuário deve ver o que ele solicitou"*.
 
-Quem enxerga todas ganha também a caixa **Só as minhas**, para filtrar rapidamente.
+Quem enxerga todas ganha também o filtro **Quem pediu**, ao lado do de Situação: em *"Todo mundo"* por padrão, ou *"Só as minhas"*.
 
 ## As situações
 

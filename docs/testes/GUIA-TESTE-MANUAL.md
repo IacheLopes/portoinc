@@ -705,7 +705,7 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 
 4. Saia e entre como **Neilma** (compradora)
 
-**Esperado:** ela **vê** a solicitação do Bras, e a frase no alto diz que ela enxerga as de toda a empresa. Aparece também a caixa **Só as minhas**.
+**Esperado:** ela **vê** a solicitação do Bras, e a frase no alto diz que ela enxerga as de toda a empresa. Aparece também o filtro **Quem pediu**, ao lado do de Situação.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

@@ -280,6 +280,66 @@ const arquivosComEmoji = [];
 }
 
 // ------------------------------------------------------------
+//  9. Situacao que o banco tem e a tela nao conhece
+//
+//  A SOL-00003 e a SOL-00006 apareceram na lista com a coluna
+//  Situacao VAZIA, em 27/09/2026. O banco tinha `EM_COTACAO`; o
+//  tipo da tela, nao. `ROTULO_SITUACAO['EM_COTACAO']` dava
+//  `undefined`, e o selo saia em branco — a linha ficava sem
+//  situacao nenhuma, como se estivesse em lugar nenhum.
+//
+//  O TypeScript nao pega: o valor vem da API como TEXTO e e
+//  convertido para o tipo na fronteira. Mentir ali nao custa erro
+//  de compilacao, custa selo em branco na tela.
+//
+//  Entao a conferencia e aqui: cada `enum` do schema contra o
+//  `Record<Tipo, string>` que o traduz. Se o banco souber um nome
+//  que a tela nao sabe, aparece.
+// ------------------------------------------------------------
+{
+  const schema = readFileSync(join(RAIZ, 'backend/prisma/schema.prisma'), 'utf8');
+  const servicos = join(FONTE, 'servicos');
+
+  const ts = readdirSync(servicos)
+    .filter((f) => f.endsWith('.ts') && !f.includes('.test.'))
+    .map((f) => join(servicos, f));
+
+  const textoDaTela = ts.map((f) => ({ arq: f, txt: readFileSync(f, 'utf8') }));
+
+  for (const m of schema.matchAll(/enum\s+(Situacao\w+)\s*\{([^}]+)\}/g)) {
+    const nome = m[1];
+    const valores = m[2]
+      .split('\n')
+      .map((l) => l.replace(/\/\/.*$/, '').trim())
+      .filter((l) => /^[A-Z][A-Z0-9_]*$/.test(l));
+
+    if (valores.length === 0) continue;
+
+    // Acha o Record que traduz esse enum. O nome do tipo na tela
+    // e o mesmo do enum no banco, por convencao da casa.
+    for (const { arq, txt } of textoDaTela) {
+      for (const r of txt.matchAll(
+        new RegExp('Record<\\s*' + nome + '\\s*,[^>]*>\\s*=\\s*\\{([^}]+)\\}', 'g'),
+      )) {
+        const traduzidos = new Set(
+          [...r[1].matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*:/gm)].map((x) => x[1]),
+        );
+
+        const faltando = valores.filter((v) => !traduzidos.has(v));
+        if (faltando.length > 0) {
+          achar(
+            'SITUACAO_SEM_NOME_NA_TELA',
+            arq,
+            linhaDe(txt, r.index),
+            nome + ': o banco tem ' + faltando.join(', ') + ' e este mapa nao — o selo sai vazio',
+          );
+        }
+      }
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  4 a 8. Os sinais de design generico, da skill frontend-design
 // ------------------------------------------------------------
 const usoDeRaio = {};

@@ -120,15 +120,26 @@ export function ListaSolicitacoes() {
             }))}
           />
 
+          {/* Uma <Selecao>, e não uma caixa de marcar.
+
+              "Só as minhas" era a ÚNICA caixa de marcar de filtro
+              do sistema — ao lado de um campo de escolha com rótulo
+              em cima, ela ficava desalinhada e falando outra
+              língua. A casa filtra lista com campo de escolha, em
+              Cotações, Pedidos, Materiais, Fornecedores e
+              Movimentos.
+
+              De dois controles iguais, as bases alinham sozinhas —
+              que é a regra escrita no documento de design. */}
           {vendoTodas && (
-            <label className="opcao">
-              <input
-                type="checkbox"
-                checked={apenasMinhas}
-                onChange={(e) => setApenasMinhas(e.target.checked)}
-              />
-              <span>Só as minhas</span>
-            </label>
+            <Selecao
+              rotulo="Quem pediu"
+              valor={apenasMinhas ? 'EU' : ''}
+              aoMudar={(v) => setApenasMinhas(v === 'EU')}
+              semMarcaOpcional
+              vazio="Todo mundo"
+              opcoes={[{ valor: 'EU', rotulo: 'Só as minhas' }]}
+            />
           )}
 
         </div>
