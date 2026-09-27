@@ -1,54 +1,55 @@
 // ============================================================
 //  Quem aprova
 //
-//  O terceiro cartão da fileira do topo, ao lado de "Total
-//  estimado" e "Precisa até". Responde a duas perguntas de uma vez:
-//  quem assina esta compra, e o que já foi assinado.
+//  O terceiro cartão da fileira do topo. É um <Indicador> — o mesmo
+//  componente de "Total estimado" e "Precisa até" —, e não uma
+//  imitação dele. Toda a inteligência aqui é escolher as duas
+//  frases que ele mostra.
 //
-//  --- A anatomia é a do indicador, de propósito ---
+//  --- as três versões anteriores, para não voltar a nenhuma ---
 //
-//  rótulo pequeno / um fato grande / rodapé miúdo. É a mesma dos
-//  dois cartões ao lado, e é o que faz os três lerem como uma
-//  fileira em vez de três coisas diferentes empurradas juntas.
+//  1ª: <Indicador> com a frase pronta do servidor dentro. A altura
+//      de linha do indicador é a de um número de 2rem, e cada linha
+//      da frase reservava 49,6px para 24,8px de texto. Parecia três
+//      parágrafos soltos.
 //
-//  O "fato grande" aqui é a REGRA — "Todas precisam assinar" —, que
-//  ocupa o lugar do R$ 6.880,00 do vizinho. É o que a pessoa precisa
-//  saber antes de olhar os nomes: se espera uma pessoa ou duas.
+//  2ª: uma barra larga, sozinha, embaixo da fileira. Consertou o
+//      espaçamento e estragou a página: uma faixa branca
+//      atravessando 1130px para dizer duas linhas de coisa.
 //
-//  --- O que já foi tentado, para não voltar ---
+//  3ª: de volta à fileira, mas com uma LISTA de funções dentro —
+//      uma linha por função, com marca e estado. Ficava 80px mais
+//      alto que os vizinhos, e a grade estica todo mundo junto: os
+//      dois cartões ao lado passaram a ter um vão morto embaixo do
+//      número. O dono disse que tirava a elegância, e tirava mesmo.
 //
-//  1º: era um <Indicador> com uma frase pronta do servidor dentro.
-//      A altura de linha do indicador é a de um número de 2rem, e
-//      cada linha da frase reservava 49,6px para 24,8px de texto.
-//      O dono fotografou: parecia três parágrafos soltos.
+//  --- por que esta cabe em três linhas ---
 //
-//  2º: virou uma barra larga, sozinha, embaixo da fileira. Consertou
-//      o espaçamento e estragou a página — o dono disse, com razão,
-//      que ficou pior: uma faixa branca atravessando a tela para
-//      dizer duas linhas de coisa.
+//  A lista respondia "qual é o estado de cada função". Só que a
+//  pergunta de quem olha o topo da tela é outra: "quantas faltam, e
+//  de quem". Isso cabe em um número e uma frase:
 //
-//  Agora está no lugar certo, com a forma dos vizinhos.
+//      Quem aprova
+//      1 de 2 assinaturas
+//      Falta assinar: Engenheiro
+//
+//  Quem quiser o detalhe — quem assinou, quando, com que observação
+//  — desce até a tabela de Assinaturas, que existe para isso e tem
+//  espaço para isso.
+//
+//  O nome da faixa saiu junto. Era informação boa, mas custava a
+//  quarta linha, que é exatamente o que estragava a fileira. Ela
+//  continua no simulador de Cadastros > Limites de alçada.
 // ============================================================
 
 import { nomeDaFuncao, type ResumoDaAlcada, type Solicitacao } from '../servicos/solicitacoes';
-import { Icone } from './Icone';
+import { Indicador } from './Indicador';
 
-/** O que aconteceu com uma função. */
-type Estado = 'assinou' | 'reprovou' | 'devolveu' | 'aguardando';
+/** "a, b e c" — a última vem com a conjunção, como se fala. */
+function juntar(nomes: string[], conjuncao: 'e' | 'ou'): string {
+  if (nomes.length <= 1) return nomes[0] ?? '';
 
-const ROTULO: Record<Estado, string> = {
-  assinou: 'assinou',
-  reprovou: 'reprovou',
-  devolveu: 'devolveu',
-  aguardando: 'aguardando',
-};
-
-interface Linha {
-  codigo: string;
-  nome: string;
-  estado: Estado;
-  /** Quem assinou, quando já assinou. */
-  quem: string | null;
+  return nomes.slice(0, -1).join(', ') + ' ' + conjuncao + ' ' + nomes[nomes.length - 1];
 }
 
 interface Props {
@@ -68,87 +69,87 @@ export function QuemAprova({ alcada, solicitacao }: Props) {
     ? solicitacao.funcoesExigidas
     : alcada?.funcoes.map((f) => f.codigo) ?? [];
 
-  const exigeTodas = enviada ? solicitacao.exigeTodas : (alcada?.exigeTodas ?? false);
-
-  // Nome pelo cadastro quando ele veio; senão, pelo código.
-  const nomePorCodigo = new Map(alcada?.funcoes.map((f) => [f.codigo, f.nome]) ?? []);
-
-  const linhas: Linha[] = codigos.map((codigo) => {
-    const decisao = solicitacao.aprovacoes.find((a) => a.funcaoCodigo === codigo);
-
-    const estado: Estado = !decisao
-      ? 'aguardando'
-      : decisao.decisao === 'APROVADA'
-        ? 'assinou'
-        : decisao.decisao === 'REPROVADA'
-          ? 'reprovou'
-          : 'devolveu';
-
-    return {
-      codigo,
-      nome: nomePorCodigo.get(codigo) ?? nomeDaFuncao(codigo),
-      estado,
-      quem: decisao ? decisao.usuario : null,
-    };
-  });
-
-  // Nenhuma faixa cobre o valor: não há lista, e o problema é de
-  // configuração — não desta compra.
-  if (linhas.length === 0) {
+  // Nenhuma faixa cobre o valor: o problema é de configuração, não
+  // desta compra, e a cor de atenção é o que diz isso de longe.
+  if (codigos.length === 0) {
     return (
-      <article className="quem-aprova quem-aprova--sem-faixa">
-        <h3 className="quem-aprova__titulo">Quem aprova</h3>
-        <p className="quem-aprova__alerta">
-          <Icone nome="alerta" />
-          <span>{alcada?.explicacao ?? 'Não foi possível calcular.'}</span>
-        </p>
-      </article>
+      <Indicador
+        titulo="Quem aprova"
+        largura="cheia"
+        tom="atencao"
+        valor="Sem faixa"
+        detalhe={alcada?.explicacao ?? 'Não foi possível calcular.'}
+      />
     );
   }
 
-  // Com uma função só, "todas" e "basta uma" dizem a mesma coisa.
-  const regra =
-    linhas.length === 1
-      ? 'Uma assinatura'
-      : exigeTodas
-        ? 'Todas precisam assinar'
-        : 'Basta uma assinatura';
+  const exigeTodas = enviada ? solicitacao.exigeTodas : (alcada?.exigeTodas ?? false);
+  const nomePorCodigo = new Map(alcada?.funcoes.map((f) => [f.codigo, f.nome]) ?? []);
+  const nomeDe = (codigo: string) => nomePorCodigo.get(codigo) ?? nomeDaFuncao(codigo);
+
+  // Só contam as decisões das funções que ESTA solicitação exige.
+  const relevantes = solicitacao.aprovacoes.filter((a) => codigos.includes(a.funcaoCodigo));
+  const reprovou = relevantes.find((a) => a.decisao === 'REPROVADA');
+  const devolveu = relevantes.find((a) => a.decisao === 'DEVOLVIDA');
+  const assinaram = relevantes.filter((a) => a.decisao === 'APROVADA');
+
+  if (reprovou) {
+    return (
+      <Indicador
+        titulo="Quem aprova"
+        largura="cheia"
+        tom="erro"
+        valor="Reprovada"
+        detalhe={'Por ' + reprovou.usuario + ', ' + nomeDe(reprovou.funcaoCodigo)}
+      />
+    );
+  }
+
+  if (devolveu) {
+    return (
+      <Indicador
+        titulo="Quem aprova"
+        largura="cheia"
+        tom="atencao"
+        valor="Devolvida"
+        detalhe={'Por ' + devolveu.usuario + ', ' + nomeDe(devolveu.funcaoCodigo)}
+      />
+    );
+  }
+
+  // Quantas assinaturas esta compra precisa ao todo. Com "basta uma",
+  // é uma só — por mais funções que a faixa liste.
+  const precisa = exigeTodas ? codigos.length : 1;
+  const dadas = exigeTodas ? assinaram.length : Math.min(assinaram.length, 1);
+
+  // Fechada: uma palavra, como "Reprovada" e "Devolvida". Em vez de
+  // "1 de 1 assinatura", que é o que a conta daria com "basta uma".
+  if (dadas >= precisa) {
+    return (
+      <Indicador
+        titulo="Quem aprova"
+        largura="cheia"
+        valor="Assinada"
+        detalhe={'Por ' + juntar(assinaram.map((a) => a.usuario), 'e')}
+      />
+    );
+  }
+
+  const plural = precisa === 1 ? 'assinatura' : 'assinaturas';
+  const valor = dadas === 0 ? precisa + ' ' + plural : dadas + ' de ' + precisa + ' ' + plural;
+
+  const faltam = codigos.filter((c) => !assinaram.some((a) => a.funcaoCodigo === c));
+  const nomes = faltam.map(nomeDe);
+
+  // Começou a assinar: o que importa é quem falta. Sem nenhuma
+  // assinatura ainda, a conjunção carrega a regra inteira — "e" quer
+  // dizer as duas, "ou" quer dizer qualquer uma delas.
+  const detalhe =
+    dadas > 0
+      ? 'Falta assinar: ' + juntar(nomes, 'e')
+      : juntar(nomes, exigeTodas ? 'e' : 'ou');
 
   return (
-    <article className="quem-aprova">
-      <h3 className="quem-aprova__titulo">Quem aprova</h3>
-      <p className="quem-aprova__regra">{regra}</p>
-
-      <ul className="quem-aprova__lista">
-        {linhas.map((l) => (
-          <li key={l.codigo} className={'quem-aprova__linha quem-aprova__linha--' + l.estado}>
-            {/* A marca NUNCA informa sozinha: a palavra à direita diz
-                o mesmo, para quem não distingue as cores e para quem
-                ouve a tela.
-
-                "Aguardando" vem vazio de propósito: o CSS desenha um
-                anel oco ali. Não havia ícone de espera no conjunto, e
-                pôr um "○" de teclado no meio de SVGs deixa uma marca
-                de tamanho e peso diferentes das outras. */}
-            <span className="quem-aprova__marca" aria-hidden="true">
-              {l.estado === 'assinou' && <Icone nome="certo" />}
-              {l.estado === 'reprovou' && <Icone nome="errado" />}
-              {l.estado === 'devolveu' && <Icone nome="voltar" />}
-            </span>
-
-            <span className="quem-aprova__funcao">{l.nome}</span>
-
-            <span className="quem-aprova__estado">
-              {ROTULO[l.estado]}
-              {l.quem && <small className="quem-aprova__quem">{l.quem}</small>}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {alcada?.faixa && (
-        <p className="quem-aprova__criterio">Faixa &ldquo;{alcada.faixa}&rdquo;</p>
-      )}
-    </article>
+    <Indicador titulo="Quem aprova" largura="cheia" valor={valor} detalhe={detalhe} />
   );
 }

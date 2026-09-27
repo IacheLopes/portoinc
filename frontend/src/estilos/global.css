@@ -972,6 +972,18 @@ a.indicador--clicavel:focus-visible {
 }
 
 @media (max-width: 640px) {
+  /* O indicador cujo valor é uma PALAVRA ocupa a fileira inteira.
+
+     Em duas colunas sobram ~175px, e "1 de 2 assinaturas" quebra em
+     duas linhas. O cartão fica mais alto que os vizinhos, a grade
+     estica todos juntos, e sobra um vão morto embaixo dos números —
+     o defeito que o dono apontou em 27/09/2026. Quem declara é a
+     tela, com `largura="cheia"`, porque só ela sabe o que vai
+     dentro. */
+  .grade > .indicador--cheio {
+    grid-column: 1 / -1;
+  }
+
   /* ----------------------------------------------------------
      O rodapé da tabela no modo cartão
 

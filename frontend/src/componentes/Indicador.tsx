@@ -38,17 +38,23 @@ interface Props {
    */
   para?: string;
   tom?: TomDoIndicador;
+  /**
+   * Ocupa a fileira inteira no celular.
+   *
+   * Para o indicador cujo valor é uma PALAVRA curta em vez de um
+   * número: "2 assinaturas", "Reprovada". Em duas colunas sobram
+   * ~175px, e "1 de 2 assinaturas" quebra em duas linhas — o cartão
+   * fica mais alto que os vizinhos e a grade estica todos, deixando
+   * um vão morto embaixo dos números. Medido em 393px, 2026-09-27.
+   *
+   * Quem declara é a tela, porque só ela sabe o que vai dentro.
+   */
+  largura?: 'cheia';
 }
 
-// Havia aqui uma prop `largura="cheia"`, para o indicador que
-// carregasse uma FRASE ocupar a linha inteira no celular. O único
-// caso era o "Quem aprova" da solicitação, e frase dentro deste
-// componente nunca ia funcionar: a altura da linha aqui é a de um
-// número de 2rem, e o texto saía com o dobro de espaço entre as
-// linhas. Virou componente próprio (QuemAprova.tsx), e este voltou a
-// ser só para número.
-export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro' }: Props) {
+export function Indicador({ titulo, valor, detalhe, para, tom = 'neutro', largura }: Props) {
   const classes = 'indicador'
+    + (largura === 'cheia' ? ' indicador--cheio' : '')
     + (tom !== 'neutro' ? ' indicador--' + tom : '')
     + (para ? ' indicador--clicavel' : '');
 
