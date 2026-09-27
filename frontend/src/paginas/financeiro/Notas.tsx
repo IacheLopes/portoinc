@@ -392,23 +392,50 @@ export function NotasFiscais() {
           }
         />
 
-        {podeGerenciar && (
+        {/* Uma linha só: AÇÕES à esquerda, o que só muda a VISTA à
+            direita.
+
+            Eram três alturas empilhadas — os dois botões numa linha
+            e a caixa de marcar sozinha numa caixa própria embaixo,
+            com borda, parecendo um terceiro botão que não era. A
+            posição já diz o que é cada coisa; não precisa de
+            moldura para isso.
+
+            O filtro fica FORA do `podeGerenciar`: quem só enxerga o
+            financeiro também merece esconder as canceladas. */}
+        {(podeGerenciar || canceladas > 0) && (
           <div className="barra-acoes">
+            {podeGerenciar && (
+              <>
+                <label className="botao botao--secundario rotulo-arquivo">
+                  Importar XML
+                  <input
+                    ref={arquivo}
+                    type="file"
+                    accept=".xml,text/xml,application/xml"
+                    onChange={(e) => void aoEscolherArquivo(e)}
+                    className="apenas-leitor-tela"
+                  />
+                </label>
 
-            <label className="botao botao--secundario rotulo-arquivo">
-              Importar XML
-              <input
-                ref={arquivo}
-                type="file"
-                accept=".xml,text/xml,application/xml"
-                onChange={(e) => void aoEscolherArquivo(e)}
-                className="apenas-leitor-tela"
-              />
-            </label>
+                <Link to="/financeiro" className="botao botao--discreto">
+                  Ver contas a pagar
+                </Link>
+              </>
+            )}
 
-            <Link to="/financeiro" className="botao botao--discreto">
-              Ver contas a pagar
-            </Link>
+            {canceladas > 0 && (
+              <label className="opcao opcao--filtro">
+                <input
+                  type="checkbox"
+                  checked={mostrarCanceladas}
+                  onChange={(e) => setMostrarCanceladas(e.target.checked)}
+                />
+                <span>
+                  Mostrar {canceladas === 1 ? 'a cancelada' : 'as ' + canceladas + ' canceladas'}
+                </span>
+              </label>
+            )}
           </div>
         )}
 
@@ -581,24 +608,6 @@ export function NotasFiscais() {
       )}
 
       <section className="secao">
-        {/* Nota cancelada não some — é trilha. Mas sai da frente.
-
-            O dono lançou R$ 3.200 por engano, cancelou, e ficou com
-            uma linha morta na lista para sempre. Esconder resolve o
-            incômodo sem apagar história. */}
-        {canceladas > 0 && (
-          <label className="opcao opcao--filtro">
-            <input
-              type="checkbox"
-              checked={mostrarCanceladas}
-              onChange={(e) => setMostrarCanceladas(e.target.checked)}
-            />
-            <span>
-              Mostrar as {canceladas === 1 ? 'canceladas' : canceladas + ' canceladas'}
-            </span>
-          </label>
-        )}
-
         {naTela.length === 0 ? (
           <Vazio
             titulo={

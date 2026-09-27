@@ -457,13 +457,36 @@
   cursor: pointer;
 }
 
-/* Uma opção que FILTRA a lista, e não que escolhe um valor num
-   formulário. Fica solta acima da tabela, encolhida ao próprio
-   texto — esticada na largura toda pareceria um campo a preencher. */
+/* Uma opção que muda a VISTA, e não que escolhe um valor.
+
+   Sem moldura, e empurrada para a direita da barra de ações. Ela
+   estava com a borda do `.opcao` normal, sozinha numa linha
+   embaixo dos botões — parecia um terceiro botão que não fazia
+   nada, e comia uma altura de tela só para isso.
+
+   A POSIÇÃO diz o que ela é: ação à esquerda, vista à direita.
+   Moldura não precisa. */
 .opcao--filtro {
   display: inline-flex;
-  margin-bottom: var(--esp-3);
-  background: var(--fundo-elevado);
+  margin-left: auto;
+  border: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background: none;
+  color: var(--texto-secundario);
+}
+
+/* No celular a barra quebra e o `margin-left: auto` não empurra
+   nada — ela volta a ser uma linha própria, e aí ganha um traço
+   em cima para não colar nos botões. */
+@media (max-width: 560px) {
+  .opcao--filtro {
+    margin-left: 0;
+    width: 100%;
+    padding-top: var(--esp-2);
+    border-top: 1px solid var(--borda);
+    border-radius: 0;
+  }
 }
 
 /* Foco visivel na opcao inteira.
