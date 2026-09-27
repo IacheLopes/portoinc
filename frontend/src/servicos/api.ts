@@ -335,6 +335,20 @@ export function criarUsuario(dados: {
   return chamar<{ usuario: UsuarioAdmin }>('/api/usuarios', { metodo: 'POST', corpo: dados });
 }
 
+/**
+ * Redefine a senha de outra pessoa.
+ *
+ * O servidor derruba TODAS as sessoes dela junto — quem estivesse
+ * logado com a conta cai na hora. E o certo: se a senha esta sendo
+ * redefinida, e porque alguem perdeu o controle dela.
+ */
+export function redefinirSenhaDe(id: string, senha: string) {
+  return chamar<{ ok: boolean; mensagem: string }>('/api/usuarios/' + id + '/senha', {
+    metodo: 'POST',
+    corpo: { senha },
+  });
+}
+
 export function editarUsuario(
   id: string,
   dados: { nome?: string; telefone?: string | null; ativo?: boolean; funcoes?: string[] },

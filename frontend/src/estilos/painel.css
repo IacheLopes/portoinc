@@ -970,3 +970,30 @@ a.atalho:hover {
 .campo-cidade__opcao--marcada .campo-cidade__uf {
   color: inherit;
 }
+
+/* ------------------------------------------------------------
+   A senha provisória, para copiar
+
+   Ela precisa ser LIDA com segurança — vai ser ditada ao telefone ou
+   conferida contra o que a pessoa digitou. Fonte de largura fixa,
+   corpo maior que o normal e bastante espaço entre os caracteres.
+   ------------------------------------------------------------ */
+.senha-sorteada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo-recuado);
+}
+
+.senha-sorteada code {
+  font-family: var(--fonte-mono);
+  font-size: var(--txt-lg);
+  letter-spacing: 0.12em;
+  color: var(--texto);
+  /* Quebra se precisar: melhor duas linhas que sair da caixa. */
+  word-break: break-all;
+}

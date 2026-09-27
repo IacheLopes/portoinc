@@ -35,16 +35,24 @@ import { Icone } from './Icone';
 interface Props {
   /** O que a pessoa tem de conferir, em uma frase. */
   children: ReactNode;
+  /**
+   * A frase em negrito que abre o aviso.
+   *
+   * "Confira antes de salvar" serve para cadastro. A tela de
+   * redefinir senha usa o mesmo formato para dizer outra coisa —
+   * "Isto não tem volta" — e o título fixo ficava mentindo ali.
+   */
+  titulo?: string;
 }
 
-export function AvisoDeCriacao({ children }: Props) {
+export function AvisoDeCriacao({ children, titulo = 'Confira antes de salvar.' }: Props) {
   return (
     <div className="aviso aviso--atencao aviso--de-criacao">
       <span className="aviso__icone" aria-hidden="true">
         <Icone nome="alerta" />
       </span>
       <div>
-        <strong>Confira antes de salvar.</strong>{' '}
+        <strong>{titulo}</strong>{' '}
         {children}
       </div>
     </div>

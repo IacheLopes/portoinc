@@ -12,11 +12,14 @@ import {
   listarFuncoes,
   criarUsuario,
   editarUsuario,
+  redefinirSenhaDe,
   ErroApi,
   type UsuarioAdmin,
 } from '../../servicos/api';
 import { Selo } from '../../componentes/Selo';
-import { Campo } from '../../componentes/Campo';
+import { Campo, ErroFormulario } from '../../componentes/Campo';
+import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
+import { senhaSorteada } from '../../servicos/senhaSorteada';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { dataHoraBr } from '../../servicos/solicitacoes';
@@ -48,6 +51,8 @@ export function Usuarios() {
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState('');
   const [formAberto, setFormAberto] = useState(false);
+  /** De quem estamos redefinindo a senha. `null` = de ninguém. */
+  const [redefinindo, setRedefinindo] = useState<UsuarioAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const carregar = useCallback(async (termo = '') => {
@@ -151,6 +156,16 @@ export function Usuarios() {
             await carregar(busca);
           }}
         />
+
+        <ModalRedefinirSenha
+          key={redefinindo?.id ?? 'nenhum'}
+          usuario={redefinindo}
+          aoFechar={() => setRedefinindo(null)}
+          aoTrocar={(nome) => {
+            setRedefinindo(null);
+            setAviso('Senha de ' + nome + ' redefinida. Ela vale até ele entrar e criar a dele.');
+          }}
+        />
       </section>
 
       <section className="secao">
@@ -200,7 +215,14 @@ export function Usuarios() {
                           <Selo tipo="erro">Desativado</Selo>
                         )}
                       </td>
-                      <td>
+                      <td className="celula-acoes">
+                        <button
+                          type="button"
+                          className="botao botao--discreto"
+                          onClick={() => setRedefinindo(u)}
+                        >
+                          Redefinir senha
+                        </button>
                         <button
                           type="button"
                           className="botao botao--discreto"
@@ -428,6 +450,111 @@ function FormularioUsuario({
         )}
 
       </form>
+    </Modal>
+  );
+}
+
+// ------------------------------------------------------------
+//  Redefinir a senha de alguém
+//
+//  Pedido do dono em 27/09/2026: quando alguém esquece a senha, o
+//  administrador precisa conseguir devolver o acesso.
+//
+//  A ideia final dele é um LINK de uso único, para a pessoa definir
+//  a própria senha sem ninguém ver. Isso fica para quando o sistema
+//  tiver domínio: hoje ele mora em `localhost` e num IP de rede que
+//  muda quando o roteador reinicia, e um link desses não abriria no
+//  celular de ninguém.
+//
+//  Enquanto isso, senha sorteada. Funciona em qualquer endereço.
+// ------------------------------------------------------------
+function ModalRedefinirSenha({
+  usuario,
+  aoFechar,
+  aoTrocar,
+}: {
+  /** Preenchido = modal aberto para essa pessoa. */
+  usuario: UsuarioAdmin | null;
+  aoFechar: () => void;
+  aoTrocar: (nome: string) => void;
+}) {
+  // Sorteada uma vez, ao abrir. Sortear a cada desenho da tela faria
+  // a senha mudar embaixo de quem já a copiou.
+  const [senha] = useState(senhaSorteada);
+  const [copiada, setCopiada] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function confirmar() {
+    if (!usuario) return;
+
+    setErro(null);
+    setEnviando(true);
+
+    try {
+      await redefinirSenhaDe(usuario.id, senha);
+      aoTrocar(usuario.nome);
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível redefinir.');
+      setEnviando(false);
+    }
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(senha);
+      setCopiada(true);
+    } catch {
+      // Sem permissão de área de transferência — o navegador nega em
+      // página servida por HTTP. A senha está à vista de qualquer
+      // jeito; dá para selecionar e copiar na mão.
+      setErro('Não deu para copiar sozinho. Selecione a senha e copie.');
+    }
+  }
+
+  return (
+    <Modal
+      aberto={usuario !== null}
+      aoFechar={aoFechar}
+      titulo={'Redefinir a senha de ' + (usuario?.nome ?? '')}
+      descricao="Uma senha nova é sorteada agora. Ela só vale até a pessoa entrar e criar a dela."
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="botao botao--principal"
+            onClick={() => void confirmar()}
+            disabled={enviando}
+          >
+            {enviando ? 'Redefinindo...' : 'Redefinir agora'}
+          </button>
+        </>
+      }
+    >
+      <AvisoDeCriacao titulo="Isto não tem volta.">
+        Ao confirmar, <strong>a senha antiga para de funcionar na hora</strong> e a pessoa é
+        desconectada de onde estiver. Copie a senha abaixo <strong>antes</strong> de
+        confirmar — ela não aparece de novo.
+      </AvisoDeCriacao>
+
+      <div className="campo">
+        <span className="campo__rotulo">Senha provisória</span>
+        <div className="senha-sorteada">
+          <code>{senha}</code>
+          <button type="button" className="botao botao--secundario" onClick={() => void copiar()}>
+            {copiada ? 'Copiada' : 'Copiar'}
+          </button>
+        </div>
+        <p className="campo__ajuda">
+          Mande para <strong>{usuario?.email}</strong> por WhatsApp ou pessoalmente. No
+          primeiro acesso o sistema obriga a trocar.
+        </p>
+      </div>
+
+      {erro && <ErroFormulario mensagem={erro} />}
     </Modal>
   );
 }
