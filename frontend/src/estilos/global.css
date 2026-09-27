@@ -263,7 +263,13 @@ a:hover { text-decoration-thickness: 2px; }
 /* ------------------------------------------------------------
    Indicador: um número que vale por si
    ------------------------------------------------------------ */
+/* Coluna, e não bloco, por causa do `margin-top: auto` do rodapé
+   mais abaixo. Numa fileira em que todos os cartões têm a mesma
+   altura natural não muda nada — não sobra espaço para distribuir.
+   Só age onde a fileira tem um cartão mais alto que os outros. */
 .indicador {
+  display: flex;
+  flex-direction: column;
   background: var(--fundo-elevado);
   border: 1px solid var(--borda);
   border-radius: var(--raio-xl);
@@ -300,8 +306,18 @@ a:hover { text-decoration-thickness: 2px; }
    virou componente próprio (QuemAprova.tsx). Indicador voltou a ser
    só para número, que é para o que ele foi feito. */
 
+/* Encostado na BASE do cartão, não colado no número.
+
+   Numa fileira em que um cartão é mais alto — "Quem aprova", que
+   leva uma lista —, os outros esticam e sobrava um vão morto
+   embaixo do número. Agora "2 itens", "Ainda não enviada" e
+   "Faixa ..." terminam na mesma linha, e a fileira tem um pé.
+
+   O `--esp-2` vira mínimo: o `auto` só empurra quando há espaço
+   sobrando, e sem ele o rodapé grudaria no número. */
 .indicador__rodape {
-  margin-top: var(--esp-2);
+  margin-top: auto;
+  padding-top: var(--esp-2);
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
 }
@@ -314,7 +330,11 @@ a:hover { text-decoration-thickness: 2px; }
    pessoa a procurar a tela certa sozinha.
    ------------------------------------------------------------ */
 a.indicador--clicavel {
-  display: block;
+  /* `flex`, e não `block`: esta regra é mais específica que a do
+     `.indicador` e cancelaria a coluna — o rodapé do cartão que é
+     link pararia de encostar na base, e só dele. */
+  display: flex;
+  flex-direction: column;
   color: var(--texto);
   /* A regra global sublinha todo <a>, e aqui o <a> é o cartão
      inteiro: título, número e rodapé saíam os três sublinhados. */

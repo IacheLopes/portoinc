@@ -300,109 +300,136 @@ input[type='file'].campo__entrada {
 /* ------------------------------------------------------------
    Quem aprova
 
-   Uma LISTA de funções que assinam, e não uma frase. Ver o
-   componente QuemAprova.tsx para o porquê — em resumo, isto morava
-   dentro do cartão de indicador, que reserva altura de linha para
-   número de 2rem, e a frase saía com o dobro de espaço entre as
-   linhas.
-
-   Três colunas: a marca (fixa), o nome da função (estica) e o
-   estado (o que precisar). O nome estica porque é a coluna que o
-   olho percorre; o estado fica encostado à direita, onde se lê em
-   diagonal para saber o que falta.
+   O terceiro cartão da fileira do topo. A anatomia é a do
+   indicador ao lado — rótulo pequeno, um fato grande, rodapé
+   miúdo — porque é isso que faz os três lerem como uma fileira.
+   Ver QuemAprova.tsx para as duas versões anteriores e por que
+   cada uma caiu.
    ------------------------------------------------------------ */
 .quem-aprova {
-  margin-top: var(--esp-4);
-  padding: var(--esp-5);
+  /* Mesma caixa E mesma mecânica do `.indicador`: coluna, com o
+     rodapé encostado na base. Se divergir, a fileira racha. */
+  display: flex;
+  flex-direction: column;
   background: var(--fundo-elevado);
   border: 1px solid var(--borda);
   border-radius: var(--raio-xl);
+  padding: var(--esp-5);
   box-shadow: var(--sombra-1);
+  /* Sem isto o cartão se recusa a encolher e estoura a grade
+     quando o nome da função é comprido. */
+  min-width: 0;
 }
 
-.quem-aprova__cabecalho {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--esp-4);
-}
-
-/* Mesmo tamanho e cor do rótulo do indicador ao lado: os três
-   cartões do topo têm de parecer da mesma família, mesmo com este
-   sendo outro componente. */
+/* Igual ao `.indicador__titulo`, e não parecido com ele. */
 .quem-aprova__titulo {
   font-size: var(--txt-sm);
   font-weight: var(--peso-forte);
   color: var(--texto-secundario);
+  margin-bottom: var(--esp-3);
 }
 
-/* A lista NÃO acompanha a largura do cartão.
+/* O lugar do "R$ 6.880,00" do vizinho.
 
-   Em 1440px o cartão tem 1130px, e com o estado encostado na borda
-   direita sobravam 900px entre "Gestor de obra" e "aguardando" — o
-   olho perdia a ligação entre os dois. Medido na foto de 27/09/2026.
-   Em 36rem o par continua sendo um par, e ainda cabe o caso mais
-   comprido: "devolveu para revisão · Engenheiro Teste". */
+   Aqui o fato grande é a REGRA: antes de olhar os nomes, a pessoa
+   precisa saber se espera uma assinatura ou duas. Não é número, e
+   por isso não leva o aperto de -0,02em nem a altura de linha de
+   número — foi exatamente esse par que deformou a primeira
+   versão. */
+.quem-aprova__regra {
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
 .quem-aprova__lista {
   list-style: none;
-  margin: 0;
+  margin: var(--esp-3) 0 0;
   padding: 0;
-  max-width: 36rem;
+  border-top: 1px solid var(--borda);
 }
 
+/* Três colunas: a marca (fixa), o nome (estica) e o estado (o que
+   precisar). O estado encostado à direita forma uma coluna que se
+   lê em diagonal — o mesmo hábito da coluna de valores da tabela
+   de itens. */
 .quem-aprova__linha {
   display: grid;
-  grid-template-columns: 1.25rem 1fr auto;
+  grid-template-columns: 1.1rem minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: var(--esp-3);
-  padding: var(--esp-3) 0;
+  gap: var(--esp-2);
+  /* 10px, e não os 12 do --esp-3: o cartão é o mais alto da
+     fileira, e os dois vizinhos esticam para acompanhar. Cada
+     par de pixels aqui é vazio no rodapé deles. */
+  padding: 0.625rem 0;
   border-bottom: 1px solid var(--borda);
 }
 
-.quem-aprova__linha:first-child { padding-top: 0; }
-.quem-aprova__linha:last-child { border-bottom: none; padding-bottom: 0; }
-
 .quem-aprova__marca {
   justify-self: center;
-  line-height: 1;
+  align-self: center;
+  display: flex;
   color: var(--texto-secundario);
 }
 
-/* A cor é REFORÇO, nunca o recado: a palavra ao lado do nome já diz
-   "assinou" ou "reprovou" por extenso. */
+.quem-aprova__marca svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* O anel oco de "aguardando".
+
+   Desenhado, e não escrito: não há ícone de espera no conjunto, e
+   um "○" de teclado no meio de SVGs sai com peso e tamanho
+   próprios, que não acompanham os vizinhos. */
+.quem-aprova__linha--aguardando .quem-aprova__marca::before {
+  content: '';
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+/* A cor é REFORÇO, nunca o recado: a palavra à direita já diz
+   "assinou", "reprovou" ou "devolveu" por extenso. */
 .quem-aprova__linha--assinou .quem-aprova__marca { color: var(--sucesso-texto); }
 .quem-aprova__linha--reprovou .quem-aprova__marca { color: var(--erro-texto); }
 .quem-aprova__linha--devolveu .quem-aprova__marca { color: var(--atencao-texto); }
 
 .quem-aprova__funcao {
-  font-size: var(--txt-md);
+  font-size: var(--txt-sm);
   font-weight: var(--peso-medio);
-  /* O indicador aperta -0,02em, que serve para número e atrapalha
-     em nome próprio. Aqui a letra respira. */
   letter-spacing: 0;
+  /* Nome comprido encolhe a coluna em vez de empurrar o estado
+     para fora do cartão. */
+  overflow-wrap: anywhere;
 }
 
 .quem-aprova__estado {
-  display: flex;
-  align-items: baseline;
-  gap: var(--esp-2);
-  flex-wrap: wrap;
-  justify-content: flex-end;
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
+  text-align: right;
 }
 
+/* Quem assinou vai embaixo da palavra, e não ao lado: em 366px de
+   cartão, "assinou Marcos Teste" na mesma linha come a coluna do
+   nome da função. */
 .quem-aprova__quem {
+  display: block;
   color: var(--texto);
   font-weight: var(--peso-medio);
+  font-size: var(--txt-sm);
 }
 
+/* De onde saiu a exigência. Sem o valor: ele é o cartão a duas
+   posições à esquerda, na mesma fileira e em corpo 32. */
 .quem-aprova__criterio {
-  margin: var(--esp-4) 0 0;
+  margin: 0;
+  margin-top: auto;
   padding-top: var(--esp-3);
-  border-top: 1px solid var(--borda);
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
   line-height: var(--linha-normal);
@@ -412,31 +439,23 @@ input[type='file'].campo__entrada {
    configuração — não desta compra. */
 .quem-aprova--sem-faixa { border-left: 4px solid var(--atencao-texto); }
 
-.quem-aprova__vazio {
+.quem-aprova__alerta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--esp-2);
   margin: 0;
-  font-size: var(--txt-md);
+  font-size: var(--txt-sm);
+  line-height: var(--linha-normal);
   color: var(--atencao-texto);
 }
 
-/* No celular a linha vira duas: nome em cima, estado embaixo. Em
-   393px, "devolveu para revisão · Engenheiro Teste" ao lado do nome
-   deixava ~90px para cada um. */
-@media (max-width: 480px) {
-  .quem-aprova {
-    padding: var(--esp-4);
-  }
-
-  .quem-aprova__linha {
-    grid-template-columns: 1.25rem 1fr;
-    gap: var(--esp-2) var(--esp-3);
-  }
-
-  .quem-aprova__estado {
-    grid-column: 2;
-    justify-content: flex-start;
+/* A fileira vira duas colunas no celular, e este cartão é o
+   terceiro: sozinho na segunda fileira, com meia tela vazia do
+   lado, ele ficaria com ~165px — a lista não cabe. Ocupa a fileira
+   inteira, como o `.indicador--cheio` fazia antes. */
+@media (max-width: 640px) {
+  .grade > .quem-aprova {
+    grid-column: 1 / -1;
   }
 }
 

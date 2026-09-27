@@ -85,12 +85,17 @@ describe('Antes de enviar', () => {
     expect(screen.getByText('Basta uma assinatura')).toBeInTheDocument();
   });
 
-  it('diz por qual valor e por qual faixa, e não só "pelas faixas"', () => {
+  it('diz qual faixa pegou, e não só "pelas faixas"', () => {
     render(<QuemAprova alcada={ALCADA} solicitacao={solicitacao()} />);
 
     // Se a alçada calcular errado, é aqui que a pessoa percebe.
-    expect(screen.getByText(/R\$ 6\.880,00/)).toBeInTheDocument();
     expect(screen.getByText(/Compras de valor médio/)).toBeInTheDocument();
+  });
+
+  it('não repete o total: ele é o cartão ao lado, na mesma fileira', () => {
+    render(<QuemAprova alcada={ALCADA} solicitacao={solicitacao()} />);
+
+    expect(screen.queryByText(/R\$ 6\.880,00/)).not.toBeInTheDocument();
   });
 });
 

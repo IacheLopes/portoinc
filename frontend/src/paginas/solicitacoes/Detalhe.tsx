@@ -191,13 +191,13 @@ export function DetalheSolicitacao() {
             valor={dataBr(dados.dataDesejada)}
             detalhe={dados.enviadaEm ? 'Enviada em ' + dataBr(dados.enviadaEm) : 'Ainda não enviada'}
           />
-        </div>
 
-        {/* Fora da grade de indicadores de propósito: indicador é
-            NÚMERO, e isto é uma lista de gente que assina. Estava
-            dentro, herdando altura de linha de número, e a frase
-            saía com o dobro do espaço entre as linhas. */}
-        <QuemAprova alcada={aprovacao} solicitacao={dados} />
+          {/* O terceiro da fileira. Não é <Indicador> — aquele
+              reserva altura de linha de número, e aqui vai uma
+              lista —, mas veste a mesma caixa e a mesma anatomia,
+              senão a fileira racha. */}
+          <QuemAprova alcada={aprovacao} solicitacao={dados} />
+        </div>
 
         {dados.justificativa && (
           <Cartao titulo="Justificativa" className="respiro-acima">

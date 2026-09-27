@@ -1,36 +1,36 @@
 // ============================================================
 //  Quem aprova
 //
-//  A lista de funções que precisam assinar esta compra, com o
-//  estado de cada uma.
+//  O terceiro cartão da fileira do topo, ao lado de "Total
+//  estimado" e "Precisa até". Responde a duas perguntas de uma vez:
+//  quem assina esta compra, e o que já foi assinado.
 //
-//  Era um <Indicador> — o componente de NÚMERO — carregando uma
-//  frase pronta do servidor. Três defeitos vinham daí, e o dono
-//  fotografou os três em 27/09/2026:
+//  --- A anatomia é a do indicador, de propósito ---
 //
-//   1. O buraco entre as linhas. O indicador reserva altura para
-//      número grande: 2rem × 1,55 = 49,6px por linha. A frase usa
-//      1rem × 1,55 = 24,8px. Sobrava o dobro em cada linha, e a
-//      frase parecia três parágrafos soltos. Encolher a letra do
-//      <span> não resolve: quem manda na altura da linha é o bloco
-//      de fora, não o texto de dentro.
+//  rótulo pequeno / um fato grande / rodapé miúdo. É a mesma dos
+//  dois cartões ao lado, e é o que faz os três lerem como uma
+//  fileira em vez de três coisas diferentes empurradas juntas.
 //
-//   2. A letra apertada. O indicador aperta -0,02em, que é certo
-//      para "R$ 6.880,00" e errado para frase.
+//  O "fato grande" aqui é a REGRA — "Todas precisam assinar" —, que
+//  ocupa o lugar do R$ 6.880,00 do vizinho. É o que a pessoa precisa
+//  saber antes de olhar os nomes: se espera uma pessoa ou duas.
 //
-//   3. A caixa não aprendia nada. Depois que o gestor assinasse,
-//      ela continuaria dizendo exatamente a mesma coisa; para saber
-//      em que pé estava, era preciso rolar até a tabela de
-//      Assinaturas, lá embaixo.
+//  --- O que já foi tentado, para não voltar ---
 //
-//  Agora é lista. Cada função é uma linha com o seu estado, e a
-//  regra ("as duas assinam" ou "basta uma") virou a etiqueta do
-//  canto — deixou de ser frase.
+//  1º: era um <Indicador> com uma frase pronta do servidor dentro.
+//      A altura de linha do indicador é a de um número de 2rem, e
+//      cada linha da frase reservava 49,6px para 24,8px de texto.
+//      O dono fotografou: parecia três parágrafos soltos.
+//
+//  2º: virou uma barra larga, sozinha, embaixo da fileira. Consertou
+//      o espaçamento e estragou a página — o dono disse, com razão,
+//      que ficou pior: uma faixa branca atravessando a tela para
+//      dizer duas linhas de coisa.
+//
+//  Agora está no lugar certo, com a forma dos vizinhos.
 // ============================================================
 
-import { nomeDaFuncao, dataBr, type ResumoDaAlcada, type Solicitacao } from '../servicos/solicitacoes';
-import { dinheiro } from '../servicos/cadastros';
-import { Selo } from './Selo';
+import { nomeDaFuncao, type ResumoDaAlcada, type Solicitacao } from '../servicos/solicitacoes';
 import { Icone } from './Icone';
 
 /** O que aconteceu com uma função. */
@@ -39,7 +39,7 @@ type Estado = 'assinou' | 'reprovou' | 'devolveu' | 'aguardando';
 const ROTULO: Record<Estado, string> = {
   assinou: 'assinou',
   reprovou: 'reprovou',
-  devolveu: 'devolveu para revisão',
+  devolveu: 'devolveu',
   aguardando: 'aguardando',
 };
 
@@ -58,10 +58,10 @@ interface Props {
 }
 
 export function QuemAprova({ alcada, solicitacao }: Props) {
-  // Depois do envio vale a FOTOGRAFIA guardada na solicitação: se a
-  // empresa mexer nas faixas amanhã, o que já está em aprovação
-  // continua com a regra de hoje. Antes do envio, essa fotografia
-  // ainda não existe, e aí vale a alçada calculada agora.
+  // Depois do envio vale a FOTOGRAFIA guardada na solicitação, e não
+  // a alçada de hoje: se a empresa mexer nas faixas amanhã, o que já
+  // está em aprovação continua com a regra de hoje. Antes do envio
+  // essa fotografia ainda não existe, e aí vale a alçada de agora.
   const enviada = solicitacao.funcoesExigidas.length > 0;
 
   const codigos = enviada
@@ -92,69 +92,63 @@ export function QuemAprova({ alcada, solicitacao }: Props) {
     };
   });
 
-  // Nenhuma faixa cobre o valor: não há lista para mostrar, e o
-  // problema é de configuração, não desta compra.
+  // Nenhuma faixa cobre o valor: não há lista, e o problema é de
+  // configuração — não desta compra.
   if (linhas.length === 0) {
     return (
-      <section className="quem-aprova quem-aprova--sem-faixa" aria-labelledby="quem-aprova-titulo">
-        <h2 className="quem-aprova__titulo" id="quem-aprova-titulo">
-          Quem aprova
-        </h2>
-        <p className="quem-aprova__vazio">
-          <Icone nome="alerta" /> {alcada?.explicacao ?? 'Não foi possível calcular.'}
+      <article className="quem-aprova quem-aprova--sem-faixa">
+        <h3 className="quem-aprova__titulo">Quem aprova</h3>
+        <p className="quem-aprova__alerta">
+          <Icone nome="alerta" />
+          <span>{alcada?.explicacao ?? 'Não foi possível calcular.'}</span>
         </p>
-      </section>
+      </article>
     );
   }
 
+  // Com uma função só, "todas" e "basta uma" dizem a mesma coisa.
+  const regra =
+    linhas.length === 1
+      ? 'Uma assinatura'
+      : exigeTodas
+        ? 'Todas precisam assinar'
+        : 'Basta uma assinatura';
+
   return (
-    <section className="quem-aprova" aria-labelledby="quem-aprova-titulo">
-      <div className="quem-aprova__cabecalho">
-        <h2 className="quem-aprova__titulo" id="quem-aprova-titulo">
-          Quem aprova
-        </h2>
-        {/* `info` nos dois, e não `atencao` em um deles: precisar de
-            duas assinaturas não é um problema, é a regra da faixa. O
-            triângulo do `atencao` fazia a caixa parecer um alarme
-            numa solicitação em que não havia nada de errado. */}
-        <Selo tipo="info">
-          {exigeTodas ? 'Todas precisam assinar' : 'Basta uma assinatura'}
-        </Selo>
-      </div>
+    <article className="quem-aprova">
+      <h3 className="quem-aprova__titulo">Quem aprova</h3>
+      <p className="quem-aprova__regra">{regra}</p>
 
       <ul className="quem-aprova__lista">
         {linhas.map((l) => (
           <li key={l.codigo} className={'quem-aprova__linha quem-aprova__linha--' + l.estado}>
-            {/* A marca NUNCA informa sozinha: a palavra ao lado diz
-                a mesma coisa, para quem não distingue as cores e
-                para quem ouve a tela. */}
+            {/* A marca NUNCA informa sozinha: a palavra à direita diz
+                o mesmo, para quem não distingue as cores e para quem
+                ouve a tela.
+
+                "Aguardando" vem vazio de propósito: o CSS desenha um
+                anel oco ali. Não havia ícone de espera no conjunto, e
+                pôr um "○" de teclado no meio de SVGs deixa uma marca
+                de tamanho e peso diferentes das outras. */}
             <span className="quem-aprova__marca" aria-hidden="true">
-              {l.estado === 'assinou' ? (
-                <Icone nome="certo" />
-              ) : l.estado === 'aguardando' ? (
-                '○'
-              ) : (
-                <Icone nome="alerta" />
-              )}
+              {l.estado === 'assinou' && <Icone nome="certo" />}
+              {l.estado === 'reprovou' && <Icone nome="errado" />}
+              {l.estado === 'devolveu' && <Icone nome="voltar" />}
             </span>
 
             <span className="quem-aprova__funcao">{l.nome}</span>
 
             <span className="quem-aprova__estado">
               {ROTULO[l.estado]}
-              {l.quem && <span className="quem-aprova__quem">{l.quem}</span>}
+              {l.quem && <small className="quem-aprova__quem">{l.quem}</small>}
             </span>
           </li>
         ))}
       </ul>
 
-      <p className="quem-aprova__criterio">
-        Pelo valor de <strong>{dinheiro(solicitacao.totalEstimado)}</strong>
-        {alcada?.faixa && <> — faixa &ldquo;{alcada.faixa}&rdquo;</>}.
-        {enviada && solicitacao.enviadaEm && (
-          <> Congelado no envio, em {dataBr(solicitacao.enviadaEm)}.</>
-        )}
-      </p>
-    </section>
+      {alcada?.faixa && (
+        <p className="quem-aprova__criterio">Faixa &ldquo;{alcada.faixa}&rdquo;</p>
+      )}
+    </article>
   );
 }
