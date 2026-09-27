@@ -21,9 +21,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import { ConferirRecebimento } from './Conferir';
 import {
   buscarPedidoParaConferir,
+  registrarRecebimento,
   type PedidoParaConferir,
   type ItemParaConferir,
 } from '../../servicos/recebimentos';
@@ -167,5 +169,70 @@ describe('Conferir recebimento', () => {
     const caixa = titulo.parentElement;
     expect(caixa).toHaveClass('cabecalho__titulo-com-selos');
     expect(within(caixa as HTMLElement).getByText('Recebido em parte')).toBeInTheDocument();
+  });
+});
+
+describe('O atalho que só preenche', () => {
+  beforeEach(() => {
+    vi.mocked(buscarPedidoParaConferir).mockResolvedValue(pedido());
+  });
+
+  it('o botão diz o que faz, e não que já fez', async () => {
+    // Chamava-se "Recebi tudo que falta" — frase na primeira pessoa
+    // e no passado, que soa como declaração. O dono digitou 10 num
+    // item de saldo 10, clicou, e nada mudou (o campo já tinha 10).
+    // Ele perguntou para que servia o botão.
+    abrirTela();
+
+    expect(
+      await screen.findByRole('button', { name: /Preencher com o saldo/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Recebi tudo que falta/ })).toBeNull();
+  });
+
+  it('avisa, ali do lado, que ele não registra nada', async () => {
+    abrirTela();
+    await screen.findByRole('button', { name: /Preencher com o saldo/ });
+
+    expect(screen.getByText(/Só preenche os campos acima/)).toBeInTheDocument();
+  });
+
+  it('preenche as linhas com saldo, sem chamar o servidor', async () => {
+    const usuario = userEvent.setup();
+    abrirTela();
+
+    await usuario.click(await screen.findByRole('button', { name: /Preencher com o saldo/ }));
+
+    const linha = screen.getByRole('row', { name: /Arame recozido/ });
+    expect(
+      within(linha).getByRole('textbox', { name: /Quantidade recebida/ }),
+    ).toHaveValue('4');
+
+    // O ponto todo: preencher NÃO é registrar.
+    expect(vi.mocked(registrarRecebimento)).not.toHaveBeenCalled();
+  });
+
+  it('com item marcado, manda descer até o botão que registra', async () => {
+    // Os dois botões ficam longe um do outro: o de registrar mora
+    // depois das observações, no fim da página. O dono desceu
+    // procurando, sem saber que faltava um passo.
+    const usuario = userEvent.setup();
+    abrirTela();
+
+    await usuario.click(await screen.findByRole('button', { name: /Preencher com o saldo/ }));
+
+    expect(screen.getByText(/Nada foi registrado ainda/)).toBeInTheDocument();
+    // O botão de verdade, e não a menção a ele no aviso que eu
+    // acabei de escrever — senão o teste passaria só pelo texto.
+    expect(
+      screen.getByRole('button', { name: /Registrar recebimento/ }),
+    ).toBeEnabled();
+  });
+
+  it('sem item marcado, não fica cobrando nada', async () => {
+    abrirTela();
+    await screen.findByRole('button', { name: /Preencher com o saldo/ });
+
+    expect(screen.queryByText(/Nada foi registrado ainda/)).toBeNull();
   });
 });

@@ -1185,6 +1185,19 @@ input[type='file'].campo__entrada {
   border-top: 1px solid var(--borda);
 }
 
+/* A nota do atalho fica EMBAIXO dos dois botões, na largura toda.
+   Ao lado deles não caberia: o rodapé é flex com `space-between`, e
+   a frase disputaria espaço com a contagem do outro canto. */
+.rodape-da-tabela__nota {
+  flex: 1 0 100%;
+  margin: 0;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .rodape-da-tabela__nota { text-align: left; }
+}
+
 .campo__entrada--celula {
   width: 7.5rem;
   text-align: right;

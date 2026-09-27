@@ -1343,7 +1343,7 @@ Se o código não estiver naquele pedido, o sistema avisa: provavelmente é mate
 
 | Botão | O que faz |
 |---|---|
-| **Recebi tudo que falta** | Preenche todas as linhas com o saldo |
+| **Preencher com o saldo** | Preenche todas as linhas com o saldo. **Não registra nada** — você confere e registra no fim da página |
 | **Limpar** | Apaga o que você marcou e recomeça |
 
 ## Documento da entrega

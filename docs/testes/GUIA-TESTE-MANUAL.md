@@ -1691,12 +1691,26 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 ---
 
-## CT-109 · Recebi tudo que falta
+## CT-109 · Preencher com o saldo
 
 1. Abra um pedido com saldo em vários itens
-2. Clique em **Recebi tudo que falta**
+2. Clique em **Preencher com o saldo**
 
 **Esperado:** todas as linhas com saldo ficam preenchidas de uma vez. **Limpar** desfaz.
+
+3. Leia a frase abaixo dos dois botões
+
+**Esperado:** *"Só preenche os campos acima. Você confere e registra no fim da página."*
+
+4. Olhe a contagem no canto esquerdo do mesmo rodapé
+
+**Esperado:** com item marcado, ela avisa que **nada foi registrado ainda** e manda descer até "Registrar recebimento".
+
+5. Confira que **nada** foi gravado: saia da tela sem registrar e volte
+
+**Esperado:** o saldo continua o mesmo. O botão só preenche.
+
+> **Por que mudou de nome:** chamava-se *"Recebi tudo que falta"* — frase na primeira pessoa e no passado, que soa como declaração. O dono digitou 10 num item cujo saldo era 10, clicou, e nada mudou na tela (o campo já tinha 10). Ele perguntou para que servia o botão. Botão tem de dizer o que faz.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -4646,7 +4660,7 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-106 | Ressalva sem motivo é recusada |  |
 | CT-107 | Entrega parcial |  |
 | CT-108 | Devolução não baixa o saldo |  |
-| CT-109 | Recebi tudo que falta |  |
+| CT-109 | Preencher com o saldo |  |
 | CT-110 | O pedido fecha quando tudo chega |  |
 | CT-111 | Nada marcado |  |
 | CT-112 | Histórico da entrega |  |

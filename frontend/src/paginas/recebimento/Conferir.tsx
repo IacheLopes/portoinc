@@ -434,10 +434,34 @@ export function ConferirRecebimento() {
           </TabelaArea>
 
           <div className="rodape-da-tabela">
+            {/* Com item marcado, dizer QUE FALTA REGISTRAR.
+
+                O botão que registra fica no fim da página, depois
+                das observações, e quem preenche aqui em cima não
+                tem como saber que ainda falta um passo — o dono
+                desceu procurando. A frase aponta para lá. */}
             <p>
               <strong>{marcados}</strong> {marcados === 1 ? 'item marcado' : 'itens marcados'} nesta
               conferência.
+              {marcados > 0 && (
+                <>
+                  {' '}
+                  Nada foi registrado ainda:{' '}
+                  <strong>desça até o fim e confirme em “Registrar recebimento”.</strong>
+                </>
+              )}
             </p>
+            {/* "Preencher com o saldo", e não "Recebi tudo que falta".
+
+                O botão não registra nada: ele copia o saldo de cada
+                item para o campo "Recebido agora", para quem tem um
+                pedido de quinze linhas não digitar quinze vezes.
+
+                O nome antigo era uma frase na primeira pessoa e no
+                passado — soava como declaração, como "pronto,
+                registrei". O dono clicou nele com 10 digitados, nada
+                mudou na tela (o campo já tinha 10), e ele perguntou
+                para que servia. Botão tem de dizer o que faz. */}
             <div className="formulario__acoes">
               <button
                 type="button"
@@ -445,7 +469,7 @@ export function ConferirRecebimento() {
                 onClick={receberTudo}
                 disabled={dados.tudoRecebido || ocupado}
               >
-                Recebi tudo que falta
+                Preencher com o saldo
               </button>
               <button
                 type="button"
@@ -456,6 +480,10 @@ export function ConferirRecebimento() {
                 Limpar
               </button>
             </div>
+
+            <p className="campo__ajuda rodape-da-tabela__nota">
+              Só preenche os campos acima. Você confere e registra no fim da página.
+            </p>
           </div>
         </Cartao>
       </section>
@@ -509,7 +537,8 @@ export function ConferirRecebimento() {
           {marcados === 0 && !dados.tudoRecebido && (
             <p className="campo__ajuda">
               Informe a quantidade em <strong>Recebido agora</strong> de pelo menos um item.
-              Se chegou tudo, use <strong>Recebi tudo que falta</strong>.
+              Se chegou tudo, use <strong>Preencher com o saldo</strong> lá em cima e confira
+              antes de registrar.
             </p>
           )}
 
