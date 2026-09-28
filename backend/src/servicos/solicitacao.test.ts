@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   podeIrPara, podeEditar, formatarNumero, conferirParaEnvio,
   calcularTotalEstimado, acharFaixa, explicarAprovacao, resumoDaAlcada,
+  conferirAlcadaDoFechamento,
   type FaixaAlcada,
 } from './solicitacao.js';
 
@@ -275,5 +276,151 @@ describe('Escolha da faixa de alçada', () => {
     assert.equal(r.faixa, null);
     assert.equal(r.exigeTodas, false);
     assert.ok(r.explicacao.includes('Nenhuma faixa'));
+  });
+});
+
+// ============================================================
+//  A alçada conferida contra o preço real
+// ============================================================
+
+const FAIXAS_PARA_FECHAMENTO: FaixaAlcada[] = [
+  {
+    id: 'ate-2k', descricao: 'Até R$ 2.000', valorMinimo: 0, valorMaximo: 2000,
+    exigeTodas: false, funcoes: [{ codigo: 'GESTOR_OBRA', nome: 'Gestor de obra' }],
+  },
+  {
+    id: 'ate-15k', descricao: 'De R$ 2.000 a R$ 15.000', valorMinimo: 2000, valorMaximo: 15000,
+    exigeTodas: true,
+    funcoes: [
+      { codigo: 'GESTOR_OBRA', nome: 'Gestor de obra' },
+      { codigo: 'ENGENHEIRO', nome: 'Engenheiro' },
+    ],
+  },
+  {
+    id: 'acima-15k', descricao: 'Acima de R$ 15.000', valorMinimo: 15000, valorMaximo: null,
+    exigeTodas: false, funcoes: [{ codigo: 'FUNDADOR', nome: 'Fundador' }],
+  },
+];
+
+/** Atalho: o mínimo da faixa fotografada no envio. */
+function faixaDoEnvio(id: string) {
+  const f = FAIXAS_PARA_FECHAMENTO.find((x) => x.id === id)!;
+  return { valorMinimo: f.valorMinimo };
+}
+
+describe('Alçada conferida contra o preço real', () => {
+  it('estourar a faixa manda de volta para assinar', () => {
+    // O buraco que existia: quem assinou R$ 1.900 estava autorizando
+    // qualquer valor, porque ninguém mais olhava depois.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 1900,
+      valorReal: 8000,
+      faixaDoEnvio: faixaDoEnvio('ate-2k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, true);
+    assert.equal(r.faixaAgora?.id, 'ate-15k');
+    assert.match(r.motivo!, /Gestor de obra e Engenheiro/);
+    assert.match(r.motivo!, /mudou de faixa/);
+  });
+
+  it('fechar MAIS BARATO segue em frente', () => {
+    // O caso real de 28/09/2026: estimado R$ 6.880 (duas
+    // assinaturas), fechado R$ 2.900. Quem assinou tinha poder de
+    // sobra — travar aqui seria burocracia pura.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 6880,
+      valorReal: 2900,
+      faixaDoEnvio: faixaDoEnvio('ate-15k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, false);
+    assert.equal(r.motivo, null);
+    assert.equal(r.variacao, -57.8);
+  });
+
+  it('subir dentro da tolerância segue em frente', () => {
+    // R$ 1.000 → R$ 1.200 é 20% cravado, e 20% é o limite.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 1000,
+      valorReal: 1200,
+      faixaDoEnvio: faixaDoEnvio('ate-2k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, false);
+    assert.equal(r.variacao, 20);
+  });
+
+  it('subir muito SEM mudar de faixa também segue', () => {
+    // Dobrou de preço, mas continua sendo compra que o gestor
+    // sozinho podia autorizar. Não há assinatura faltando.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 500,
+      valorReal: 1800,
+      faixaDoEnvio: faixaDoEnvio('ate-2k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, false);
+    assert.equal(r.variacao, 260);
+  });
+
+  it('pular duas faixas de uma vez manda de volta', () => {
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 1500,
+      valorReal: 30000,
+      faixaDoEnvio: faixaDoEnvio('ate-2k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, true);
+    assert.equal(r.faixaAgora?.id, 'acima-15k');
+    assert.match(r.motivo!, /Fundador/);
+  });
+
+  it('a tolerância é ajustável', () => {
+    const entrada = {
+      valorNoEnvio: 1900,
+      valorReal: 2100,
+      faixaDoEnvio: faixaDoEnvio('ate-2k'),
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    };
+
+    // 10,5% acima: passa com tolerância de 20, trava com 10.
+    assert.equal(conferirAlcadaDoFechamento({ ...entrada }).precisaReaprovar, false);
+    assert.equal(
+      conferirAlcadaDoFechamento({ ...entrada, tolerancia: 10 }).precisaReaprovar,
+      true,
+    );
+  });
+
+  it('solicitação antiga, sem estimativa guardada, não trava nada', () => {
+    // Anterior à fotografia da alçada. Sem o número do envio não há
+    // de que desviar, e inventar um travaria compra por engano.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: null,
+      valorReal: 50000,
+      faixaDoEnvio: null,
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, false);
+  });
+
+  it('faixa do envio apagada do cadastro não trava a compra', () => {
+    // Administrador mexeu nas faixas no meio do caminho. Sem o
+    // mínimo antigo não dá para dizer que subiu — e travar por
+    // dúvida seria pior que deixar passar com o registro.
+    const r = conferirAlcadaDoFechamento({
+      valorNoEnvio: 1000,
+      valorReal: 9000,
+      faixaDoEnvio: null,
+      faixas: FAIXAS_PARA_FECHAMENTO,
+    });
+
+    assert.equal(r.precisaReaprovar, false);
   });
 });

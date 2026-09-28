@@ -34,7 +34,11 @@ const CAMINHOS: Record<Situacao, Situacao[]> = {
   AGUARDANDO_APROVACAO: ['APROVADA', 'REPROVADA', 'EM_REVISAO', 'CANCELADA'],
   EM_REVISAO: ['AGUARDANDO_APROVACAO', 'CANCELADA'],
   APROVADA: ['EM_COTACAO'],
-  EM_COTACAO: [],
+  // De volta para a fila quando o preço real da cotação estoura a
+  // faixa de alçada. É o único caminho de volta a partir daqui, e
+  // existe para a assinatura não virar formalidade: quem assinou
+  // R$ 1.900 não autorizou R$ 8.000.
+  EM_COTACAO: ['AGUARDANDO_APROVACAO'],
   REPROVADA: [],
   CANCELADA: [],
 };
@@ -204,4 +208,108 @@ export function explicarAprovacao(faixa: FaixaAlcada | null): string {
   return faixa.exigeTodas
     ? 'Precisa de ' + nomes.length + ' assinaturas: ' + juntar(nomes, 'e') + '.'
     : 'Basta 1 assinatura: ' + juntar(nomes, 'ou') + '.';
+}
+
+// ------------------------------------------------------------
+//  A alçada precisa ser conferida DUAS vezes
+// ------------------------------------------------------------
+
+/**
+ * Quanto o preço real pode subir sem incomodar ninguém.
+ *
+ * Material varia de preço entre a estimativa e a compra, e isso é
+ * normal. Travar por qualquer centavo faria o comprador achar o
+ * sistema chato e, pior, procurar jeito de contorná-lo.
+ */
+export const TOLERANCIA_DE_ALCADA = 20;
+
+export interface ConferenciaDeAlcada {
+  /** A compra tem de voltar para a fila de aprovação. */
+  precisaReaprovar: boolean;
+  valorNoEnvio: number;
+  valorReal: number;
+  /** Quanto por cento o real ficou acima do estimado. */
+  variacao: number;
+  /** A faixa que vale para o preço de verdade. */
+  faixaAgora: FaixaAlcada | null;
+  /** Uma frase explicando, para o histórico e para a tela. */
+  motivo: string | null;
+}
+
+/**
+ * Confere a alçada contra o preço que a cotação fechou.
+ *
+ * O SISTEMA DECIDIA A ALÇADA UMA VEZ SÓ, no envio, em cima de uma
+ * ESTIMATIVA — e nunca mais olhava. Quem assinasse uma solicitação
+ * de R$ 1.900 estava, na prática, autorizando qualquer valor: se a
+ * cotação fechasse em R$ 8.000, o pedido saía com a assinatura de
+ * quem só podia até R$ 2.000. A assinatura virava formalidade.
+ *
+ * Achado em 28/09/2026, lendo os relatórios: uma solicitação saiu
+ * com estimativa de R$ 6.880 (duas assinaturas) e fechou em
+ * R$ 2.900, que precisaria de uma só.
+ *
+ * Aqui a regra é de mão única, de propósito:
+ *
+ *   - fechou MAIS BARATO → segue. As assinaturas que já existem são
+ *     mais do que o valor exige; ninguém autorizou de menos.
+ *   - fechou MAIS CARO, dentro da tolerância → segue.
+ *   - fechou MAIS CARO e SUBIU DE FAIXA → volta para assinar.
+ *
+ * O frete fica de fora da conta: a alçada do envio foi decidida
+ * sobre os itens, e comparar uma coisa com a outra faria o sistema
+ * travar compra por causa de entrega.
+ */
+export function conferirAlcadaDoFechamento(entrada: {
+  valorNoEnvio: number | null;
+  valorReal: number;
+  /** A faixa fotografada no envio. Nula se a regra foi apagada. */
+  faixaDoEnvio: { valorMinimo: number } | null;
+  /** Todas as faixas ativas hoje. */
+  faixas: FaixaAlcada[];
+  tolerancia?: number;
+}): ConferenciaDeAlcada {
+  const {
+    valorNoEnvio, valorReal, faixaDoEnvio, faixas,
+    tolerancia = TOLERANCIA_DE_ALCADA,
+  } = entrada;
+
+  const estimado = valorNoEnvio ?? 0;
+  const faixaAgora = acharFaixa(valorReal, faixas);
+
+  const variacao = estimado > 0
+    ? Math.round(((valorReal - estimado) / estimado) * 1000) / 10
+    : 0;
+
+  const base = { valorNoEnvio: estimado, valorReal, variacao, faixaAgora };
+
+  // Sem estimativa não há de que desviar. Acontece com solicitação
+  // antiga, anterior à fotografia da alçada.
+  if (estimado <= 0) return { ...base, precisaReaprovar: false, motivo: null };
+
+  if (valorReal <= estimado * (1 + tolerancia / 100)) {
+    return { ...base, precisaReaprovar: false, motivo: null };
+  }
+
+  // Passou da tolerância, mas continua na mesma faixa: quem assinou
+  // já tinha poder para este valor.
+  if (!faixaAgora || !faixaDoEnvio || faixaAgora.valorMinimo <= faixaDoEnvio.valorMinimo) {
+    return { ...base, precisaReaprovar: false, motivo: null };
+  }
+
+  return {
+    ...base,
+    precisaReaprovar: true,
+    motivo:
+      'Fechou em ' + dinheiroBr(valorReal) + ', ' + variacao.toLocaleString('pt-BR') +
+      '% acima dos ' + dinheiroBr(estimado) + ' estimados, e mudou de faixa de alçada. ' +
+      explicarAprovacao(faixaAgora),
+  };
+}
+
+/** R$ 1.234,56 — só para as frases daqui. */
+function dinheiroBr(v: number): string {
+  return v.toLocaleString('pt-BR', {
+    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
+  });
 }

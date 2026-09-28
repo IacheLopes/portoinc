@@ -1,4 +1,4 @@
-<!-- versao: 0.38.0 -->
+<!-- versao: 0.39.0 -->
 
 # 1. Antes de começar
 
@@ -1264,8 +1264,43 @@ Antes de gerar, o sistema confere:
 | Todo item com proposta tem um vencedor escolhido | Para não deixar item órfão no meio do caminho |
 | O fornecedor escolhido realmente cotou aquele item | Evita erro de clique |
 | A cotação ainda não foi concluída | Impede gerar o mesmo pedido duas vezes |
+| **O preço que fechou ainda cabe na alçada aprovada** | A assinatura foi dada sobre uma estimativa |
 
 Se algo estiver faltando, ele **lista exatamente o que falta** em vez de dar um erro genérico.
+
+## A alçada é conferida DUAS vezes
+
+Esta é a conferência mais importante, e ela não existia.
+
+A alçada é decidida quando a solicitação é **enviada**, em cima do valor que o solicitante
+**estimou**. Só que entre a estimativa e a compra passam dias, e o preço muda.
+
+Na prática, quem assinasse uma solicitação de R$ 1.900 estava autorizando **qualquer
+valor**: se a cotação fechasse em R$ 8.000, o pedido saía do mesmo jeito, com a assinatura
+de quem só podia até R$ 2.000. A assinatura virava formalidade.
+
+Agora, na hora de gerar os pedidos, o sistema compara o **preço real** com o que foi
+aprovado:
+
+| O que aconteceu | O que o sistema faz |
+|---|---|
+| Fechou **mais barato** | Segue. Quem assinou tinha poder de sobra |
+| Fechou até **20% acima** | Segue. Material varia de preço, e isso é normal |
+| Fechou acima de 20% **mas na mesma faixa** | Segue. Quem assinou já podia autorizar esse valor |
+| Fechou acima de 20% **e mudou de faixa** | **Trava.** A solicitação volta para Aprovações |
+
+Quando trava, o sistema diz qual solicitação, quanto foi estimado, quanto fechou e quem
+precisa assinar agora. **Suas escolhas continuam salvas** — depois de assinada, é só
+clicar em Gerar pedidos de novo.
+
+> **As assinaturas antigas são apagadas.** Elas foram dadas sobre outro valor. Deixá-las
+> de pé faria a solicitação voltar já assinada, e a volta não serviria de nada.
+
+> **O frete fica fora dessa conta.** A alçada foi decidida sobre os materiais; misturar
+> as duas coisas travaria compra por causa da entrega.
+
+> **Os 20% são ajustáveis** — hoje estão escritos no sistema, em `TOLERANCIA_DE_ALCADA`.
+> Se a Porto Inc. achar o número apertado ou frouxo demais, é uma linha.
 
 ## Um pedido por fornecedor
 

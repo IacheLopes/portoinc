@@ -648,3 +648,115 @@ describe('Um pedido inteiro', () => {
     assert.equal(r.status, 403);
   });
 });
+
+// ============================================================
+//  A alçada conferida contra o preço que fechou
+// ============================================================
+
+describe('Reaprovação quando a compra estoura a faixa', () => {
+  /** Escolhe o fornecedor 1 em todos os itens do pacote. */
+  async function escolherTudoDoPrimeiro(id: string, itensBid: Array<{ id: string }>) {
+    const mapa = await chamar('/api/cotacoes/' + id + '/equalizacao', { token: comprador });
+    const vencedor = mapa.corpo.comparativo.fornecedores[0].bidFornecedorId;
+
+    await chamar('/api/cotacoes/' + id + '/escolhas', {
+      metodo: 'POST', token: comprador,
+      corpo: {
+        escolhas: itensBid.map((i) => ({ bidItemId: i.id, bidFornecedorId: vencedor })),
+      },
+    });
+
+    await chamar('/api/cotacoes/' + id + '/encerrar', { metodo: 'POST', token: comprador });
+  }
+
+  it('trava o pedido e devolve a solicitação para assinar', async () => {
+    // A solicitação sai estimada em R$ 150 — faixa do gestor
+    // sozinho. A cotação fecha em R$ 7.500, que exige gestor E
+    // engenheiro. Antes disto o pedido saía assim mesmo, com a
+    // assinatura de quem só podia até R$ 5.000.
+    const { id, itensBid } = await pacoteComRespostas([
+      { f1: 500, f2: 900 },
+      { f1: 500, f2: 900 },
+    ]);
+
+    await escolherTudoDoPrimeiro(id, itensBid);
+
+    const r = await chamar('/api/cotacoes/' + id + '/gerar-pedidos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(r.status, 409);
+    assert.match(r.corpo.erro, /acima da alçada/);
+    assert.equal(r.corpo.reaprovacao.length, 1);
+    assert.equal(r.corpo.reaprovacao[0].estimado, 150);
+    assert.equal(r.corpo.reaprovacao[0].fechado, 7500);
+
+    // E a solicitação voltou para a fila, com a faixa nova.
+    const lista = await chamar('/api/solicitacoes', { token: admin });
+    const voltou = lista.corpo.solicitacoes.find(
+      (s: { numeroFormatado: string }) => s.numeroFormatado === r.corpo.reaprovacao[0].solicitacao,
+    );
+
+    assert.equal(voltou.situacao, 'AGUARDANDO_APROVACAO');
+
+    // Nenhum pedido foi criado.
+    const pedidos = await chamar('/api/pedidos', { token: comprador });
+    assert.equal(
+      pedidos.corpo.pedidos.filter((p: { origem: string }) => p.origem.includes(id)).length,
+      0,
+    );
+  });
+
+  it('a assinatura antiga não vale mais', async () => {
+    // Ela foi dada sobre outro valor. Deixá-la de pé faria a
+    // solicitação voltar já assinada, e a volta não serviria de nada.
+    const { banco } = await import('../src/plugins/banco.js');
+
+    const naFila = await banco.solicitacao.findFirst({
+      where: { situacao: 'AGUARDANDO_APROVACAO' },
+      orderBy: { numero: 'desc' },
+      include: { aprovacoes: true },
+    });
+
+    assert.ok(naFila);
+    assert.equal(naFila.aprovacoes.length, 0, 'as assinaturas antigas foram apagadas');
+    assert.equal(numeroDoBanco(naFila.valorNoEnvio), 7500, 'agora ela vale o preço real');
+    assert.equal(naFila.funcoesExigidas.length, 2, 'gestor E engenheiro');
+  });
+
+  it('o histórico conta o que aconteceu', async () => {
+    const { banco } = await import('../src/plugins/banco.js');
+
+    const evento = await banco.solicitacaoEvento.findFirst({
+      where: { tipo: 'REAPROVACAO' },
+      orderBy: { criadoEm: 'desc' },
+    });
+
+    assert.ok(evento, 'quem for auditar precisa achar o motivo');
+    assert.match(evento.descricao, /mudou de faixa/);
+    assert.match(evento.descricao, /7\.500,00/);
+  });
+
+  it('fechar DENTRO da faixa aprovada gera o pedido normalmente', async () => {
+    // R$ 150 estimados, R$ 225 fechados: subiu 50%, mas continua
+    // sendo compra do gestor. Travar aqui seria burocracia.
+    const { id, itensBid } = await pacoteComRespostas([
+      { f1: 15, f2: 40 },
+      { f1: 15, f2: 40 },
+    ]);
+
+    await escolherTudoDoPrimeiro(id, itensBid);
+
+    const r = await chamar('/api/cotacoes/' + id + '/gerar-pedidos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.pedidos.length, 1);
+  });
+});
+
+/** Decimal do Prisma vira número. */
+function numeroDoBanco(d: unknown): number {
+  return Number(d);
+}

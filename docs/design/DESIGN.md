@@ -1,4 +1,4 @@
-<!-- versao: 0.38.0 -->
+<!-- versao: 0.39.0 -->
 
 # Design do sistema — Porto Inc.
 

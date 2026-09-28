@@ -1,4 +1,4 @@
-<!-- versao: 0.38.0 -->
+<!-- versao: 0.39.0 -->
 
 # Guia de Navegação Simples
 
@@ -156,6 +156,13 @@ abra o pedido → **Enviar para aprovação**.
 > | acima de R$ 15.000 | o dono |
 >
 > Esses valores são de exemplo. Mudam em **Cadastros → Limites de alçada**.
+
+> **A assinatura é conferida duas vezes.** Quem assina está vendo uma **estimativa** — o
+> preço de verdade só aparece depois, na cotação. Se a compra fechar bem acima e mudar de
+> faixa, ela **volta para cá** com a faixa nova, e o comprador não consegue gerar o pedido
+> até alguém assinar de novo.
+>
+> Sem isso, quem assinasse R$ 1.900 estaria autorizando qualquer valor.
 
 > **Se a lista aparecer vazia**, não está quebrado. Ou não tem nada esperando você, ou
 > você não é quem assina. A tela diz qual dos dois é.

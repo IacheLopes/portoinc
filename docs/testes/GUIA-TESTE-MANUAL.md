@@ -1,4 +1,4 @@
-<!-- versao: 0.38.0 -->
+<!-- versao: 0.39.0 -->
 
 # 1. Como usar este guia
 
@@ -4666,6 +4666,51 @@ engoliu as cinco parcelas sem avisar ninguém.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+
+## CT-310 · A compra que estoura a alçada volta para assinar
+
+1. Abra uma solicitação com valor **estimado baixo** — algo que o gestor aprove sozinho.
+2. Aprove com **uma** assinatura só.
+3. Leve para cotação e faça o fornecedor responder com um preço **bem mais alto**, que
+   caia na faixa seguinte da alçada.
+4. Escolha o vencedor e clique em **Gerar pedidos de compra**.
+
+**Esperado:** o sistema **recusa**. A mensagem diz qual solicitação, quanto foi estimado,
+quanto fechou, quantos por cento acima, e **quem precisa assinar agora**. Nenhum pedido
+foi criado.
+
+5. Vá em **Solicitações** e abra aquela.
+
+**Esperado:** ela está de volta em **Aguardando aprovação**, agora valendo o preço real.
+No **Histórico** há uma linha explicando por quê. As assinaturas anteriores **sumiram** —
+elas foram dadas sobre outro valor.
+
+6. Assine com quem a faixa nova exige e volte à equalização.
+
+**Esperado:** suas escolhas continuam marcadas, e agora **Gerar pedidos** funciona.
+
+> Este era o único buraco de controle do sistema: a alçada era decidida uma vez, pela
+estimativa, e nunca mais conferida. Quem assinava R$ 1.900 autorizava, na prática,
+qualquer valor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-311 · Variação normal de preço NÃO trava a compra
+
+Repita o CT-310, mas com o fornecedor fechando **só um pouco acima** do estimado — até
+20% — ou fechando **mais barato**.
+
+**Esperado:** os pedidos são gerados normalmente, sem aviso nenhum. Fechar mais barato
+nunca trava: quem assinou tinha poder de sobra.
+
+> Travar por qualquer centavo faria o comprador achar o sistema chato e procurar jeito de
+contorná-lo. A tolerância existe para a regra ser respeitada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -5081,6 +5126,8 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-307 | O preço da última compra na equalização |  |
 | CT-308 | O prazo de pagamento vira dinheiro |  |
 | CT-309 | 100% de entrada não tem parcela |  |
+| CT-310 | A compra que estoura a alçada volta para assinar |  |
+| CT-311 | Variação normal de preço NÃO trava a compra |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

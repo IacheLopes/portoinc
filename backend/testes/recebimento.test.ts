@@ -74,7 +74,17 @@ async function pedidoPronto(quantidades = { a: 10, b: 5 }) {
       itens: cot.itens.map((item: { id: string }) => ({
         bidItemId: item.id,
         disponivel: true,
-        valorUnitario: 25,
+        // 12 contra os 10 estimados: 20% acima, o limite da
+        // tolerância da alçada. Como os dois lados usam a mesma
+        // quantidade, a proporção não muda quando o teste pede
+        // quantidade maior, e a compra nunca sai da faixa que foi
+        // assinada.
+        //
+        // Era 25. Com quantidade grande isso fechava R$ 2.750 em
+        // cima de R$ 1.100 aprovados — de outra faixa de alçada —, e
+        // o pedido saía assim mesmo. Este teste é de recebimento;
+        // quem prova a regra da alçada é o de equalização.
+        valorUnitario: 12,
         prazoEntregaDias: 5,
       })),
       valorFrete: 100,

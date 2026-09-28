@@ -16,7 +16,11 @@ import {
 import { gerarPdfPedido } from '../servicos/pdf-pedido.js';
 // Aliás porque três serviços exportam `formatarNumero`, cada um com
 // o prefixo do seu documento.
-import { formatarNumero as numeroDaSolicitacao } from '../servicos/solicitacao.js';
+import {
+  formatarNumero as numeroDaSolicitacao,
+  conferirAlcadaDoFechamento,
+  type FaixaAlcada,
+} from '../servicos/solicitacao.js';
 import { integracoes } from '../integracoes/index.js';
 
 const INCLUIR_BID = {
@@ -142,6 +146,137 @@ function montarPedido(p: PedidoCompleto) {
     observacoes: p.observacoes,
     itens,
   };
+}
+
+/**
+ * Confere a alçada de cada solicitação contra o preço que fechou.
+ *
+ * Devolve a lista das que estouraram — e, para essas, JÁ as coloca
+ * de volta na fila de aprovação com a faixa nova. Fazer as duas
+ * coisas juntas é de propósito: se avisasse sem devolver, alguém
+ * teria de lembrar de mandar de volta à mão, e é exatamente esse
+ * tipo de passo manual que o controle perde.
+ *
+ * O frete fica fora da conta. A alçada do envio foi decidida sobre
+ * os itens, e misturar as duas coisas travaria compra por causa de
+ * entrega.
+ */
+async function conferirAlcadaAntesDoPedido(
+  bid: { id: string; itens: Array<{ id: string; quantidade: unknown; cotacaoVencedoraId: string | null; cotacoes: Array<{ id: string; valorUnitario: unknown }>; solicitacaoItemId: string | null }> },
+  usuarioId: string,
+) {
+  // Quanto cada solicitação fechou, de verdade.
+  const itensComDono = await banco.solicitacaoItem.findMany({
+    where: { itemBid: { bidId: bid.id } },
+    select: { id: true, solicitacaoId: true },
+  });
+
+  const donoDoItem = new Map(itensComDono.map((i) => [i.id, i.solicitacaoId]));
+  const fechadoPorSolicitacao = new Map<string, number>();
+
+  for (const item of bid.itens) {
+    const vencedora = item.cotacoes.find((c) => c.id === item.cotacaoVencedoraId);
+    if (!vencedora || !item.solicitacaoItemId) continue;
+
+    const solicitacaoId = donoDoItem.get(item.solicitacaoItemId);
+    if (!solicitacaoId) continue;
+
+    const total = (numero(item.quantidade as never) ?? 0) *
+      (numero(vencedora.valorUnitario as never) ?? 0);
+
+    fechadoPorSolicitacao.set(
+      solicitacaoId,
+      (fechadoPorSolicitacao.get(solicitacaoId) ?? 0) + total,
+    );
+  }
+
+  if (fechadoPorSolicitacao.size === 0) return [];
+
+  const solicitacoes = await banco.solicitacao.findMany({
+    where: { id: { in: [...fechadoPorSolicitacao.keys()] } },
+    select: {
+      id: true, numero: true, situacao: true,
+      valorNoEnvio: true, regraAlcadaId: true,
+    },
+  });
+
+  const faixas = await carregarFaixasAtivas();
+
+  const faixasDoEnvio = await banco.regraAlcada.findMany({
+    where: { id: { in: solicitacoes.map((s) => s.regraAlcadaId).filter((x): x is string => !!x) } },
+    select: { id: true, valorMinimo: true },
+  });
+
+  const minimoDaFaixa = new Map(
+    faixasDoEnvio.map((f) => [f.id, { valorMinimo: numero(f.valorMinimo) ?? 0 }]),
+  );
+
+  const estouradas = [];
+
+  for (const s of solicitacoes) {
+    const conferencia = conferirAlcadaDoFechamento({
+      valorNoEnvio: numero(s.valorNoEnvio),
+      valorReal: fechadoPorSolicitacao.get(s.id) ?? 0,
+      faixaDoEnvio: s.regraAlcadaId ? minimoDaFaixa.get(s.regraAlcadaId) ?? null : null,
+      faixas,
+    });
+
+    if (!conferencia.precisaReaprovar || !conferencia.faixaAgora) continue;
+
+    const numeroFormatado = numeroDaSolicitacao(s.numero);
+
+    // As assinaturas antigas foram dadas sobre outro valor.
+    await banco.aprovacao.deleteMany({ where: { solicitacaoId: s.id } });
+
+    await banco.solicitacao.update({
+      where: { id: s.id },
+      data: {
+        situacao: 'AGUARDANDO_APROVACAO',
+        enviadaEm: new Date(),
+        decididaEm: null,
+        regraAlcadaId: conferencia.faixaAgora.id,
+        exigeTodas: conferencia.faixaAgora.exigeTodas,
+        funcoesExigidas: conferencia.faixaAgora.funcoes.map((f) => f.codigo),
+        valorNoEnvio: conferencia.valorReal,
+      },
+    });
+
+    await banco.solicitacaoEvento.create({
+      data: {
+        solicitacaoId: s.id,
+        usuarioId,
+        tipo: 'REAPROVACAO',
+        descricao: conferencia.motivo ?? '',
+      },
+    });
+
+    estouradas.push({
+      numeroFormatado,
+      valorNoEnvio: conferencia.valorNoEnvio,
+      valorReal: conferencia.valorReal,
+      variacao: conferencia.variacao,
+      aviso: numeroFormatado + ': ' + conferencia.motivo,
+    });
+  }
+
+  return estouradas;
+}
+
+/** As faixas de alçada ativas, no formato das regras. */
+async function carregarFaixasAtivas(): Promise<FaixaAlcada[]> {
+  const regras = await banco.regraAlcada.findMany({
+    where: { ativa: true },
+    include: { funcoes: { include: { funcao: true } } },
+  });
+
+  return regras.map((r) => ({
+    id: r.id,
+    descricao: r.descricao,
+    valorMinimo: numero(r.valorMinimo) ?? 0,
+    valorMaximo: r.valorMaximo === null ? null : numero(r.valorMaximo),
+    exigeTodas: r.exigeTodas,
+    funcoes: r.funcoes.map((f) => ({ codigo: f.funcao.codigo, nome: f.funcao.nome })),
+  }));
 }
 
 export async function rotasEqualizacao(app: FastifyInstance) {
@@ -531,6 +666,34 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         return res.status(400).send({
           erro: 'Ainda não é possível gerar os pedidos.',
           detalhes: problemas,
+        });
+      }
+
+      // ----------------------------------------------------
+      //  A alçada é conferida OUTRA VEZ, agora com o preço real
+      //
+      //  No envio ela foi decidida sobre uma ESTIMATIVA. Se a
+      //  cotação fechou bem acima e mudou de faixa, a assinatura
+      //  que existe não cobre o valor que vai sair — e é agora,
+      //  antes do pedido, o último momento de perceber isso.
+      // ----------------------------------------------------
+      const estouradas = await conferirAlcadaAntesDoPedido(bid, req.usuario!.id);
+
+      if (estouradas.length > 0) {
+        return res.status(409).send({
+          erro: 'A compra fechou acima da alçada que foi aprovada.',
+          detalhes: [
+            ...estouradas.map((e) => e.aviso),
+            estouradas.length === 1
+              ? 'Ela voltou para a fila de Aprovações. Assim que for assinada, gere os pedidos de novo — suas escolhas continuam salvas.'
+              : 'Elas voltaram para a fila de Aprovações. Assim que forem assinadas, gere os pedidos de novo — suas escolhas continuam salvas.',
+          ],
+          reaprovacao: estouradas.map((e) => ({
+            solicitacao: e.numeroFormatado,
+            estimado: e.valorNoEnvio,
+            fechado: e.valorReal,
+            variacao: e.variacao,
+          })),
         });
       }
 
