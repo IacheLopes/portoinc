@@ -562,3 +562,57 @@ describe('PDF', () => {
     assert.match(numero, /^SOL-/);
   });
 });
+
+// ============================================================
+//  O filtro de situação
+// ============================================================
+
+describe('Filtrar por situação', () => {
+  it('cada situação devolve SÓ o que está nela', async () => {
+    // O defeito que o dono achou em 28/09/2026: filtrar por
+    // ATENDIDA devolvia as sete solicitações. A rota validava o
+    // valor contra uma lista própria, que não sabia da situação
+    // nova, e o que não estava na lista caía fora do filtro em
+    // silêncio.
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST', token: bras,
+      corpo: { obraId, itens: [{ materialId: cimentoId, quantidade: 3 }] },
+    });
+    assert.equal(criada.status, 201);
+
+    const rascunhos = await chamar('/api/solicitacoes?situacao=RASCUNHO', { token: admin });
+    const atendidas = await chamar('/api/solicitacoes?situacao=ATENDIDA', { token: admin });
+    const todas = await chamar('/api/solicitacoes', { token: admin });
+
+    assert.ok(rascunhos.corpo.solicitacoes.length > 0);
+    assert.ok(
+      rascunhos.corpo.solicitacoes.every((s: { situacao: string }) => s.situacao === 'RASCUNHO'),
+      'veio coisa que não é rascunho',
+    );
+
+    // Nenhuma foi atendida nesta suíte: a lista tem de vir VAZIA,
+    // e não com tudo dentro.
+    assert.equal(atendidas.corpo.solicitacoes.length, 0);
+    assert.ok(
+      todas.corpo.solicitacoes.length > rascunhos.corpo.solicitacoes.length,
+      'sem filtro tem de vir mais do que com filtro',
+    );
+  });
+
+  it('situação que não existe é RECUSADA, não ignorada', async () => {
+    // Ignorar era o que escondia o defeito: a tela mostrava tudo
+    // achando que tinha filtrado.
+    const r = await chamar('/api/solicitacoes?situacao=INVENTADA', { token: admin });
+
+    assert.equal(r.status, 400);
+    assert.match(r.corpo.erro, /desconhecida/);
+    assert.match(r.corpo.detalhes[0], /ATENDIDA/, 'a mensagem diz quais valem');
+  });
+
+  it('sem filtro continua trazendo tudo', async () => {
+    const r = await chamar('/api/solicitacoes', { token: admin });
+
+    assert.equal(r.status, 200);
+    assert.ok(r.corpo.solicitacoes.length > 0);
+  });
+});

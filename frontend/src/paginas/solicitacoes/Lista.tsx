@@ -24,6 +24,33 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { NovaSolicitacao } from './Nova';
 
+/**
+ * Por que a lista veio vazia.
+ *
+ * O dono escolheu "Aprovada", nao veio nada e concluiu que o
+ * filtro estava quebrado. Nao estava: APROVADA e um estado de
+ * passagem — assim que o comprador monta o pacote de cotacao, a
+ * solicitacao sai dali. Tela vazia que nao explica vira chamado.
+ */
+function explicarVazio(situacao: string, podeCriar: boolean): string {
+  if (situacao === 'APROVADA') {
+    return 'Aprovada é um estado de passagem: assim que o comprador monta o pacote ' +
+      'de cotação, a solicitação passa para Em cotação. Se nenhuma está esperando ' +
+      'cotação neste momento, esta lista fica vazia mesmo.';
+  }
+
+  if (situacao === 'ATENDIDA') {
+    return 'Nenhuma compra chegou por inteiro ainda. A solicitação vira Atendida ' +
+      'quando o almoxarife confere a última entrega dela.';
+  }
+
+  if (situacao) return 'Nenhuma solicitação está nesta situação agora. Troque o filtro para ver as outras.';
+
+  return podeCriar
+    ? 'Clique em "+ Nova solicitação" para abrir a primeira.'
+    : 'Ajuste os filtros para ver outras situações.';
+}
+
 export function ListaSolicitacoes() {
   const { pode } = useAutenticacao();
   const podeCriar = pode('solicitacoes.criar');
@@ -148,12 +175,12 @@ export function ListaSolicitacoes() {
       <section className="secao">
         {solicitacoes.length === 0 ? (
           <Vazio
-            titulo="Nenhuma solicitação encontrada"
-            descricao={
-              podeCriar
-                ? 'Clique em "+ Nova solicitação" para abrir a primeira.'
-                : 'Ajuste os filtros para ver outras situações.'
+            titulo={
+              situacao
+                ? 'Nenhuma solicitação ' + ROTULO_SITUACAO[situacao as SituacaoSolicitacao]
+                : 'Nenhuma solicitação encontrada'
             }
+            descricao={explicarVazio(situacao, podeCriar)}
           />
         ) : (
           <Cartao semEspaco>

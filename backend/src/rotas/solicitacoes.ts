@@ -15,15 +15,11 @@ import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
 import {
   podeEditar, podeIrPara, conferirParaEnvio, calcularTotalEstimado,
   acharFaixa, explicarAprovacao, resumoDaAlcada, formatarNumero,
+  SITUACOES,
   type Situacao, type FaixaAlcada,
 } from '../servicos/solicitacao.js';
 import { gerarPdfSolicitacao } from '../servicos/pdf-solicitacao.js';
 import { calcularEstado, type Decisao } from '../servicos/aprovacao.js';
-
-const SITUACOES = [
-  'RASCUNHO', 'AGUARDANDO_APROVACAO', 'EM_REVISAO',
-  'APROVADA', 'EM_COTACAO', 'REPROVADA', 'CANCELADA',
-] as const;
 
 const esquemaItem = z.object({
   materialId: z.string().uuid('Escolha um item do catálogo.'),
@@ -234,7 +230,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
   app.get(
     '/api/solicitacoes',
     { preHandler: app.exigirPermissao('solicitacoes.criar', 'solicitacoes.ver_todas') },
-    async (req) => {
+    async (req, res) => {
       const { situacao, obraId, busca, apenasMinhas } = req.query as {
         situacao?: string;
         obraId?: string;
@@ -242,13 +238,25 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
         apenasMinhas?: string;
       };
 
+      // SITUAÇÃO QUE NÃO EXISTE É ERRO, NÃO É "SEM FILTRO".
+      //
+      // Antes, valor desconhecido era simplesmente ignorado: a tela
+      // devolvia a lista inteira com a caixa dizendo "Atendida", e
+      // quem olhava concluía que o filtro não funcionava — sem
+      // jeito de saber por quê. Recusar deixa o defeito visível no
+      // primeiro teste, em vez de escondê-lo por uma semana.
+      if (situacao && !SITUACOES.includes(situacao as Situacao)) {
+        return res.status(400).send({
+          erro: 'Situação desconhecida: ' + situacao + '.',
+          detalhes: ['As situações válidas são: ' + SITUACOES.join(', ') + '.'],
+        });
+      }
+
       const solicitacoes = await banco.solicitacao.findMany({
         where: {
           ...filtroDeVisibilidade(req),
           ...(apenasMinhas === 'true' ? { solicitanteId: req.usuario!.id } : {}),
-          ...(situacao && SITUACOES.includes(situacao as never)
-            ? { situacao: situacao as never }
-            : {}),
+          ...(situacao ? { situacao: situacao as never } : {}),
           ...(obraId ? { obraId } : {}),
           ...(busca
             ? {

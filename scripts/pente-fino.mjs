@@ -340,6 +340,46 @@ const arquivosComEmoji = [];
 }
 
 // ------------------------------------------------------------
+//  10. Filtro que sai de fininho quando nao reconhece o valor
+//
+//  A rota da lista de solicitacoes validava assim:
+//
+//    ...(situacao && SITUACOES.includes(situacao) ? { situacao } : {})
+//
+//  Quando a situacao ATENDIDA nasceu, aquela lista nao soube — e o
+//  valor caiu no `: {}`. Resultado: a tela devolvia as SETE
+//  solicitacoes com a caixa dizendo "Atendida". O dono achou que o
+//  filtro estava quebrado e nao tinha como saber por que.
+//
+//  Filtro que MENTE e pior que filtro que da erro. O certo e
+//  recusar com 400 e dizer quais valores existem.
+//
+//  A regra procura o formato, nao o nome: qualquer ternario cuja
+//  condicao seja um `.includes(` e cujo galho falso seja `{}`.
+// ------------------------------------------------------------
+{
+  const rotas = join(RAIZ, 'backend/src/rotas');
+
+  for (const f of readdirSync(rotas).filter((x) => x.endsWith('.ts') && !x.includes('.test.'))) {
+    const arq = join(rotas, f);
+    const txt = readFileSync(arq, 'utf8');
+
+    // O galho verdadeiro do ternario tem `:` dentro dele — e um
+    // objeto. A primeira versao desta regra parava no primeiro `:`
+    // e nao pegava nada; so descobri porque testei contra o codigo
+    // velho antes de dar por pronta.
+    for (const m of txt.matchAll(/\.includes\([^)]{0,120}\)[\s\S]{0,40}?\?[\s\S]{0,200}?:\s*\{\s*\}/g)) {
+      achar(
+        'FILTRO_QUE_SAI_DE_FININHO',
+        arq,
+        linhaDe(txt, m.index),
+        'valor nao reconhecido vira "sem filtro" — a tela mostra tudo achando que filtrou',
+      );
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  4 a 8. Os sinais de design generico, da skill frontend-design
 // ------------------------------------------------------------
 const usoDeRaio = {};

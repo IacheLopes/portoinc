@@ -5,15 +5,33 @@
 //  possam ser testadas sem banco e sem rede.
 // ============================================================
 
-export type Situacao =
-  | 'RASCUNHO'
-  | 'AGUARDANDO_APROVACAO'
-  | 'EM_REVISAO'
-  | 'APROVADA'
-  | 'EM_COTACAO'
-  | 'ATENDIDA'
-  | 'REPROVADA'
-  | 'CANCELADA';
+/**
+ * Todas as situações, em ordem de vida.
+ *
+ * ESTA LISTA É A ÚNICA. O tipo nasce dela, e não o contrário.
+ *
+ * Havia uma segunda cópia na rota da lista, usada para validar o
+ * filtro da tela. Quando a situação ATENDIDA nasceu, a cópia não
+ * soube — e o pior é COMO ela falhava: valor fora da lista caía
+ * fora do filtro em silêncio, então a tela mostrava as sete
+ * solicitações enquanto a caixa dizia "Atendida". Filtro que mente
+ * é pior que filtro que dá erro.
+ *
+ * Escrito assim, `Record<Situacao, ...>` obriga todo mapa a cobrir
+ * todas, e a rota importa daqui em vez de repetir.
+ */
+export const SITUACOES = [
+  'RASCUNHO',
+  'AGUARDANDO_APROVACAO',
+  'EM_REVISAO',
+  'APROVADA',
+  'EM_COTACAO',
+  'ATENDIDA',
+  'REPROVADA',
+  'CANCELADA',
+] as const;
+
+export type Situacao = (typeof SITUACOES)[number];
 
 export const ROTULO_SITUACAO: Record<Situacao, string> = {
   RASCUNHO: 'Rascunho',
