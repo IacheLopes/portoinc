@@ -126,6 +126,29 @@ p { margin: 0; }
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+/* UM CARTÃO SOZINHO NÃO PODE VIRAR UMA FAIXA
+
+   `auto-fit` apaga as colunas vazias, e o que sobra estica. Com
+   quatro cartões a grade dá quatro colunas; com um só, esse um
+   ocupava a largura inteira.
+
+   Parecia hierarquia — "o que cobra ação é maior" —, mas não era:
+   o cartão ficava grande por estar sozinho. Na tela de Início isso
+   acontecia justamente quando quase tudo estava em ordem, e a
+   urgência solitária virava uma barra desalinhada do bloco de
+   baixo. O dono viu em 28/09/2026.
+
+   `auto-fill` guarda as colunas vazias, então um cartão ocupa uma
+   coluna e mede o mesmo que os vizinhos. Quem avisa continua sendo
+   a borda vermelha e o número, que é o certo: cor e conteúdo, não
+   tamanho de caixa.
+
+   No celular NÃO vale — lá a urgência ocupa a linha inteira por
+   medição, e a regra que faz isso está na media query lá embaixo. */
+.grade--destaque {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
 /* ------------------------------------------------------------
    Cartao
    ------------------------------------------------------------ */
