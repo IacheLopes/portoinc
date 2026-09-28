@@ -9,8 +9,10 @@ import {
   diasEntre, compararOrcamento, resumirOrcamento,
   analisarCotacoes, resumirEconomia, analisarFornecedores,
   medirTempos, tempoTotal, consumoPorFamilia, materiaisMaisComprados,
+  acharEstoqueParado,
   type LinhaDeOrcamento, type CotacaoParaAnalise,
   type FornecedorParaAnalise, type PassagemDaSolicitacao, type ItemComprado,
+  type MaterialNaPrateleira,
 } from './relatorios.js';
 
 function dia(iso: string): Date {
@@ -430,5 +432,148 @@ describe('Consumo por família e material', () => {
   it('lista vazia devolve lista vazia', () => {
     assert.deepEqual(consumoPorFamilia([]), []);
     assert.deepEqual(materiaisMaisComprados([]), []);
+  });
+});
+
+// ============================================================
+//  Estoque parado
+// ============================================================
+
+const HOJE = new Date('2026-09-28T12:00:00Z');
+
+function naPrateleira(r: Partial<MaterialNaPrateleira> = {}): MaterialNaPrateleira {
+  return {
+    codigo: 'MAT-001',
+    descricao: 'Cimento CP-II 50kg',
+    familia: 'Cimentos',
+    unidadeMedida: 'SC',
+    almoxarifado: 'Central',
+    quantidade: 100,
+    custoMedio: 30,
+    ultimaSaida: null,
+    primeiraEntrada: new Date('2026-01-01T12:00:00Z'),
+    ...r,
+  };
+}
+
+describe('Estoque parado', () => {
+  it('acusa o que não sai há mais tempo que o corte', () => {
+    const { linhas, resumo } = acharEstoqueParado(
+      [naPrateleira({ ultimaSaida: new Date('2026-05-01T12:00:00Z') })],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas.length, 1);
+    assert.equal(linhas[0].diasParado, 150);
+    assert.equal(linhas[0].motivo, 'PAROU');
+    // 100 sacos × R$ 30 de custo médio.
+    assert.equal(linhas[0].valorParado, 3000);
+    assert.equal(resumo.valorParado, 3000);
+  });
+
+  it('deixa em paz o que saiu faz pouco', () => {
+    const { linhas, resumo } = acharEstoqueParado(
+      [naPrateleira({ ultimaSaida: new Date('2026-09-01T12:00:00Z') })],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas.length, 0);
+    assert.equal(resumo.valorParado, 0);
+    assert.match(resumo.leitura, /girando/);
+  });
+
+  it('conta da ENTRADA quando o material nunca saiu', () => {
+    // O caso que mais dói: comprou e nunca usou. Contar da última
+    // saída não funcionaria — não existe saída nenhuma.
+    const { linhas, resumo } = acharEstoqueParado([naPrateleira()], 90, HOJE);
+
+    assert.equal(linhas.length, 1);
+    assert.equal(linhas[0].motivo, 'NUNCA_SAIU');
+    assert.equal(linhas[0].diasParado, 270);
+    assert.equal(resumo.nuncaSairam, 1);
+    assert.match(resumo.leitura, /nunca saiu/);
+  });
+
+  it('material que entrou ontem e nunca saiu ainda NÃO é parado', () => {
+    // O corte vale para os dois casos. Sem isto, toda compra
+    // recente entraria no relatório no dia seguinte.
+    const { linhas } = acharEstoqueParado(
+      [naPrateleira({ primeiraEntrada: new Date('2026-09-27T12:00:00Z') })],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas.length, 0);
+  });
+
+  it('prateleira vazia não é dinheiro parado', () => {
+    const { linhas } = acharEstoqueParado([naPrateleira({ quantidade: 0 })], 90, HOJE);
+
+    assert.equal(linhas.length, 0);
+  });
+
+  it('sem data nenhuma, prefere calar a acusar', () => {
+    const { linhas } = acharEstoqueParado(
+      [naPrateleira({ ultimaSaida: null, primeiraEntrada: null })],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas.length, 0);
+  });
+
+  it('sem custo médio, conta o material mas não inventa valor', () => {
+    const { linhas, resumo } = acharEstoqueParado(
+      [naPrateleira({ custoMedio: null })],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas.length, 1);
+    assert.equal(linhas[0].valorParado, 0);
+    assert.equal(resumo.itens, 1);
+  });
+
+  it('ordena pelo dinheiro, não pelo tempo', () => {
+    // Quem lê quer saber onde está o dinheiro. Um parafuso parado
+    // há dois anos importa menos que uma carga de aço parada há
+    // quatro meses.
+    const { linhas, resumo } = acharEstoqueParado(
+      [
+        naPrateleira({
+          codigo: 'MAT-PARAFUSO', quantidade: 10, custoMedio: 1,
+          primeiraEntrada: new Date('2024-09-01T12:00:00Z'),
+        }),
+        naPrateleira({
+          codigo: 'MAT-ACO', quantidade: 100, custoMedio: 500,
+          ultimaSaida: new Date('2026-05-01T12:00:00Z'),
+        }),
+      ],
+      90,
+      HOJE,
+    );
+
+    assert.equal(linhas[0].codigo, 'MAT-ACO');
+    assert.equal(linhas[1].codigo, 'MAT-PARAFUSO');
+    assert.equal(resumo.valorParado, 50010);
+    assert.equal(resumo.maisAntigo, 757);
+  });
+
+  it('o corte é escolha de quem lê', () => {
+    const saiuEm = new Date('2026-08-01T12:00:00Z');
+
+    assert.equal(acharEstoqueParado([naPrateleira({ ultimaSaida: saiuEm })], 30, HOJE).linhas.length, 1);
+    assert.equal(acharEstoqueParado([naPrateleira({ ultimaSaida: saiuEm })], 90, HOJE).linhas.length, 0);
+  });
+
+  it('estoque limpo devolve resumo zerado', () => {
+    const { linhas, resumo } = acharEstoqueParado([], 90, HOJE);
+
+    assert.deepEqual(linhas, []);
+    assert.equal(resumo.itens, 0);
+    assert.equal(resumo.valorParado, 0);
+    assert.equal(resumo.maisAntigo, 0);
   });
 });

@@ -781,3 +781,189 @@ async function limparCompras() {
   await banco.solicitacaoItem.deleteMany({});
   await banco.solicitacao.deleteMany({});
 }
+
+// ============================================================
+//  7. Concentração de fornecedor
+// ============================================================
+
+describe('Concentração de fornecedor', () => {
+  it('acusa quem concentra as compras da empresa', async () => {
+    // Depender de um fornecedor não é problema de preço, é de
+    // poder: quando ele sobe, não há para onde correr. Nenhum
+    // relatório respondia isso.
+    await limparCompras();
+    await comprar();
+
+    const r = await chamar('/api/relatorios/fornecedores', { token: admin });
+    const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
+    const caro = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Caro');
+
+    assert.equal(rapido.participacao, 100);
+    assert.equal(rapido.concentracao, 'ATENCAO');
+
+    // Quem não vendeu nada não é dependência — é lista vazia.
+    assert.equal(caro.participacao, 0);
+    assert.equal(
+      caro.concentracao, 'OK',
+      '0% de participação não pode virar alerta de dependência',
+    );
+  });
+});
+
+// ============================================================
+//  8. Comprometido no orçamento
+// ============================================================
+
+describe('Comprometido no orçamento', () => {
+  it('conta o aprovado que ainda não virou pedido', async () => {
+    // Sem isto o relatório era espelho retrovisor: quem lesse
+    // "gastei 3%" acharia que tinha 97% na mão, quando parte já
+    // estava prometida.
+    await limparCompras();
+
+    const antes = await chamar('/api/relatorios/orcamento?obraId=' + obraId, { token: admin });
+    assert.equal(antes.corpo.resumo.comprometido, 0);
+
+    // Uma solicitação aprovada e parada: não virou pedido.
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST', token: solicitante,
+      corpo: {
+        obraId,
+        itens: [{
+          materialId: materialA, quantidade: 10, valorEstimado: 50,
+          especificacaoTecnica: 'Padrão.',
+        }],
+      },
+    });
+    const id = criada.corpo.solicitacao.id as string;
+
+    await chamar('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST', token: solicitante });
+    await chamar('/api/aprovacoes/' + id + '/decidir', {
+      metodo: 'POST', token: gestor, corpo: { decisao: 'APROVADA' },
+    });
+
+    const depois = await chamar('/api/relatorios/orcamento?obraId=' + obraId, { token: admin });
+
+    assert.equal(depois.corpo.resumo.comprometido, 500, '10 × R$ 50 aprovados e parados');
+    // O saldo desconta o gasto E a promessa: mostrar só o gasto
+    // ofereceria de novo um dinheiro que já tem dono.
+    assert.equal(
+      depois.corpo.resumo.saldo,
+      depois.corpo.resumo.previsto - depois.corpo.resumo.realizado - 500,
+    );
+  });
+
+  it('o que virou pedido sai do comprometido e entra no gasto', async () => {
+    // Contar nos dois lugares dobraria o dinheiro.
+    await limparCompras();
+    await comprar({ quantidade: 10, preco: 90 });
+
+    const r = await chamar('/api/relatorios/orcamento?obraId=' + obraId, { token: admin });
+
+    assert.equal(r.corpo.resumo.comprometido, 0, 'virou pedido, não é mais promessa');
+    assert.ok(r.corpo.resumo.realizado > 0, 'e o dinheiro tem de aparecer no gasto');
+  });
+});
+
+// ============================================================
+//  9. Estoque parado
+// ============================================================
+
+describe('Estoque parado', () => {
+  /** Empurra os movimentos para trás no tempo. */
+  async function envelhecer(dias: number) {
+    const { banco } = await import('../src/plugins/banco.js');
+
+    const quando = new Date();
+    quando.setDate(quando.getDate() - dias);
+
+    await banco.$executeRawUnsafe(
+      'UPDATE movimentos_estoque SET criado_em = $1',
+      quando,
+    );
+  }
+
+  it('sem "relatorios.ver" o acesso é negado', async () => {
+    const r = await chamar('/api/relatorios/estoque-parado', { token: semPermissao });
+
+    assert.equal(r.status, 403);
+  });
+
+  it('material recebido hoje não é estoque parado', async () => {
+    await limparCompras();
+    await comprar();
+
+    const r = await chamar('/api/relatorios/estoque-parado', { token: admin });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.dias, 90, 'o corte padrão é 90 dias');
+    assert.equal(r.corpo.linhas.length, 0, 'chegou agora, não está parado');
+  });
+
+  it('o que entrou e nunca saiu aparece, com o dinheiro que ficou', async () => {
+    await limparCompras();
+    // 2 itens × 10 unidades × R$ 90.
+    await comprar({ quantidade: 10, preco: 90 });
+    await envelhecer(200);
+
+    const r = await chamar('/api/relatorios/estoque-parado', { token: admin });
+
+    assert.equal(r.corpo.linhas.length, 2);
+    assert.equal(r.corpo.resumo.nuncaSairam, 2, 'nenhum dos dois teve saída');
+    assert.equal(r.corpo.resumo.valorParado, 1800, 'o dinheiro inteiro ficou na prateleira');
+    assert.equal(r.corpo.linhas[0].motivo, 'NUNCA_SAIU');
+    assert.equal(r.corpo.linhas[0].diasParado, 200);
+    assert.match(r.corpo.resumo.leitura, /nunca saíram/);
+  });
+
+  it('o corte é escolha de quem lê', async () => {
+    const curto = await chamar('/api/relatorios/estoque-parado?dias=180', { token: admin });
+    const longo = await chamar('/api/relatorios/estoque-parado?dias=365', { token: admin });
+
+    assert.equal(curto.corpo.linhas.length, 2);
+    assert.equal(longo.corpo.linhas.length, 0, 'parado há 200 dias não é parado há um ano');
+  });
+
+  it('corte inválido cai no padrão em vez de quebrar', async () => {
+    const r = await chamar('/api/relatorios/estoque-parado?dias=abacaxi', { token: admin });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.dias, 90);
+  });
+
+  it('a saída tira o material da lista', async () => {
+    const { banco } = await import('../src/plugins/banco.js');
+
+    const saldo = await banco.saldoEstoque.findFirst({ where: { quantidade: { gt: 0 } } });
+    assert.ok(saldo, 'precisa haver saldo para o teste valer');
+
+    await chamar('/api/estoque/movimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        almoxarifadoId: saldo.almoxarifadoId,
+        materialId: saldo.materialId,
+        tipo: 'SAIDA',
+        quantidade: 1,
+        destino: 'Frente de serviço do teste',
+      },
+    });
+
+    const r = await chamar('/api/relatorios/estoque-parado', { token: admin });
+
+    assert.equal(r.corpo.linhas.length, 1, 'o que saiu hoje sai da lista');
+    assert.equal(r.corpo.resumo.nuncaSairam, 1);
+  });
+
+  it('sai em PDF e em Word', async () => {
+    const pdf = await chamar('/api/relatorios/estoque-parado?formato=pdf', { token: admin });
+    const docx = await chamar('/api/relatorios/estoque-parado?formato=docx', { token: admin });
+
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.tipo, 'application/pdf');
+    assert.equal(pdf.bruto.subarray(0, 4).toString('latin1'), '%PDF');
+
+    assert.equal(docx.status, 200);
+    assert.match(docx.tipo, /wordprocessingml/);
+    assert.equal(docx.bruto.subarray(0, 2).toString('latin1'), 'PK');
+  });
+});

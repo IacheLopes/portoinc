@@ -12,12 +12,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   buscarEqualizacao, salvarEscolhas, ultimaChamada, gerarPedidos,
+  ganhoDoPrazo, TAXAS_DE_CUSTO_DO_DINHEIRO, ONDE_GUARDA_A_TAXA,
   ROTULO_SITUACAO_BID, COR_SITUACAO_BID,
   type Equalizacao as Dados,
 } from '../../servicos/cotacoes';
 
 import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { dataBr } from '../../servicos/solicitacoes';
+import { dias as diasBr } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
+import { Selecao } from '../../componentes/Campo';
 import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
@@ -30,6 +34,10 @@ function daquiADias(dias: number): string {
   const d = new Date();
   d.setDate(d.getDate() + dias);
   return d.toISOString().slice(0, 10);
+}
+
+function porcentoAoMes(t: number): string {
+  return t.toLocaleString('pt-BR', { minimumFractionDigits: 1 }) + '% ao mês';
 }
 
 export function Equalizacao() {
@@ -45,6 +53,26 @@ export function Equalizacao() {
   const [painelChamada, setPainelChamada] = useState(false);
   const [novoPrazo, setNovoPrazo] = useState(daquiADias(3));
   const [recadoChamada, setRecadoChamada] = useState('');
+
+  // A taxa fica no navegador de quem compra: é a mesma em toda
+  // cotação, e ninguém quer escolher de novo a cada tela.
+  const [taxa, setTaxa] = useState(() => {
+    try {
+      const guardada = localStorage.getItem(ONDE_GUARDA_A_TAXA);
+      return guardada && TAXAS_DE_CUSTO_DO_DINHEIRO.includes(Number(guardada)) ? guardada : '0';
+    } catch {
+      return '0';
+    }
+  });
+
+  function guardarTaxa(nova: string) {
+    setTaxa(nova);
+    try {
+      localStorage.setItem(ONDE_GUARDA_A_TAXA, nova);
+    } catch {
+      // Navegador sem armazenamento: a escolha vale só nesta visita.
+    }
+  }
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -338,6 +366,20 @@ export function Equalizacao() {
                     <th scope="row">
                       <span className="mono">{l.codigo}</span>
                       <small className="linha-extra">{l.descricao}</small>
+                      {/* "Da última vez pagamos X" — a pergunta
+                          número um de quem compra, na hora de
+                          decidir e não num relatório depois. */}
+                      {(() => {
+                        const h = dados.historico?.find((x) => x.bidItemId === l.bidItemId);
+                        if (!h?.ultimaCompra) return null;
+
+                        return (
+                          <small className="linha-extra linha-extra--historico">
+                            Última compra: {dinheiro(h.ultimaCompra.valorUnitario)} em{' '}
+                            {dataBr(h.ultimaCompra.quando)}
+                          </small>
+                        );
+                      })()}
                     </th>
                     <td className="numero">
                       {qtdBr(l.quantidade)} {l.unidadeMedida}
@@ -434,29 +476,81 @@ export function Equalizacao() {
           </p>
         </div>
 
-        <div className="grade grade--larga">
-          {dados.condicoes.map((cond) => (
-            <Cartao key={cond.bidFornecedorId} titulo={cond.fornecedor}>
-              <dl className="dados">
-                <div>
-                  <dt>Pagamento</dt>
-                  <dd>{cond.pagamento}</dd>
-                </div>
-                <div>
-                  <dt>Frete</dt>
-                  <dd>{dinheiro(cond.frete)}</dd>
-                </div>
-                {cond.outrosCustos > 0 && (
-                  <div>
-                    <dt>Outros</dt>
-                    <dd>{dinheiro(cond.outrosCustos)}</dd>
-                  </div>
-                )}
-              </dl>
-              {cond.observacao && <p className="funcao__descricao">{cond.observacao}</p>}
-            </Cartao>
-          ))}
+        <div className="barra-acoes">
+          <Selecao
+            rotulo="Custo do dinheiro"
+            valor={taxa}
+            aoMudar={guardarTaxa}
+            semMarcaOpcional
+            opcoes={TAXAS_DE_CUSTO_DO_DINHEIRO.map((t) => ({
+              valor: String(t),
+              rotulo: t === 0 ? 'Não considerar' : porcentoAoMes(t),
+            }))}
+          />
         </div>
+
+        <div className="grade grade--larga">
+          {dados.condicoes.map((cond) => {
+            const resumo = c.fornecedores.find(
+              (f) => f.bidFornecedorId === cond.bidFornecedorId,
+            );
+            const total = resumo?.totalSeFecharTudo ?? null;
+            const ganho = ganhoDoPrazo(total, cond.prazoMedioPagamento, Number(taxa));
+
+            return (
+              <Cartao key={cond.bidFornecedorId} titulo={cond.fornecedor}>
+                <dl className="dados">
+                  <div>
+                    <dt>Pagamento</dt>
+                    <dd>{cond.pagamento}</dd>
+                  </div>
+                  <div>
+                    <dt>Prazo médio</dt>
+                    <dd>
+                      {cond.prazoMedioPagamento === null
+                        ? '—'
+                        : cond.prazoMedioPagamento === 0
+                          ? 'À vista'
+                          : diasBr(cond.prazoMedioPagamento)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Frete</dt>
+                    <dd>{dinheiro(cond.frete)}</dd>
+                  </div>
+                  {cond.outrosCustos > 0 && (
+                    <div>
+                      <dt>Outros</dt>
+                      <dd>{dinheiro(cond.outrosCustos)}</dd>
+                    </div>
+                  )}
+                  {/* Só aparece quando a empresa disse quanto custa o
+                      dinheiro dela. Sem taxa não há o que converter. */}
+                  {ganho > 0 && total !== null && (
+                    <div>
+                      <dt>Equivale à vista a</dt>
+                      <dd>
+                        <strong>{dinheiro(total - ganho)}</strong>
+                        <span className="dado__extra">
+                          {dinheiro(ganho)} a menos que {dinheiro(total)}, pelo prazo
+                        </span>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                {cond.observacao && <p className="funcao__descricao">{cond.observacao}</p>}
+              </Cartao>
+            );
+          })}
+        </div>
+
+        {Number(taxa) > 0 && (
+          <p className="texto-fraco">
+            O "equivale à vista" desconta {porcentoAoMes(Number(taxa))} sobre o prazo médio
+            de cada proposta. Serve para comparar: quem paga depois usa o caixa da
+            construtora até lá. Só vale para quem cotou o pacote inteiro.
+          </p>
+        )}
       </section>
 
       {/* ---------------- Decisão ---------------- */}

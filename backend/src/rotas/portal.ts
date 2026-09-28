@@ -40,7 +40,20 @@ const esquemaResposta = z.object({
   quantidadeParcelas: z.coerce.number().int().min(1).max(60).nullable().optional(),
   intervaloParcelasDias: z.coerce.number().int().min(1).max(365).nullable().optional(),
   observacaoFornecedor: textoOpcional(1000),
-});
+})
+  // 100% DE ENTRADA E PARCELAS NÃO EXISTEM JUNTOS.
+  //
+  // Um fornecedor respondeu "100% de entrada + 5x a cada 30 dias" e
+  // o sistema guardou. Não é preciosismo: é a conta do prazo médio
+  // de pagamento, que compara propostas. Com 100% de entrada ela dá
+  // "à vista", e as cinco parcelas somem sem ninguém ser avisado.
+  .refine(
+    (d) => !(d.percentualEntrada === 100 && (d.quantidadeParcelas ?? 0) > 1),
+    {
+      path: ['quantidadeParcelas'],
+      message: 'Com 100% de entrada não há parcelas. Reduza a entrada ou deixe as parcelas em branco.',
+    },
+  );
 
 /** Carrega o convite pelo token, com tudo que o portal precisa. */
 async function carregarConvite(token: string) {

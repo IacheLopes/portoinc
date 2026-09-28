@@ -360,6 +360,8 @@ export interface Equalizacao {
     frete: number;
     outrosCustos: number;
     pagamento: string;
+    /** Em quantos dias, em média, o dinheiro sai do caixa. */
+    prazoMedioPagamento: number | null;
     observacao: string | null;
   }>;
   comparativo: {
@@ -373,6 +375,18 @@ export interface Equalizacao {
     economiaAoMisturar: number;
     itensSemCotacao: number;
   };
+  /**
+   * Quanto a empresa pagou da última vez, por item.
+   *
+   * A pergunta número um de quem compra. O sistema guardava a
+   * resposta e não mostrava: numa compra da validação o solicitante
+   * estimou R$ 52,00 o saco de cimento e o mercado cobrou R$ 20,00.
+   * Aqui o comprador vê a comparação ANTES de escolher.
+   */
+  historico: Array<{
+    bidItemId: string;
+    ultimaCompra: { valorUnitario: number; quando: string } | null;
+  }>;
   escolhas: Record<string, string>;
 }
 
@@ -487,4 +501,45 @@ export function buscarPedido(id: string) {
 
 export function baixarPdfPedido(id: string, nome: string) {
   return baixarArquivo('/api/pedidos/' + id + '/pdf', nome + '.pdf');
+}
+
+// ------------------------------------------------------------
+//  O prazo de pagamento vale dinheiro
+// ------------------------------------------------------------
+
+/**
+ * Quanto custa o dinheiro da construtora, ao mês.
+ *
+ * Faixas, e não campo aberto: ninguém sabe esse número com duas
+ * casas — sabe se está perto de 1% ou de 3%. Começa em zero de
+ * propósito, porque enquanto a empresa não disser a taxa dela o
+ * sistema não arbitra nenhuma.
+ */
+export const TAXAS_DE_CUSTO_DO_DINHEIRO = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+
+export const ONDE_GUARDA_A_TAXA = 'portoink.custo-do-dinheiro';
+
+/**
+ * Quanto vale, em reais, o prazo que o fornecedor deu.
+ *
+ * Duas propostas com o mesmo preço não custam o mesmo: quem aceita
+ * receber em 3x está emprestando dinheiro para a construtora, quem
+ * exige tudo na entrega não está.
+ *
+ * Desconto simples sobre o custo mensal, que é como se fala disso
+ * na obra ("1,5% ao mês"). Não usamos juro composto: em 60 dias a
+ * diferença é de centavos, e a conta precisa ser explicável para
+ * quem vai assinar.
+ *
+ * O prazo médio em dias vem do servidor, em `prazoMedioPagamento`.
+ * A taxa vem da tela — é por isso que esta conta mora aqui e não lá.
+ */
+export function ganhoDoPrazo(
+  total: number | null,
+  prazoMedioDias: number | null,
+  taxaMensal: number,
+): number {
+  if (total === null || prazoMedioDias === null || taxaMensal <= 0) return 0;
+
+  return Math.round(total * (taxaMensal / 100) * (prazoMedioDias / 30) * 100) / 100;
 }

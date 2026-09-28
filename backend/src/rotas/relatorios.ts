@@ -1,13 +1,14 @@
 // ============================================================
 //  Relatórios
 //
-//  Cinco perguntas que alguém faz de verdade na construtora:
+//  Seis perguntas que alguém faz de verdade na construtora:
 //
-//    1. /orcamento     A obra está estourando o orçamento?
-//    2. /economia      A cotação valeu a pena?
-//    3. /fornecedores  Em quem dá para confiar?
-//    4. /tempos        Onde o processo trava?
-//    5. /consumo       O que a empresa mais compra?
+//    1. /orcamento       A obra está estourando o orçamento?
+//    2. /economia        A cotação valeu a pena?
+//    3. /fornecedores    Em quem dá para confiar?
+//    4. /tempos          Onde o processo trava?
+//    5. /consumo         O que a empresa mais compra?
+//    6. /estoque-parado  Que dinheiro está encostado na prateleira?
 //
 //  As contas ficam em servicos/relatorios.ts. Aqui só buscamos
 //  os dados e passamos para lá — é o que permite testar as
@@ -25,9 +26,11 @@ import {
   analisarFornecedores,
   medirTempos, tempoTotal,
   consumoPorFamilia, materiaisMaisComprados,
+  acharEstoqueParado, DIAS_PARADO_PADRAO,
   type LinhaDeOrcamento, type CotacaoParaAnalise,
   type FornecedorParaAnalise, type EntregaDoFornecedor,
   type PassagemDaSolicitacao, type ItemComprado,
+  type MaterialNaPrateleira,
 } from '../servicos/relatorios.js';
 import {
   gerarArquivoDaTabela, formatoValido,
@@ -59,6 +62,8 @@ interface Filtro {
   de?: string;
   ate?: string;
   formato?: string;
+  /** Só no estoque parado: a partir de quantos dias sem sair. */
+  dias?: string;
 }
 
 /**
@@ -275,6 +280,32 @@ export async function rotasRelatorios(app: FastifyInstance) {
       0,
     );
 
+    // COMPROMETIDO: dinheiro que já tem dono e ainda não virou
+    // compra. Solicitação aprovada esperando cotação, e cotação em
+    // andamento. Pedido já emitido não entra aqui — ele já conta
+    // como comprado acima.
+    //
+    // Sem isso o relatório era espelho retrovisor: quem olhasse
+    // "gastei 3%" acharia que tinha 97% na mão.
+    const emAndamento = await banco.solicitacaoItem.findMany({
+      where: {
+        solicitacao: { obraId, situacao: { in: ['APROVADA', 'EM_COTACAO'] } },
+        // O que já virou pedido não é mais promessa, é compra —
+        // e já foi somado no "realizado" acima. Contar nos dois
+        // lugares dobraria o dinheiro.
+        OR: [
+          { itemBid: null },
+          { itemBid: { pedidoItem: null } },
+        ],
+      },
+      select: { quantidade: true, valorEstimado: true },
+    });
+
+    const comprometido = emAndamento.reduce(
+      (s, i) => s + val(i.quantidade) * val(i.valorEstimado),
+      0,
+    );
+
     const realizadoPorLinha = new Map<string, number>();
     let semApontamento = 0;
 
@@ -328,7 +359,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
     }
 
     const linhas = compararOrcamento(entrada);
-    const resumo = resumirOrcamento(linhas);
+    const resumo = resumirOrcamento(linhas, comprometido);
     const obra = obras.find((o) => o.id === obraId) ?? null;
 
     const formato = lerFormato(q);
@@ -343,7 +374,10 @@ export async function rotasRelatorios(app: FastifyInstance) {
           { rotulo: 'Obra', valor: (obra?.codigo ?? '—') + ' · ' + (obra?.nome ?? '') },
           { rotulo: 'Previsto', valor: dinheiro(resumo.previsto) },
           { rotulo: 'Já comprado', valor: dinheiro(resumo.realizado) },
-          { rotulo: 'Saldo', valor: dinheiro(resumo.saldo) },
+          // Entre o gasto e o saldo, de propósito: é o número que
+          // explica por que o saldo é menor do que parece.
+          { rotulo: 'Comprometido', valor: dinheiro(resumo.comprometido) },
+          { rotulo: 'Saldo livre', valor: dinheiro(resumo.saldo) },
           { rotulo: 'Consumido', valor: pct(resumo.consumido) },
           {
             rotulo: 'Linhas em alerta',
@@ -381,6 +415,12 @@ export async function rotasRelatorios(app: FastifyInstance) {
             ? 'A linha "(frete)" reúne ' + dinheiro(freteEOutros) +
               ' de frete e outros custos dos pedidos. Ele não pertence a nenhuma ' +
               'linha do orçamento, mas saiu do caixa da obra.'
+            : null,
+          comprometido > 0
+            ? 'O "comprometido" são ' + dinheiro(comprometido) +
+              ' em solicitações já aprovadas que ainda não viraram pedido. ' +
+              'O dinheiro não saiu, mas já tem dono — por isso o saldo livre ' +
+              'desconta os dois.'
             : null,
           semApontamento > 0 || freteEOutros > 0
             ? 'As duas aparecem para o total continuar batendo com o que foi gasto.'
@@ -683,6 +723,9 @@ export async function rotasRelatorios(app: FastifyInstance) {
           colunas: [
             { titulo: 'Fornecedor', campo: 'nome', peso: 1.6 },
             { titulo: 'Comprado', campo: 'comprado', peso: 1.6, numero: true },
+            // Logo depois do valor: é a leitura dele. R$ 3.000 não
+            // diz nada; R$ 3.000 sendo 100% das compras diz tudo.
+            { titulo: 'Participação', campo: 'participacao', peso: 1.1, numero: true },
             { titulo: 'Respostas', campo: 'respostas', peso: 1.2, numero: true },
             { titulo: 'Entregas', campo: 'entregas', peso: 0.8, numero: true },
             { titulo: 'Pontualidade', campo: 'pontualidade', peso: 1.3, numero: true },
@@ -694,6 +737,12 @@ export async function rotasRelatorios(app: FastifyInstance) {
           linhas: desempenho.map((f) => ({
             nome: f.nome,
             comprado: dinheiro(f.valorComprado) + ' · ' + f.pedidos + ' pedido(s)',
+            // A marca de atenção vai no TEXTO, e não só numa cor:
+            // este relatório é lido impresso, em reunião.
+            participacao:
+              f.valorComprado > 0
+                ? pct(f.participacao) + (f.concentracao === 'ATENCAO' ? ' ⚠' : '')
+                : '—',
             respostas: f.respostas + ' de ' + f.convites + ' (' + pct(f.taxaDeResposta) + ')',
             entregas: String(f.entregas),
             pontualidade: f.entregas === 0
@@ -705,7 +754,10 @@ export async function rotasRelatorios(app: FastifyInstance) {
             leitura: f.leitura,
           })),
         }],
-        nota: 'Pontualidade compara com o prazo que o PRÓPRIO fornecedor prometeu na cotação. ' +
+        nota: 'Participação marcada com ⚠ passa de 40% das compras da empresa: ' +
+          'aí o fornecedor deixa de ser opção e vira dependência — quando ele ' +
+          'subir o preço, não há para onde correr. ' +
+          'Pontualidade compara com o prazo que o PRÓPRIO fornecedor prometeu na cotação. ' +
           'A leitura só vira veredito a partir de 3 entregas: com uma ou duas, ' +
           'qualquer conta dá 0% ou 100%.',
       }, formato);
@@ -950,5 +1002,128 @@ export async function rotasRelatorios(app: FastifyInstance) {
       familias, materiais, total,
       linhas: itens.length,
     };
+  });
+
+  // --------------------------------------------------------
+  //  6. Estoque parado
+  // --------------------------------------------------------
+  app.get('/api/relatorios/estoque-parado', protegido, async (req, reply) => {
+    const q = req.query as Filtro;
+
+    // Quantos dias é "parado" depende da obra: cimento encostado
+    // 90 dias é desperdício, andaime encostado 90 dias pode ser
+    // planejamento. Quem lê o relatório é que sabe, então o número
+    // vem da tela.
+    const dias = Number.isFinite(Number(q.dias)) && Number(q.dias) > 0
+      ? Math.min(Math.trunc(Number(q.dias)), 3650)
+      : DIAS_PARADO_PADRAO;
+
+    const saldos = await banco.saldoEstoque.findMany({
+      where: { quantidade: { gt: 0 } },
+      select: {
+        quantidade: true, custoMedio: true,
+        almoxarifado: { select: { id: true, nome: true } },
+        material: {
+          select: {
+            id: true, codigoInterno: true, descricao: true, unidadeMedida: true,
+            familia: { select: { nome: true } },
+          },
+        },
+      },
+    });
+
+    // Uma consulta só para todos os movimentos que interessam, em vez
+    // de uma por material: com o estoque cheio isso seria uma
+    // consulta por linha da tela.
+    const movimentos = await banco.movimentoEstoque.findMany({
+      where: {
+        almoxarifadoId: { in: [...new Set(saldos.map((s) => s.almoxarifado.id))] },
+        materialId: { in: [...new Set(saldos.map((s) => s.material.id))] },
+      },
+      orderBy: { criadoEm: 'asc' },
+      select: { almoxarifadoId: true, materialId: true, tipo: true, criadoEm: true },
+    });
+
+    const chave = (almoxarifado: string, material: string) => almoxarifado + '|' + material;
+
+    const ultimaSaida = new Map<string, Date>();
+    const primeiraEntrada = new Map<string, Date>();
+
+    for (const m of movimentos) {
+      const k = chave(m.almoxarifadoId, m.materialId);
+
+      // Transferência é o material andando dentro da empresa, e
+      // conta: saiu deste almoxarifado, está parado no outro.
+      if (m.tipo === 'SAIDA' || m.tipo === 'TRANSFERENCIA_SAIDA') {
+        ultimaSaida.set(k, m.criadoEm);
+      }
+
+      if (!primeiraEntrada.has(k)) primeiraEntrada.set(k, m.criadoEm);
+    }
+
+    const prateleira: MaterialNaPrateleira[] = saldos.map((s) => {
+      const k = chave(s.almoxarifado.id, s.material.id);
+
+      return {
+        codigo: s.material.codigoInterno,
+        descricao: s.material.descricao,
+        familia: s.material.familia.nome,
+        unidadeMedida: s.material.unidadeMedida,
+        almoxarifado: s.almoxarifado.nome,
+        quantidade: val(s.quantidade),
+        custoMedio: numero(s.custoMedio),
+        ultimaSaida: ultimaSaida.get(k) ?? null,
+        primeiraEntrada: primeiraEntrada.get(k) ?? null,
+      };
+    });
+
+    const { linhas, resumo } = acharEstoqueParado(prateleira, dias);
+
+    const formato = lerFormato(q);
+    if (formato === 'invalido') return reply.status(400).send(RECUSA_DE_FORMATO);
+
+    if (formato) {
+      return entregarArquivo(reply, {
+        arquivo: 'estoque-parado',
+        titulo: 'Estoque parado',
+        subtitulo: 'Dinheiro já pago que está encostado no almoxarifado',
+        resumo: [
+          { rotulo: 'Parado há mais de', valor: dias + ' dias' },
+          { rotulo: 'Dinheiro encostado', valor: dinheiro(resumo.valorParado) },
+          { rotulo: 'Materiais', valor: String(resumo.itens) },
+          { rotulo: 'Nunca saíram', valor: String(resumo.nuncaSairam) },
+        ],
+        tabelas: [
+          {
+            titulo: 'O que está encostado',
+            colunas: [
+              { titulo: 'Código', campo: 'codigo', peso: 0.8 },
+              { titulo: 'Descrição', campo: 'descricao', peso: 2.6 },
+              { titulo: 'Almoxarifado', campo: 'almoxarifado', peso: 1.4 },
+              { titulo: 'Saldo', campo: 'saldo', peso: 1.1, numero: true },
+              { titulo: 'Custo médio', campo: 'custoMedio', peso: 1.1, numero: true },
+              { titulo: 'Parado', campo: 'parado', peso: 1.4, numero: true },
+              { titulo: 'Dinheiro', campo: 'valor', peso: 1.2, numero: true },
+            ],
+            linhas: linhas.map((l) => ({
+              codigo: l.codigo,
+              descricao: l.descricao,
+              almoxarifado: l.almoxarifado,
+              saldo: qtd(l.quantidade) + ' ' + l.unidadeMedida,
+              custoMedio: l.custoMedio === null ? '—' : dinheiro(l.custoMedio),
+              // No papel não há selo: a palavra é que avisa.
+              parado: l.diasParado + ' dias' +
+                (l.motivo === 'NUNCA_SAIU' ? ' · nunca saiu' : ''),
+              valor: dinheiro(l.valorParado),
+            })),
+          },
+        ],
+        nota: resumo.leitura + ' A conta é do último dia em que o material saiu; ' +
+          'quando nunca saiu, vale a data em que entrou. ' +
+          'O dinheiro é o saldo pelo custo médio do almoxarifado.',
+      }, formato);
+    }
+
+    return { dias, linhas, resumo };
   });
 }

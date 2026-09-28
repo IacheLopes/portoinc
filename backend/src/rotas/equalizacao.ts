@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
 import {
-  formatarNumeroBid, podeIrPara, descreverPagamento,
+  formatarNumeroBid, podeIrPara, descreverPagamento, prazoMedioDePagamento,
   type SituacaoBid,
 } from '../servicos/cotacao.js';
 import {
@@ -190,6 +190,50 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         custos,
       );
 
+      // QUANTO PAGAMOS DA ÚLTIMA VEZ.
+      //
+      // A pergunta número um de quem compra, e o sistema tinha a
+      // resposta guardada sem mostrar para ninguém. Na validação de
+      // 28/09/2026 uma compra fechou 56% abaixo do que o solicitante
+      // estimou — ele teria acertado o chute se soubesse o preço da
+      // última vez.
+      //
+      // Aqui, na equalização, é onde o número vale mais: o comprador
+      // vê "R$ 51,00 · 155% acima da última compra" antes de
+      // escolher, e não depois, num relatório.
+      const materiaisDoPacote = [...new Set(bid.itens.map((i) => i.materialId))];
+
+      const comprasAnteriores = await banco.pedidoItem.findMany({
+        where: {
+          bidItem: { materialId: { in: materiaisDoPacote }, bidId: { not: id } },
+          pedido: { situacao: { not: 'CANCELADO' } },
+        },
+        orderBy: { pedido: { criadoEm: 'desc' } },
+        select: {
+          valorUnitario: true,
+          bidItem: { select: { materialId: true } },
+          pedido: { select: { criadoEm: true } },
+        },
+      });
+
+      // A mais recente de cada material. A lista já vem ordenada,
+      // então a primeira que aparecer é a que vale.
+      const ultimaCompra: Record<string, { valorUnitario: number; quando: Date }> = {};
+      for (const c of comprasAnteriores) {
+        const material = c.bidItem.materialId;
+        if (ultimaCompra[material]) continue;
+
+        ultimaCompra[material] = {
+          valorUnitario: numero(c.valorUnitario) ?? 0,
+          quando: c.pedido.criadoEm,
+        };
+      }
+
+      const historico = bid.itens.map((item) => ({
+        bidItemId: item.id,
+        ultimaCompra: ultimaCompra[item.materialId] ?? null,
+      }));
+
       // Escolhas já feitas pelo comprador.
       const escolhas: Record<string, string> = {};
       for (const item of bid.itens) {
@@ -221,9 +265,19 @@ export async function rotasEqualizacao(app: FastifyInstance) {
               c.quantidadeParcelas,
               c.intervaloParcelasDias,
             ),
+            // O prazo vale dinheiro: quem paga depois usa o caixa
+            // da construtora de graça até lá. A conversão em reais
+            // fica na tela, onde o comprador informa quanto custa o
+            // dinheiro da empresa.
+            prazoMedioPagamento: prazoMedioDePagamento(
+              numero(c.percentualEntrada),
+              c.quantidadeParcelas,
+              c.intervaloParcelasDias,
+            ),
             observacao: c.observacaoFornecedor,
           })),
         comparativo,
+        historico,
         escolhas,
       };
     },

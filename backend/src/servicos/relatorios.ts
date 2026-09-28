@@ -91,21 +91,40 @@ export function compararOrcamento(linhas: LinhaDeOrcamento[]): LinhaComparada[] 
 export interface ResumoDoOrcamento {
   previsto: number;
   realizado: number;
+  /**
+   * Dinheiro que já tem dono e ainda não virou compra.
+   *
+   * Solicitação aprovada esperando cotação, cotação em andamento,
+   * pedido emitido que ainda não chegou. Não saiu do caixa, mas
+   * também não está disponível.
+   *
+   * Sem isso o relatório era espelho retrovisor: o engenheiro via
+   * "gastei 3%" e achava que tinha 97% na mão, quando metade já
+   * estava prometida. É a informação que mais evita estouro.
+   */
+  comprometido: number;
+  /** Previsto menos o que saiu E o que já está prometido. */
   saldo: number;
   consumido: number;
   linhasEstouradas: number;
   linhasEmAtencao: number;
 }
 
-export function resumirOrcamento(linhas: LinhaComparada[]): ResumoDoOrcamento {
+export function resumirOrcamento(
+  linhas: LinhaComparada[],
+  comprometido = 0,
+): ResumoDoOrcamento {
   const previsto = arredondar(linhas.reduce((s, l) => s + l.previsto, 0));
   const realizado = arredondar(linhas.reduce((s, l) => s + l.realizado, 0));
 
   return {
     previsto,
     realizado,
-    saldo: arredondar(previsto - realizado),
-    consumido: porcentagem(realizado, previsto),
+    comprometido: arredondar(comprometido),
+    // O saldo desconta os DOIS. Mostrar só o gasto seria prometer
+    // um dinheiro que já foi prometido.
+    saldo: arredondar(previsto - realizado - comprometido),
+    consumido: porcentagem(realizado + comprometido, previsto),
     linhasEstouradas: linhas.filter((l) => l.situacao === 'ESTOUROU').length,
     linhasEmAtencao: linhas.filter((l) => l.situacao === 'ATENCAO').length,
   };
@@ -218,11 +237,36 @@ export interface DesempenhoDoFornecedor {
   qualidade: number;
   /** Uma frase curta resumindo o fornecedor. */
   leitura: string;
+  /** Quanto das compras da empresa passou por ele, em %. */
+  participacao: number;
+  /**
+   * Depender demais dele é risco?
+   *
+   * A pergunta que a diretoria faz e que nenhum relatório
+   * respondia. Se um fornecedor concentra a maior parte das
+   * compras, ele deixa de ser opção e vira dependência: quando
+   * subir o preço, não há para onde correr.
+   */
+  concentracao: 'OK' | 'ATENCAO';
 }
+
+/**
+ * A partir de quanto a dependência de um fornecedor vira risco.
+ *
+ * Não é um número sagrado: é o ponto em que a empresa perde poder de
+ * barganha. Acima disso, se ele quebrar ou subir o preço, a obra
+ * para ou paga o que ele pedir.
+ */
+const CONCENTRACAO_DE_RISCO = 40;
 
 export function analisarFornecedores(
   fornecedores: FornecedorParaAnalise[],
 ): DesempenhoDoFornecedor[] {
+  // Quanto a empresa comprou ao todo, para medir de quem ela
+  // depende. A conta é feita ANTES do mapa porque cada fornecedor
+  // precisa saber o tamanho do bolo, não só o pedaço dele.
+  const totalDaEmpresa = fornecedores.reduce((s, f) => s + f.valorComprado, 0);
+
   return fornecedores
     .map((f) => {
       const comPrazo = f.entregas.filter(
@@ -241,6 +285,7 @@ export function analisarFornecedores(
       const pontualidade = comPrazo.length > 0 ? porcentagem(noPrazo, comPrazo.length) : 100;
       const qualidade = f.entregas.length > 0 ? porcentagem(semProblema, f.entregas.length) : 100;
       const taxaDeResposta = porcentagem(f.respostas, f.convites);
+      const participacao = porcentagem(f.valorComprado, totalDaEmpresa);
 
       return {
         nome: f.nome,
@@ -256,6 +301,13 @@ export function analisarFornecedores(
         ressalvas,
         devolucoes,
         qualidade,
+        participacao,
+        // Só acusa quem de fato comprou: um fornecedor com 100% de
+        // zero não é dependência, é lista vazia.
+        concentracao:
+          f.valorComprado > 0 && participacao >= CONCENTRACAO_DE_RISCO
+            ? ('ATENCAO' as const)
+            : ('OK' as const),
         leitura: lerFornecedor({
           entregas: f.entregas.length,
           convites: f.convites,
@@ -501,4 +553,132 @@ export function materiaisMaisComprados(
     }))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, limite);
+}
+
+// ------------------------------------------------------------
+//  6. Estoque parado
+//
+//  Material encostado no almoxarifado é dinheiro que a empresa
+//  já pagou e ainda não usou. Ele não aparece em relatório
+//  nenhum: o orçado × realizado já deu a compra por gasta, e o
+//  saldo de estoque diz o que tem, nunca há quanto tempo está lá.
+// ------------------------------------------------------------
+
+/** Quantos dias sem sair até um material virar caso para olhar. */
+export const DIAS_PARADO_PADRAO = 90;
+
+export interface MaterialNaPrateleira {
+  codigo: string;
+  descricao: string;
+  familia: string;
+  unidadeMedida: string;
+  almoxarifado: string;
+  quantidade: number;
+  /** Custo médio ponderado. Nulo quando nunca houve entrada valorizada. */
+  custoMedio: number | null;
+  /** Última vez que saiu material. Nulo: nunca saiu nada. */
+  ultimaSaida: Date | null;
+  /** Quando este material apareceu no almoxarifado. */
+  primeiraEntrada: Date | null;
+}
+
+export interface LinhaDeEstoqueParado extends MaterialNaPrateleira {
+  /** Dias desde a última saída — ou desde que entrou, se nunca saiu. */
+  diasParado: number;
+  /** Quanto dinheiro está encostado nesta linha. */
+  valorParado: number;
+  /** NUNCA_SAIU dói mais do que PAROU: foi comprado à toa. */
+  motivo: 'NUNCA_SAIU' | 'PAROU';
+}
+
+export interface ResumoDoEstoqueParado {
+  /** Soma do dinheiro encostado. */
+  valorParado: number;
+  itens: number;
+  /** Quantos nunca tiveram uma saída sequer. */
+  nuncaSairam: number;
+  /** O material parado há mais tempo. */
+  maisAntigo: number;
+  leitura: string;
+}
+
+/**
+ * Separa o que está encostado há mais de `dias`.
+ *
+ * Conta da última SAÍDA, não da entrada. Material que entrou
+ * ontem e nunca saiu é justamente o caso ruim — contar da entrada
+ * o esconderia por três meses.
+ */
+export function acharEstoqueParado(
+  materiais: MaterialNaPrateleira[],
+  dias = DIAS_PARADO_PADRAO,
+  hoje = new Date(),
+): { linhas: LinhaDeEstoqueParado[]; resumo: ResumoDoEstoqueParado } {
+  const linhas: LinhaDeEstoqueParado[] = [];
+
+  for (const m of materiais) {
+    // Saldo zerado não é dinheiro parado, é prateleira vazia.
+    if (m.quantidade <= 0) continue;
+
+    const desde = m.ultimaSaida ?? m.primeiraEntrada;
+
+    // Sem nenhuma data não há o que julgar. Acusar de parado o que
+    // não se sabe seria pior do que ficar calado.
+    if (!desde) continue;
+
+    const diasParado = diasEntre(desde, hoje);
+    if (diasParado < dias) continue;
+
+    linhas.push({
+      ...m,
+      diasParado,
+      valorParado: arredondar(m.quantidade * (m.custoMedio ?? 0)),
+      motivo: m.ultimaSaida ? 'PAROU' : 'NUNCA_SAIU',
+    });
+  }
+
+  linhas.sort((a, b) => b.valorParado - a.valorParado || b.diasParado - a.diasParado);
+
+  const valorParado = arredondar(linhas.reduce((s, l) => s + l.valorParado, 0));
+  const nuncaSairam = linhas.filter((l) => l.motivo === 'NUNCA_SAIU').length;
+  const maisAntigo = linhas.reduce((maior, l) => Math.max(maior, l.diasParado), 0);
+
+  return {
+    linhas,
+    resumo: {
+      valorParado,
+      itens: linhas.length,
+      nuncaSairam,
+      maisAntigo,
+      leitura: lerEstoqueParado(linhas.length, valorParado, nuncaSairam, dias),
+    },
+  };
+}
+
+function lerEstoqueParado(
+  itens: number,
+  valor: number,
+  nuncaSairam: number,
+  dias: number,
+): string {
+  if (itens === 0) {
+    return 'Nada encostado há mais de ' + dias + ' dias. O estoque está girando.';
+  }
+
+  const reais = valor.toLocaleString('pt-BR', {
+    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
+  });
+
+  const abertura = itens === 1
+    ? 'Um material está parado'
+    : itens + ' materiais estão parados';
+
+  const fim = nuncaSairam > 0
+    ? ' ' + (nuncaSairam === 1
+      ? 'Um deles nunca saiu do almoxarifado desde que chegou.'
+      : nuncaSairam + ' deles nunca saíram do almoxarifado desde que chegaram.')
+    : '';
+
+  return abertura + ' há mais de ' + dias + ' dias, somando ' + reais +
+    ' de dinheiro já pago e ainda sem uso.' + fim;
 }

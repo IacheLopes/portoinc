@@ -1,4 +1,4 @@
-<!-- versao: 0.37.0 -->
+<!-- versao: 0.38.0 -->
 
 # 1. Antes de começar
 
@@ -1129,6 +1129,18 @@ Quem não cotou aquele item aparece como **não cotou**, e a célula não é cli
 
 Nas duas últimas linhas vêm **frete e outros custos** e o **total fechando tudo com um só**.
 
+## Quanto pagamos da última vez
+
+Embaixo da descrição de cada item, quando o material já foi comprado antes, aparece:
+
+> *Última compra: R$ 18,50 em 12/08/2026*
+
+É a pergunta número um de quem compra, e o sistema tinha a resposta guardada sem mostrar para ninguém.
+
+Na validação de 28/09/2026 uma compra fechou **56% abaixo** do que o solicitante tinha estimado. Ele teria acertado o chute se soubesse o preço da última vez — e o comprador teria sabido, na hora de escolher, que a proposta era boa de verdade.
+
+O número vem do **último pedido** daquele material, seja de qual fornecedor for, ignorando pedidos cancelados. Material comprado pela primeira vez não mostra linha nenhuma.
+
 ## Escolhendo item a item
 
 **Clique na célula** do fornecedor que você quer para aquele item. Ela fica marcada. Clicando de novo, você desmarca.
@@ -1152,6 +1164,40 @@ Marca de uma vez o vencedor de cada linha. Serve como **ponto de partida**: depo
 Abaixo do mapa fica o quadro **Condições comerciais**, com o que cada fornecedor ofereceu de pagamento, frete e validade da proposta.
 
 > Um fornecedor R$ 300 mais caro que parcela em 3x pode ser melhor para o caixa da obra do que um mais barato à vista. O sistema mostra os dois lados — **a decisão é sua**.
+
+### Prazo médio: comparando maçã com maçã
+
+Cada fornecedor mostra o **prazo médio de pagamento**: em quantos dias, na média, o dinheiro sai do caixa.
+
+Não é o prazo da última parcela. É a média **ponderada**: a entrada pesa no dia 0, e cada parcela no dia em que vence.
+
+| Proposta | Prazo médio |
+|---|---|
+| Tudo na entrega | **À vista** |
+| 3x a cada 30 dias | **60 dias** (vence em 30, 60 e 90) |
+| 30% de entrada + 2x de 30 dias | **31,5 dias** |
+
+Fornecedor que informou parcelas **sem dizer o intervalo** aparece com **—**: o sistema não inventa 30 dias para ele, porque isso seria colocar palavra na boca de quem cotou.
+
+### Custo do dinheiro: transformando prazo em reais
+
+No alto do quadro há a caixa **Custo do dinheiro**, que começa em **Não considerar**.
+
+Escolhendo uma taxa — 0,5%, 1%, 1,5%, 2%, 2,5% ou 3% ao mês —, cada fornecedor passa a mostrar quanto a proposta dele **equivale à vista**:
+
+> **R$ 9.700,00** — R$ 300,00 a menos que R$ 10.000,00, pelo prazo
+
+A conta é simples e de propósito: *total × taxa ÷ 100 × dias ÷ 30*. Desconto simples, não juro composto — em 60 dias a diferença é de centavos, e a conta precisa ser explicável para quem vai assinar.
+
+**Por que começa em zero.** Cada empresa tem um custo de dinheiro diferente: depende do capital de giro, do limite no banco, da taxa que ela paga. Enquanto a Porto Inc. não disser qual é o dela, o sistema **não arbitra nenhum número** — mostra só o prazo em dias. Quem definir a taxa, escolhe na caixa; a escolha fica guardada no navegador e vale para as próximas cotações.
+
+> O "equivale à vista" só aparece para quem cotou o **pacote inteiro**. Fornecedor que cotou metade não tem total para descontar.
+
+### 100% de entrada não tem parcela
+
+Se um fornecedor tentar responder **100% de entrada** e ao mesmo tempo **5x a cada 30 dias**, o portal recusa e explica.
+
+As duas coisas não existem juntas. O sistema aceitou essa combinação uma vez, e o prazo médio leu aquilo como "à vista", engolindo as cinco parcelas sem avisar ninguém.
 
 ## Salvando
 
@@ -2130,9 +2176,9 @@ Até aqui o sistema **guardou** informação. Esta tela é onde ela finalmente *
 
 O ponto importante: **nada é digitado de novo**. Todo número desta tela sai do que já aconteceu — a solicitação que alguém abriu, o preço que o fornecedor mandou, o pedido que o comprador fechou, a carga que o almoxarife conferiu. Se um número parecer errado, a resposta está no fluxo, não no relatório.
 
-## Cinco perguntas, cinco abas
+## Seis perguntas, seis abas
 
-A tela tem cinco abas. Cada uma responde a **uma pergunta** que alguém faz de verdade na construtora:
+A tela tem seis abas. Cada uma responde a **uma pergunta** que alguém faz de verdade na construtora:
 
 | Aba | A pergunta |
 |---|---|
@@ -2141,6 +2187,7 @@ A tela tem cinco abas. Cada uma responde a **uma pergunta** que alguém faz de v
 | **Fornecedores** | Em quem dá para confiar? |
 | **Tempos** | Onde o processo trava? |
 | **Consumo** | O que a empresa mais compra? |
+| **Estoque parado** | Que dinheiro está encostado na prateleira? |
 
 Em toda aba a ordem é a mesma: primeiro os **números grandes**, depois o **gráfico**, e só então a **tabela**. Quem abre a tela quer a resposta; a tabela é para quem já sabe o que está procurando.
 
@@ -2184,6 +2231,21 @@ Escolha a obra no alto. A tela mostra, linha a linha do orçamento:
 | **Saldo** | Quanto ainda cabe |
 | **Consumo** | Quanto do previsto já foi usado |
 | **Situação** | Folgado, Atenção ou Estourou |
+
+### O dinheiro que já tem dono
+
+No alto da aba há cinco cartões. Dois deles respondem a pergunta que o saldo sozinho não responde:
+
+| Cartão | O que é |
+|---|---|
+| **Comprometido** | Solicitações **aprovadas** e cotações **em andamento** que ainda não viraram pedido |
+| **Saldo livre** | O previsto **menos** o que já saiu **e** o que já está prometido |
+
+O comprometido é dinheiro que ainda não saiu do caixa, mas também **não está disponível**: alguém já assinou embaixo.
+
+Sem esse número o relatório era espelho retrovisor. Quem lesse *"gastei 3% do orçamento"* acharia que tinha 97% na mão — e ofereceria de novo um dinheiro que já tinha dono.
+
+> Assim que a solicitação vira **pedido de compra**, o valor sai do comprometido e entra no comprado. Nunca aparece nos dois ao mesmo tempo: isso dobraria o dinheiro.
 
 ### Por que o alerta começa em 80%
 
@@ -2234,11 +2296,30 @@ Uma linha por fornecedor com histórico:
 | Coluna | O que é |
 |---|---|
 | **Comprado** | Quanto a empresa já comprou dele |
+| **Participação** | Quanto ele representa de **tudo** que a empresa comprou |
 | **Respostas** | Quantas cotações ele respondeu, de quantas foi convidado |
-| **Entregas** | Quantos itens dele já foram conferidos no almoxarifado |
+| **Entregas** | Quantas **cargas** dele já foram conferidas no almoxarifado |
 | **Pontualidade** | Quantos chegaram **dentro do prazo que ele prometeu** na cotação |
 | **Qualidade** | Quantos chegaram **sem ressalva e sem devolução** |
 | **Leitura** | Uma frase em português resumindo o fornecedor |
+
+### O selo "Dependência"
+
+Quando um fornecedor passa de **40%** de tudo que a empresa comprou, a linha dele ganha o selo **Dependência**.
+
+Não é acusação de preço alto — é aviso de **poder**. Quando um fornecedor concentra quase toda a compra, ele sabe disso. No dia em que ele subir o preço, atrasar ou simplesmente parar de responder, não há para onde correr: não existe outro cadastrado com histórico para assumir o volume.
+
+O que fazer com o aviso: **convidar mais gente** para as próximas cotações daquela família, mesmo que o preço do concentrador esteja bom. Segunda opção viva vale dinheiro no dia em que for preciso usá-la.
+
+> Fornecedor com 0% não recebe selo nenhum. Quem não vendeu nada não é dependência — é lista vazia.
+
+### Uma carga é uma entrega, não um item
+
+A coluna **Entregas** conta **caminhões**, não linhas de item.
+
+Um caminhão trazendo cimento e argamassa é **uma** entrega. Quando ele chega atrasado, é uma entrega atrasada — não duas. E se um dos itens vier com ressalva, a entrega inteira conta como problema: quem recebe não separa o caminhão em pedaços.
+
+Isso importa por causa da regra logo abaixo: contar itens em vez de cargas fazia o sistema achar que já tinha três entregas quando tinha uma, e emitir veredito sobre um fornecedor de uma compra só.
 
 ### Por que a leitura só aparece depois de 3 entregas
 
@@ -2293,6 +2374,38 @@ O preço médio é útil na hora de cotar de novo: se a proposta que chegou est�
 ### A fatia "Outros"
 
 Os gráficos de rosca mostram as **quatro maiores** fatias e somam o resto em **"Outros"**, em cinza. Sem isso as porcentagens não fechariam 100% e o desenho contradiria o total escrito no meio do anel.
+
+---
+
+## Aba 6 — Estoque parado: que dinheiro está encostado?
+
+Material encostado no almoxarifado é dinheiro que a empresa **já pagou e ainda não usou**. Ele não aparecia em relatório nenhum: o orçado × realizado já deu a compra por gasta, e o saldo de estoque diz o que **tem**, nunca **há quanto tempo está lá**.
+
+Três números no alto:
+
+| Cartão | O que é |
+|---|---|
+| **Dinheiro encostado** | O saldo de cada material pelo **custo médio** do almoxarifado |
+| **Nunca saíram** | Quantos materiais entraram e **nunca** tiveram uma saída sequer |
+| **Parado há mais tempo** | O campeão de prateleira |
+
+### Quantos dias é "parado"?
+
+Você escolhe, no alto da tela: **30, 60, 90, 180 ou 365 dias**. Começa em 90.
+
+Não existe número certo, e é por isso que ele não está cravado no sistema: cimento encostado 90 dias é desperdício, andaime encostado 90 dias pode ser planejamento. Quem lê o relatório é que sabe qual é o caso.
+
+### De quando a conta começa
+
+Da **última saída** do material. Quando nunca saiu nada, vale a data em que **entrou**.
+
+Contar sempre da entrada esconderia justamente o pior caso — o material que chegou ontem e nunca vai ser usado ficaria invisível por três meses. E contar da entrada num material que sai toda semana acusaria de parado o que está girando.
+
+> Material com saldo **zero** não aparece: prateleira vazia não é dinheiro parado. Material sem nenhum movimento registrado também fica de fora — acusar o que não se sabe é pior que ficar calado.
+
+### O selo "Nunca saiu"
+
+É o caso que mais dói: alguém comprou, o material chegou, e ninguém nunca precisou dele. Ou a compra foi feita sem uso à vista, ou a obra mudou depois. Nos dois casos o dinheiro está lá, na prateleira, esperando.
 
 ---
 

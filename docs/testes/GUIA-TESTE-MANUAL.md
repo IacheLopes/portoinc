@@ -1,4 +1,4 @@
-<!-- versao: 0.37.0 -->
+<!-- versao: 0.38.0 -->
 
 # 1. Como usar este guia
 
@@ -4540,6 +4540,132 @@ importante do papel.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+
+## CT-302 · O orçamento mostra o dinheiro já prometido
+
+Em **Relatórios → Orçamento**, escolha uma obra. Aprove uma solicitação dessa obra e
+**não** a transforme em cotação. Volte ao relatório.
+
+**Esperado:** o cartão **Comprometido** subiu pelo valor estimado da solicitação, e o
+**Saldo livre** desceu na mesma medida. O **Já comprado** não mudou.
+
+Agora leve essa solicitação até virar pedido de compra e volte de novo.
+
+**Esperado:** o valor **saiu** do comprometido e **entrou** no comprado. Nunca aparece
+nos dois.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-303 · O selo de dependência de fornecedor
+
+Em **Relatórios → Fornecedores**, olhe a coluna **Participação**.
+
+**Esperado:** quem passou de **40%** de tudo que a empresa comprou tem o selo
+**Dependência** ao lado do número. Quem está com **0%** não tem selo nenhum — quem não
+vendeu nada não é dependência.
+
+Baixe em **PDF**: a coluna Participação está lá, e o fornecedor concentrador vem com um
+aviso escrito. No papel não há cor, então a palavra é que avisa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-304 · Duas cargas do mesmo pedido são duas entregas
+
+Faça um pedido com dois itens. Receba **parte** dele hoje (os dois itens, quantidade
+parcial) e o resto depois, num segundo recebimento.
+
+**Esperado:** em **Relatórios → Fornecedores**, a coluna **Entregas** mostra **2**, e não
+3 nem 4. A conta é de **caminhões**, não de linhas de item.
+
+> Contando itens, o sistema achava que já tinha três entregas quando tinha uma — e
+passava a dar veredito sobre um fornecedor de uma compra só.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-305 · Estoque parado: o que está encostado
+
+Em **Relatórios → Estoque parado**, com o corte em **90 dias**.
+
+**Esperado:** se nada está encostado há 90 dias, a tela diz *"Nada encostado — o estoque
+está girando"*. Material que chegou esta semana **não** aparece.
+
+Troque o corte para **30 dias** e depois para **365**.
+
+**Esperado:** a lista muda a cada troca, e o texto da tela sempre diz o mesmo número de
+dias que está selecionado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-306 · Estoque parado: a conta do dinheiro
+
+Com algum material listado no estoque parado:
+
+**Esperado:** a coluna **Dinheiro** é o **saldo × custo médio** daquele almoxarifado.
+Confira abrindo **Estoque** e comparando o saldo e o custo médio do mesmo material.
+
+Material que nunca teve saída traz o selo **Nunca saiu**, e o cartão **Nunca saíram**
+conta quantos são.
+
+> Material com saldo zero não aparece: prateleira vazia não é dinheiro parado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-307 · O preço da última compra na equalização
+
+Compre um material, e depois abra uma **nova** cotação do **mesmo** material até chegar
+na equalização.
+
+**Esperado:** embaixo da descrição do item aparece *"Última compra: R$ X em DD/MM/AAAA"*,
+com o preço do pedido anterior. Material comprado pela primeira vez não mostra linha
+nenhuma.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-308 · O prazo de pagamento vira dinheiro
+
+Na equalização, no quadro **Condições comerciais**:
+
+1. Com **Custo do dinheiro** em *Não considerar*, cada fornecedor mostra só o **Prazo
+   médio** em dias.
+2. Escolha **1,5% ao mês**.
+
+**Esperado:** aparece a linha **Equivale à vista a**, com o total descontado. Quem
+respondeu *3x a cada 30 dias* tem prazo médio de **60 dias**; quem exigiu tudo na entrega
+aparece como **À vista** e não ganha desconto nenhum.
+
+3. Saia da tela e volte.
+
+**Esperado:** a taxa que você escolheu continua escolhida.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-309 · 100% de entrada não tem parcela
+
+No portal do fornecedor, responda uma cotação com **100%** de entrada **e** 5 parcelas.
+
+**Esperado:** o portal **recusa** e explica que com 100% de entrada não há parcelas.
+Respondendo só com 100% de entrada, sem parcelas, ele aceita normalmente.
+
+> O sistema aceitou essa combinação uma vez. O prazo médio leu aquilo como "à vista" e
+engoliu as cinco parcelas sem avisar ninguém.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -4947,6 +5073,14 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-299 | O rodapé diz de quantas folhas o papel é |  |
 | CT-300 | Contas a pagar: CNPJ e situação legíveis |  |
 | CT-301 | O espelho da nota avisa que não é a nota |  |
+| CT-302 | O orçamento mostra o dinheiro já prometido |  |
+| CT-303 | O selo de dependência de fornecedor |  |
+| CT-304 | Duas cargas do mesmo pedido são duas entregas |  |
+| CT-305 | Estoque parado: o que está encostado |  |
+| CT-306 | Estoque parado: a conta do dinheiro |  |
+| CT-307 | O preço da última compra na equalização |  |
+| CT-308 | O prazo de pagamento vira dinheiro |  |
+| CT-309 | 100% de entrada não tem parcela |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

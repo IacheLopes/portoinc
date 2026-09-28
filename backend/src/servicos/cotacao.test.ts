@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   podeIrPara, podeEditarBid, formatarNumeroBid, gerarToken,
   conferirAbertura, conferirLink, calcularTotais, descreverPagamento,
+  prazoMedioDePagamento,
   STATUS_RECUSA,
 } from './cotacao.js';
 
@@ -270,5 +271,31 @@ describe('Descrição do pagamento', () => {
 
   it('avisa quando não foi informado', () => {
     assert.equal(descreverPagamento(null, null, null), 'Não informada');
+  });
+});
+
+describe('Prazo de pagamento vira dinheiro', () => {
+  it('3x a cada 30 dias dá prazo médio de 60 dias', () => {
+    // Vence em 30, 60 e 90 — a média é 60.
+    assert.equal(prazoMedioDePagamento(null, 3, 30), 60);
+  });
+
+  it('a entrada puxa a média para baixo', () => {
+    // 30% no dia 0, 35% no dia 30 e 35% no dia 60.
+    assert.equal(prazoMedioDePagamento(30, 2, 30), 31.5);
+  });
+
+  it('pagar 100% de entrada é prazo zero', () => {
+    assert.equal(prazoMedioDePagamento(100, null, null), 0);
+  });
+
+  it('parcelas sem intervalo não têm prazo calculável', () => {
+    // Inventar 30 dias aqui seria colocar palavra na boca do
+    // fornecedor, e a conta sairia na tela como se fosse dele.
+    assert.equal(prazoMedioDePagamento(null, 3, null), null);
+  });
+
+  it('sem condição nenhuma, não há prazo', () => {
+    assert.equal(prazoMedioDePagamento(null, null, null), null);
   });
 });

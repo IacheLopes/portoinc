@@ -188,6 +188,15 @@ input[type='file'].campo__entrada {
   word-break: break-word;
 }
 
+/* Segunda linha de um dado: explica o número de cima. Bloco, e
+   não em linha, para quebrar em vez de estourar o cartão no
+   celular. */
+.dado__extra {
+  display: block;
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
+}
+
 .fornecedor__nome {
   display: flex;
   flex-wrap: wrap;
@@ -1670,4 +1679,14 @@ input[type='file'].campo__entrada {
    vazia ao lado de um campo de quatro dígitos. */
 .montagem .formulario__linha {
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+
+/* "Da última vez pagamos X", na linha do item da equalização.
+
+   A pergunta número um de quem compra, mostrada na hora de
+   decidir. Em azul discreto para não competir com o preço da
+   proposta, que é o número principal da linha. */
+.linha-extra--historico {
+  color: var(--info-texto);
+  font-variant-numeric: tabular-nums;
 }

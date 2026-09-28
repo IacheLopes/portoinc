@@ -1,4 +1,4 @@
-<!-- versao: 0.37.0 -->
+<!-- versao: 0.38.0 -->
 
 # Guia de Navegação Simples
 
@@ -376,7 +376,7 @@ foi paga → informe a data e a forma.
 **Essa tela serve para** responder perguntas sobre o negócio.
 
 **Aqui você consegue:**
-- Escolher uma das cinco abas
+- Escolher uma das seis abas
 - Filtrar por obra e por período
 - Baixar em **PDF ou Word**
 
@@ -389,6 +389,7 @@ foi paga → informe a data e a forma.
 | Fornecedores | Em quem dá para confiar? |
 | Tempos | Onde o processo está travando? |
 | Consumo | O que a empresa mais compra? |
+| Estoque parado | Que dinheiro está encostado na prateleira? |
 
 > **A aba Economia é a melhor para mostrar numa apresentação.** Ela diz, em dinheiro,
 > quanto a disputa entre fornecedores economizou.

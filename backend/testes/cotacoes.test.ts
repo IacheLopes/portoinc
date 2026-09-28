@@ -504,6 +504,41 @@ describe('Portal do fornecedor', () => {
     assert.ok(r.corpo.resumo.pagamento.includes('30%'));
   });
 
+  it('recusa 100% de entrada COM parcelas', async () => {
+    // O sistema guardou "100% de entrada + 5x a cada 30 dias" de um
+    // fornecedor de verdade. As duas coisas não existem juntas, e o
+    // prazo médio de pagamento — que compara as propostas — lia
+    // aquilo como "à vista", engolindo as cinco parcelas caladamente.
+    const r = await chamar('/api/portal/' + token, {
+      metodo: 'POST',
+      corpo: {
+        itens: itensDoPacote.map((i) => ({
+          bidItemId: i.id, disponivel: true, valorUnitario: 100,
+        })),
+        percentualEntrada: 100,
+        quantidadeParcelas: 5,
+        intervaloParcelasDias: 30,
+      },
+    });
+
+    assert.equal(r.status, 400);
+    assert.match(JSON.stringify(r.corpo), /100% de entrada não há parcelas/);
+  });
+
+  it('aceita 100% de entrada sozinho: é pagamento à vista', async () => {
+    const r = await chamar('/api/portal/' + token, {
+      metodo: 'POST',
+      corpo: {
+        itens: itensDoPacote.map((i) => ({
+          bidItemId: i.id, disponivel: true, valorUnitario: 100,
+        })),
+        percentualEntrada: 100,
+      },
+    });
+
+    assert.equal(r.status, 200);
+  });
+
   it('aceita "não tenho este item"', async () => {
     const r = await chamar('/api/portal/' + token, {
       metodo: 'POST',

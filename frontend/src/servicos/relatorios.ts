@@ -36,6 +36,8 @@ export interface LinhaDoOrcamento {
 export interface ResumoDoOrcamento {
   previsto: number;
   realizado: number;
+  /** Dinheiro já aprovado que ainda não virou pedido. */
+  comprometido: number;
   saldo: number;
   consumido: number;
   linhasEstouradas: number;
@@ -147,6 +149,10 @@ export interface DesempenhoDoFornecedor {
   devolucoes: number;
   qualidade: number;
   leitura: string;
+  /** Quanto das compras da empresa passou por ele, em %. */
+  participacao: number;
+  /** Depender demais dele é risco? */
+  concentracao: 'OK' | 'ATENCAO';
 }
 
 export function buscarFornecedores() {
@@ -240,6 +246,46 @@ export function exportarConsumo(
   return baixarArquivo(
     '/api/relatorios/consumo' + comPeriodo(filtro, formato),
     'consumo-de-materiais.' + formato,
+  );
+}
+
+// ------------------------------------------------------------
+//  6. Estoque parado
+// ------------------------------------------------------------
+
+export interface LinhaDeEstoqueParado {
+  codigo: string;
+  descricao: string;
+  familia: string;
+  unidadeMedida: string;
+  almoxarifado: string;
+  quantidade: number;
+  custoMedio: number | null;
+  diasParado: number;
+  valorParado: number;
+  motivo: 'NUNCA_SAIU' | 'PAROU';
+}
+
+export interface RelatorioDeEstoqueParado {
+  dias: number;
+  linhas: LinhaDeEstoqueParado[];
+  resumo: {
+    valorParado: number;
+    itens: number;
+    nuncaSairam: number;
+    maisAntigo: number;
+    leitura: string;
+  };
+}
+
+export function buscarEstoqueParado(dias: number) {
+  return chamar<RelatorioDeEstoqueParado>('/api/relatorios/estoque-parado?dias=' + dias);
+}
+
+export function exportarEstoqueParado(formato: FormatoDeArquivo, dias: number) {
+  return baixarArquivo(
+    '/api/relatorios/estoque-parado?formato=' + formato + '&dias=' + dias,
+    'estoque-parado.' + formato,
   );
 }
 

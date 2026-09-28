@@ -218,3 +218,45 @@ export function descreverPagamento(
 
   return partes.join(' + ');
 }
+
+/**
+ * Em quantos dias, em média, este dinheiro sai do caixa.
+ *
+ * Duas propostas com o mesmo preço não custam o mesmo: quem aceita
+ * receber em 3x a cada 30 dias está emprestando dinheiro para a
+ * construtora, e quem exige tudo na entrega não está. O prazo médio
+ * é o que torna as duas comparáveis.
+ *
+ * É a média dos vencimentos PONDERADA pelo peso de cada pagamento:
+ * a entrada pesa no dia 0, e as parcelas nos dias 30, 60, 90...
+ *
+ * Nulo quando não dá para saber — fornecedor que informou parcelas
+ * sem dizer o intervalo não tem prazo calculável, e inventar 30 dias
+ * aqui seria colocar palavra na boca dele.
+ */
+export function prazoMedioDePagamento(
+  percentualEntrada: number | null,
+  parcelas: number | null,
+  intervaloDias: number | null,
+): number | null {
+  const entrada = percentualEntrada ?? 0;
+  const resto = 100 - entrada;
+
+  // Pagou tudo na entrada: o dinheiro sai hoje.
+  if (resto <= 0) return 0;
+
+  if (!parcelas || parcelas <= 0) return null;
+  if (!intervaloDias || intervaloDias <= 0) return null;
+
+  // Cada parcela vale resto/n e vence em intervalo × k.
+  // Σ k, de 1 a n, é n(n+1)/2 — daí a fórmula fechada.
+  const somaPonderada = resto * intervaloDias * ((parcelas + 1) / 2);
+
+  return Math.round((somaPonderada / 100) * 10) / 10;
+}
+
+// A conversão do prazo em reais NÃO mora aqui.
+//
+// Ela depende da taxa que a empresa escolhe na tela, e o servidor
+// não tem esse número. Fica em `frontend/src/servicos/cotacoes.ts`,
+// com os testes dela — uma conta só, num lugar só.

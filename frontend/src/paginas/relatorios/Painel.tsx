@@ -1,13 +1,14 @@
 // ============================================================
 //  Relatórios
 //
-//  Cinco perguntas, uma aba para cada:
+//  Seis perguntas, uma aba para cada:
 //
-//    1. Orçamento    A obra está estourando o orçamento?
-//    2. Economia     A cotação valeu a pena?
-//    3. Fornecedores Em quem dá para confiar?
-//    4. Tempos       Onde o processo trava?
-//    5. Consumo      O que a empresa mais compra?
+//    1. Orçamento      A obra está estourando o orçamento?
+//    2. Economia       A cotação valeu a pena?
+//    3. Fornecedores   Em quem dá para confiar?
+//    4. Tempos         Onde o processo trava?
+//    5. Consumo        O que a empresa mais compra?
+//    6. Estoque parado Que dinheiro está encostado na prateleira?
 //
 //  Em toda aba a ordem é a mesma: primeiro os números grandes
 //  (o resumo), depois o gráfico, e só então a tabela. Quem abre
@@ -26,10 +27,12 @@ import {
   buscarFornecedores, exportarFornecedores,
   buscarTempos, exportarTempos,
   buscarConsumo, exportarConsumo,
+  buscarEstoqueParado, exportarEstoqueParado,
   ROTULO_SITUACAO, COR_SITUACAO,
   type RelatorioDeOrcamento, type RelatorioDeEconomia,
   type DesempenhoDoFornecedor, type RelatorioDeTempos,
   type RelatorioDeConsumo, type ObraResumo,
+  type RelatorioDeEstoqueParado,
 } from '../../servicos/relatorios';
 import type { FatiaDoGrafico } from '../../componentes/Graficos';
 import { dinheiro, quantidade as quantidadeOficial } from '../../servicos/cadastros';
@@ -55,6 +58,7 @@ const ABAS = [
   { chave: 'fornecedores', rotulo: 'Fornecedores', pergunta: 'Em quem dá para confiar?' },
   { chave: 'tempos', rotulo: 'Tempos', pergunta: 'Onde o processo trava?' },
   { chave: 'consumo', rotulo: 'Consumo', pergunta: 'O que a empresa mais compra?' },
+  { chave: 'parado', rotulo: 'Estoque parado', pergunta: 'Que dinheiro está encostado na prateleira?' },
 ] as const;
 
 type Aba = (typeof ABAS)[number]['chave'];
@@ -231,6 +235,7 @@ export function PainelRelatorios() {
         {aba === 'fornecedores' && <AbaFornecedores />}
         {aba === 'tempos' && <AbaTempos />}
         {aba === 'consumo' && <AbaConsumo />}
+        {aba === 'parado' && <AbaEstoqueParado />}
       </div>
     </section>
   );
@@ -322,11 +327,21 @@ function AbaOrcamento() {
               destaque="info"
             />
 
+            {/* Entre o gasto e o saldo, de propósito: é ele que
+                explica por que sobra menos do que parece. */}
             <CartaoIndicador
-              rotulo="Saldo"
+              rotulo="Comprometido"
+              valor={dinheiro(resumo.comprometido)}
+              detalhe="Aprovado, ainda sem pedido"
+              explicacao="Dinheiro que já tem dono: solicitações aprovadas e cotações em andamento que ainda não viraram pedido. Não saiu do caixa, mas também não está disponível."
+              destaque={resumo.comprometido > 0 ? 'atencao' : 'info'}
+            />
+
+            <CartaoIndicador
+              rotulo="Saldo livre"
               valor={dinheiro(resumo.saldo)}
-              detalhe={resumo.saldo < 0 ? 'Acima do previsto' : 'Disponível'}
-              explicacao="O que ainda cabe no orçamento. Negativo significa que a obra já passou do que foi planejado."
+              detalhe={resumo.saldo < 0 ? 'Acima do previsto' : 'Sobra de verdade'}
+              explicacao="O previsto menos o que já saiu E o que já está prometido. É o que a obra realmente tem para gastar — mostrar só o gasto prometeria um dinheiro que já tem dono."
               destaque={resumo.saldo < 0 ? 'erro' : 'sucesso'}
             />
 
@@ -701,6 +716,7 @@ function AbaFornecedores() {
             <tr>
               <th scope="col">Fornecedor</th>
               <th scope="col" className="celula-valor">Comprado</th>
+              <th scope="col" className="celula-valor">Participação</th>
               <th scope="col" className="celula-valor">Respostas</th>
               <th scope="col" className="celula-valor">Entregas</th>
               <th scope="col">Pontualidade</th>
@@ -715,6 +731,17 @@ function AbaFornecedores() {
                 <td className="celula-valor">
                   {dinheiro(f.valorComprado)}
                   <span className="celula-extra">{plural(f.pedidos, 'pedido', 'pedidos')}</span>
+                </td>
+                {/* Depender demais de um fornecedor é risco: quando
+                    ele subir o preço, não há para onde correr. O
+                    selo diz isso com palavra, não só com cor. */}
+                <td className="celula-valor">
+                  {f.valorComprado > 0 ? porcento(f.participacao) : '—'}
+                  {f.concentracao === 'ATENCAO' && (
+                    <span className="celula-extra">
+                      <Selo tipo="atencao">Dependência</Selo>
+                    </span>
+                  )}
                 </td>
                 <td className="celula-valor">
                   {f.respostas} de {f.convites}
@@ -1108,6 +1135,170 @@ function AbaConsumo() {
               </tbody>
             </table>
           </TabelaArea>
+        </>
+      )}
+    </>
+  );
+}
+
+// ------------------------------------------------------------
+//  6. Estoque parado
+// ------------------------------------------------------------
+
+/**
+ * A partir de quantos dias sem sair o material vira caso para olhar.
+ *
+ * Vem numa lista, e não num campo livre, porque não é uma medida
+ * exata: é o corte que a empresa escolhe. Cimento encostado 90 dias
+ * é desperdício, andaime encostado 90 dias pode ser planejamento.
+ */
+const CORTES_DE_DIAS = [30, 60, 90, 180, 365];
+
+function AbaEstoqueParado() {
+  const [dados, setDados] = useState<RelatorioDeEstoqueParado | null>(null);
+  const [corte, setCorte] = useState('90');
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [baixando, setBaixando] = useState(false);
+
+  const carregar = useCallback(async (quantosDias: string) => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      setDados(await buscarEstoqueParado(Number(quantosDias)));
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao ler o estoque.');
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar('90');
+  }, [carregar]);
+
+  async function baixar(formato: FormatoDeArquivo) {
+    setBaixando(true);
+    try {
+      await exportarEstoqueParado(formato, Number(corte));
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao gerar o arquivo.');
+    } finally {
+      setBaixando(false);
+    }
+  }
+
+  if (carregando && !dados) return <Carregando mensagem="Olhando as prateleiras..." />;
+  if (erro && !dados) return <Erro mensagem={erro} aoTentarNovamente={() => void carregar(corte)} />;
+  if (!dados) return null;
+
+  const { linhas, resumo } = dados;
+
+  return (
+    <>
+      {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
+
+      <div className="barra-acoes">
+        <Selecao
+          rotulo="Parado há mais de"
+          valor={corte}
+          aoMudar={(v) => { setCorte(v); void carregar(v); }}
+          semMarcaOpcional
+          opcoes={CORTES_DE_DIAS.map((d) => ({ valor: String(d), rotulo: dias(d) }))}
+        />
+        <BotaoExportar
+          aoEscolher={(f) => void baixar(f)}
+          ocupado={baixando}
+          descricao="estoque parado"
+        />
+      </div>
+
+      {linhas.length === 0 ? (
+        <Vazio
+          titulo="Nada encostado"
+          descricao={'Nenhum material está parado há mais de ' + dias(Number(corte)) +
+            '. O estoque está girando.'}
+        />
+      ) : (
+        <>
+          <div className="painel-relatorio">
+            <CartaoIndicador
+              rotulo="Dinheiro encostado"
+              valor={dinheiro(resumo.valorParado)}
+              detalhe={plural(resumo.itens, 'material parado', 'materiais parados')}
+              explicacao="O saldo de cada material pelo custo médio do almoxarifado. É dinheiro que a empresa já pagou e ainda não usou."
+              destaque={resumo.valorParado > 0 ? 'atencao' : 'sucesso'}
+            />
+
+            <CartaoIndicador
+              rotulo="Nunca saíram"
+              valor={String(resumo.nuncaSairam)}
+              detalhe="Chegaram e ficaram"
+              explicacao="Material que entrou no almoxarifado e nunca teve uma saída sequer. Foi comprado sem uso à vista, ou a obra mudou depois da compra."
+              // Atenção, e não erro: material parado é dinheiro
+              // dormindo, não é defeito. O vermelho desta tela é
+              // reservado para o que precisa de conserto.
+              destaque={resumo.nuncaSairam > 0 ? 'atencao' : 'sucesso'}
+            />
+
+            <CartaoIndicador
+              rotulo="Parado há mais tempo"
+              valor={dias(resumo.maisAntigo)}
+              detalhe="Desde a última saída"
+              explicacao="Conta do último dia em que o material saiu. Quando nunca saiu, conta da data em que entrou."
+            />
+          </div>
+
+          <TabelaArea>
+            <table className="tabela">
+              <caption className="apenas-leitor-tela">
+                Materiais com saldo e sem saída no período escolhido.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col">Almoxarifado</th>
+                  <th scope="col" className="celula-valor">Saldo</th>
+                  <th scope="col" className="celula-valor">Custo médio</th>
+                  <th scope="col" className="celula-valor">Parado</th>
+                  <th scope="col" className="celula-valor">Dinheiro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map((l) => (
+                  <tr key={l.almoxarifado + '|' + l.codigo}>
+                    <th scope="row" className="celula-texto">
+                      <span className="mono">{l.codigo}</span>
+                      <span className="celula-extra">{l.descricao}</span>
+                    </th>
+                    <td className="celula-texto">{l.almoxarifado}</td>
+                    <td className="celula-valor">
+                      {quantidade(l.quantidade)}
+                      <span className="celula-extra">{l.unidadeMedida}</span>
+                    </td>
+                    <td className="celula-valor">
+                      {l.custoMedio === null ? '—' : dinheiro(l.custoMedio)}
+                    </td>
+                    <td className="celula-valor">
+                      {dias(l.diasParado)}
+                      {l.motivo === 'NUNCA_SAIU' && (
+                        <span className="celula-extra">
+                          <Selo tipo="atencao">Nunca saiu</Selo>
+                        </span>
+                      )}
+                    </td>
+                    <td className="celula-valor">{dinheiro(l.valorParado)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabelaArea>
+
+          <p className="texto-fraco">
+            A conta é do último dia em que o material saiu; quando nunca saiu,
+            vale a data em que entrou. O dinheiro é o saldo pelo custo médio
+            do almoxarifado.
+          </p>
         </>
       )}
     </>
