@@ -38,10 +38,58 @@ const SEM_PRINT = process.argv.includes('--sem-print');
 const ALTURA = 1000;
 const PORTA = 9340 + (LARGURA % 7) + (Date.now() % 40) * 10;
 
-const OBRA = '83fbfc58-1d58-46d7-add8-48270ebdf663';
-const SOLICITACAO = '21c990c3-54f7-4cd6-a7d8-3f9fb7007a2d';
-const COTACAO = 'f5c04aad-add6-4e56-8ff2-fe166f0098be';
-const PEDIDO = '17';
+// OS EXEMPLOS NAO PODEM SER CRAVADOS
+//
+// Estes quatro ids ficavam escritos a mao aqui dentro. Em 28/09/2026
+// tres deles ja nao existiam no banco, e as telas de detalhe
+// responderam "NAO CARREGOU" — o mesmo jeito de falhar da senha, no
+// dia anterior: a regua envelhece calada e ninguem nota.
+//
+// Agora ela pergunta a API qual e o primeiro de cada coisa. Se a API
+// nao responder, seguimos com o que da: as telas de detalhe caem,
+// mas as outras 30 continuam sendo medidas.
+const API = process.env.API_AUDITORIA ?? 'http://localhost:3000';
+
+async function descobrirExemplos() {
+  const vazio = { OBRA: '', SOLICITACAO: '', COTACAO: '', PEDIDO: '', PEDIDO_ID: '' };
+
+  try {
+    const entrada = await fetch(API + '/api/autenticacao/entrar', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: CONTA, senha: SENHA }),
+    });
+
+    if (!entrada.ok) return vazio;
+
+    const { token } = await entrada.json();
+    const cracha = { headers: { authorization: 'Bearer ' + token } };
+
+    const ler = async (rota, caminho) => {
+      const r = await fetch(API + rota, cracha);
+      if (!r.ok) return '';
+      const corpo = await r.json();
+      const lista = caminho.split('.').reduce((o, k) => o?.[k], corpo);
+      return lista?.[0] ?? null;
+    };
+
+    const pedido = await ler('/api/pedidos', 'pedidos');
+
+    return {
+      OBRA: (await ler('/api/obras', 'obras'))?.id ?? '',
+      SOLICITACAO: (await ler('/api/solicitacoes', 'solicitacoes'))?.id ?? '',
+      COTACAO: (await ler('/api/cotacoes', 'cotacoes'))?.id ?? '',
+      // A tela de conferencia quer o numero cru, e a lista so
+      // devolve "PC-00001".
+      PEDIDO: (pedido?.numeroFormatado ?? '').replace(/\D/g, ''),
+      PEDIDO_ID: pedido?.id ?? '',
+    };
+  } catch {
+    return vazio;
+  }
+}
+
+const { OBRA, SOLICITACAO, COTACAO, PEDIDO, PEDIDO_ID } = await descobrirExemplos();
 
 // Cada tela diz QUEM a desenha.
 //
@@ -82,6 +130,7 @@ const TELAS = [
   ['/cotacoes/' + COTACAO, 'cotacoes-detalhe', [PG + 'cotacoes/Detalhe.tsx']],
   ['/cotacoes/' + COTACAO + '/equalizacao', 'cotacoes-equalizacao', [PG + 'cotacoes/Equalizacao.tsx']],
   ['/pedidos', 'pedidos', [PG + 'pedidos/Lista.tsx']],
+  ['/pedidos/' + PEDIDO_ID, 'pedidos-detalhe', [PG + 'pedidos/Detalhe.tsx']],
   ['/recebimento', 'recebimento', [PG + 'recebimento/Painel.tsx']],
   ['/recebimento/' + PEDIDO, 'recebimento-conferir', [PG + 'recebimento/Conferir.tsx']],
   ['/estoque', 'estoque', [PG + 'estoque/Painel.tsx']],
@@ -94,6 +143,7 @@ const TELAS = [
   ['/relatorios?ver=fornecedores', 'relatorios-fornecedores', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=tempos', 'relatorios-tempos', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=consumo', 'relatorios-consumo', [PG + 'relatorios/Painel.tsx']],
+  ['/relatorios?ver=parado', 'relatorios-estoque-parado', [PG + 'relatorios/Painel.tsx']],
   ['/cadastros', 'cadastros-indice', [PG + 'cadastros/Indice.tsx']],
   ['/cadastros/familias', 'cadastros-familias', [PG + 'cadastros/Familias.tsx']],
   ['/cadastros/materiais', 'cadastros-materiais', [PG + 'cadastros/Materiais.tsx']],
