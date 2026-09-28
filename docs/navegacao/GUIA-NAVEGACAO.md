@@ -55,12 +55,22 @@ Abra **http://localhost:5173** e use uma destas contas:
 
 | Conta | Senha | Quem é |
 |---|---|---|
-| **`porto@dev.com`** | **`admin123`** | **Tem os sete papéis. Use esta para explorar** |
-| `admin@portoinc.com.br` | `Porto@2026` | Cuida do sistema |
+| **`porto@dev.com`** | **`admin123`** | **Tem os sete papéis. É esta que você usa** |
+| `admin@portoinc.com.br` | `admin123` | Cuida do sistema |
 
-> **São só estas duas.** As contas com nome de pessoa saíram junto com os dados de
-> exemplo. Para testar permissão de verdade — se o almoxarife realmente não consegue
-> aprovar, por exemplo — crie contas de um papel só em **Usuários**.
+> **Use a `porto@dev.com` para tudo.** Ela enxerga o sistema inteiro, então nenhum botão
+> some da sua frente no meio de uma demonstração.
+
+**E as contas de cada papel?** Existem seis — comprador, gestor, engenheiro, fundador,
+almoxarife e solicitante —, mas **elas foram criadas por você**, na tela de Usuários, cada
+uma com uma senha sorteada na hora. **Só quem criou sabe a senha.**
+
+Elas servem para **provar permissão**: mostrar que o almoxarife realmente não consegue
+aprovar uma compra. Se você não tem mais as senhas, entre em **Usuários**, abra a pessoa e
+**gere uma senha nova** — o sistema mostra a senha na tela, uma vez só.
+
+> Cinco delas ainda estão marcadas para **trocar a senha no primeiro acesso**. Se você
+> entrar com uma e ele pedir senha nova, não está quebrado: é a regra funcionando.
 
 > **O menu muda conforme quem entrou.** Se um botão não aparece, não está quebrado: é que
 > aquela pessoa não faz aquilo.
@@ -255,6 +265,19 @@ outro, para dar para comparar de verdade.
 | **Condições comerciais** | prazo e forma de pagamento de cada fornecedor |
 | **Fechar a compra** | o resumo do que você escolheu, por fornecedor |
 
+> **Quanto pagamos da última vez?** Embaixo de cada item aparece o preço do último pedido
+> daquele material, com a data. É a pergunta número um de quem compra, e agora ela está
+> respondida **antes** da escolha, não depois num relatório.
+
+> **O prazo de pagamento vale dinheiro.** Cada fornecedor mostra o **prazo médio** em
+> dias: quem parcela em 3x tem prazo médio de 60 dias, quem exige tudo na entrega aparece
+> como *à vista*. Escolhendo uma taxa na caixa **Custo do dinheiro**, o sistema mostra
+> quanto cada proposta **equivale à vista** — aí dá para comparar de verdade um mais
+> barato à vista com um mais caro parcelado.
+>
+> Ela começa em **Não considerar** de propósito: enquanto a Porto Inc. não disser quanto
+> custa o dinheiro dela, o sistema não inventa número nenhum.
+
 | Botão | O que faz |
 |---|---|
 | **Aceitar todos os melhores preços** | escolhe o mais barato de cada item de uma vez |
@@ -363,6 +386,13 @@ foi paga → informe a data e a forma.
 **Para lançar uma nota:** **Financeiro** → **Notas fiscais** → **Lançar nota** (ou
 **Importar XML**, que lê tudo sozinho) → **Gerar parcelas**.
 
+> **Errou o valor da nota?** Enquanto ela não gerou parcela, dá para **editar**. Depois
+> disso só resta **cancelar** e lançar de novo — e aí o número da nota **fica livre**,
+> porque o certo é a nota nova ter o mesmo número da que foi cancelada.
+
+> **O PDF da nota é um ESPELHO.** Ele não é a nota fiscal, não substitui o DANFE e não
+> tem valor fiscal. O próprio papel avisa isso, em vermelho, logo abaixo do total.
+
 **O gráfico de fluxo de caixa** mostra quanto sai por mês.
 - As setas **‹** e **›** andam um mês
 - O campo do meio abre um calendário e pula para qualquer mês
@@ -393,6 +423,18 @@ foi paga → informe a data e a forma.
 
 > **A aba Economia é a melhor para mostrar numa apresentação.** Ela diz, em dinheiro,
 > quanto a disputa entre fornecedores economizou.
+
+**Três números que ninguém costuma ter:**
+
+| Onde | O que responde |
+|---|---|
+| **Orçamento → Comprometido** | o dinheiro que **já tem dono** mas ainda não saiu: aprovado e em cotação. O "Saldo livre" já desconta ele |
+| **Fornecedores → Dependência** | quem passou de **40%** de tudo que a empresa compra. Não é preço: é o risco de não ter para onde correr no dia em que ele subir |
+| **Estoque parado** | material encostado há mais de 30, 60, 90, 180 ou 365 dias — você escolhe —, valendo o custo médio. Dinheiro já pago e ainda sem uso |
+
+> **Se a aba Estoque parado aparecer vazia, está certa.** Quer dizer que nada está
+> encostado além do prazo escolhido. Ela só acusa material que **tem saldo** e **não sai**
+> desde a data.
 
 ---
 
@@ -472,20 +514,34 @@ recebe um link e abre sem senha.
 
 Siga **uma compra do começo ao fim**. Mostra muito mais que abrir tela por tela.
 
-| # | Entre como | Faça |
+**Entre com `porto@dev.com`** e faça tudo com ela. Ela tem os sete papéis, então você não
+precisa sair e entrar de novo no meio da apresentação.
+
+| # | Onde | Faça |
 |---|---|---|
-| 1 | `bras` | Peça um material em **Solicitações** |
-| 2 | `bras` | Aprove em **Aprovações** |
-| 3 | `andre` | Monte a cotação e chame fornecedores |
-| 4 | — | Abra o link do fornecedor numa aba anônima |
-| 5 | `andre` | **Equalizar** → escolha os melhores → **Gerar pedidos** |
-| 6 | `gilson` | Receba o material em **Recebimento** |
-| 7 | `neilma` | Lance a nota e gere as parcelas |
-| 8 | `neilma` | **Dar baixa** numa parcela |
-| 9 | `porto@dev.com` | **Relatórios → Economia**: mostre quanto economizou |
+| 1 | **Solicitações** | Peça um material — diga que é a obra pedindo |
+| 2 | **Aprovações** | Aprove. Mostre que **quem assina depende do valor** |
+| 3 | **Cotações** | Monte o pacote e convide dois fornecedores |
+| 4 | *aba anônima* | **Copiar link** → cole → responda como se fosse o fornecedor |
+| 5 | **Equalização** | Compare, escolha os melhores, **Gerar pedidos** |
+| 6 | **Recebimento** | Confira a carga. Receba **só parte** dela, de propósito |
+| 7 | **Financeiro** | Lance a nota e gere as parcelas |
+| 8 | **Financeiro** | **Dar baixa** numa parcela |
+| 9 | **Relatórios** | Feche em **Economia** e **Orçamento** |
 
 **Termine no Início.** Ele resume tudo em números, e cada número volta para a tela de
 onde veio.
+
+## Os três momentos que impressionam
+
+Se o tempo for curto, são estes:
+
+1. **O passo 4** — o fornecedor responde **sem senha, sem cadastro, pelo celular**, e não
+   vê quem mais foi convidado. É o que hoje é feito por WhatsApp, um a um.
+2. **O passo 5** — o mapa comparativo com o melhor preço já marcado, o preço da **última
+   compra** ao lado, e a conta de quanto se ganha misturando fornecedores.
+3. **O passo 6, recebendo só parte** — o pedido continua aberto sozinho, esperando o
+   resto. É o que a planilha nunca soube fazer.
 
 > Pode mexer à vontade. Nada é enviado de verdade, e dá para recarregar os dados do zero.
 
@@ -498,4 +554,21 @@ onde veio.
 | A tela não abre | Veja **Status do sistema** |
 | Não achei um botão | Aquela conta não faz aquilo. Entre com `porto@dev.com` |
 | Apareceu "Muitas requisições" | Espere 1 minuto e tente de novo |
+| A senha não entra | Só `porto@dev.com` e `admin@portoinc.com.br` têm senha conhecida (`admin123`). As outras seis foram criadas por você — gere uma senha nova em **Usuários** |
+| Ele pediu para trocar a senha | É a regra funcionando: conta criada por outra pessoa troca a senha no primeiro acesso |
+| Uma tela está vazia | Leia o que ela diz. Tela vazia sempre explica **por que** está vazia e o que fazer |
 | Quero recomeçar | Peça para recarregar os dados de teste |
+
+---
+
+# 5 · O que este sistema **não** faz
+
+Vale saber antes que alguém pergunte na reunião:
+
+| Não faz | Por quê |
+|---|---|
+| Mandar WhatsApp ou e-mail de verdade | Está tudo em **modo de teste**, de propósito. Ligar é uma decisão sua |
+| Emitir nota fiscal | Ele **recebe** a nota do fornecedor. Quem emite é quem vende |
+| Consultar a SEFAZ | O XML é lido do arquivo. A consulta ao governo é uma integração à parte |
+| Pagar sozinho no banco | Ele controla a conta a pagar. O pagamento é feito no banco, e depois marcado aqui |
+| Rodar na internet | Hoje roda **na sua máquina**. Colocar no ar é passo de outra etapa |
