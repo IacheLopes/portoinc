@@ -14,6 +14,7 @@ import {
   type Solicitacao, type SituacaoSolicitacao,
 } from '../../servicos/solicitacoes';
 import { dinheiro } from '../../servicos/cadastros';
+import { plural } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selo } from '../../componentes/Selo';
@@ -236,8 +237,12 @@ export function ListaSolicitacoes() {
           </Cartao>
         )}
 
+        {/* "solicitação(ões) listada(s)" era o único lugar do
+            sistema que empurrava o plural entre parênteses para o
+            leitor resolver. A casa tem `plural()` justamente para
+            isso, e todas as outras listas já usavam. */}
         <p className="secao__descricao" style={{ marginTop: 'var(--esp-3)' }}>
-          {solicitacoes.length} solicitação(ões) listada(s).
+          {plural(solicitacoes.length, 'solicitação listada', 'solicitações listadas')}.
         </p>
       </section>
     </>

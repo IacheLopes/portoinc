@@ -23,7 +23,7 @@ import {
 } from '../../servicos/fiscal';
 import { dinheiro } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
-import { plural, contar } from '../../servicos/texto';
+import { plural, contar, dias } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
@@ -279,12 +279,12 @@ export function PainelFinanceiro() {
               proximo === null
                 ? 'Nada em aberto'
                 : proximo < 0
-                  ? 'A mais antiga venceu há ' + -proximo + ' dias'
+                  ? 'A mais antiga venceu há ' + dias(-proximo)
                   : proximo === 0
                     ? 'A próxima vence hoje'
                     : proximo === 1
                       ? 'A próxima vence amanhã'
-                      : 'A próxima vence em ' + proximo + ' dias'
+                      : 'A próxima vence em ' + dias(proximo)
             }
             explicacao="O que precisa entrar no fluxo de caixa desta semana."
             destaque={resumo.proximos7Dias.valor > 0 ? 'atencao' : undefined}
@@ -308,7 +308,7 @@ export function PainelFinanceiro() {
 
           <CartaoIndicador
             rotulo="Prazo médio negociado"
-            valor={indicadores.prazoMedioPagamento + ' dias'}
+            valor={dias(indicadores.prazoMedioPagamento)}
             detalhe="Da nota até o vencimento"
             explicacao="Quanto maior, mais fôlego de caixa o comprador conseguiu negociar com os fornecedores."
           />
