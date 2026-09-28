@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   podeIrPara, podeEditar, formatarNumero, conferirParaEnvio,
   calcularTotalEstimado, acharFaixa, explicarAprovacao, resumoDaAlcada,
-  conferirAlcadaDoFechamento,
+  conferirAlcadaDoFechamento, solicitacaoAtendida,
   type FaixaAlcada,
 } from './solicitacao.js';
 
@@ -422,5 +422,58 @@ describe('Alçada conferida contra o preço real', () => {
     });
 
     assert.equal(r.precisaReaprovar, false);
+  });
+});
+
+// ============================================================
+//  A solicitação fecha quando o material chega
+// ============================================================
+
+describe('Solicitação atendida', () => {
+  it('fecha quando TODOS os itens chegaram', () => {
+    assert.equal(
+      solicitacaoAtendida([{ pedida: 10, recebida: 10 }, { pedida: 5, recebida: 5 }]),
+      true,
+    );
+  });
+
+  it('um item faltando mantém a solicitação aberta', () => {
+    // Quem pediu cimento e areia não pode ver "atendida" com a
+    // areia ainda na rua.
+    assert.equal(
+      solicitacaoAtendida([{ pedida: 10, recebida: 10 }, { pedida: 5, recebida: 4 }]),
+      false,
+    );
+  });
+
+  it('receber a mais também fecha', () => {
+    // O fornecedor mandou 11 de 10. Sobrou, mas chegou.
+    assert.equal(solicitacaoAtendida([{ pedida: 10, recebida: 11 }]), true);
+  });
+
+  it('item que nunca virou pedido segura a solicitação', () => {
+    // Ninguém cotou aquele item. Ela não foi atendida, e dizer que
+    // foi esconderia justamente o que ficou para trás.
+    assert.equal(solicitacaoAtendida([{ pedida: 10, recebida: 10 }, { pedida: 0, recebida: 0 }]), false);
+  });
+
+  it('solicitação sem item nenhum não é atendida', () => {
+    assert.equal(solicitacaoAtendida([]), false);
+  });
+});
+
+describe('O fim da vida da solicitação', () => {
+  it('de cotação vai para atendida', () => {
+    assert.equal(podeIrPara('EM_COTACAO', 'ATENDIDA'), true);
+  });
+
+  it('atendida é ponto final', () => {
+    assert.equal(podeIrPara('ATENDIDA', 'EM_COTACAO'), false);
+    assert.equal(podeIrPara('ATENDIDA', 'CANCELADA'), false);
+  });
+
+  it('atendida NÃO é caminho para quem ainda está aprovando', () => {
+    assert.equal(podeIrPara('AGUARDANDO_APROVACAO', 'ATENDIDA'), false);
+    assert.equal(podeIrPara('APROVADA', 'ATENDIDA'), false);
   });
 });

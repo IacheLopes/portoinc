@@ -1,4 +1,4 @@
-<!-- versao: 0.39.0 -->
+<!-- versao: 0.40.0 -->
 
 # 1. Como usar este guia
 
@@ -4711,6 +4711,77 @@ contorná-lo. A tolerância existe para a regra ser respeitada.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+
+## CT-312 · A solicitação fecha quando o material chega
+
+Leve uma compra até o recebimento e receba **só parte** dela.
+
+**Esperado:** abra a solicitação que originou o pedido. Ela continua **Em cotação**, e o
+histórico ganha uma linha dizendo que chegou parte e que ainda falta item.
+
+Agora receba o resto.
+
+**Esperado:** a solicitação passa para **Atendida**, com selo verde, e o histórico diz
+*"Tudo que foi pedido chegou e foi conferido no almoxarifado"*.
+
+> Antes disso, a solicitação ficava "Em cotação" para sempre — o material chegava, virava
+nota e virava conta paga, e a tela de quem pediu não mudava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-313 · "É o que eu pedi"
+
+Na solicitação **Atendida**, entre como **quem a abriu**.
+
+**Esperado:** aparece o botão azul **✓ É o que eu pedi**. Clicando, o histórico ganha a
+linha da conferência com nome e hora, e o botão some — não dá para validar duas vezes.
+
+Entre como outra pessoa que não abriu a solicitação e não supervisiona.
+
+**Esperado:** o botão não aparece. E se a solicitação ainda não estiver atendida, ele
+também não aparece.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-314 · Serviço não vira saldo de estoque
+
+Cadastre um item do tipo **Serviço** (ex.: *Instalação elétrica — ponto*), compre-o junto
+com um material qualquer e receba o pedido inteiro.
+
+**Esperado:** em **Estoque**, o material aparece com saldo; o serviço **não aparece**, nem
+na lista nem no extrato de movimentos. A conferência do serviço foi registrada
+normalmente no recebimento.
+
+> Serviço no estoque apareceria depois no relatório de **Estoque parado** como dinheiro
+encostado num item que não existe fisicamente.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-315 · O engenheiro vê a equalização, mas não decide
+
+Entre com uma conta que tenha **só a função Engenheiro** e abra **Cotações**.
+
+**Esperado:** ele entra na lista, abre o pacote e **abre o mapa comparativo**, com as
+condições comerciais. Mas **não vê** os botões *Aceitar todos os melhores preços*,
+*Salvar escolhas*, *Última chamada* nem *Gerar pedidos de compra*.
+
+Entre como **Almoxarife**.
+
+**Esperado:** Cotações não aparece no menu dele.
+
+> O fluxo da Porto Inc. diz que a equalização é conferida por comprador, solicitante e
+engenheiro juntos — é ali que se checa se o que foi cotado atende à especificação. Antes,
+só o comprador entrava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -5128,6 +5199,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-309 | 100% de entrada não tem parcela |  |
 | CT-310 | A compra que estoura a alçada volta para assinar |  |
 | CT-311 | Variação normal de preço NÃO trava a compra |  |
+| CT-312 | A solicitação fecha quando o material chega |  |
+| CT-313 | "É o que eu pedi" |  |
+| CT-314 | Serviço não vira saldo de estoque |  |
+| CT-315 | O engenheiro vê a equalização, mas não decide |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

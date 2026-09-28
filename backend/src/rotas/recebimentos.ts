@@ -20,6 +20,7 @@ import {
   situacaoDoPedido, saldosDepoisDe, resumirConferencia,
   type ItemDoPedido,
 } from '../servicos/recebimento.js';
+import { solicitacaoAtendida } from '../servicos/solicitacao.js';
 import { movimentar, comRepeticao } from '../servicos/movimentar-estoque.js';
 
 const INCLUIR_PEDIDO = {
@@ -32,12 +33,18 @@ const INCLUIR_PEDIDO = {
       bidItem: {
         include: {
           material: {
-            select: { codigoInterno: true, descricao: true, gtin: true, normaTecnica: true },
+            select: {
+              codigoInterno: true, descricao: true, gtin: true,
+              normaTecnica: true, tipo: true,
+            },
           },
           solicitacaoItem: {
             select: {
               solicitacao: {
-                select: { numero: true, obra: { select: { id: true, codigo: true, nome: true } } },
+                select: {
+                  id: true, numero: true, situacao: true,
+                  obra: { select: { id: true, codigo: true, nome: true } },
+                },
               },
             },
           },
@@ -115,6 +122,109 @@ const esquemaRecebimento = z.object({
   observacoes: textoOpcional(1000),
   itens: z.array(esquemaLinha).min(1),
 });
+
+/**
+ * Fecha as solicitações cujo material chegou por inteiro.
+ *
+ * O PASSO QUE FALTAVA. O BPMN da Porto Inc. termina a trilha do
+ * recebimento com a validação do solicitante — e o sistema nunca
+ * contou nada para ele. Em 28/09/2026, no banco de teste, a
+ * SOL-00003 estava "Em cotação" com o pedido dela já RECEBIDO: o
+ * material estava na obra, virou nota e virou conta paga, e a tela
+ * de quem pediu continuava dizendo que estava em cotação.
+ *
+ * Esta é a queixa numero um de quem usa planilha — "ninguem sabia
+ * se chegou" — e era a unica pessoa do fluxo que o sistema ainda
+ * deixava no escuro.
+ *
+ * O evento no histórico vai SEMPRE que chega alguma coisa, mesmo
+ * parcial: saber que metade chegou também é informação. A situação
+ * só muda quando chega tudo.
+ */
+async function fecharSolicitacoesAtendidas(
+  pedido: { numero: number; itens: Array<{ bidItem: { solicitacaoItem: { solicitacao: { id: string; situacao: string } } | null } }> },
+  usuarioId: string,
+): Promise<string[]> {
+  const ids = [
+    ...new Set(
+      pedido.itens
+        .map((i) => i.bidItem.solicitacaoItem?.solicitacao)
+        .filter((s): s is { id: string; situacao: string } => s?.situacao === 'EM_COTACAO')
+        .map((s) => s.id),
+    ),
+  ];
+
+  const fechadas: string[] = [];
+
+  for (const id of ids) {
+    const itens = await banco.solicitacaoItem.findMany({
+      where: { solicitacaoId: id },
+      select: {
+        quantidade: true,
+        itemBid: {
+          select: {
+            pedidoItem: {
+              select: {
+                quantidade: true,
+                pedido: { select: { situacao: true } },
+                recebimentos: { select: { quantidadeRecebida: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const conta = itens.map((i) => {
+      const pi = i.itemBid?.pedidoItem;
+
+      // Pedido cancelado é como se nunca tivesse existido: o item
+      // volta a estar sem atendimento.
+      if (!pi || pi.pedido.situacao === 'CANCELADO') {
+        return { pedida: numero(i.quantidade) ?? 0, recebida: 0 };
+      }
+
+      return {
+        pedida: numero(pi.quantidade) ?? 0,
+        recebida: pi.recebimentos.reduce((s, r) => s + (numero(r.quantidadeRecebida) ?? 0), 0),
+      };
+    });
+
+    const numeroDoPedido = formatarNumeroPedido(pedido.numero);
+
+    if (!solicitacaoAtendida(conta)) {
+      await banco.solicitacaoEvento.create({
+        data: {
+          solicitacaoId: id,
+          usuarioId,
+          tipo: 'RECEBIMENTO',
+          descricao: 'Chegou parte do material, pelo pedido ' + numeroDoPedido +
+            '. Ainda falta item para a solicitação ser atendida.',
+        },
+      });
+      continue;
+    }
+
+    await banco.solicitacao.update({
+      where: { id },
+      data: { situacao: 'ATENDIDA' },
+    });
+
+    await banco.solicitacaoEvento.create({
+      data: {
+        solicitacaoId: id,
+        usuarioId,
+        tipo: 'ATENDIDA',
+        descricao: 'Tudo que foi pedido chegou e foi conferido no almoxarifado, ' +
+          'pelo pedido ' + numeroDoPedido + '.',
+      },
+    });
+
+    fechadas.push(id);
+  }
+
+  return fechadas;
+}
 
 export async function rotasRecebimentos(app: FastifyInstance) {
   // --------------------------------------------------------
@@ -250,8 +360,21 @@ export async function rotasRecebimentos(app: FastifyInstance) {
       const precoPorItem = new Map(
         pedido.itens.map((i) => [i.id, numero(i.valorUnitario) ?? 0]),
       );
+      // SERVIÇO NÃO ENTRA NO ESTOQUE.
+      //
+      // Está escrito no BPMN da Porto Inc.: "material entra no
+      // estoque (serviço não entra)". O recebimento dava entrada em
+      // tudo, sem olhar o tipo — e uma instalação elétrica
+      // contratada virava saldo de prateleira, aparecendo depois no
+      // relatório de estoque parado como dinheiro encostado num
+      // item que não existe fisicamente.
+      //
+      // A conferência continua valendo para serviço: o que muda é
+      // só a entrada no almoxarifado.
       const materialPorItem = new Map(
-        pedido.itens.map((i) => [i.id, i.bidItem.materialId]),
+        pedido.itens
+          .filter((i) => i.bidItem.material.tipo !== 'SERVICO')
+          .map((i) => [i.id, i.bidItem.materialId]),
       );
 
       // Gravar a conferência e dar entrada no estoque é uma coisa
@@ -318,8 +441,11 @@ export async function rotasRecebimentos(app: FastifyInstance) {
         data: { situacao: novaSituacao },
       });
 
+      const fechadas = await fecharSolicitacoesAtendidas(pedido, req.usuario!.id);
+
       return {
         ok: true,
+        solicitacoesAtendidas: fechadas,
         recebimento: {
           id: recebimento.id,
           numeroFormatado: formatarNumeroRecebimento(recebimento.numero),

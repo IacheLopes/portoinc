@@ -1,4 +1,4 @@
-<!-- versao: 0.39.0 -->
+<!-- versao: 0.40.0 -->
 
 # Guia de Navegação Simples
 
@@ -296,6 +296,11 @@ outro, para dar para comparar de verdade.
 > pagar um pouco mais por quem entrega no prazo. A aba **Fornecedores**, em Relatórios,
 > mostra quem costuma cumprir.
 
+> **O engenheiro também abre esta tela.** Ele **vê** o mapa para conferir se o que foi
+> cotado atende à especificação, mas não escolhe vencedor nem fecha a compra: os botões
+> de decisão não aparecem para ele. Preço é do comprador; especificação é de quem
+> responde por ela.
+
 **Sobre a "Última chamada":** ela avisa cada fornecedor apenas dos itens em que ele **não**
 está na frente, e o convida a rever. **O preço do concorrente nunca é revelado** — revelar
 ensinaria o mercado a se alinhar, e a Porto Inc. acabaria pagando mais caro.
@@ -339,6 +344,18 @@ nota fiscal → **Registrar recebimento**.
 
 > **Tem um leitor de código de barras.** No campo **Localizar**, bipe o código e o item
 > acende na lista. Assim o almoxarife não precisa procurar.
+
+> **Quem pediu fica sabendo.** Quando tudo chega, a solicitação vira **Atendida** sozinha
+> e o histórico dela conta. Chegando só parte, ela continua aberta e o histórico diz que
+> ainda falta item. Antes, quem abriu o pedido nunca descobria pelo sistema que o material
+> tinha chegado — e essa é a queixa número um de quem controla compra por planilha.
+
+> **Depois de atendida, quem pediu confirma: "É o que eu pedi".** São duas conferências
+> diferentes — o almoxarife conta sacos, quem pediu é que sabe se o cimento é o certo para
+> a laje. Não trava nada; fica no histórico com nome e hora.
+
+> **Serviço não entra no estoque.** Ele é conferido normalmente, mas não vira saldo de
+> prateleira: não há o que guardar numa prateleira.
 
 ---
 

@@ -285,7 +285,14 @@ export async function rotasEqualizacao(app: FastifyInstance) {
   // --------------------------------------------------------
   app.get(
     '/api/cotacoes/:id/equalizacao',
-    { preHandler: app.exigirPermissao('cotacoes.gerenciar') },
+    // VER o mapa nao e MEXER nele.
+    //
+    // O BPMN da Porto Inc. diz que a equalizacao e conferida por
+    // comprador, solicitante E engenheiro juntos — e ali que se
+    // checa se o que foi cotado atende a especificacao. So existia
+    // `cotacoes.gerenciar`, que da poder de escolher vencedor e
+    // fechar a compra, entao o engenheiro nao entrava.
+    { preHandler: app.exigirPermissao('cotacoes.gerenciar', 'cotacoes.ver') },
     async (req, res) => {
       const { id } = req.params as { id: string };
 

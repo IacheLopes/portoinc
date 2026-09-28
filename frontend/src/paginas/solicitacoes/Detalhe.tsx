@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  buscarSolicitacao, enviarSolicitacao, cancelarSolicitacao, baixarPdf,
+  buscarSolicitacao, enviarSolicitacao, cancelarSolicitacao, validarSolicitacao, baixarPdf,
   ROTULO_SITUACAO, COR_SITUACAO, dataBr, dataHoraBr,
   ROTULO_DECISAO,
   type Solicitacao, type SituacaoSolicitacao, type Decisao, type ResumoDaAlcada,
@@ -89,6 +89,22 @@ export function DetalheSolicitacao() {
     }
   }
 
+  async function validar() {
+    setErro(null);
+    setAviso(null);
+    setOcupado(true);
+
+    try {
+      await validarSolicitacao(id);
+      setAviso('Conferência registrada. Fica no histórico com o seu nome e a hora.');
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Falha ao registrar a conferência.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   async function cancelar() {
     setOcupado(true);
     try {
@@ -117,6 +133,12 @@ export function DetalheSolicitacao() {
   if (!dados) return null;
 
   const souOAutor = dados.solicitante.id === usuario?.id;
+
+  // Quem pediu valida. Quem supervisiona também — solicitante de
+  // férias não pode travar o registro. É a mesma regra do servidor;
+  // deixar as duas diferentes daria botão que some ou botão que o
+  // servidor recusa.
+  const podeValidar = souOAutor || pode('solicitacoes.supervisionar');
 
   // Funcoes que EU tenho e que esta solicitacao exige, descontando
   // as que eu ja assinei.
@@ -237,6 +259,27 @@ export function DetalheSolicitacao() {
               disabled={ocupado}
             >
               <Icone nome="escrever" /> Editar
+            </button>
+          )}
+
+          {/* O passo 10 do BPMN da Porto Inc.
+
+              O almoxarife confere se chegou a QUANTIDADE certa; quem
+              pediu é que sabe se chegou a COISA certa — a marca, a
+              bitola, a resistência. São duas conferências, e o
+              documento pede as duas.
+
+              Não trava nada: o material já está no estoque e a nota
+              já virou conta a pagar. É o registro que responde,
+              três meses depois, "mas alguém conferiu isso?". */}
+          {podeValidar && situacao === 'ATENDIDA' && !dados.validadaEm && (
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => void validar()}
+              disabled={ocupado}
+            >
+              <Icone nome="certo" /> É o que eu pedi
             </button>
           )}
 

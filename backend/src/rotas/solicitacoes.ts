@@ -93,6 +93,7 @@ async function completarLinhas(
 const INCLUIR = {
   obra: { select: { id: true, codigo: true, nome: true, cliente: true } },
   solicitante: { select: { id: true, nome: true, email: true } },
+  validadaPor: { select: { nome: true } },
   itens: {
     orderBy: { ordem: 'asc' },
     include: {
@@ -151,6 +152,8 @@ function formatar(s: SolicitacaoCompleta) {
     criadaEm: s.criadaEm,
     enviadaEm: s.enviadaEm,
     decididaEm: s.decididaEm,
+    validadaEm: s.validadaEm,
+    validadaPor: s.validadaPor?.nome ?? null,
     itens,
     totalEstimado: calcularTotalEstimado(itens),
     podeEditar: podeEditar(s.situacao as Situacao),
@@ -669,6 +672,81 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
           'attachment; filename="' + dados.numeroFormatado + '.pdf"',
         )
         .send(pdf);
+    },
+  );
+
+  // --------------------------------------------------------
+  //  Validar: "é isto que eu pedi"
+  //
+  //  O passo 10 do BPMN da Porto Inc. O almoxarife confere se
+  //  chegou a quantidade certa; quem pediu é que sabe se chegou a
+  //  COISA certa — a marca, a bitola, a resistência. São duas
+  //  conferências diferentes, e o documento pede as duas.
+  //
+  //  Não trava nada: o material já está no estoque e a nota já
+  //  virou conta a pagar. Serve de registro — e é o registro que
+  //  responde, três meses depois, "mas alguém conferiu isso?".
+  // --------------------------------------------------------
+  app.post(
+    '/api/solicitacoes/:id/validar',
+    { preHandler: app.exigirPermissao('solicitacoes.criar') },
+    async (req, res) => {
+      const { id } = req.params as { id: string };
+
+      const dados = z
+        .object({ observacao: textoOpcional(500) })
+        .safeParse(req.body ?? {});
+
+      if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
+
+      const atual = await banco.solicitacao.findUnique({
+        where: { id },
+        select: { id: true, situacao: true, solicitanteId: true, validadaEm: true },
+      });
+
+      if (!atual) return res.status(404).send({ erro: 'Solicitação não encontrada.' });
+
+      if (atual.situacao !== 'ATENDIDA') {
+        return res.status(409).send({
+          erro: 'Só dá para validar depois que o material chega por inteiro.',
+          situacaoAtual: atual.situacao,
+        });
+      }
+
+      if (atual.validadaEm) {
+        return res.status(409).send({ erro: 'Esta solicitação já foi validada.' });
+      }
+
+      // Quem pediu é que valida. Quem supervisiona também pode —
+      // solicitante de férias não pode travar o registro.
+      const ehDono = atual.solicitanteId === req.usuario!.id;
+      const supervisiona = req.usuario!.permissoes.includes('solicitacoes.supervisionar');
+
+      if (!ehDono && !supervisiona) {
+        return res.status(403).send({
+          erro: 'Só quem abriu a solicitação pode dizer se é o que pediu.',
+        });
+      }
+
+      await banco.solicitacao.update({
+        where: { id },
+        data: { validadaEm: new Date(), validadaPorId: req.usuario!.id },
+      });
+
+      await registrarEvento(
+        id,
+        req.usuario!.id,
+        'VALIDADA',
+        'Conferiu e confirmou que é o material que pediu.' +
+          (dados.data.observacao ? ' ' + dados.data.observacao : ''),
+      );
+
+      const completa = await banco.solicitacao.findUniqueOrThrow({
+        where: { id },
+        include: INCLUIR,
+      });
+
+      return { ok: true, solicitacao: formatar(completa) };
     },
   );
 }

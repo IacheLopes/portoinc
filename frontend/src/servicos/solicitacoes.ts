@@ -25,6 +25,7 @@ export type SituacaoSolicitacao =
   | 'EM_REVISAO'
   | 'APROVADA'
   | 'EM_COTACAO'
+  | 'ATENDIDA'
   | 'REPROVADA'
   | 'CANCELADA';
 
@@ -34,6 +35,7 @@ export const ROTULO_SITUACAO: Record<SituacaoSolicitacao, string> = {
   EM_REVISAO: 'Em revisão',
   APROVADA: 'Aprovada',
   EM_COTACAO: 'Em cotação',
+  ATENDIDA: 'Atendida',
   REPROVADA: 'Reprovada',
   CANCELADA: 'Cancelada',
 };
@@ -46,6 +48,8 @@ export const COR_SITUACAO: Record<SituacaoSolicitacao, 'info' | 'atencao' | 'suc
   // `info`, e não `sucesso`: estar em cotação não é um desfecho, é
   // uma etapa andando. Verde ali faria a pessoa parar de esperar.
   EM_COTACAO: 'info',
+  // Verde aqui e o unico desfecho bom do fluxo: o material chegou.
+  ATENDIDA: 'sucesso',
   REPROVADA: 'erro',
   CANCELADA: 'erro',
 };
@@ -79,6 +83,9 @@ export interface Solicitacao {
   criadaEm: string;
   enviadaEm: string | null;
   decididaEm: string | null;
+  /** Quando quem pediu confirmou que e o material certo. */
+  validadaEm: string | null;
+  validadaPor: string | null;
   itens: ItemSolicitacao[];
   totalEstimado: number;
   podeEditar: boolean;
@@ -210,6 +217,20 @@ export function enviarSolicitacao(id: string) {
     solicitacao: Solicitacao;
     aprovacao: ResumoDaAlcada;
   }>('/api/solicitacoes/' + id + '/enviar', { metodo: 'POST' });
+}
+
+/**
+ * O passo 10 do BPMN: quem pediu diz que e o material certo.
+ *
+ * O almoxarife confere se chegou a QUANTIDADE certa; quem pediu e
+ * que sabe se chegou a COISA certa — a marca, a bitola, a
+ * resistencia. Sao duas conferencias diferentes.
+ */
+export function validarSolicitacao(id: string, observacao?: string) {
+  return chamar<{ ok: boolean; solicitacao: Solicitacao }>(
+    '/api/solicitacoes/' + id + '/validar',
+    { metodo: 'POST', corpo: { observacao } },
+  );
 }
 
 export function cancelarSolicitacao(id: string, motivo?: string) {

@@ -89,7 +89,14 @@ async function descobrirExemplos() {
   }
 }
 
-const { OBRA, SOLICITACAO, COTACAO, PEDIDO, PEDIDO_ID } = await descobrirExemplos();
+const exemplos = await descobrirExemplos();
+
+// Para olhar UMA solicitacao especifica — a que esta no estado que
+// eu quero fotografar, e nao a primeira da lista:
+//
+//   SOLICITACAO_AUDITORIA=<id> node auditoria-ui.mjs ...
+const { OBRA, COTACAO, PEDIDO, PEDIDO_ID } = exemplos;
+const SOLICITACAO = process.env.SOLICITACAO_AUDITORIA ?? exemplos.SOLICITACAO;
 
 // Cada tela diz QUEM a desenha.
 //

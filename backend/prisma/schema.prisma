@@ -35,6 +35,7 @@ model Usuario {
   sessoes Sessao[]
 
   solicitacoes      Solicitacao[]
+  solicitacoesValidadas Solicitacao[]   @relation("SolicitacaoValidada")
   eventosGerados    SolicitacaoEvento[]
   aprovacoes        Aprovacao[]
   bids              Bid[]
@@ -364,6 +365,11 @@ enum SituacaoSolicitacao {
   APROVADA
   /// Itens já entraram num pacote de cotação.
   EM_COTACAO
+  /// Tudo que foi pedido chegou e foi conferido no almoxarifado.
+  /// É o fim da vida da solicitação — sem ele, a tela de quem
+  /// pediu continuava dizendo "em cotação" depois de o material
+  /// já estar na obra.
+  ATENDIDA
   REPROVADA
   CANCELADA
 }
@@ -389,8 +395,16 @@ model Solicitacao {
   decididaEm   DateTime? @map("decidida_em")
   atualizadaEm DateTime  @updatedAt @map("atualizada_em")
 
-  obra        Obra    @relation(fields: [obraId], references: [id])
-  solicitante Usuario @relation(fields: [solicitanteId], references: [id])
+  /// Quando o solicitante disse "é isto que eu pedi", e quem disse.
+  /// É o passo 10 do BPMN. Fica nulo enquanto ninguém conferiu — o
+  /// material pode estar na obra sem nunca ter sido validado, e o
+  /// sistema não finge o contrário.
+  validadaEm    DateTime? @map("validada_em")
+  validadaPorId String?   @map("validada_por_id")
+
+  obra        Obra     @relation(fields: [obraId], references: [id])
+  solicitante Usuario  @relation(fields: [solicitanteId], references: [id])
+  validadaPor Usuario? @relation("SolicitacaoValidada", fields: [validadaPorId], references: [id])
 
   /// Fotografia da alçada no momento do envio. Guardamos aqui
   /// para que uma mudança futura nas faixas não altere o que

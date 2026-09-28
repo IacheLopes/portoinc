@@ -79,7 +79,10 @@ export const MODULOS: Modulo[] = [
     descricao: 'Montar pacote e convidar fornecedores',
     para: '/cotacoes',
     icone: 'conversa',
-    permissoes: ['cotacoes.gerenciar'],
+    // `ver` entra junto: o engenheiro precisa abrir o mapa
+    // comparativo para conferir se o que foi cotado atende à
+    // especificação, sem poder escolher vencedor.
+    permissoes: ['cotacoes.gerenciar', 'cotacoes.ver'],
   },
   {
     rotulo: 'Pedidos',

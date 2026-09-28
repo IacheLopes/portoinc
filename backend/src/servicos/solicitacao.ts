@@ -11,6 +11,7 @@ export type Situacao =
   | 'EM_REVISAO'
   | 'APROVADA'
   | 'EM_COTACAO'
+  | 'ATENDIDA'
   | 'REPROVADA'
   | 'CANCELADA';
 
@@ -20,6 +21,7 @@ export const ROTULO_SITUACAO: Record<Situacao, string> = {
   EM_REVISAO: 'Em revisão',
   APROVADA: 'Aprovada',
   EM_COTACAO: 'Em cotação',
+  ATENDIDA: 'Atendida',
   REPROVADA: 'Reprovada',
   CANCELADA: 'Cancelada',
 };
@@ -34,17 +36,38 @@ const CAMINHOS: Record<Situacao, Situacao[]> = {
   AGUARDANDO_APROVACAO: ['APROVADA', 'REPROVADA', 'EM_REVISAO', 'CANCELADA'],
   EM_REVISAO: ['AGUARDANDO_APROVACAO', 'CANCELADA'],
   APROVADA: ['EM_COTACAO'],
-  // De volta para a fila quando o preço real da cotação estoura a
-  // faixa de alçada. É o único caminho de volta a partir daqui, e
-  // existe para a assinatura não virar formalidade: quem assinou
-  // R$ 1.900 não autorizou R$ 8.000.
-  EM_COTACAO: ['AGUARDANDO_APROVACAO'],
+  // Dois caminhos a partir daqui:
+  //
+  //  - ATENDIDA, quando tudo que foi pedido chegou. É o fim.
+  //  - de volta para a fila, quando o preço real da cotação
+  //    estoura a faixa de alçada — para a assinatura não virar
+  //    formalidade: quem assinou R$ 1.900 não autorizou R$ 8.000.
+  EM_COTACAO: ['ATENDIDA', 'AGUARDANDO_APROVACAO'],
+  ATENDIDA: [],
   REPROVADA: [],
   CANCELADA: [],
 };
 
 export function podeIrPara(atual: Situacao, destino: Situacao): boolean {
   return CAMINHOS[atual].includes(destino);
+}
+
+/**
+ * A solicitação já foi atendida por inteiro?
+ *
+ * TODOS os itens precisam ter chegado. Fechar no primeiro seria o
+ * mesmo defeito da planilha ao contrário: quem pediu cimento e
+ * areia veria "atendida" com a areia ainda na rua.
+ *
+ * Item que nunca virou pedido — porque ninguém cotou — mantém a
+ * solicitação aberta, e está certo: ela não foi atendida.
+ */
+export function solicitacaoAtendida(
+  itens: Array<{ pedida: number; recebida: number }>,
+): boolean {
+  if (itens.length === 0) return false;
+
+  return itens.every((i) => i.pedida > 0 && i.recebida >= i.pedida);
 }
 
 /** Só rascunho e revisão aceitam mudança de itens. */

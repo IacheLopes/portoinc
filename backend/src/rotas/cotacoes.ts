@@ -202,7 +202,7 @@ export async function rotasCotacoes(app: FastifyInstance) {
   // --------------------------------------------------------
   app.get(
     '/api/cotacoes',
-    { preHandler: app.exigirPermissao('cotacoes.gerenciar') },
+    { preHandler: app.exigirPermissao('cotacoes.gerenciar', 'cotacoes.ver') },
     async (req) => {
       const { situacao } = req.query as { situacao?: string };
 
@@ -222,7 +222,7 @@ export async function rotasCotacoes(app: FastifyInstance) {
   // --------------------------------------------------------
   app.get(
     '/api/cotacoes/:id',
-    { preHandler: app.exigirPermissao('cotacoes.gerenciar') },
+    { preHandler: app.exigirPermissao('cotacoes.gerenciar', 'cotacoes.ver') },
     async (req, res) => {
       const { id } = req.params as { id: string };
 

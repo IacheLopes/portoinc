@@ -21,6 +21,7 @@ import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
 import { dias as diasBr } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
+import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selecao } from '../../componentes/Campo';
 import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
@@ -42,6 +43,13 @@ function porcentoAoMes(t: number): string {
 
 export function Equalizacao() {
   const { id = '' } = useParams();
+
+  // Quem tem so `cotacoes.ver` — o engenheiro — LE o mapa para
+  // conferir se o que foi cotado atende a especificacao, mas nao
+  // escolhe vencedor nem fecha a compra. O servidor recusaria de
+  // qualquer jeito; esconder o botao evita o clique frustrado.
+  const { pode } = useAutenticacao();
+  const podeDecidir = pode('cotacoes.gerenciar');
 
   const [dados, setDados] = useState<Dados | null>(null);
   const [escolhas, setEscolhas] = useState<Record<string, string>>({});
@@ -317,7 +325,7 @@ export function Equalizacao() {
           </p>
         </div>
 
-        {!concluido && (
+        {!concluido && podeDecidir && (
           <div className="barra-acoes">
             <button
               type="button"
@@ -554,7 +562,7 @@ export function Equalizacao() {
       </section>
 
       {/* ---------------- Decisão ---------------- */}
-      {!concluido && (
+      {!concluido && podeDecidir && (
         <section className="secao">
           <Cartao className="painel-decisao">
             <h2 className="formulario__titulo">Fechar a compra</h2>

@@ -760,3 +760,67 @@ describe('Reaprovação quando a compra estoura a faixa', () => {
 function numeroDoBanco(d: unknown): number {
   return Number(d);
 }
+
+// ============================================================
+//  O engenheiro CONFERE o mapa, mas não decide
+// ============================================================
+
+describe('Quem vê a equalização', () => {
+  let engenheiro = '';
+
+  it('o engenheiro abre o mapa comparativo', async () => {
+    // O BPMN diz que a equalização é conferida por comprador,
+    // solicitante E engenheiro juntos — é ali que se checa se o que
+    // foi cotado atende à especificação. Só existia
+    // `cotacoes.gerenciar`, que dá poder de fechar a compra, então
+    // o engenheiro simplesmente não entrava.
+    await criarUsuarioTeste('eng6@teste.com.br', ['ENGENHEIRO']);
+    engenheiro = await entrarComo('eng6@teste.com.br');
+
+    const { id } = await pacoteComRespostas([
+      { f1: 10, f2: 12 },
+      { f1: 20, f2: 18 },
+    ]);
+
+    const r = await chamar('/api/cotacoes/' + id + '/equalizacao', { token: engenheiro });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.comparativo.linhas.length, 2);
+    assert.ok(r.corpo.condicoes.length > 0, 'precisa ver as condições comerciais também');
+  });
+
+  it('mas NÃO escolhe vencedor nem fecha a compra', async () => {
+    // Ver não é mexer. O engenheiro opina sobre a especificação; a
+    // decisão de compra continua sendo de quem responde por ela.
+    const { id, itensBid } = await pacoteComRespostas([
+      { f1: 10, f2: 12 },
+      { f1: 20, f2: 18 },
+    ]);
+
+    const escolha = await chamar('/api/cotacoes/' + id + '/escolhas', {
+      metodo: 'POST', token: engenheiro,
+      corpo: { escolhas: [{ bidItemId: itensBid[0].id, bidFornecedorId: null }] },
+    });
+
+    const pedidos = await chamar('/api/cotacoes/' + id + '/gerar-pedidos', {
+      metodo: 'POST', token: engenheiro,
+    });
+
+    assert.equal(escolha.status, 403);
+    assert.equal(pedidos.status, 403);
+  });
+
+  it('quem não tem nenhuma das duas continua de fora', async () => {
+    await criarUsuarioTeste('almox6@teste.com.br', ['ALMOXARIFE']);
+    const almoxarife = await entrarComo('almox6@teste.com.br');
+
+    const { id } = await pacoteComRespostas([
+      { f1: 10, f2: 12 },
+      { f1: 20, f2: 18 },
+    ]);
+
+    const r = await chamar('/api/cotacoes/' + id + '/equalizacao', { token: almoxarife });
+
+    assert.equal(r.status, 403);
+  });
+});

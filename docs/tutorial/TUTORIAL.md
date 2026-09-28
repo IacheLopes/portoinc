@@ -1,4 +1,4 @@
-<!-- versao: 0.39.0 -->
+<!-- versao: 0.40.0 -->
 
 # 1. Antes de começar
 
@@ -1445,6 +1445,46 @@ O botão **Registrar recebimento** grava e devolve uma frase curta:
 > REC-00002 registrado. 1 item conforme. Pedido recebido por inteiro.
 
 Cada conferência ganha seu próprio número (**REC-00001**, **REC-00002**...). O mesmo pedido pode ter vários.
+
+## Quem pediu fica sabendo
+
+Registrar o recebimento **avisa a solicitação** que deu origem à compra:
+
+| O que chegou | O que acontece com a solicitação |
+|---|---|
+| Uma parte | Continua **Em cotação**, e o histórico ganha a linha *"Chegou parte do material… ainda falta item"* |
+| Tudo | Passa para **Atendida**, e o histórico diz *"Tudo que foi pedido chegou e foi conferido no almoxarifado"* |
+
+Isso parece pequeno e é o contrário disso. Antes, a solicitação ficava **"Em cotação" para sempre**: o material chegava, entrava no estoque, virava nota fiscal e virava conta paga — e a tela de quem pediu continuava dizendo que estava em cotação.
+
+O comprador sabia, o almoxarife sabia, o financeiro sabia. **Só quem pediu não sabia** — que é exatamente a queixa número um de quem controla compra por planilha.
+
+> **Atendida é o fim da vida da solicitação.** Dali ela não volta para lugar nenhum.
+
+## "É o que eu pedi": a segunda conferência
+
+Quando a solicitação fica **Atendida**, quem a abriu vê um botão novo: **✓ É o que eu pedi**.
+
+São **duas conferências diferentes**, e o fluxo da Porto Inc. pede as duas:
+
+| Quem | Confere o quê |
+|---|---|
+| **Almoxarife** | Se chegou a **quantidade** certa, e se veio danificado |
+| **Quem pediu** | Se chegou a **coisa** certa — a marca, a bitola, a resistência |
+
+O almoxarife conta sacos; ele não tem como saber se o cimento é CP-II-Z-32 ou se serve para a laje. Quem pediu sabe.
+
+**Não trava nada.** O material já está no estoque e a nota já virou conta a pagar. É o registro que responde, três meses depois: *"mas alguém conferiu isso?"*. Fica no histórico com nome e hora.
+
+> Quem supervisiona solicitações também pode confirmar — solicitante de férias não pode travar o registro.
+
+## Serviço não entra no estoque
+
+Item cadastrado como **serviço** é conferido normalmente, mas **não gera saldo** no almoxarifado.
+
+Faz sentido quando se pensa: não há o que guardar numa prateleira. Uma instalação elétrica contratada, se entrasse no estoque, apareceria depois no relatório de **Estoque parado** como dinheiro encostado — num item que não existe fisicamente.
+
+O filtro é por item, não por pedido: um pedido com cimento e mão de obra dá entrada no cimento e ignora a mão de obra.
 
 ---
 

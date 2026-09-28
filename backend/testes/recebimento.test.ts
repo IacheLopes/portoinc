@@ -15,6 +15,7 @@ let almoxarife = '';
 let obraId = '';
 let materialA = '';
 let materialB = '';
+let materialServico = '';
 let fornecedor1 = '';
 
 function prazo(dias = 7): string {
@@ -29,15 +30,15 @@ function prazo(dias = 7): string {
  *
  * Devolve o número do pedido, que é por onde o almoxarife entra.
  */
-async function pedidoPronto(quantidades = { a: 10, b: 5 }) {
+async function pedidoPronto(quantidades: { a: number; b: number } = { a: 10, b: 5 }, materiais = [materialA, materialB]) {
   const criada = await chamar('/api/solicitacoes', {
     metodo: 'POST',
     token: solicitante,
     corpo: {
       obraId,
       itens: [
-        { materialId: materialA, quantidade: quantidades.a, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },
-        { materialId: materialB, quantidade: quantidades.b, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },
+        { materialId: materiais[0], quantidade: quantidades.a, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },
+        { materialId: materiais[1], quantidade: quantidades.b, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },
       ],
     },
   });
@@ -113,6 +114,7 @@ async function pedidoPronto(quantidades = { a: 10, b: 5 }) {
   return {
     pedidoId: gerados.corpo.pedidos[0].id as string,
     numero: gerados.corpo.pedidos[0].numero as string,
+    solicitacaoId: solicitacaoId as string,
   };
 }
 
@@ -159,6 +161,18 @@ before(async () => {
     },
   });
   materialB = b.corpo.material.id;
+
+  // Um SERVIÇO. O BPMN da Porto Inc. diz que ele não entra no
+  // estoque: não há o que guardar numa prateleira.
+  const servico = await chamar('/api/materiais', {
+    metodo: 'POST', token: admin,
+    corpo: {
+      familiaId: familia.corpo.familia.id, codigoInterno: 'RC-S',
+      descricao: 'Instalacao eletrica ponto', unidadeMedida: 'UN',
+      tipo: 'SERVICO',
+    },
+  });
+  materialServico = servico.corpo.material.id;
 
   const f1 = await chamar('/api/fornecedores', {
     metodo: 'POST', token: admin,
@@ -508,5 +522,216 @@ describe('Quem pode o quê', () => {
     assert.equal(r.status, 200);
     assert.ok(Array.isArray(r.corpo.pedidos));
     assert.ok(r.corpo.pedidos.every((p: { itensPendentes: number }) => p.itensPendentes >= 0));
+  });
+});
+
+// ============================================================
+//  A solicitação fecha quando o material chega
+// ============================================================
+
+describe('A solicitação fecha quando o material chega', () => {
+  it('recebendo tudo, a solicitação vira ATENDIDA', async () => {
+    // O PASSO QUE FALTAVA no BPMN. Antes disto a SOL ficava "em
+    // cotação" para sempre: o material chegava, entrava no estoque,
+    // virava nota e virava conta paga, e a tela de quem pediu
+    // continuava dizendo que estava em cotação.
+    const { pedidoId, numero, solicitacaoId } = await pedidoPronto();
+    const aberto = await abrirParaConferir(numero);
+
+    const antes = await chamar('/api/solicitacoes/' + solicitacaoId, { token: solicitante });
+    assert.equal(antes.corpo.solicitacao.situacao, 'EM_COTACAO');
+
+    const r = await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId,
+        almoxarifadoId: aberto.corpo.almoxarifados[0].id,
+        itens: aberto.corpo.itens.map((i: { pedidoItemId: string; saldo: number }) => ({
+          pedidoItemId: i.pedidoItemId,
+          quantidadeRecebida: i.saldo,
+          situacao: 'CONFORME',
+        })),
+      },
+    });
+
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.corpo.solicitacoesAtendidas, [solicitacaoId]);
+
+    const depois = await chamar('/api/solicitacoes/' + solicitacaoId, { token: solicitante });
+    assert.equal(depois.corpo.solicitacao.situacao, 'ATENDIDA');
+
+    // E quem pediu descobre POR QUE, no histórico dele.
+    const evento = depois.corpo.solicitacao.eventos.find(
+      (e: { tipo: string }) => e.tipo === 'ATENDIDA',
+    );
+    assert.ok(evento, 'o histórico precisa contar que chegou');
+    assert.match(evento.descricao, /chegou e foi conferido/);
+  });
+
+  it('entrega parcial NÃO fecha, mas avisa no histórico', async () => {
+    // Saber que metade chegou também é informação — e é ela que
+    // evita a ligação "e o resto?".
+    const { pedidoId, numero, solicitacaoId } = await pedidoPronto();
+    const aberto = await abrirParaConferir(numero);
+    const primeiro = aberto.corpo.itens[0];
+
+    const r = await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId,
+        almoxarifadoId: aberto.corpo.almoxarifados[0].id,
+        itens: [
+          { pedidoItemId: primeiro.pedidoItemId, quantidadeRecebida: 1, situacao: 'CONFORME' },
+        ],
+      },
+    });
+
+    assert.deepEqual(r.corpo.solicitacoesAtendidas, [], 'ainda falta item');
+
+    const depois = await chamar('/api/solicitacoes/' + solicitacaoId, { token: solicitante });
+    assert.equal(depois.corpo.solicitacao.situacao, 'EM_COTACAO');
+
+    const evento = depois.corpo.solicitacao.eventos.find(
+      (e: { tipo: string }) => e.tipo === 'RECEBIMENTO',
+    );
+    assert.ok(evento);
+    assert.match(evento.descricao, /Ainda falta item/);
+  });
+});
+
+// ============================================================
+//  Serviço não entra no estoque
+// ============================================================
+
+describe('Serviço não entra no estoque', () => {
+  it('conferir um serviço NÃO cria saldo de prateleira', async () => {
+    // "material entra no estoque (serviço não entra)", diz o BPMN.
+    // O recebimento dava entrada em tudo, e uma instalação elétrica
+    // contratada virava saldo — aparecendo depois no relatório de
+    // estoque parado como dinheiro encostado num item que não
+    // existe fisicamente.
+    const { banco } = await import('../src/plugins/banco.js');
+
+    const { pedidoId, numero } = await pedidoPronto(
+      { a: 4, b: 3 },
+      [materialServico, materialB],
+    );
+    const aberto = await abrirParaConferir(numero);
+
+    await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId,
+        almoxarifadoId: aberto.corpo.almoxarifados[0].id,
+        itens: aberto.corpo.itens.map((i: { pedidoItemId: string; saldo: number }) => ({
+          pedidoItemId: i.pedidoItemId,
+          quantidadeRecebida: i.saldo,
+          situacao: 'CONFORME',
+        })),
+      },
+    });
+
+    const doServico = await banco.saldoEstoque.findFirst({
+      where: { materialId: materialServico },
+    });
+    assert.equal(doServico, null, 'serviço não tem prateleira');
+
+    const movimento = await banco.movimentoEstoque.findFirst({
+      where: { materialId: materialServico },
+    });
+    assert.equal(movimento, null, 'nem extrato de estoque');
+
+    // O material do mesmo pedido entrou normalmente: o filtro é
+    // por tipo de item, não "pedido com serviço não entra".
+    const doMaterial = await banco.saldoEstoque.findFirst({
+      where: { materialId: materialB },
+    });
+    assert.ok(doMaterial, 'o material do mesmo pedido tem de entrar');
+  });
+});
+
+// ============================================================
+//  "É o que eu pedi" — o passo 10 do BPMN
+// ============================================================
+
+describe('Validação do solicitante', () => {
+  /** Recebe o pedido inteiro e devolve a solicitação já ATENDIDA. */
+  async function solicitacaoAtendidaNoBanco() {
+    const { pedidoId, numero, solicitacaoId } = await pedidoPronto();
+    const aberto = await abrirParaConferir(numero);
+
+    await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId,
+        almoxarifadoId: aberto.corpo.almoxarifados[0].id,
+        itens: aberto.corpo.itens.map((i: { pedidoItemId: string; saldo: number }) => ({
+          pedidoItemId: i.pedidoItemId,
+          quantidadeRecebida: i.saldo,
+          situacao: 'CONFORME',
+        })),
+      },
+    });
+
+    return solicitacaoId;
+  }
+
+  it('quem pediu confirma que é o material certo', async () => {
+    // O almoxarife confere a QUANTIDADE; quem pediu é que sabe se
+    // veio a COISA certa — marca, bitola, resistência.
+    const id = await solicitacaoAtendidaNoBanco();
+
+    const r = await chamar('/api/solicitacoes/' + id + '/validar', {
+      metodo: 'POST', token: solicitante,
+      corpo: { observacao: 'Marca conferida na embalagem.' },
+    });
+
+    assert.equal(r.status, 200);
+    assert.ok(r.corpo.solicitacao.validadaEm);
+    assert.ok(r.corpo.solicitacao.validadaPor);
+
+    const evento = r.corpo.solicitacao.eventos.find(
+      (e: { tipo: string }) => e.tipo === 'VALIDADA',
+    );
+    assert.ok(evento, 'é o registro que responde "alguém conferiu isso?" meses depois');
+    assert.match(evento.descricao, /Marca conferida/);
+  });
+
+  it('não valida duas vezes', async () => {
+    const id = await solicitacaoAtendidaNoBanco();
+
+    await chamar('/api/solicitacoes/' + id + '/validar', {
+      metodo: 'POST', token: solicitante,
+    });
+
+    const segunda = await chamar('/api/solicitacoes/' + id + '/validar', {
+      metodo: 'POST', token: solicitante,
+    });
+
+    assert.equal(segunda.status, 409);
+  });
+
+  it('não valida antes de o material chegar', async () => {
+    const { solicitacaoId } = await pedidoPronto();
+
+    const r = await chamar('/api/solicitacoes/' + solicitacaoId + '/validar', {
+      metodo: 'POST', token: solicitante,
+    });
+
+    assert.equal(r.status, 409);
+    assert.match(r.corpo.erro, /depois que o material chega/);
+  });
+
+  it('quem não pediu não valida pelos outros', async () => {
+    // O almoxarife já disse o que sabia — a quantidade. Deixá-lo
+    // assinar pelo solicitante transformaria as duas conferências
+    // numa só, que é exatamente o que o BPMN separa.
+    const id = await solicitacaoAtendidaNoBanco();
+
+    const r = await chamar('/api/solicitacoes/' + id + '/validar', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(r.status, 403);
   });
 });
