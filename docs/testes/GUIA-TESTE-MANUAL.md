@@ -2847,6 +2847,54 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 ---
 
+## CT-199a · Entrega é CAMINHÃO, não item
+
+> **Este defeito passou por todo mundo até 28/09/2026**, quando o dono leu o PDF e desconfiou do número.
+
+1. Escolha um pedido com **dois ou mais itens**
+2. Receba tudo de uma vez, num recebimento só
+3. Aba **Fornecedores**, coluna **Entregas**
+
+**Esperado:** **1**. Um caminhão chegou, ainda que com vários itens dentro.
+
+4. Faça outro pedido, receba **metade** de um item, e depois o saldo em outro recebimento
+
+**Esperado:** **2** entregas — não 3, mesmo tendo 3 linhas de material conferidas.
+
+5. Leia a coluna **Leitura** desse fornecedor
+
+**Esperado:** *"Só 2 entregas até agora — pouco para concluir."*
+
+> **Por que importa:** o relatório contava linhas de item. Um pedido entregue em dois caminhões dava "3 entregas" — e 3 é justamente o limiar a partir do qual o sistema se permite opinar. A trava que existe para ele não julgar com pouco dado foi furada por um número que não era de entrega, e o relatório escreveu *"Cumpre prazo e entrega certo"* sobre uma compra única. Um comprador leria isso como histórico.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-199b · O frete aparece no dinheiro
+
+> Nenhum relatório enxergava o frete: o PC-00001 custou R$ 3.000 e todos diziam R$ 2.900.
+
+1. Aba **Orçado × realizado**
+
+**Esperado:** uma linha **(frete)** no fim da tabela, com o frete e os outros custos dos pedidos da obra, e o **Já comprado** incluindo esse valor.
+
+2. Aba **Fornecedores**, coluna **Comprado**
+
+**Esperado:** o valor inclui o frete. É dinheiro que foi para aquele fornecedor.
+
+3. Aba **Economia**, campo **Fechado**
+
+**Esperado:** o desembolso real, com frete. E o **Ganho na disputa** compara com a proposta mais cara **incluindo o frete dela** — era ali que a diferença estava na BID-00001, com R$ 1,00 contra R$ 100,00.
+
+4. Aba **Consumo**
+
+**Esperado:** o rótulo diz **Total em materiais**, e não "Total comprado" — esta tabela é por família, e frete não tem família. O número é menor que o do orçado × realizado, de propósito.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-200 · Fornecedor convidado que nunca entregou
 
 1. Aba **Fornecedores**

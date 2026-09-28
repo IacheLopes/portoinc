@@ -42,6 +42,18 @@ function val(d: unknown): number {
 /** Pedido cancelado não conta em lugar nenhum. */
 const PEDIDO_VALE = { situacao: { not: 'CANCELADO' as const } };
 
+/**
+ * Quantos dias esta linha atrasou. `null` quando não dá para saber.
+ *
+ * Serve para escolher, entre os itens do mesmo caminhão, qual deles
+ * define se o caminhão chegou atrasado.
+ */
+function atrasoDe(e: { prazoPrometido: number | null; prazoReal: number | null }): number | null {
+  if (e.prazoPrometido === null || e.prazoReal === null) return null;
+
+  return e.prazoReal - e.prazoPrometido;
+}
+
 interface Filtro {
   obraId?: string;
   de?: string;
@@ -238,6 +250,31 @@ export async function rotasRelatorios(app: FastifyInstance) {
       },
     });
 
+    // O frete e os outros custos dos pedidos desta obra.
+    //
+    // Nenhum relatório enxergava esse dinheiro: o PC-00001 custou
+    // R$ 3.000 e todos diziam R$ 2.900, porque somavam só os itens.
+    // O dono pediu para aparecer — "fica melhor de entender o que
+    // foi gasto".
+    //
+    // Um pedido pode atender mais de uma obra. O frete é da
+    // ENTREGA, não do item, e não há como reparti-lo com honestidade
+    // entre obras; então ele conta inteiro para a obra que tem itens
+    // no pedido. Com uma obra por pedido — o caso normal aqui — dá
+    // no mesmo.
+    const pedidosDaObra = await banco.pedido.findMany({
+      where: {
+        ...PEDIDO_VALE,
+        itens: { some: { bidItem: { solicitacaoItem: { solicitacao: { obraId } } } } },
+      },
+      select: { valorFrete: true, outrosCustos: true },
+    });
+
+    const freteEOutros = pedidosDaObra.reduce(
+      (s, p) => s + val(p.valorFrete) + val(p.outrosCustos),
+      0,
+    );
+
     const realizadoPorLinha = new Map<string, number>();
     let semApontamento = 0;
 
@@ -272,6 +309,21 @@ export async function rotasRelatorios(app: FastifyInstance) {
         quantidadePrevista: 0,
         valorUnitarioPrevisto: 0,
         realizado: semApontamento,
+      });
+    }
+
+    // O frete entra como LINHA PRÓPRIA, do mesmo jeito que o
+    // "(sem linha)". Diluí-lo entre cimento e argamassa inventaria
+    // um preço de saco que ninguém pagou; escondê-lo faria o total
+    // do relatório ficar menor que o desembolso.
+    if (freteEOutros > 0) {
+      entrada.push({
+        codigo: '(frete)',
+        descricao: 'Frete e outros custos dos pedidos',
+        unidade: '—',
+        quantidadePrevista: 0,
+        valorUnitarioPrevisto: 0,
+        realizado: freteEOutros,
       });
     }
 
@@ -320,11 +372,20 @@ export async function rotasRelatorios(app: FastifyInstance) {
             situacao: SITUACAO_EM_TEXTO[l.situacao],
           })),
         }],
-        nota: semApontamento > 0
-          ? 'A linha "(sem linha)" reúne ' + dinheiro(semApontamento) +
-            ' comprados para a obra sem apontamento em linha do orçamento. ' +
-            'Ela aparece para o total continuar batendo com o que foi gasto.'
-          : undefined,
+        nota: [
+          semApontamento > 0
+            ? 'A linha "(sem linha)" reúne ' + dinheiro(semApontamento) +
+              ' comprados para a obra sem apontamento em linha do orçamento.'
+            : null,
+          freteEOutros > 0
+            ? 'A linha "(frete)" reúne ' + dinheiro(freteEOutros) +
+              ' de frete e outros custos dos pedidos. Ele não pertence a nenhuma ' +
+              'linha do orçamento, mas saiu do caixa da obra.'
+            : null,
+          semApontamento > 0 || freteEOutros > 0
+            ? 'As duas aparecem para o total continuar batendo com o que foi gasto.'
+            : null,
+        ].filter(Boolean).join(' ') || undefined,
       }, formato);
     }
 
@@ -346,7 +407,10 @@ export async function rotasRelatorios(app: FastifyInstance) {
       orderBy: [{ encerradoEm: 'desc' }],
       select: {
         numero: true, titulo: true, encerradoEm: true,
-        convidados: { select: { respondidoEm: true } },
+        // O frete que cada fornecedor cobrou na proposta dele.
+        convidados: { select: { respondidoEm: true, valorFrete: true, outrosCustos: true } },
+        // O frete do pedido que de fato saiu.
+        pedidos: { where: PEDIDO_VALE, select: { valorFrete: true, outrosCustos: true } },
         itens: {
           select: {
             solicitacaoItem: { select: { quantidade: true, valorEstimado: true } },
@@ -385,6 +449,33 @@ export async function rotasRelatorios(app: FastifyInstance) {
 
         if (propostas.length > 0) maiorProposta += Math.max(...propostas) * quantidade;
       }
+
+      // O FRETE entra dos dois lados da comparação.
+      //
+      // Sem ele o relatório dizia que a compra fechou em R$ 2.900
+      // quando saíram R$ 3.000 do caixa. E o "ganho na disputa"
+      // saía inflado justamente onde o frete era o diferencial: na
+      // BID-00001 a Constrular cobrava R$ 1,00 de frete e o
+      // Marquilip R$ 100,00 — comparar só o material escondia
+      // exatamente a parte interessante da decisão.
+      const freteFechado = b.pedidos.reduce(
+        (s, p) => s + val(p.valorFrete) + val(p.outrosCustos),
+        0,
+      );
+
+      // No pior caso, o frete mais caro entre quem respondeu — na
+      // mesma lógica do `maiorProposta`, que já é o pior preço de
+      // cada item somado.
+      const fretesPropostos = b.convidados
+        .filter((c) => c.respondidoEm !== null)
+        .map((c) => val(c.valorFrete) + val(c.outrosCustos));
+
+      const piorFrete = fretesPropostos.length > 0 ? Math.max(...fretesPropostos) : 0;
+
+      // Só somam quando houve compra: numa cotação encerrada sem
+      // pedido, fechado é zero e um frete solto ali seria invenção.
+      if (fechado > 0) fechado += freteFechado;
+      if (maiorProposta > 0) maiorProposta += piorFrete;
 
       return {
         numeroFormatado: 'BID-' + String(b.numero).padStart(5, '0'),
@@ -468,13 +559,20 @@ export async function rotasRelatorios(app: FastifyInstance) {
           where: PEDIDO_VALE,
           select: {
             criadoEm: true, enviadoEm: true,
+            // Frete é dinheiro que foi para ESTE fornecedor. O
+            // relatório dizia R$ 2.900 quando o Marquilip recebeu
+            // R$ 3.000.
+            valorFrete: true, outrosCustos: true,
             itens: {
               select: {
                 quantidade: true, valorUnitario: true, prazoEntregaDias: true,
                 recebimentos: {
                   select: {
                     situacao: true,
-                    recebimento: { select: { recebidoEm: true } },
+                    // O `id` do recebimento e o que diz QUAL caminhao
+                    // trouxe este item. Sem ele nao da para agrupar,
+                    // e cada item virava uma "entrega".
+                    recebimento: { select: { id: true, recebidoEm: true } },
                   },
                 },
               },
@@ -491,7 +589,24 @@ export async function rotasRelatorios(app: FastifyInstance) {
         let valorComprado = 0;
         const entregas: EntregaDoFornecedor[] = [];
 
+        // UMA entrega por recebimento — por caminhão que chegou —,
+        // e não uma por linha de material conferida.
+        //
+        // Um caminhão com cimento e argamassa contava 2; o de
+        // depois, com o saldo do cimento, contava mais 1. Deu
+        // "3 entregas" para um fornecedor que apareceu DUAS vezes,
+        // com um pedido só. E 3 é justamente o limiar a partir do
+        // qual o sistema se permite opinar: a trava que existe para
+        // ele não julgar com pouco dado foi furada por um número
+        // que não era de entrega. O relatório escreveu "Cumpre
+        // prazo e entrega certo" sobre uma compra única.
+        //
+        // Achado pelo dono em 28/09/2026, lendo o PDF.
+        const porCaminhao = new Map<string, EntregaDoFornecedor>();
+
         for (const pedido of f.pedidos) {
+          valorComprado += val(pedido.valorFrete) + val(pedido.outrosCustos);
+
           // O relógio da entrega começa quando o pedido sai da
           // empresa. Se ainda é rascunho, vale a criação.
           const saida = pedido.enviadoEm ?? pedido.criadoEm;
@@ -500,15 +615,43 @@ export async function rotasRelatorios(app: FastifyInstance) {
             valorComprado += val(item.quantidade) * val(item.valorUnitario);
 
             for (const conferido of item.recebimentos) {
-              entregas.push({
+              const chave = conferido.recebimento.id;
+              const jaTem = porCaminhao.get(chave);
+
+              const desteItem: EntregaDoFornecedor = {
                 prazoPrometido: item.prazoEntregaDias,
                 prazoReal: diasEntre(saida, conferido.recebimento.recebidoEm),
                 comRessalva: conferido.situacao === 'COM_RESSALVA',
                 devolvido: conferido.situacao === 'DEVOLVIDO',
-              });
+              };
+
+              if (!jaTem) {
+                porCaminhao.set(chave, desteItem);
+                continue;
+              }
+
+              // Juntando os itens do mesmo caminhão: a entrega só
+              // chegou certa se TODOS os itens dela chegaram certos,
+              // e só chegou no prazo se nenhum deles atrasou. Um
+              // item com ressalva no meio de cinco perfeitos não é
+              // uma entrega perfeita.
+              jaTem.comRessalva = jaTem.comRessalva || desteItem.comRessalva;
+              jaTem.devolvido = jaTem.devolvido || desteItem.devolvido;
+
+              // Fica o item de prazo mais APERTADO: é ele que diz se
+              // o caminhão chegou atrasado.
+              const atrasoAtual = atrasoDe(jaTem);
+              const atrasoNovo = atrasoDe(desteItem);
+
+              if (atrasoNovo !== null && (atrasoAtual === null || atrasoNovo > atrasoAtual)) {
+                jaTem.prazoPrometido = desteItem.prazoPrometido;
+                jaTem.prazoReal = desteItem.prazoReal;
+              }
             }
           }
         }
+
+        entregas.push(...porCaminhao.values());
 
         return {
           nome: f.nomeFantasia ?? f.razaoSocial,
@@ -751,7 +894,11 @@ export async function rotasRelatorios(app: FastifyInstance) {
         resumo: [
           { rotulo: 'Período', valor: periodo(deTexto, ateTexto) },
           { rotulo: 'Obra', valor: obra ? obra.codigo + ' · ' + obra.nome : 'Todas as obras' },
-          { rotulo: 'Total comprado', valor: dinheiro(total) },
+          // "em materiais", e não "comprado": esta tabela é por
+          // família, e frete não tem família. Chamar de total
+          // faria o número brigar com o do orçado × realizado, que
+          // conta o desembolso inteiro.
+          { rotulo: 'Total em materiais', valor: dinheiro(total) },
           { rotulo: 'Itens de pedido', valor: String(itens.length) },
         ],
         tabelas: [

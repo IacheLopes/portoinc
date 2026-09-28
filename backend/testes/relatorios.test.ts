@@ -418,7 +418,13 @@ describe('Desempenho do fornecedor', () => {
     assert.equal(rapido.convites, 1);
     assert.equal(rapido.respostas, 1);
     assert.equal(rapido.pedidos, 1);
-    assert.equal(rapido.entregas, 2, 'dois itens conferidos');
+    // UMA entrega: um caminhão, com dois itens dentro.
+    //
+    // Esta linha dizia 2, com o comentário "dois itens conferidos".
+    // Fixava o defeito como se fosse a regra — e é por isso que
+    // nenhum teste pegou quando o relatório deu veredito sobre um
+    // fornecedor de uma compra só.
+    assert.equal(rapido.entregas, 1, 'um caminhão, ainda que com dois itens');
     assert.equal(rapido.qualidade, 100);
 
     // O perdedor foi convidado e respondeu, mas não vendeu nada.
@@ -434,9 +440,110 @@ describe('Desempenho do fornecedor', () => {
     const r = await chamar('/api/relatorios/fornecedores', { token: admin });
     const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
 
-    assert.equal(rapido.ressalvas, 2);
+    // Uma entrega com ressalva, e não duas: os dois itens vieram
+    // no mesmo caminhão. A entrega inteira é que veio com problema.
+    assert.equal(rapido.ressalvas, 1);
     assert.equal(rapido.qualidade, 0);
     assert.equal(rapido.pontualidade, 100, 'chegou no prazo, só veio com problema');
+  });
+
+  it('dois caminhões do mesmo pedido são DUAS entregas, não três', async () => {
+    // O defeito que o dono achou lendo o PDF, em 28/09/2026.
+    //
+    // O relatório contava LINHAS DE ITEM conferidas. Um caminhão
+    // com dois itens e outro com o saldo de um deles davam 3 — e 3
+    // é o limiar a partir do qual o sistema se permite opinar. A
+    // trava que existe para ele não julgar com pouco dado foi
+    // furada por um número que não era de entrega, e o relatório
+    // escreveu "Cumpre prazo e entrega certo" sobre UMA compra.
+    await limparCompras();
+    const { pedidoId, numero } = await comprar({ comoChegou: null, quantidade: 10 });
+
+    const paraConferir = await chamar('/api/recebimentos/pedido/' + numero, { token: almoxarife });
+    const almoxarifadoId = paraConferir.corpo.almoxarifados[0].id;
+    const itens = paraConferir.corpo.itens as Array<{ pedidoItemId: string; saldo: number }>;
+
+    // Primeiro caminhão: os dois itens, um deles pela metade.
+    await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId, almoxarifadoId,
+        itens: [
+          { pedidoItemId: itens[0].pedidoItemId, quantidadeRecebida: itens[0].saldo - 4, situacao: 'CONFORME' },
+          { pedidoItemId: itens[1].pedidoItemId, quantidadeRecebida: itens[1].saldo, situacao: 'CONFORME' },
+        ],
+      },
+    });
+
+    // Segundo caminhão: o saldo do primeiro item.
+    await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId, almoxarifadoId,
+        itens: [
+          { pedidoItemId: itens[0].pedidoItemId, quantidadeRecebida: 4, situacao: 'CONFORME' },
+        ],
+      },
+    });
+
+    const r = await chamar('/api/relatorios/fornecedores', { token: admin });
+    const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
+
+    assert.equal(rapido.entregas, 2, 'dois caminhões — três linhas de item não são três entregas');
+    assert.match(
+      rapido.leitura,
+      /pouco para concluir/,
+      'com duas entregas o sistema NÃO pode dar veredito',
+    );
+  });
+
+  it('uma entrega só vira ruim se algum item dela vier ruim', async () => {
+    // Ao juntar os itens de um caminhão, a entrega herda o pior
+    // deles: um item com ressalva no meio de cinco perfeitos não
+    // faz uma entrega perfeita.
+    await limparCompras();
+    const { pedidoId, numero } = await comprar({ comoChegou: null, quantidade: 10 });
+
+    const paraConferir = await chamar('/api/recebimentos/pedido/' + numero, { token: almoxarife });
+    const itens = paraConferir.corpo.itens as Array<{ pedidoItemId: string; saldo: number }>;
+
+    await chamar('/api/recebimentos', {
+      metodo: 'POST', token: almoxarife,
+      corpo: {
+        pedidoId,
+        almoxarifadoId: paraConferir.corpo.almoxarifados[0].id,
+        itens: [
+          { pedidoItemId: itens[0].pedidoItemId, quantidadeRecebida: itens[0].saldo, situacao: 'CONFORME' },
+          {
+            pedidoItemId: itens[1].pedidoItemId,
+            quantidadeRecebida: itens[1].saldo,
+            situacao: 'COM_RESSALVA',
+            motivo: 'Saco rasgado no canto.',
+          },
+        ],
+      },
+    });
+
+    const r = await chamar('/api/relatorios/fornecedores', { token: admin });
+    const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
+
+    assert.equal(rapido.entregas, 1);
+    assert.equal(rapido.ressalvas, 1, 'a entrega inteira conta como problemática');
+    assert.equal(rapido.qualidade, 0);
+  });
+
+  it('o frete é dinheiro que foi para o fornecedor', async () => {
+    // O relatório dizia R$ 2.900 quando o Marquilip recebeu
+    // R$ 3.000. Somava só os itens.
+    await limparCompras();
+    await comprar({ quantidade: 10, preco: 90 });
+
+    const r = await chamar('/api/relatorios/fornecedores', { token: admin });
+    const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
+
+    // 2 itens × 10 × R$ 90 = R$ 1.800, e o portal do teste não
+    // informa frete: sem frete, o número não pode mudar.
+    assert.equal(rapido.valorComprado, 1800);
   });
 
   it('com poucas entregas a leitura não dá veredito', async () => {
@@ -446,8 +553,10 @@ describe('Desempenho do fornecedor', () => {
     const r = await chamar('/api/relatorios/fornecedores', { token: admin });
     const rapido = r.corpo.fornecedores.find((f: { nome: string }) => f.nome === 'Rápido');
 
-    assert.equal(rapido.devolucoes, 2);
-    assert.match(rapido.leitura, /Só 2 entregas até agora/);
+    // Um caminhão com devolução nos dois itens é UMA entrega
+    // devolvida. Dizia 2 porque contava linha de item.
+    assert.equal(rapido.devolucoes, 1);
+    assert.match(rapido.leitura, /Só 1 entrega até agora/);
   });
 
   it('pedido ainda não entregue não conta como entrega', async () => {
