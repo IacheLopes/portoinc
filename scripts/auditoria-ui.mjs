@@ -95,8 +95,12 @@ const exemplos = await descobrirExemplos();
 // eu quero fotografar, e nao a primeira da lista:
 //
 //   SOLICITACAO_AUDITORIA=<id> node auditoria-ui.mjs ...
-const { OBRA, COTACAO, PEDIDO, PEDIDO_ID } = exemplos;
+const { OBRA, PEDIDO, PEDIDO_ID } = exemplos;
 const SOLICITACAO = process.env.SOLICITACAO_AUDITORIA ?? exemplos.SOLICITACAO;
+
+// Idem para a cotacao: o botao de convidar so existe com o pacote
+// ABERTO, e a primeira da lista nem sempre esta.
+const COTACAO_ESCOLHIDA = process.env.COTACAO_AUDITORIA ?? exemplos.COTACAO;
 
 // Cada tela diz QUEM a desenha.
 //
@@ -134,8 +138,8 @@ const TELAS = [
   ['/aprovacoes', 'aprovacoes', [PG + 'aprovacoes/Fila.tsx']],
   ['/cotacoes', 'cotacoes-lista', [PG + 'cotacoes/Lista.tsx']],
   ['/cotacoes', 'cotacoes-nova', [PG + 'cotacoes/Nova.tsx'], '+ Novo pacote de cotação'],
-  ['/cotacoes/' + COTACAO, 'cotacoes-detalhe', [PG + 'cotacoes/Detalhe.tsx']],
-  ['/cotacoes/' + COTACAO + '/equalizacao', 'cotacoes-equalizacao', [PG + 'cotacoes/Equalizacao.tsx']],
+  ['/cotacoes/' + COTACAO_ESCOLHIDA, 'cotacoes-detalhe', [PG + 'cotacoes/Detalhe.tsx']],
+  ['/cotacoes/' + COTACAO_ESCOLHIDA + '/equalizacao', 'cotacoes-equalizacao', [PG + 'cotacoes/Equalizacao.tsx']],
   ['/pedidos', 'pedidos', [PG + 'pedidos/Lista.tsx']],
   ['/pedidos/' + PEDIDO_ID, 'pedidos-detalhe', [PG + 'pedidos/Detalhe.tsx']],
   ['/recebimento', 'recebimento', [PG + 'recebimento/Painel.tsx']],

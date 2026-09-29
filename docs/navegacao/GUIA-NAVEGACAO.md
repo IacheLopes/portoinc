@@ -1,4 +1,4 @@
-<!-- versao: 0.40.0 -->
+<!-- versao: 0.41.0 -->
 
 # Guia de Navegação Simples
 
@@ -223,6 +223,10 @@ aprovação e ainda não foi comprado. Você marca quais entram neste pacote.
 
 > **Ainda não saiu nada.** Criar o pacote não avisa fornecedor nenhum — isso é na tela
 > seguinte.
+
+> **Abrir a cotação também não manda mensagem.** Abrir só fecha o pacote para mudanças.
+> Mandar o convite é um botão próprio, e ele pergunta antes, mostrando a lista de quem vai
+> receber.
 
 ---
 

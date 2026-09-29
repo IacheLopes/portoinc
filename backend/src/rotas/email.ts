@@ -323,9 +323,13 @@ export async function rotasEmail(app: FastifyInstance) {
         enviados,
         bloqueados,
         mensagem:
-          enviados + ' de ' + resultados.length + ' convite(s) enviado(s)' +
+          enviados + ' de ' + resultados.length +
+          (resultados.length === 1 ? ' convite enviado' : ' convites enviados') +
           (bloqueados > 0
-            ? '. ' + bloqueados + ' bloqueado(s) pela lista de autorizados.'
+            ? '. ' + (bloqueados === 1
+              ? '1 foi bloqueado'
+              : bloqueados + ' foram bloqueados') +
+              ' pela lista de autorizados.'
             : '.'),
       };
     },

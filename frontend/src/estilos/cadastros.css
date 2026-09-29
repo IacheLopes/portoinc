@@ -197,6 +197,53 @@ input[type='file'].campo__entrada {
   color: var(--texto-secundario);
 }
 
+/* ------------------------------------------------------------
+   Quem vai receber, na confirmação de envio
+
+   É o corpo do modal, não um detalhe: a pergunta está no título,
+   e esta lista é a única coisa que dá para CONFERIR antes de a
+   mensagem sair da empresa.
+
+   Linha com nome à esquerda e contato à direita, com um fio
+   separando. O fio é informação, não enfeite: ele conta as
+   linhas, e contar destinatário é o que a pessoa está fazendo
+   ali. Sem cartão dentro de modal — caixa dentro de caixa é o
+   que a casa evita.
+   ------------------------------------------------------------ */
+.destinos {
+  list-style: none;
+  margin: 0 0 var(--esp-3);
+  padding: 0;
+  font-size: var(--txt-sm);
+}
+
+.destinos__linha {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding: var(--esp-2) 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+/* SEM borda no topo da primeira linha.
+   O modal já traça um fio abaixo do cabeçalho. Somar o nosso dava
+   dois fios com um vão no meio, que lido rápido parece uma linha
+   vazia na lista de destinatários — justo na lista que a pessoa
+   está ali para contar. */
+
+.destinos__nome { font-weight: var(--peso-medio); }
+
+.destinos__contato {
+  color: var(--texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sem contato cadastrado: a linha continua visível — quem some
+   da lista some da conferência —, mas diz que não vai receber. */
+.destinos__linha--fora .destinos__nome { color: var(--texto-secundario); }
+.destinos__linha--fora .destinos__contato { font-style: italic; }
+
 .fornecedor__nome {
   display: flex;
   flex-wrap: wrap;

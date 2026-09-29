@@ -31,6 +31,9 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { ConfirmarEnvio } from '../../componentes/ConfirmarEnvio';
+import { telefoneCompleto } from '../../servicos/mascaras';
+import { buscarSituacao } from '../../servicos/whatsapp';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -45,12 +48,27 @@ export function DetalheCotacao() {
   const [marcados, setMarcados] = useState<string[]>([]);
   const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
 
+  // Qual envio está esperando confirmação. Nulo: nenhum.
+  const [confirmando, setConfirmando] = useState<'whatsapp' | 'email' | null>(null);
+  // Se o modo de teste está ligado, o modal avisa ANTES de mandar.
+  const [modoTeste, setModoTeste] = useState(true);
+
   const carregar = useCallback(async () => {
     setCarregando(true);
     setErro(null);
     try {
       const r = await buscarCotacao(id);
       setDados(r.cotacao);
+
+      // Se o modo de teste está ligado, o modal de confirmação
+      // avisa antes de mandar. Falhar aqui não pode derrubar a
+      // tela: é enfeite informativo, não o conteúdo dela.
+      try {
+        const w = await buscarSituacao();
+        setModoTeste(w.modoTeste);
+      } catch {
+        setModoTeste(true);
+      }
 
       if (r.cotacao.situacao === 'RASCUNHO') {
         const s = await fornecedoresSugeridos(id);
@@ -147,6 +165,7 @@ export function DetalheCotacao() {
    * daquele canal é pulado com aviso, não trava o envio dos outros.
    */
   async function mandarConvites(canal: 'whatsapp' | 'email') {
+    setConfirmando(null);
     setOcupado(true);
     setErro(null);
 
@@ -280,7 +299,7 @@ export function DetalheCotacao() {
             <button
               type="button"
               className="botao botao--secundario"
-              onClick={() => void mandarConvites('whatsapp')}
+              onClick={() => setConfirmando('whatsapp')}
               disabled={ocupado}
             >
               <Icone nome="conversa" /> Convidar pelo WhatsApp
@@ -291,7 +310,7 @@ export function DetalheCotacao() {
             <button
               type="button"
               className="botao botao--secundario"
-              onClick={() => void mandarConvites('email')}
+              onClick={() => setConfirmando('email')}
               disabled={ocupado}
             >
               <Icone nome="envelope" /> Convidar por e-mail
@@ -595,6 +614,28 @@ export function DetalheCotacao() {
           </TabelaArea>
         </Cartao>
       </section>
+
+      {/* A confirmação vive fora das seções: ela interrompe a tela
+          inteira, não um pedaço dela. */}
+      <ConfirmarEnvio
+        aberto={confirmando !== null}
+        aoFechar={() => setConfirmando(null)}
+        aoConfirmar={() => confirmando && void mandarConvites(confirmando)}
+        ocupado={ocupado}
+        canal={confirmando ?? 'whatsapp'}
+        oQue="convite"
+        referencia={dados.numeroFormatado}
+        modoTeste={modoTeste}
+        destinos={dados.convidados.map((c) => ({
+          nome: c.fornecedor.nomeFantasia ?? c.fornecedor.razaoSocial,
+          contato:
+            confirmando === 'email'
+              ? c.fornecedor.email
+              : c.fornecedor.whatsapp
+                ? telefoneCompleto(c.fornecedor.whatsapp)
+                : null,
+        }))}
+      />
     </>
   );
 }

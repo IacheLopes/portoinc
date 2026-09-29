@@ -12,8 +12,6 @@ import {
   calcularTotais, descreverPagamento,
   type SituacaoBid,
 } from '../servicos/cotacao.js';
-import { enviarPeloWhatsApp, textoConviteCotacao } from '../servicos/whatsapp.js';
-import { ambiente } from '../config/ambiente.js';
 import { dataBr } from '../servicos/data-br.js';
 
 const esquemaBid = z.object({
@@ -495,61 +493,31 @@ export async function rotasCotacoes(app: FastifyInstance) {
         });
       }
 
-      // AVISA OS FORNECEDORES — PELA PORTA ÚNICA.
+      // ABRIR NÃO ENVIA. UM BOTÃO, UM TRABALHO.
       //
-      // Aqui se chamava `integracoes.whatsapp.enviar` direto, e
-      // isso PULAVA a trava da lista de autorizados: ela mora em
-      // `enviarPeloWhatsApp`, não no adaptador. Com o WhatsApp
-      // ligado de verdade, este botão mandaria mensagem para o
-      // número cadastrado do fornecedor mesmo com o modo de teste
-      // ligado — que é exatamente o que a trava existe para
-      // impedir. Achado em 29/09/2026, antes de conectar o
-      // primeiro celular.
+      // Este bloco mandava o convite sozinho, como efeito colateral
+      // de abrir o pacote. Duas coisas erradas nisso:
       //
-      // De quebra, o link ia RELATIVO ("/portal/abc"), que no
-      // celular de quem recebe não abre nada.
-      const base = process.env.URL_PUBLICA ?? ambiente.CORS_ORIGIN;
-      const avisos: Array<{ fornecedor: string; enviado: boolean; bloqueado: boolean }> = [];
-
-      for (const convite of bid.convidados) {
-        if (!convite.fornecedor.whatsapp) {
-          avisos.push({
-            fornecedor: convite.fornecedor.razaoSocial,
-            enviado: false,
-            bloqueado: false,
-          });
-          continue;
-        }
-
-        const resultado = await enviarPeloWhatsApp({
-          para: convite.fornecedor.whatsapp,
-          destino: convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial,
-          texto: textoConviteCotacao({
-            numeroBid: formatarNumeroBid(bid.numero),
-            titulo: bid.titulo,
-            prazo: bid.prazoResposta,
-            link: base + '/portal/' + convite.token,
-            quantidadeItens: bid.itens.length,
-          }),
-          contexto: 'cotacao',
-          referencia: formatarNumeroBid(bid.numero),
-          usuarioId: req.usuario!.id,
-        });
-
-        avisos.push({
-          fornecedor: convite.fornecedor.razaoSocial,
-          enviado: resultado.sucesso,
-          bloqueado: resultado.bloqueado,
-        });
-      }
+      //  1. Ninguém espera que "abrir" mande mensagem para fora da
+      //     empresa. Foi assim que o envio passou anos pulando a
+      //     trava da lista de autorizados sem ninguém notar — o
+      //     furo achado em 29/09/2026.
+      //  2. Quem abre ainda não conferiu quem vai receber. Convidar
+      //     virou ato próprio, com o destinatário na tela antes.
+      //
+      // Os botões "Convidar pelo WhatsApp" e "Convidar por e-mail"
+      // só aparecem depois que o pacote está aberto — o caminho já
+      // existia na tela, estava era sendo atropelado.
+      //
+      // O link do portal NÃO nasce aqui: ele nasce quando o
+      // fornecedor entra no pacote. Nada aqui mexe nele.
 
       const atualizado = await banco.bid.findUniqueOrThrow({ where: { id }, include: INCLUIR });
 
       return {
         cotacao: formatar(atualizado),
-        avisos,
         mensagem:
-          'Pacote aberto. ' + bid.convidados.length + ' fornecedor(es) convidado(s).',
+          'Pacote aberto. Agora convide os fornecedores pelo WhatsApp ou por e-mail.',
       };
     },
   );

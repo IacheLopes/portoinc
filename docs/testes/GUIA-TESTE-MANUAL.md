@@ -1,4 +1,4 @@
-<!-- versao: 0.40.0 -->
+<!-- versao: 0.41.0 -->
 
 # 1. Como usar este guia
 
@@ -4782,6 +4782,52 @@ só o comprador entrava.
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
+## CT-316 · Abrir a cotação NÃO manda mensagem
+
+Monte um pacote, convide fornecedores e clique em **Abrir cotação**.
+
+**Esperado:** a mensagem diz *"Pacote aberto. Agora convide os fornecedores pelo WhatsApp
+ou por e-mail"*. Em **Avisos → WhatsApp → Histórico**, **não aparece nada** referente a
+essa cotação — nem enviado, nem bloqueado.
+
+> Antes, abrir mandava o convite sozinho. Ninguém espera que abrir faça algo sair da
+empresa, e foi assim que o envio passou tempo pulando a trava de autorizados.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-317 · A confirmação mostra quem vai receber
+
+Na cotação aberta, clique em **Convidar pelo WhatsApp**.
+
+**Esperado:** abre uma janela com **a lista dos convidados**, cada um com o telefone.
+Fornecedor sem WhatsApp cadastrado aparece como *"sem WhatsApp cadastrado"*. Com o modo
+de teste ligado, há um aviso amarelo explicando que só recebe quem está liberado.
+
+O botão diz **Enviar 2 convites** — com o número. Clicando em **Cancelar**, ou em Esc,
+**nada é enviado**.
+
+Repita em **Convidar por e-mail**: a lista mostra os e-mails.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-318 · A confirmação do pedido avisa do anexo
+
+Em um pedido, clique em **Mandar pelo WhatsApp**.
+
+**Esperado:** a janela mostra o fornecedor, o telefone, e a linha *"Vai com o PDF do
+pedido em anexo"*.
+
+Se o fornecedor não tiver WhatsApp cadastrado, a janela diz que **não há para quem
+mandar** e o botão de enviar fica desligado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -5203,6 +5249,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-313 | "É o que eu pedi" |  |
 | CT-314 | Serviço não vira saldo de estoque |  |
 | CT-315 | O engenheiro vê a equalização, mas não decide |  |
+| CT-316 | Abrir a cotação NÃO manda mensagem |  |
+| CT-317 | A confirmação mostra quem vai receber |  |
+| CT-318 | A confirmação do pedido avisa do anexo |  |
 
 **Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
 

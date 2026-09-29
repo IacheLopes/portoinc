@@ -208,11 +208,30 @@ describe('Histórico', () => {
 });
 
 describe('Quem pode mexer', () => {
-  it('só quem administra integrações vê a tela', async () => {
-    for (const token of [comprador, solicitante, almoxarife]) {
+  it('quem NÃO envia nem administra fica fora da situação', async () => {
+    for (const token of [solicitante, almoxarife]) {
       const r = await chamar('/api/whatsapp/situacao', { token });
       assert.equal(r.status, 403);
     }
+  });
+
+  it('quem ENVIA pode ler a situação, mas não mexer na conexão', async () => {
+    // O comprador precisa saber, antes de clicar em convidar, se o
+    // modo de teste vai bloquear — o modal de confirmação mostra
+    // isso. Ler não conecta, não desconecta e não libera número.
+    const leitura = await chamar('/api/whatsapp/situacao', { token: comprador });
+    assert.equal(leitura.status, 200);
+    assert.equal(typeof leitura.corpo.modoTeste, 'boolean');
+
+    const conectar = await chamar('/api/whatsapp/conectar', {
+      metodo: 'POST', token: comprador,
+    });
+    assert.equal(conectar.status, 403, 'conectar continua sendo de quem administra');
+
+    const desconectar = await chamar('/api/whatsapp/desconectar', {
+      metodo: 'POST', token: comprador,
+    });
+    assert.equal(desconectar.status, 403);
   });
 
   it('comprador não libera número', async () => {
@@ -339,20 +358,40 @@ describe('A trava vale em TODOS os caminhos de envio', () => {
       corpo: { fornecedores: [fornecedor.corpo.fornecedor.id] },
     });
 
+    // ABRIR NÃO ENVIA. Um botão, um trabalho.
     const aberta = await chamar('/api/cotacoes/' + bidId + '/abrir', {
       metodo: 'POST', token: comprador,
     });
 
     assert.equal(aberta.status, 200);
-    assert.equal(aberta.corpo.avisos.length, 1);
-    assert.equal(aberta.corpo.avisos[0].enviado, false, 'não pode ter saído');
-    assert.equal(aberta.corpo.avisos[0].bloqueado, true, 'tem de ser BLOQUEADO pela trava');
+    assert.equal(aberta.corpo.avisos, undefined, 'abrir não manda mensagem nenhuma');
+    assert.match(aberta.corpo.mensagem, /convide os fornecedores/);
 
-    // E o bloqueio tem de estar no histórico: quem auditar precisa
-    // ver que houve tentativa.
+    const numeroBid = bid.corpo.cotacao.numeroFormatado;
+
+    const semNada = await chamar('/api/whatsapp/historico', { token: admin });
+    assert.equal(
+      semNada.corpo.mensagens.filter(
+        (m: { referencia: string | null }) => m.referencia === numeroBid,
+      ).length,
+      0,
+      'abrir não pode deixar rastro de envio, nem bloqueado',
+    );
+
+    // Convidar é ato PRÓPRIO — e aí sim passa pela trava.
+    const convite = await chamar('/api/cotacoes/' + bidId + '/enviar-convites', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(convite.status, 200);
+    assert.equal(convite.corpo.bloqueados, 1, 'fora da lista: bloqueado');
+    assert.equal(convite.corpo.enviados, 0);
+
+    // E o bloqueio fica no histórico: quem auditar precisa ver que
+    // houve tentativa.
     const historico = await chamar('/api/whatsapp/historico', { token: admin });
     const registro = historico.corpo.mensagens.find(
-      (m: { referencia: string | null }) => m.referencia === bid.corpo.cotacao.numeroFormatado,
+      (m: { referencia: string | null }) => m.referencia === numeroBid,
     );
 
     assert.ok(registro, 'a tentativa precisa aparecer no histórico');

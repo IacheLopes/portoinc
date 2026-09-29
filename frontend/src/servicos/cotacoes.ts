@@ -176,12 +176,12 @@ export function removerConvite(id: string, conviteId: string) {
   });
 }
 
+/** Abre o pacote. NÃO envia nada: convidar é ato próprio. */
 export function abrirCotacao(id: string) {
-  return chamar<{
-    cotacao: Cotacao;
-    mensagem: string;
-    avisos: Array<{ fornecedor: string; enviado: boolean; adaptador: string }>;
-  }>('/api/cotacoes/' + id + '/abrir', { metodo: 'POST' });
+  return chamar<{ cotacao: Cotacao; mensagem: string }>(
+    '/api/cotacoes/' + id + '/abrir',
+    { metodo: 'POST' },
+  );
 }
 
 export function encerrarCotacao(id: string) {

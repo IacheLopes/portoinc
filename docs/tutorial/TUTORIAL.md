@@ -1,4 +1,4 @@
-<!-- versao: 0.40.0 -->
+<!-- versao: 0.41.0 -->
 
 # 1. Antes de começar
 
@@ -963,13 +963,50 @@ Os que ainda não foram convidados vêm **pré-marcados** — o caminho normal �
 
 > Enquanto não houver ninguém convidado, o botão de abrir fica **desligado**, com o motivo escrito ao lado. Não adianta abrir uma cotação que ninguém vai responder.
 
-## O que "abrir" faz
+## O que "abrir" faz — e o que ele NÃO faz
 
-1. Gera um **link único** para cada fornecedor
-2. Marca as solicitações de origem como **Em cotação**
-3. Libera os botões de aviso por WhatsApp e e-mail
+1. Marca as solicitações de origem como **Em cotação**
+2. Fecha o pacote para mudança de itens e de convidados
+3. Libera os botões de convite por WhatsApp e e-mail
 
-> **Enquanto a integração estiver simulada**, o aviso não sai do sistema — ele é apenas registrado. Você mesmo copia o link e manda como quiser.
+**Abrir não manda mensagem nenhuma.**
+
+Antes mandava, sozinho, no momento em que você clicava. Duas coisas erradas nisso: ninguém espera que *abrir* faça algo sair da empresa, e quem abre ainda não conferiu quem vai receber.
+
+Agora são atos separados. **Um botão, um trabalho.**
+
+> O **link único de cada fornecedor** nasce antes, quando você o convida para o pacote — não ao abrir. Por isso dá para copiar o link e mandar do seu jeito mesmo sem usar os botões de envio.
+
+## A confirmação antes de mandar
+
+Clicando em **Convidar pelo WhatsApp** ou **Convidar por e-mail**, aparece uma janela com **a lista de quem vai receber**:
+
+```
+Enviar convite pelo WhatsApp
+O convite da BID-00003 sai agora para quem está na lista.
+
+Constrular              +55 (48) 9000-0004
+Marquilip               +55 (48) 9000-0001
+
+⚠ Modo de teste ligado. Só recebe quem estiver na
+  lista de números liberados, em Avisos.
+
+              Cancelar    💬 Enviar 2 convites
+```
+
+Ela não pergunta só *"tem certeza?"*. Uma janela dessas vira quebra-molas: em três dias a pessoa clica em **Sim** sem ler.
+
+O que ela faz é mostrar **o que dá para conferir**:
+
+- **quem vai receber**, com o contato de cada um — porque o erro real não é o clique acidental, é o fornecedor errado na lista
+- **quem não tem contato cadastrado**, que aparece como *"sem WhatsApp cadastrado"* e não recebe
+- **o aviso do modo de teste antes**, e não depois. Sem ele, você só descobre que foi bloqueado quando a mensagem não chegou em ninguém
+
+O botão diz o que faz — *Enviar 2 convites*, com o número — e o texto continua o mesmo do começo ao fim: você clica em **Convidar**, confirma **Enviar convite**, e recebe **"2 de 2 convites enviados"**.
+
+> A mesma janela aparece nos dois botões do **pedido de compra**, avisando que o PDF vai em anexo.
+
+> Na **última chamada** não há janela: aquele painel já pede prazo e recado, e já é a parada consciente. A lista de quem vai receber aparece ali dentro, logo acima do botão. Duas confirmações seguidas ensinam a pessoa a parar de ler.
 
 Depois de aberto, **não dá mais para trocar itens nem convidados**. Isso é proposital: o pacote precisa ser o mesmo para todos que já receberam o link.
 

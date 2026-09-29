@@ -677,6 +677,23 @@ export function Equalizacao() {
                   </div>
                 </div>
 
+                {/* QUEM VAI RECEBER, ANTES DO BOTÃO.
+                    Nos outros envios isto é um modal. Aqui não:
+                    este painel JÁ é a parada consciente — tem
+                    prazo e recado para preencher. Pôr um modal em
+                    cima dele seriam dois "tem certeza?" seguidos,
+                    que é como se ensina alguém a parar de ler. */}
+                <ul className="destinos">
+                  {dados.condicoes.map((cond) => (
+                    <li key={cond.bidFornecedorId} className="destinos__linha">
+                      <span className="destinos__nome">{cond.fornecedor}</span>
+                      <span className="destinos__contato">
+                        só os itens em que não está na frente
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
                 <div className="formulario__acoes">
                   <button
                     type="button"

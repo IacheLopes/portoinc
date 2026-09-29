@@ -47,6 +47,9 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { ConfirmarEnvio } from '../../componentes/ConfirmarEnvio';
+import { telefoneCompleto } from '../../servicos/mascaras';
+import { buscarSituacao } from '../../servicos/whatsapp';
 
 export function DetalhePedido() {
   const { id = '' } = useParams();
@@ -57,12 +60,25 @@ export function DetalhePedido() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
+  // Qual envio espera confirmação, e se o modo de teste vai barrar.
+  const [confirmando, setConfirmando] = useState<'whatsapp' | 'email' | null>(null);
+  const [modoTeste, setModoTeste] = useState(true);
+
   const carregar = useCallback(async () => {
     setCarregando(true);
     setErro(null);
     try {
       const r = await buscarPedido(id);
       setPedido(r.pedido);
+
+      // Para o modal avisar, antes de mandar, que o modo de teste
+      // vai bloquear. Falhar aqui não derruba a tela.
+      try {
+        const w = await buscarSituacao();
+        setModoTeste(w.modoTeste);
+      } catch {
+        setModoTeste(true);
+      }
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar o pedido.');
     } finally {
@@ -207,12 +223,7 @@ export function DetalhePedido() {
             type="button"
             className="botao botao--secundario"
             disabled={ocupado}
-            onClick={() =>
-              void tentar(async () => {
-                const r = await enviarPedidoPorWhatsApp(pedido.id);
-                return r.mensagem;
-              })
-            }
+            onClick={() => setConfirmando('whatsapp')}
           >
             <Icone nome="conversa" /> Mandar pelo WhatsApp
           </button>
@@ -221,12 +232,7 @@ export function DetalhePedido() {
             type="button"
             className="botao botao--secundario"
             disabled={ocupado}
-            onClick={() =>
-              void tentar(async () => {
-                const r = await enviarPedidoPorEmail(pedido.id);
-                return r.mensagem;
-              })
-            }
+            onClick={() => setConfirmando('email')}
           >
             <Icone nome="envelope" /> Mandar por e-mail
           </button>
@@ -396,6 +402,36 @@ export function DetalhePedido() {
           </dl>
         </Cartao>
       </section>
+
+      <ConfirmarEnvio
+        aberto={confirmando !== null}
+        aoFechar={() => setConfirmando(null)}
+        aoConfirmar={() => {
+          const canal = confirmando;
+          setConfirmando(null);
+          void tentar(async () => {
+            const r = canal === 'whatsapp'
+              ? await enviarPedidoPorWhatsApp(pedido.id)
+              : await enviarPedidoPorEmail(pedido.id);
+            return r.mensagem;
+          });
+        }}
+        ocupado={ocupado}
+        canal={confirmando ?? 'whatsapp'}
+        oQue="pedido"
+        referencia={pedido.numeroFormatado}
+        modoTeste={modoTeste}
+        anexo="PDF do pedido"
+        destinos={[{
+          nome: fornecedor,
+          contato:
+            confirmando === 'email'
+              ? pedido.fornecedor.email
+              : pedido.fornecedor.telefone
+                ? telefoneCompleto(pedido.fornecedor.telefone)
+                : null,
+        }]}
+      />
     </>
   );
 }

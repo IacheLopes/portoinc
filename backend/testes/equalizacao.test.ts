@@ -372,6 +372,10 @@ describe('Última chamada', () => {
     assert.equal(r.corpo.avisos.length, 2);
     for (const a of r.corpo.avisos) {
       assert.equal(a.itensAtras, 1);
+      // A última chamada passa pela porta única como todo o resto:
+      // sem número liberado, ela é bloqueada, não enviada.
+      assert.equal(a.enviado, false);
+      assert.equal(a.bloqueado, true);
     }
   });
 

@@ -26,7 +26,14 @@ export async function rotasWhatsApp(app: FastifyInstance) {
   // --------------------------------------------------------
   app.get(
     '/api/whatsapp/situacao',
-    { preHandler: app.exigirPermissao('sistema.integracoes') },
+    // LER a situação é de quem envia, não só de quem administra.
+    //
+    // O comprador precisa saber, ANTES de clicar, se o modo de
+    // teste vai bloquear o convite — senão ele só descobre depois,
+    // quando a mensagem não chegou em ninguém. Ler não conecta,
+    // não desconecta e não envia: essas continuam em
+    // `sistema.integracoes`.
+    { preHandler: app.exigirPermissao('sistema.integracoes', 'cotacoes.gerenciar', 'pedidos.gerenciar') },
     async () => {
       const autorizados = await banco.numeroAutorizado.count();
 
@@ -314,16 +321,24 @@ export async function rotasWhatsApp(app: FastifyInstance) {
       const enviados = resultados.filter((r) => r.sucesso).length;
       const bloqueados = resultados.filter((r) => r.bloqueado).length;
 
+      // A frase que aparece na faixa verde depois de confirmar o
+      // envio. Sem "convite(s) enviado(s)": plural entre
+      // parenteses empurra para o leitor um trabalho que e nosso.
+      const um = resultados.length === 1;
+
       return {
         ok: enviados > 0,
+        enviados,
+        bloqueados,
         resultados,
         mensagem:
-          enviados +
-          ' de ' +
-          resultados.length +
-          ' convite(s) enviado(s)' +
+          enviados + ' de ' + resultados.length +
+          (um ? ' convite enviado' : ' convites enviados') +
           (bloqueados > 0
-            ? '. ' + bloqueados + ' bloqueado(s) por não estarem na lista de autorizados.'
+            ? '. ' + (bloqueados === 1
+              ? '1 foi bloqueado por não estar'
+              : bloqueados + ' foram bloqueados por não estarem') +
+              ' na lista de autorizados.'
             : '.'),
       };
     },
