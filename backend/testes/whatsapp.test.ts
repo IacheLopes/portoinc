@@ -11,6 +11,12 @@ import assert from 'node:assert/strict';
 
 import { limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar } from './ajuda.js';
 
+function prazo(dias = 7): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.toISOString();
+}
+
 let admin = '';
 let comprador = '';
 let solicitante = '';
@@ -248,5 +254,120 @@ describe('Envio ligado ao fluxo de compras', () => {
     });
 
     assert.equal(r.status, 404);
+  });
+});
+
+// ============================================================
+//  Nenhuma mensagem sai por fora da porta única
+// ============================================================
+
+describe('A trava vale em TODOS os caminhos de envio', () => {
+  /**
+   * Monta uma cotação com fornecedor que tem WhatsApp e a abre.
+   *
+   * Abrir a cotação dispara o convite. Esse botão chamava o
+   * adaptador direto e PULAVA a lista de autorizados: com o
+   * WhatsApp ligado de verdade, a mensagem sairia para o número
+   * cadastrado do fornecedor mesmo com o modo de teste ligado.
+   */
+  it('abrir a cotação NÃO envia para número fora da lista', async () => {
+    const familia = await chamar('/api/familias', {
+      metodo: 'POST', token: admin, corpo: { codigo: 'WPP', nome: 'Família do WhatsApp' },
+    });
+    const familiaId = familia.corpo.familia.id;
+
+    const material = await chamar('/api/materiais', {
+      metodo: 'POST', token: admin,
+      corpo: {
+        familiaId, codigoInterno: 'WPP-1',
+        descricao: 'Material do teste de envio', unidadeMedida: 'UN',
+      },
+    });
+
+    const fornecedor = await chamar('/api/fornecedores', {
+      metodo: 'POST', token: admin,
+      corpo: {
+        razaoSocial: 'Fornecedor Com WhatsApp Ltda', cnpj: '05570714000159',
+        // DDD 00 não existe: este número não chega em ninguém,
+        // nem se toda a trava falhar.
+        whatsapp: '550090000099',
+        familias: [familiaId],
+      },
+    });
+
+    const obra = await chamar('/api/obras', {
+      metodo: 'POST', token: admin, corpo: { codigo: 'OB-WPP', nome: 'Obra do WhatsApp' },
+    });
+
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST', token: solicitante,
+      corpo: {
+        obraId: obra.corpo.obra.id,
+        itens: [{
+          materialId: material.corpo.material.id, quantidade: 5, valorEstimado: 10,
+          especificacaoTecnica: 'Padrão.',
+        }],
+      },
+    });
+    const solicitacaoId = criada.corpo.solicitacao.id;
+
+    await chamar('/api/solicitacoes/' + solicitacaoId + '/enviar', {
+      metodo: 'POST', token: solicitante,
+    });
+
+    // Quem assina nesta faixa é o Gestor de obra — o admin deste
+    // arquivo não tem esse papel, e a aprovação passaria batida.
+    await criarUsuarioTeste('gestor10@teste.com.br', ['GESTOR_OBRA']);
+    const gestor = await entrarComo('gestor10@teste.com.br');
+
+    const decisao = await chamar('/api/aprovacoes/' + solicitacaoId + '/decidir', {
+      metodo: 'POST', token: gestor, corpo: { decisao: 'APROVADA' },
+    });
+    assert.equal(decisao.status, 200, 'a solicitação precisa estar aprovada para virar cotação');
+
+    const detalhe = await chamar('/api/solicitacoes/' + solicitacaoId, { token: solicitante });
+    const itens = detalhe.corpo.solicitacao.itens.map((i: { id: string }) => i.id);
+
+    const bid = await chamar('/api/cotacoes', {
+      metodo: 'POST', token: comprador,
+      corpo: { titulo: 'Pacote do teste de envio', prazoResposta: prazo(), itens },
+    });
+    const bidId = bid.corpo.cotacao.id;
+
+    await chamar('/api/cotacoes/' + bidId + '/fornecedores', {
+      metodo: 'POST', token: comprador,
+      corpo: { fornecedores: [fornecedor.corpo.fornecedor.id] },
+    });
+
+    const aberta = await chamar('/api/cotacoes/' + bidId + '/abrir', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(aberta.status, 200);
+    assert.equal(aberta.corpo.avisos.length, 1);
+    assert.equal(aberta.corpo.avisos[0].enviado, false, 'não pode ter saído');
+    assert.equal(aberta.corpo.avisos[0].bloqueado, true, 'tem de ser BLOQUEADO pela trava');
+
+    // E o bloqueio tem de estar no histórico: quem auditar precisa
+    // ver que houve tentativa.
+    const historico = await chamar('/api/whatsapp/historico', { token: admin });
+    const registro = historico.corpo.mensagens.find(
+      (m: { referencia: string | null }) => m.referencia === bid.corpo.cotacao.numeroFormatado,
+    );
+
+    assert.ok(registro, 'a tentativa precisa aparecer no histórico');
+    assert.equal(registro.situacao, 'BLOQUEADA');
+  });
+
+  it('a rota antiga de teste também passa pela trava', async () => {
+    // Ela nasceu quando só existia o simulador e chamava o
+    // adaptador direto.
+    const r = await chamar('/api/integracoes/whatsapp/testar', {
+      metodo: 'POST', token: admin,
+      corpo: { para: '550090000098', texto: 'nao deve sair' },
+    });
+
+    assert.equal(r.corpo.bloqueado, true);
+    assert.equal(r.corpo.sucesso, false);
   });
 });

@@ -21,7 +21,7 @@
 //  sao os sinais de design generico que ela manda evitar.
 // ============================================================
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -375,6 +375,58 @@ const arquivosComEmoji = [];
         linhaDe(txt, m.index),
         'valor nao reconhecido vira "sem filtro" — a tela mostra tudo achando que filtrou',
       );
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  11. Mensagem saindo por fora da porta unica
+//
+//  A trava que impede o sistema de mandar WhatsApp para numero
+//  de desconhecido NAO mora no adaptador: mora no servico
+//  `enviarPeloWhatsApp`. Quem chama `integracoes.whatsapp.enviar`
+//  direto pula a lista de autorizados E o historico.
+//
+//  Tres rotas faziam isso — inclusive o botao "Abrir cotacao",
+//  que o dono usou na gravacao. Com o Baileys ligado, aquele
+//  clique teria mandado mensagem para o numero cadastrado do
+//  fornecedor com o modo de teste LIGADO. Achado em 29/09/2026,
+//  na vespera de conectar o primeiro celular.
+//
+//  O proprio cabecalho do servico ja dizia "nenhuma mensagem sai
+//  sem passar por aqui". A intencao estava escrita; o codigo e
+//  que nao obedecia. Agora a regua cobra.
+//
+//  Mesma coisa para o e-mail, pelo mesmo motivo.
+// ------------------------------------------------------------
+{
+  const portas = { whatsapp: 'enviarPeloWhatsApp', email: 'enviarPorEmail' };
+  const pastas = ['rotas', 'servicos'];
+
+  for (const pasta of pastas) {
+    const dir = join(RAIZ, 'backend/src', pasta);
+    if (!existsSync(dir)) continue;
+
+    for (const f of readdirSync(dir).filter((x) => x.endsWith('.ts') && !x.includes('.test.'))) {
+      const arq = join(dir, f);
+
+      // O proprio servico E a porta: ele PODE chamar o adaptador.
+      if (/whatsapp\.ts$|email\.ts$/.test(f) && pasta === 'servicos') continue;
+
+      const txt = readFileSync(arq, 'utf8');
+
+      for (const [canal, servico] of Object.entries(portas)) {
+        const chamada = new RegExp('integracoes\\.' + canal + '\\.enviar\\s*\\(', 'g');
+
+        for (const m of txt.matchAll(chamada)) {
+          achar(
+            'ENVIO_FORA_DA_PORTA_UNICA',
+            arq,
+            linhaDe(txt, m.index),
+            'chama o adaptador direto e pula a trava de autorizados — use ' + servico + '()',
+          );
+        }
+      }
     }
   }
 }

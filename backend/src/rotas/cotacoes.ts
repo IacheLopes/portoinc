@@ -12,7 +12,8 @@ import {
   calcularTotais, descreverPagamento,
   type SituacaoBid,
 } from '../servicos/cotacao.js';
-import { integracoes } from '../integracoes/index.js';
+import { enviarPeloWhatsApp, textoConviteCotacao } from '../servicos/whatsapp.js';
+import { ambiente } from '../config/ambiente.js';
 import { dataBr } from '../servicos/data-br.js';
 
 const esquemaBid = z.object({
@@ -494,34 +495,51 @@ export async function rotasCotacoes(app: FastifyInstance) {
         });
       }
 
-      // Avisa os fornecedores. Com o adaptador simulado isso não
-      // sai do sistema: apenas registra o que SERIA enviado.
-      const avisos: Array<{ fornecedor: string; enviado: boolean; adaptador: string }> = [];
+      // AVISA OS FORNECEDORES — PELA PORTA ÚNICA.
+      //
+      // Aqui se chamava `integracoes.whatsapp.enviar` direto, e
+      // isso PULAVA a trava da lista de autorizados: ela mora em
+      // `enviarPeloWhatsApp`, não no adaptador. Com o WhatsApp
+      // ligado de verdade, este botão mandaria mensagem para o
+      // número cadastrado do fornecedor mesmo com o modo de teste
+      // ligado — que é exatamente o que a trava existe para
+      // impedir. Achado em 29/09/2026, antes de conectar o
+      // primeiro celular.
+      //
+      // De quebra, o link ia RELATIVO ("/portal/abc"), que no
+      // celular de quem recebe não abre nada.
+      const base = process.env.URL_PUBLICA ?? ambiente.CORS_ORIGIN;
+      const avisos: Array<{ fornecedor: string; enviado: boolean; bloqueado: boolean }> = [];
 
       for (const convite of bid.convidados) {
         if (!convite.fornecedor.whatsapp) {
           avisos.push({
             fornecedor: convite.fornecedor.razaoSocial,
             enviado: false,
-            adaptador: 'sem-whatsapp',
+            bloqueado: false,
           });
           continue;
         }
 
-        const resultado = await integracoes.whatsapp.enviar({
+        const resultado = await enviarPeloWhatsApp({
           para: convite.fornecedor.whatsapp,
-          texto:
-            'Porto Inc. — Cotação ' + formatarNumeroBid(bid.numero) + '\n' +
-            bid.titulo + '\n' +
-            bid.itens.length + ' item(ns) para cotar.\n' +
-            'Responda até ' + dataBr(bid.prazoResposta) + '.\n' +
-            'Link: /portal/' + convite.token,
+          destino: convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial,
+          texto: textoConviteCotacao({
+            numeroBid: formatarNumeroBid(bid.numero),
+            titulo: bid.titulo,
+            prazo: bid.prazoResposta,
+            link: base + '/portal/' + convite.token,
+            quantidadeItens: bid.itens.length,
+          }),
+          contexto: 'cotacao',
+          referencia: formatarNumeroBid(bid.numero),
+          usuarioId: req.usuario!.id,
         });
 
         avisos.push({
           fornecedor: convite.fornecedor.razaoSocial,
           enviado: resultado.sucesso,
-          adaptador: resultado.adaptador,
+          bloqueado: resultado.bloqueado,
         });
       }
 

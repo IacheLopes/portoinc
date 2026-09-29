@@ -21,7 +21,8 @@ import {
   conferirAlcadaDoFechamento,
   type FaixaAlcada,
 } from '../servicos/solicitacao.js';
-import { integracoes } from '../integracoes/index.js';
+import { enviarPeloWhatsApp } from '../servicos/whatsapp.js';
+import { ambiente } from '../config/ambiente.js';
 
 const INCLUIR_BID = {
   itens: {
@@ -577,11 +578,12 @@ export async function rotasEqualizacao(app: FastifyInstance) {
       ]);
 
       // Avisa cada fornecedor. NUNCA revelando o preço do concorrente.
+      const base = process.env.URL_PUBLICA ?? ambiente.CORS_ORIGIN;
       const avisos: Array<{
         fornecedor: string;
         itensAtras: number;
         enviado: boolean;
-        adaptador: string;
+        bloqueado: boolean;
       }> = [];
 
       for (const resumo of comparativo.fornecedores) {
@@ -597,31 +599,39 @@ export async function rotasEqualizacao(app: FastifyInstance) {
           })
           .filter((x): x is { codigo: string; descricao: string } => x !== null);
 
+        // Link ABSOLUTO: relativo não abre no celular de ninguém.
         const texto =
           mensagemUltimaChamada(formatarNumeroBid(bid.numero), itensAtras, prazo) +
           (dados.data.observacao ? '\n' + dados.data.observacao : '') +
-          '\nLink: /portal/' + convite.token;
+          '\nLink: ' + base + '/portal/' + convite.token;
 
         if (!convite.fornecedor.whatsapp) {
           avisos.push({
             fornecedor: convite.fornecedor.razaoSocial,
             itensAtras: itensAtras.length,
             enviado: false,
-            adaptador: 'sem-whatsapp',
+            bloqueado: false,
           });
           continue;
         }
 
-        const resultado = await integracoes.whatsapp.enviar({
+        // Pela porta única. Chamar o adaptador direto pulava a
+        // trava da lista de autorizados — ver o comentário em
+        // rotas/cotacoes.ts, mesmo defeito.
+        const resultado = await enviarPeloWhatsApp({
           para: convite.fornecedor.whatsapp,
+          destino: convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial,
           texto,
+          contexto: 'cotacao',
+          referencia: formatarNumeroBid(bid.numero),
+          usuarioId: req.usuario!.id,
         });
 
         avisos.push({
           fornecedor: convite.fornecedor.razaoSocial,
           itensAtras: itensAtras.length,
           enviado: resultado.sucesso,
-          adaptador: resultado.adaptador,
+          bloqueado: resultado.bloqueado,
         });
       }
 

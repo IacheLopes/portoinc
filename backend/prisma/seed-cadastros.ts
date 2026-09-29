@@ -51,13 +51,24 @@ const SERVICOS = [
   { familia: 'LOC', codigo: 'L0002', descricao: 'Locação de andaime tubular metro linear', unidade: 'M', linha: '01.02.002' },
 ];
 
+// OS TELEFONES SAO IMPOSSIVEIS DE PROPOSITO.
+//
+// O DDD 00 nao existe no Brasil, entao estes numeros nao podem
+// chegar em pessoa nenhuma. Antes eram numeros de Sao Paulo com
+// formato valido — e alguem e dono deles.
+//
+// Isso e a ULTIMA linha de defesa, nao a primeira: a trava de
+// verdade e a lista de autorizados. Mas em 29/09/2026 tres rotas
+// pulavam essa trava, e se o WhatsApp estivesse ligado naquele
+// dia a mensagem teria saido. Numero impossivel e o cinto de
+// seguranca para quando o freio falha.
 const FORNECEDORES = [
-  { razao: 'Marquilip Comércio e Representação Ltda', fantasia: 'Marquilip', cnpj: '19131243000197', cidade: 'São Paulo', uf: 'SP', email: 'vendas@marquilip.com.br', whatsapp: '5511988887777', familias: ['CIM', 'AGR', 'ACO'] },
-  { razao: 'Eletrosul Materiais Elétricos Ltda', fantasia: 'Eletrosul', cnpj: '05570714000159', cidade: 'Guarulhos', uf: 'SP', email: 'comercial@eletrosul.com.br', whatsapp: '5511977776666', familias: ['ELE'] },
-  { razao: 'Hidromax Distribuidora de Materiais Ltda', fantasia: 'Hidromax', cnpj: '33000167000101', cidade: 'Osasco', uf: 'SP', email: 'pedidos@hidromax.com.br', whatsapp: '5511966665555', familias: ['HID', 'REV'] },
-  { razao: 'Constrular Depósito de Materiais Ltda', fantasia: 'Constrular', cnpj: '47960950000121', cidade: 'São Paulo', uf: 'SP', email: 'atendimento@constrular.com.br', whatsapp: '5511955554444', familias: ['CIM', 'AGR', 'PIN', 'REV'] },
-  { razao: 'Segurança Total EPI Comércio Ltda', fantasia: 'Segurança Total', cnpj: '60746948000112', cidade: 'Barueri', uf: 'SP', email: 'vendas@segurancatotal.com.br', whatsapp: '5511944443333', familias: ['EPI'] },
-  { razao: 'LocaMaq Locação de Equipamentos Ltda', fantasia: 'LocaMaq', cnpj: '02558157000162', cidade: 'São Paulo', uf: 'SP', email: 'locacao@locamaq.com.br', whatsapp: '5511933332222', familias: ['LOC'] },
+  { razao: 'Marquilip Comércio e Representação Ltda', fantasia: 'Marquilip', cnpj: '19131243000197', cidade: 'São Paulo', uf: 'SP', email: 'vendas@marquilip.com.br', whatsapp: '550090000001', familias: ['CIM', 'AGR', 'ACO'] },
+  { razao: 'Eletrosul Materiais Elétricos Ltda', fantasia: 'Eletrosul', cnpj: '05570714000159', cidade: 'Guarulhos', uf: 'SP', email: 'comercial@eletrosul.com.br', whatsapp: '550090000002', familias: ['ELE'] },
+  { razao: 'Hidromax Distribuidora de Materiais Ltda', fantasia: 'Hidromax', cnpj: '33000167000101', cidade: 'Osasco', uf: 'SP', email: 'pedidos@hidromax.com.br', whatsapp: '550090000003', familias: ['HID', 'REV'] },
+  { razao: 'Constrular Depósito de Materiais Ltda', fantasia: 'Constrular', cnpj: '47960950000121', cidade: 'São Paulo', uf: 'SP', email: 'atendimento@constrular.com.br', whatsapp: '550090000004', familias: ['CIM', 'AGR', 'PIN', 'REV'] },
+  { razao: 'Segurança Total EPI Comércio Ltda', fantasia: 'Segurança Total', cnpj: '60746948000112', cidade: 'Barueri', uf: 'SP', email: 'vendas@segurancatotal.com.br', whatsapp: '550090000005', familias: ['EPI'] },
+  { razao: 'LocaMaq Locação de Equipamentos Ltda', fantasia: 'LocaMaq', cnpj: '02558157000162', cidade: 'São Paulo', uf: 'SP', email: 'locacao@locamaq.com.br', whatsapp: '550090000006', familias: ['LOC'] },
 ];
 
 const OBRAS = [

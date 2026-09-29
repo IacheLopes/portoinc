@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { integracoes, resumoIntegracoes } from '../integracoes/index.js';
 import { AdaptadorWhatsAppMock } from '../integracoes/whatsapp/adaptador.mock.js';
+import { enviarPeloWhatsApp } from '../servicos/whatsapp.js';
 
 const esquemaTesteWhatsApp = z.object({
   para: z.string().regex(/^\d{10,15}$/, 'Informe só números, com DDI e DDD. Ex: 5511999998888'),
@@ -39,7 +40,20 @@ export async function rotasIntegracoes(app: FastifyInstance) {
         });
       }
 
-      const resultado = await integracoes.whatsapp.enviar(dados.data);
+      // Pela porta única, como todo o resto.
+      //
+      // Esta rota nasceu quando só existia o adaptador simulado, e
+      // chamava o adaptador direto — o que, com o WhatsApp ligado
+      // de verdade, mandaria mensagem para qualquer número sem
+      // consultar a lista de autorizados. A tela de Avisos já usa
+      // o caminho certo; esta ficou para trás.
+      const resultado = await enviarPeloWhatsApp({
+        para: dados.data.para,
+        texto: dados.data.texto,
+        contexto: 'teste',
+        usuarioId: requisicao.usuario?.id ?? null,
+      });
+
       return resposta.status(resultado.sucesso ? 200 : 502).send(resultado);
     },
   );
