@@ -14,7 +14,7 @@ import {
   type Solicitacao, type SituacaoSolicitacao,
 } from '../../servicos/solicitacoes';
 import { dinheiro } from '../../servicos/cadastros';
-import { plural } from '../../servicos/texto';
+import { Paginacao } from '../../componentes/Paginacao';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selo } from '../../componentes/Selo';
@@ -58,6 +58,10 @@ export function ListaSolicitacoes() {
 
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [vendoTodas, setVendoTodas] = useState(false);
+
+  // A conta de verdade, que vem do servidor junto com as linhas.
+  const [pagina, setPagina] = useState(1);
+  const [dados, setDados] = useState({ total: 0, paginas: 1, porPagina: 20 });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [situacao, setSituacao] = useState('');
@@ -65,13 +69,14 @@ export function ListaSolicitacoes() {
   const [apenasMinhas, setApenasMinhas] = useState(false);
 
   const carregar = useCallback(
-    async (filtros: { situacao?: string; apenasMinhas?: boolean } = {}) => {
+    async (filtros: { situacao?: string; apenasMinhas?: boolean; pagina?: number } = {}) => {
       setCarregando(true);
       setErro(null);
       try {
         const r = await listarSolicitacoes(filtros);
         setSolicitacoes(r.solicitacoes);
         setVendoTodas(r.vendoTodas);
+        setDados({ total: r.total, paginas: r.paginas, porPagina: r.porPagina });
       } catch (e) {
         setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
       } finally {
@@ -87,9 +92,18 @@ export function ListaSolicitacoes() {
   // lista não mexia, e parecia que o filtro estava quebrado. Botão que
   // existe só para confirmar o que já foi escolhido é trabalho a mais
   // para quem usa — a tela já sabe o que ele quer.
+  // Trocar o filtro volta para a página 1.
+  //
+  // Sem isto, quem está na página 7 e filtra por "Rascunho" cai
+  // numa página 7 que não existe mais, vê a lista vazia e conclui
+  // que não há rascunho nenhum.
   useEffect(() => {
-    void carregar({ situacao: situacao || undefined, apenasMinhas });
-  }, [carregar, situacao, apenasMinhas]);
+    setPagina(1);
+  }, [situacao, apenasMinhas]);
+
+  useEffect(() => {
+    void carregar({ situacao: situacao || undefined, apenasMinhas, pagina });
+  }, [carregar, situacao, apenasMinhas, pagina]);
 
   if (carregando && solicitacoes.length === 0) {
     return <Carregando mensagem="Carregando solicitações..." />;
@@ -237,13 +251,22 @@ export function ListaSolicitacoes() {
           </Cartao>
         )}
 
-        {/* "solicitação(ões) listada(s)" era o único lugar do
-            sistema que empurrava o plural entre parênteses para o
-            leitor resolver. A casa tem `plural()` justamente para
-            isso, e todas as outras listas já usavam. */}
-        <p className="secao__descricao" style={{ marginTop: 'var(--esp-3)' }}>
-          {plural(solicitacoes.length, 'solicitação listada', 'solicitações listadas')}.
-        </p>
+        {/* A conta saía de `solicitacoes.length` — o tamanho do que
+            CHEGOU, não do que existe. Com a lista cortada em 200,
+            ela dizia "200 solicitações listadas" havendo 347, e a
+            201ª não aparecia em lugar nenhum.
+
+            Agora o número vem do servidor, contado no banco, com
+            o mesmo filtro da busca. */}
+        <Paginacao
+          pagina={pagina}
+          paginas={dados.paginas}
+          total={dados.total}
+          porPagina={dados.porPagina}
+          aoTrocar={setPagina}
+          oQue="solicitação"
+          oQuePlural="solicitações"
+        />
       </section>
     </>
   );

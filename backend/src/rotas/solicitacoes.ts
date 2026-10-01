@@ -12,6 +12,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
+import { lerPaginacao, montarPagina } from '../servicos/paginacao.js';
 import {
   podeEditar, podeIrPara, conferirParaEnvio, calcularTotalEstimado,
   acharFaixa, explicarAprovacao, resumoDaAlcada, formatarNumero,
@@ -252,28 +253,48 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
         });
       }
 
-      const solicitacoes = await banco.solicitacao.findMany({
-        where: {
-          ...filtroDeVisibilidade(req),
-          ...(apenasMinhas === 'true' ? { solicitanteId: req.usuario!.id } : {}),
-          ...(situacao ? { situacao: situacao as never } : {}),
-          ...(obraId ? { obraId } : {}),
-          ...(busca
-            ? {
-                OR: [
-                  { justificativa: { contains: busca, mode: 'insensitive' as const } },
-                  { itens: { some: { material: { descricao: { contains: busca, mode: 'insensitive' as const } } } } },
-                ],
-              }
-            : {}),
-        },
-        include: INCLUIR,
-        orderBy: { numero: 'desc' },
-        take: 200,
-      });
+      // O MESMO FILTRO VALE PARA A CONTA E PARA A PÁGINA.
+      //
+      // Escrito uma vez só: filtro que diverge entre a contagem e
+      // a busca faz a tela dizer "de 347" e devolver outra coisa.
+      const filtro = {
+        ...filtroDeVisibilidade(req),
+        ...(apenasMinhas === 'true' ? { solicitanteId: req.usuario!.id } : {}),
+        ...(situacao ? { situacao: situacao as never } : {}),
+        ...(obraId ? { obraId } : {}),
+        ...(busca
+          ? {
+              OR: [
+                { justificativa: { contains: busca, mode: 'insensitive' as const } },
+                { itens: { some: { material: { descricao: { contains: busca, mode: 'insensitive' as const } } } } },
+              ],
+            }
+          : {}),
+      };
+
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      // As duas de uma vez: o banco responde junto, e não há
+      // janela entre contar e buscar em que alguém crie uma nova.
+      const [total, solicitacoes] = await Promise.all([
+        banco.solicitacao.count({ where: filtro }),
+        banco.solicitacao.findMany({
+          where: filtro,
+          include: INCLUIR,
+          orderBy: { numero: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+      ]);
+
+      const pagina = montarPagina(solicitacoes.map(formatar), total, pedido);
 
       return {
-        solicitacoes: solicitacoes.map(formatar),
+        solicitacoes: pagina.itens,
+        total: pagina.total,
+        pagina: pagina.pagina,
+        porPagina: pagina.porPagina,
+        paginas: pagina.paginas,
         vendoTodas: req.usuario!.permissoes.includes('solicitacoes.ver_todas'),
       };
     },

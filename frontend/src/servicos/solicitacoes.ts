@@ -127,16 +127,26 @@ export interface ItemParaEnviar {
   valorEstimado?: number | null;
 }
 
+/** O que toda lista paginada devolve junto com os itens. */
+export interface DadosDaPagina {
+  /** Quantas existem NO TOTAL, não quantas vieram. */
+  total: number;
+  pagina: number;
+  porPagina: number;
+  paginas: number;
+}
+
 export function listarSolicitacoes(filtros: {
   situacao?: string;
   obraId?: string;
   apenasMinhas?: boolean;
+  pagina?: number;
 } = {}) {
   const partes = Object.entries(filtros)
     .filter(([, v]) => v !== undefined && v !== '' && v !== false)
     .map(([k, v]) => k + '=' + encodeURIComponent(String(v)));
 
-  return chamar<{ solicitacoes: Solicitacao[]; vendoTodas: boolean }>(
+  return chamar<{ solicitacoes: Solicitacao[]; vendoTodas: boolean } & DadosDaPagina>(
     '/api/solicitacoes' + (partes.length ? '?' + partes.join('&') : ''),
   );
 }

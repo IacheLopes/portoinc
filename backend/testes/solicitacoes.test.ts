@@ -616,3 +616,78 @@ describe('Filtrar por situação', () => {
     assert.ok(r.corpo.solicitacoes.length > 0);
   });
 });
+
+// ============================================================
+//  Paginação
+// ============================================================
+
+describe('Paginação da lista', () => {
+  /** Cria N rascunhos para haver mais de uma página. */
+  async function criarVarias(quantas: number) {
+    for (let i = 0; i < quantas; i++) {
+      await chamar('/api/solicitacoes', {
+        metodo: 'POST', token: bras,
+        corpo: { obraId, itens: [{ materialId: cimentoId, quantidade: 1 }] },
+      });
+    }
+  }
+
+  it('devolve o TOTAL de verdade, não o tamanho da página', async () => {
+    // O defeito que isto fecha: a lista cortava em 200 e dizia
+    // "200 listadas" havendo mais. A 201ª não aparecia em tela
+    // nenhuma, e nada avisava.
+    await criarVarias(25);
+
+    const r = await chamar('/api/solicitacoes?pagina=1', { token: admin });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.solicitacoes.length, 20, 'a página tem 20');
+    assert.ok(r.corpo.total > 20, 'mas o total conta todas');
+    assert.equal(r.corpo.paginas, Math.ceil(r.corpo.total / 20));
+    assert.equal(r.corpo.pagina, 1);
+  });
+
+  it('a página 2 traz outras solicitações, sem repetir', async () => {
+    const p1 = await chamar('/api/solicitacoes?pagina=1', { token: admin });
+    const p2 = await chamar('/api/solicitacoes?pagina=2', { token: admin });
+
+    const numeros1 = p1.corpo.solicitacoes.map((s: { numero: number }) => s.numero);
+    const numeros2 = p2.corpo.solicitacoes.map((s: { numero: number }) => s.numero);
+
+    assert.ok(numeros2.length > 0);
+    assert.equal(
+      numeros1.filter((n: number) => numeros2.includes(n)).length,
+      0,
+      'página 2 não pode repetir o que já veio na 1',
+    );
+  });
+
+  it('página além do fim devolve lista vazia, não erro', async () => {
+    const r = await chamar('/api/solicitacoes?pagina=9999', { token: admin });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.solicitacoes.length, 0);
+    assert.ok(r.corpo.total > 0, 'o total continua sendo o de verdade');
+  });
+
+  it('o filtro vale para a conta E para a página', async () => {
+    // Se o total fosse contado sem o filtro, a tela diria
+    // "de 68" e mostraria 3 — e ninguém entenderia por quê.
+    const r = await chamar('/api/solicitacoes?situacao=RASCUNHO&pagina=1', { token: admin });
+
+    assert.ok(
+      r.corpo.solicitacoes.every((s: { situacao: string }) => s.situacao === 'RASCUNHO'),
+    );
+
+    const todas = await chamar('/api/solicitacoes', { token: admin });
+    assert.ok(r.corpo.total <= todas.corpo.total, 'filtrado não pode contar mais que o total');
+  });
+
+  it('pedido de página absurdo não derruba a API', async () => {
+    for (const q of ['pagina=abacaxi', 'pagina=-5', 'porPagina=999999']) {
+      const r = await chamar('/api/solicitacoes?' + q, { token: admin });
+      assert.equal(r.status, 200, q);
+      assert.ok(r.corpo.solicitacoes.length <= 100, 'o teto por página protege a memória');
+    }
+  });
+});

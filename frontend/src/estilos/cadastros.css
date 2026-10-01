@@ -1737,3 +1737,97 @@ input[type='file'].campo__entrada {
   color: var(--info-texto);
   font-variant-numeric: tabular-nums;
 }
+
+/* ------------------------------------------------------------
+   Barra de páginas
+
+   Toda lista do sistema parava em 200 e dizia "200 listadas",
+   como se não houvesse mais. A linha 201 continuava no banco sem
+   aparecer em tela nenhuma.
+
+   Por isso a CONTA ("Mostrando 21 a 40 de 347") vem primeiro e
+   aparece mesmo com uma página só: é ela que desfaz a mentira.
+   Os números são o segundo trabalho, não o primeiro.
+
+   No celular a conta sobe para cima dos números, porque lá a
+   largura não comporta os dois lado a lado — e, se um tiver de
+   ser cortado, não é a conta.
+   ------------------------------------------------------------ */
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  margin-top: var(--esp-4);
+}
+
+.paginacao__conta {
+  margin: 0;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginacao__passos {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.paginacao__numero,
+.paginacao__passo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px é o alvo mínimo da casa, e a régua cobra. Escrevi 40 na
+     primeira versão e ela me pegou — botão de página é pequeno
+     por natureza, e errar a página irrita justamente porque a
+     correção custa outro clique. */
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--esp-2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--fundo-elevado);
+  color: var(--texto);
+  font-size: var(--txt-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.paginacao__numero:hover:not(:disabled),
+.paginacao__passo:hover:not(:disabled) {
+  border-color: var(--azul-600);
+  color: var(--azul-600);
+}
+
+/* A página atual não é um botão que dá para clicar de novo: é
+   onde você está. Fundo cheio, e o cursor diz isso. */
+.paginacao__numero--aqui,
+.paginacao__numero--aqui:hover {
+  background: var(--azul-600);
+  border-color: var(--azul-600);
+  color: #fff;
+  font-weight: var(--peso-medio);
+  cursor: default;
+}
+
+.paginacao__passo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginacao__vao {
+  padding: 0 var(--esp-1);
+  color: var(--texto-secundario);
+}
+
+@media (max-width: 640px) {
+  .paginacao {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .paginacao__passos { justify-content: center; }
+}
