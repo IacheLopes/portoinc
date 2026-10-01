@@ -26,6 +26,7 @@
 // ============================================================
 
 import { janelaDePaginas } from '../servicos/paginacao';
+import { useTelaEstreita } from '../ganchos/telaEstreita';
 import { Icone } from './Icone';
 
 interface PropsConta {
@@ -77,10 +78,34 @@ interface Props {
 }
 
 export function Paginacao({ pagina, paginas, aoTrocar, carregando }: Props) {
+  // No celular a janela encolhe.
+  //
+  // Com as quatro setas mais os números, onze botões não cabem
+  // numa linha de 420px — e quebrar em duas parte a sequência no
+  // meio, que confunde mais do que ajuda. Sem vizinhas, a barra
+  // fica com a primeira, a atual e a última, e cabe.
+  const estreita = useTelaEstreita();
+
   if (paginas <= 1) return null;
 
   return (
     <nav className="paginacao" aria-label="Páginas da lista">
+      {/* Ir ao começo e ao fim.
+          O "1" e o último número já estão sempre na janela, então
+          estes botões não abrem caminho novo — eles dão um lugar
+          FIXO para clicar. Os números dançam de posição conforme
+          a quantidade de dígitos; estes dois não saem do canto, e
+          é isso que a mão aprende. */}
+      <button
+        type="button"
+        className="paginacao__passo"
+        onClick={() => aoTrocar(1)}
+        disabled={pagina === 1 || carregando}
+        aria-label="Primeira página"
+      >
+        <Icone nome="primeira" />
+      </button>
+
       <button
         type="button"
         className="paginacao__passo"
@@ -91,7 +116,7 @@ export function Paginacao({ pagina, paginas, aoTrocar, carregando }: Props) {
         <Icone nome="anterior" />
       </button>
 
-      {janelaDePaginas(pagina, paginas).map((p, i) =>
+      {janelaDePaginas(pagina, paginas, estreita ? 0 : 1).map((p, i) =>
         p === null ? (
           <span key={'vao-' + i} className="paginacao__vao" aria-hidden="true">
             …
@@ -119,6 +144,16 @@ export function Paginacao({ pagina, paginas, aoTrocar, carregando }: Props) {
         aria-label="Próxima página"
       >
         <Icone nome="proximo" />
+      </button>
+
+      <button
+        type="button"
+        className="paginacao__passo"
+        onClick={() => aoTrocar(paginas)}
+        disabled={pagina === paginas || carregando}
+        aria-label="Última página"
+      >
+        <Icone nome="ultima" />
       </button>
     </nav>
   );

@@ -65,6 +65,22 @@ const CAMINHOS = {
   ),
   anterior: <path d="m14.5 5-6.5 7 6.5 7" />,
   proximo: <path d="m9.5 5 6.5 7-6.5 7" />,
+  // Seta dupla: ir direto para o começo ou para o fim de uma
+  // lista. São as mesmas duas curvas de `anterior` e `proximo`,
+  // repetidas com 5,5 de distância — mesma inclinação, mesma
+  // espessura, para a dupla parecer irmã da simples ao lado.
+  primeira: (
+    <>
+      <path d="m11 5-6.5 7 6.5 7" />
+      <path d="m18 5-6.5 7 6.5 7" />
+    </>
+  ),
+  ultima: (
+    <>
+      <path d="m6 5 6.5 7L6 19" />
+      <path d="m13 5 6.5 7L13 19" />
+    </>
+  ),
   certo: <path d="m4.5 12.5 5 5 10-11" />,
   errado: <path d="M6 6l12 12M18 6 6 18" />,
 
