@@ -1738,41 +1738,80 @@ input[type='file'].campo__entrada {
   font-variant-numeric: tabular-nums;
 }
 
+
+/* ------------------------------------------------------------
+   Trocar de página: onde eu estou agora?
+
+   O dono clicou em "2" e se perguntou se tinha mudado de página.
+   E tinha razão: a tela trocava as linhas em silêncio, no meio da
+   rolagem, com a única confirmação no rodapé — ou seja, fora de
+   vista justamente depois do clique.
+
+   Quatro peças resolvem, e nenhuma delas é um aviso piscando:
+
+     1. A CONTA sobe para cima da lista, junto dos filtros. É o
+        que o olho encontra quando a tela rola de volta.
+     2. A tela ROLA até o topo da lista (no .tsx), para a primeira
+        linha nova ficar à frente.
+     3. Enquanto busca, a lista ESMAECE e para de aceitar clique.
+        Sem trocar a tabela por um girador: isso derruba a altura
+        da página e faz tudo pular.
+     4. A lista nova entra com um fade curto. Movimento que
+        RESPONDE a um clique e mostra o que mudou — não enfeite
+        de carregamento de tela.
+   ------------------------------------------------------------ */
+/* A barra do topo é grudada (sticky). Sem esta margem, rolar até
+   o começo da lista esconde o contador DEBAIXO dela — justamente
+   o pedaço que subiu para ser visto. Vi isso na foto: a lista
+   trocava certo e a confirmação continuava escondida.
+
+   O token é o mesmo da altura da barra; se ela mudar, isto
+   acompanha. */
+.secao-com-ancora { scroll-margin-top: calc(var(--altura-cabecalho) + var(--esp-3)); }
+
+.conta-da-pagina {
+  margin: 0 0 var(--esp-3);
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+  font-variant-numeric: tabular-nums;
+  /* Altura reservada: trocar "Mostrando 21 a 40 de 68" por
+     "Buscando..." não pode empurrar a tabela para cima. */
+  min-height: 1.5em;
+}
+
+/* A lista enquanto a página nova não chegou. */
+.lista-trocando {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lista-trocando { transition: opacity 120ms ease-out; }
+
+  /* `key` da página muda no React, o elemento é novo, e a
+     animação roda uma vez. É a confirmação de que a lista é
+     outra. */
+  .lista-chegou { animation: lista-entra 180ms ease-out; }
+
+  @keyframes lista-entra {
+    from { opacity: 0.45; }
+    to   { opacity: 1; }
+  }
+}
+
 /* ------------------------------------------------------------
    Barra de páginas
 
-   Toda lista do sistema parava em 200 e dizia "200 listadas",
-   como se não houvesse mais. A linha 201 continuava no banco sem
-   aparecer em tela nenhuma.
-
-   Por isso a CONTA ("Mostrando 21 a 40 de 347") vem primeiro e
-   aparece mesmo com uma página só: é ela que desfaz a mentira.
-   Os números são o segundo trabalho, não o primeiro.
-
-   No celular a conta sobe para cima dos números, porque lá a
-   largura não comporta os dois lado a lado — e, se um tiver de
-   ser cortado, não é a conta.
+   Centralizada, e não grudada à direita: sem o contador do lado,
+   um bloco de botões solto no canto parece sobra de layout.
    ------------------------------------------------------------ */
 .paginacao {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  margin-top: var(--esp-4);
-}
-
-.paginacao__conta {
-  margin: 0;
-  font-size: var(--txt-sm);
-  color: var(--texto-secundario);
-  font-variant-numeric: tabular-nums;
-}
-
-.paginacao__passos {
-  display: flex;
-  align-items: center;
+  justify-content: center;
   gap: var(--esp-1);
+  margin-top: var(--esp-4);
 }
 
 .paginacao__numero,
@@ -1802,8 +1841,8 @@ input[type='file'].campo__entrada {
   color: var(--azul-600);
 }
 
-/* A página atual não é um botão que dá para clicar de novo: é
-   onde você está. Fundo cheio, e o cursor diz isso. */
+/* A página atual não é um botão para clicar de novo: é onde você
+   está. Fundo cheio, e o cursor diz isso. */
 .paginacao__numero--aqui,
 .paginacao__numero--aqui:hover {
   background: var(--azul-600);
@@ -1813,6 +1852,7 @@ input[type='file'].campo__entrada {
   cursor: default;
 }
 
+.paginacao__numero:disabled,
 .paginacao__passo:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -1821,13 +1861,4 @@ input[type='file'].campo__entrada {
 .paginacao__vao {
   padding: 0 var(--esp-1);
   color: var(--texto-secundario);
-}
-
-@media (max-width: 640px) {
-  .paginacao {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .paginacao__passos { justify-content: center; }
 }

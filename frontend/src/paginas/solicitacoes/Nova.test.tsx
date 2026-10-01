@@ -124,8 +124,15 @@ describe('Corrigir um rascunho', () => {
   it('o título e o botão dizem que é correção, não criação', async () => {
     montar({ editando: rascunho() });
 
+    // As DUAS esperam.
+    //
+    // A segunda era `getByRole`, que não espera nada: quando a
+    // máquina estava ocupada e o botão renderizava um instante
+    // depois do título, o teste falhava sozinho e passava na
+    // tentativa seguinte. Teste que falha de vez em quando ensina
+    // a gente a reexecutar em vez de investigar.
     expect(await screen.findByText(/Corrigir SOL-00007/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Salvar alterações/ })).toBeInTheDocument();
   });
 
   it('salva o cabeçalho e os itens, e avisa a tela', async () => {

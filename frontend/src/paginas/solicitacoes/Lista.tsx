@@ -7,14 +7,14 @@
 //  que sumiu informação.
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   listarSolicitacoes, ROTULO_SITUACAO, COR_SITUACAO, dataBr,
   type Solicitacao, type SituacaoSolicitacao,
 } from '../../servicos/solicitacoes';
 import { dinheiro } from '../../servicos/cadastros';
-import { Paginacao } from '../../componentes/Paginacao';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selo } from '../../componentes/Selo';
@@ -61,6 +61,11 @@ export function ListaSolicitacoes() {
 
   // A conta de verdade, que vem do servidor junto com as linhas.
   const [pagina, setPagina] = useState(1);
+  // Trocando de página agora? É isto que esmaece a lista e trava
+  // os botões — diferente de `carregando`, que vale só na
+  // primeira vez, quando ainda não há nada em tela.
+  const [trocandoPagina, setTrocandoPagina] = useState(false);
+  const topoDaLista = useRef<HTMLElement>(null);
   const [dados, setDados] = useState({ total: 0, paginas: 1, porPagina: 20 });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -81,6 +86,7 @@ export function ListaSolicitacoes() {
         setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
       } finally {
         setCarregando(false);
+        setTrocandoPagina(false);
       }
     },
     [],
@@ -92,6 +98,33 @@ export function ListaSolicitacoes() {
   // lista não mexia, e parecia que o filtro estava quebrado. Botão que
   // existe só para confirmar o que já foi escolhido é trabalho a mais
   // para quem usa — a tela já sabe o que ele quer.
+  /**
+   * Trocar de página: rola até a lista e avisa que está buscando.
+   *
+   * Sem rolar, a pessoa clica no rodapé, as linhas mudam ACIMA
+   * dela e ela continua olhando o mesmo pedaço de tela. Foi
+   * exatamente a dúvida do dono: "será que eu mudei de página?".
+   *
+   * Rola para o topo da LISTA, não da página: o cabeçalho e os
+   * filtros saírem de vista tirariam o contexto de onde ela está.
+   */
+  function irPara(nova: number) {
+    setTrocandoPagina(true);
+    setPagina(nova);
+
+    // Rolagem INSTANTÂNEA, não suave.
+    //
+    // Com a tabela cheia, a distância até o topo passa de mil
+    // pixels, e a rolagem suave faz a pessoa assistir a lista
+    // inteira voar — que desorienta em vez de orientar. Vi isso
+    // numa foto tirada no meio da animação.
+    //
+    // Instantâneo é mais seco e mais honesto: você clica e está
+    // lá. Quem confirma que a lista mudou é o fade das linhas
+    // novas e o contador logo acima delas.
+    topoDaLista.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+  }
+
   // Trocar o filtro volta para a página 1.
   //
   // Sem isto, quem está na página 7 e filtra por "Rascunho" cai
@@ -187,7 +220,20 @@ export function ListaSolicitacoes() {
         </div>
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={topoDaLista}>
+        {/* A conta vem ANTES da lista, e não no rodapé.
+            É o que o olho encontra quando a tela rola de volta
+            depois de trocar de página — e, no fundo, ela é uma
+            propriedade do filtro, que fica logo acima. */}
+        <ContaDaPagina
+          pagina={pagina}
+          total={dados.total}
+          porPagina={dados.porPagina}
+          oQue="solicitação"
+          oQuePlural="solicitações"
+          carregando={trocandoPagina}
+        />
+
         {solicitacoes.length === 0 ? (
           <Vazio
             titulo={
@@ -198,7 +244,14 @@ export function ListaSolicitacoes() {
             descricao={explicarVazio(situacao, podeCriar)}
           />
         ) : (
-          <Cartao semEspaco>
+          /* `key` na página: o React troca o elemento inteiro, e a
+             animação de entrada roda de novo. É ela que confirma,
+             sem texto, que a lista é outra. */
+          <Cartao
+            semEspaco
+            key={pagina}
+            className={trocandoPagina ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Solicitações de compra</caption>
@@ -261,11 +314,8 @@ export function ListaSolicitacoes() {
         <Paginacao
           pagina={pagina}
           paginas={dados.paginas}
-          total={dados.total}
-          porPagina={dados.porPagina}
-          aoTrocar={setPagina}
-          oQue="solicitação"
-          oQuePlural="solicitações"
+          aoTrocar={irPara}
+          carregando={trocandoPagina}
         />
       </section>
     </>

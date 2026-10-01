@@ -1128,8 +1128,17 @@ for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
 
     if (abrir) {
       const clicou = await js(`(() => {
-        const alvo = [...document.querySelectorAll('button, a')]
-          .find((b) => (b.textContent || '').trim().includes(${JSON.stringify(abrir)}));
+        // Procura no texto E no aria-label.
+        //
+        // Botao cujo texto visivel e so um numero — "2", na barra
+        // de paginas — nao da para achar por texto sem casar com
+        // meia tela. O rotulo de acessibilidade ("Pagina 2") e
+        // justamente o nome dele.
+        const procurado = ${JSON.stringify(abrir)};
+        const alvo = [...document.querySelectorAll('button, a')].find((b) =>
+          (b.getAttribute('aria-label') || '').trim() === procurado ||
+          (b.textContent || '').trim().includes(procurado),
+        );
         if (!alvo) return 'nao achei o botao';
         alvo.click();
         return 'ok';
