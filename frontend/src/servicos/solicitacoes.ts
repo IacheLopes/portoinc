@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar, baixarArquivo } from './api';
+import type { DadosDaPagina } from './paginacao';
 import type { Material } from './cadastros';
 
 /**
@@ -125,15 +126,6 @@ export interface ItemParaEnviar {
   descricaoComplementar?: string;
   especificacaoTecnica?: string;
   valorEstimado?: number | null;
-}
-
-/** O que toda lista paginada devolve junto com os itens. */
-export interface DadosDaPagina {
-  /** Quantas existem NO TOTAL, não quantas vieram. */
-  total: number;
-  pagina: number;
-  porPagina: number;
-  paginas: number;
 }
 
 export function listarSolicitacoes(filtros: {

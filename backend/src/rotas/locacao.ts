@@ -15,6 +15,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { numero, erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { dataBr } from '../servicos/data-br.js';
 import {
@@ -176,6 +177,8 @@ export async function rotasLocacao(app: FastifyInstance) {
       select: { id: true, codigo: true, nome: true },
     });
 
+    // O arquivo leva a lista INTEIRA, não a página. Quem baixa o
+    // relatório quer o relatório, e não a tela que estava abrindo.
     if (q.formato) {
       if (!formatoValido(q.formato)) {
         return reply.status(400).send({ erro: 'Formato não suportado. Escolha "pdf" ou "docx".' });
@@ -184,7 +187,48 @@ export async function rotasLocacao(app: FastifyInstance) {
       return entregarArquivo(reply, lista, resumo, obras, q, q.formato);
     }
 
-    return { contratos: lista, resumo, obras };
+    // Aqui a página é cortada na memória, e só aqui no sistema.
+    //
+    // As outras oito listas cortam no banco, com skip/take, que é o
+    // certo. Esta não pode: "alerta" (atrasado, vence hoje, no
+    // prazo) e o custo acumulado não existem como coluna — são
+    // CONTA feita em cima da data de hoje, e o banco não sabe
+    // fazê-la. Cortar antes seria filtrar o alerta dentro de uma
+    // página só, e o resumo de cima — quanto está no pátio, quanto
+    // está atrasado — contaria apenas os vinte da tela.
+    //
+    // O custo é carregar a tabela de contratos a cada abertura do
+    // painel. É aceitável porque contrato de locação é coisa de
+    // dezenas por ano, não de milhares: cada um é um equipamento
+    // alugado de verdade. Se um dia passar de alguns milhares, o
+    // caminho é guardar o alerta como coluna, atualizada por tarefa
+    // diária — e aí esta rota passa a cortar no banco como as outras.
+    const pedido = lerPaginacao(q as { pagina?: string; porPagina?: string });
+    const daPagina = lista.slice(pedido.pular, pedido.pular + pedido.porPagina);
+
+    // O que precisa de ação, de TODAS as páginas.
+    //
+    // A tela montava este bloco filtrando os contratos que tinha
+    // em mão. Com página, ele passaria a avisar só do que estivesse
+    // nas vinte linhas abertas — e um andaime esquecido na página 4
+    // deixaria de aparecer justamente no lugar feito para não
+    // deixar esquecer.
+    //
+    // Vinte é o teto do bloco: ele é um lembrete, não um relatório.
+    // Quando passa disso, a conta do resto é mais útil que a
+    // vigésima primeira linha.
+    const urgentes = lista.filter(
+      (c) => c.alerta === 'ATRASADA' || c.alerta === 'PERTO' || c.alerta === 'VENCE_HOJE',
+    );
+
+    return {
+      contratos: daPagina,
+      resumo,
+      obras,
+      aFazer: urgentes.slice(0, 20),
+      aFazerTotal: urgentes.length,
+      ...camposDaPagina(lista.length, pedido),
+    };
   });
 
   // --------------------------------------------------------

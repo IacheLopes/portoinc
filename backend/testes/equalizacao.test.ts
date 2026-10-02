@@ -568,6 +568,56 @@ describe('Lista de pedidos', () => {
     assert.ok(p.total > 0);
     assert.ok(p.pagamento.includes('30%'));
   });
+
+  // ----------------------------------------------------------
+  //  Os três números do alto da tela
+  //
+  //  Eles saíam de contar o array que a tela tinha em mão. Com a
+  //  lista paginada em vinte, "Valor total · Soma de todos"
+  //  passaria a mostrar a soma de vinte — com cara de total da
+  //  empresa. Agora os três são contados no banco.
+  // ----------------------------------------------------------
+  it('o resumo soma TODOS os pedidos, não os da página', async () => {
+    const inteiro = await chamar('/api/pedidos?porPagina=100', { token: comprador });
+    const cortado = await chamar('/api/pedidos?porPagina=1', { token: comprador });
+
+    assert.ok(inteiro.corpo.pedidos.length > 1, 'o teste precisa de mais de um pedido');
+    assert.equal(cortado.corpo.pedidos.length, 1);
+
+    // Pedir uma linha por página não muda nenhum dos três.
+    assert.deepEqual(cortado.corpo.resumo, inteiro.corpo.resumo);
+  });
+
+  it('a soma do resumo bate com a soma das linhas', async () => {
+    const r = await chamar('/api/pedidos?porPagina=100', { token: comprador });
+
+    // A conta de cada pedido já vem pronta na linha, feita em
+    // TypeScript. O resumo vem de uma consulta escrita à mão. Se as
+    // duas divergirem, uma das duas está errada — e esta é a única
+    // prova que compara as duas.
+    const somaDasLinhas = r.corpo.pedidos.reduce(
+      (s: number, p: { total: number }) => s + p.total,
+      0,
+    );
+
+    assert.ok(somaDasLinhas > 0, 'sem pedido nenhum isto não mede nada');
+    assert.ok(
+      Math.abs(r.corpo.resumo.valorTotal - somaDasLinhas) < 0.01,
+      'o SQL da soma divergiu da conta das linhas: ' +
+        r.corpo.resumo.valorTotal + ' contra ' + somaDasLinhas,
+    );
+  });
+
+  it('conta os fornecedores distintos, e não as linhas', async () => {
+    const r = await chamar('/api/pedidos?porPagina=100', { token: comprador });
+
+    const distintos = new Set(
+      r.corpo.pedidos.map((p: { fornecedor: string }) => p.fornecedor),
+    ).size;
+
+    assert.equal(r.corpo.resumo.fornecedores, distintos);
+    assert.equal(r.corpo.resumo.pedidos, r.corpo.total);
+  });
 });
 
 describe('Um pedido inteiro', () => {

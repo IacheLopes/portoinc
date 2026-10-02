@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar } from './api';
+import type { DadosDaPagina } from './paginacao';
 
 // ------------------------------------------------------------
 //  Tipos
@@ -177,12 +178,13 @@ export function listarMateriais(filtros: {
   busca?: string;
   familiaId?: string;
   tipo?: TipoItem;
+  pagina?: number;
 } = {}) {
   const partes = Object.entries(filtros)
     .filter(([, v]) => v)
     .map(([k, v]) => k + '=' + encodeURIComponent(String(v)));
 
-  return chamar<{ materiais: Material[] }>(
+  return chamar<{ materiais: Material[] } & DadosDaPagina>(
     '/api/materiais' + (partes.length ? '?' + partes.join('&') : ''),
   );
 }
@@ -206,12 +208,14 @@ export function biparCodigo(gtin: string) {
 // ------------------------------------------------------------
 //  Fornecedores
 // ------------------------------------------------------------
-export function listarFornecedores(filtros: { busca?: string; familiaId?: string } = {}) {
+export function listarFornecedores(
+  filtros: { busca?: string; familiaId?: string; pagina?: number } = {},
+) {
   const partes = Object.entries(filtros)
     .filter(([, v]) => v)
     .map(([k, v]) => k + '=' + encodeURIComponent(String(v)));
 
-  return chamar<{ fornecedores: Fornecedor[] }>(
+  return chamar<{ fornecedores: Fornecedor[] } & DadosDaPagina>(
     '/api/fornecedores' + (partes.length ? '?' + partes.join('&') : ''),
   );
 }

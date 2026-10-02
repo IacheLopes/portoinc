@@ -432,6 +432,97 @@ const arquivosComEmoji = [];
 }
 
 // ------------------------------------------------------------
+//  12. Pagina pedida sem total contado
+//
+//  Uma lista paginada e DUAS consultas: o `count`, que diz
+//  quantas existem, e o `findMany` com `skip`/`take`, que traz as
+//  da pagina. Se a rota traz a pagina e nao conta o total, a tela
+//  nao tem como desenhar a barra — e volta a dizer "20 listadas"
+//  como se fossem todas.
+//
+//  Era exatamente o defeito antigo, com outra roupa: as dez
+//  listas pediam `take: 200` e devolviam o corte como se fosse
+//  tudo. Quem escrever a decima primeira lista vai copiar uma das
+//  dez; esta regra cobra o par.
+// ------------------------------------------------------------
+{
+  const rotas = join(RAIZ, 'backend/src/rotas');
+
+  for (const f of readdirSync(rotas).filter((x) => x.endsWith('.ts') && !x.includes('.test.'))) {
+    const arq = join(rotas, f);
+    const txt = readFileSync(arq, 'utf8');
+
+    // Divide por rota: cada `app.get(`/app.post(` comeca um trecho.
+    const inicios = [...txt.matchAll(/\n\s*app\.(get|post|patch|delete)\s*\(/g)].map((m) => m.index);
+
+    for (let i = 0; i < inicios.length; i++) {
+      const trecho = txt.slice(inicios[i], inicios[i + 1] ?? txt.length);
+
+      const pedePagina = /skip:\s*pedido\.pular/.test(trecho);
+      const conta = /\.count\s*\(/.test(trecho);
+      const devolveConta = /camposDaPagina\s*\(/.test(trecho);
+
+      if (pedePagina && !(conta && devolveConta)) {
+        achar(
+          'PAGINA_SEM_TOTAL',
+          arq,
+          linhaDe(txt, inicios[i]),
+          'traz a pagina mas nao ' + (conta ? 'devolve camposDaPagina' : 'conta o total') +
+            ' — a tela nao consegue desenhar a barra',
+        );
+      }
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  13. Meia barra de paginas
+//
+//  A barra e feita de DUAS pecas que trabalham em lugares
+//  diferentes: <ContaDaPagina/> em cima da lista, que e o que o
+//  olho encontra depois de a tela rolar, e <Paginacao/> embaixo,
+//  onde a pessoa age no fim da leitura.
+//
+//  Elas andam juntas. Sem o contador, o dono clica em "2" e se
+//  pergunta "sera que eu fui para a proxima pagina?" — foi a
+//  duvida que originou a divisao. Sem a barra, o contador diz
+//  "mostrando 1 a 20 de 347" e nao da caminho para as outras 327.
+// ------------------------------------------------------------
+{
+  const dir = join(RAIZ, 'frontend/src/paginas');
+
+  const varrer = (pasta) => {
+    for (const nome of readdirSync(pasta, { withFileTypes: true })) {
+      const caminho = join(pasta, nome.name);
+
+      if (nome.isDirectory()) {
+        varrer(caminho);
+        continue;
+      }
+
+      if (!nome.name.endsWith('.tsx') || nome.name.includes('.test.')) continue;
+
+      const txt = readFileSync(caminho, 'utf8');
+      const temBarra = /<Paginacao\b/.test(txt);
+      const temConta = /<ContaDaPagina\b/.test(txt);
+
+      if (temBarra !== temConta) {
+        achar(
+          'MEIA_BARRA_DE_PAGINAS',
+          caminho,
+          linhaDe(txt, txt.search(temBarra ? /<Paginacao\b/ : /<ContaDaPagina\b/)),
+          temBarra
+            ? 'tem a barra e nao tem o contador — quem clica nao ve que mudou de pagina'
+            : 'tem o contador e nao tem a barra — nao da caminho para as outras paginas',
+        );
+      }
+    }
+  };
+
+  if (existsSync(dir)) varrer(dir);
+}
+
+// ------------------------------------------------------------
 //  4 a 8. Os sinais de design generico, da skill frontend-design
 // ------------------------------------------------------------
 const usoDeRaio = {};

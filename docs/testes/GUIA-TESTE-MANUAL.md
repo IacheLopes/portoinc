@@ -1,4 +1,4 @@
-<!-- versao: 0.41.0 -->
+<!-- versao: 0.42.0 -->
 
 # 1. Como usar este guia
 
@@ -4823,6 +4823,115 @@ pedido em anexo"*.
 
 Se o fornecedor não tiver WhatsApp cadastrado, a janela diz que **não há para quem
 mandar** e o botão de enviar fica desligado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-319 · A lista diz quantas existem, não quantas mostrou
+
+Entre em **Solicitações** (a conta `porto@dev.com` enxerga todas).
+
+**Esperado:** acima da lista, uma frase do tipo *"Mostrando 1 a 20 de 68
+solicitações"*. A tabela tem **20 linhas**, e o número do fim da frase é o total de
+verdade.
+
+> Antes a frase era *"20 solicitações listadas"* — o tamanho do que chegou. Com 347 no
+> banco ela dizia 200, e a solicitação 201 não aparecia em tela nenhuma do sistema.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-320 · Dá para ver que mudou de página
+
+Em **Solicitações**, role até o fim e clique no **2**.
+
+**Esperado:** três coisas de uma vez:
+
+1. A tela **sobe** até o começo da lista
+2. As linhas ficam **apagadinhas** por um instante, e as novas entram
+3. A frase em cima passa a dizer *"Mostrando 21 a 40 de 68"*
+
+Os números das solicitações têm de ser **outros**, não os mesmos da página 1.
+
+> O dono do sistema clicou no 2 e perguntou *"será que eu fui para a próxima página?"*. A
+> confirmação existia, mas estava no rodapé: depois do clique ela ficava fora de vista.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-321 · As setas duplas vão ao começo e ao fim
+
+Em **Solicitações**, clique em **»** (duas setas para a direita).
+
+**Esperado:** vai para a **última** página. Lá, o **»** e o **›** ficam desligados, e o
+**«** e o **‹** ligados. Clicando em **«**, volta para a página 1 e a situação se inverte.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-322 · Filtrar volta para a página 1
+
+Em **Solicitações**, vá para a página 3. Agora escolha **Situação → Rascunho**.
+
+**Esperado:** a lista volta para a **página 1** do filtro novo. Ela **não** fica vazia
+por estar numa página que não existe mais.
+
+> Sem isso: quem está na página 7 e filtra cai numa página 7 que não existe naquele
+> filtro, vê a lista vazia e conclui que não há rascunho nenhum.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-323 · Lista curta não mostra botão de página
+
+Entre em **Locação** (ou outra lista com poucas linhas).
+
+**Esperado:** a frase em cima diz quantas são — *"3 locações"* —, e **não há** botões de
+página embaixo. Barra com uma página só é moldura: não leva a lugar nenhum.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-324 · As dez listas que paginam
+
+Passe por todas e confira que **cada uma** tem a frase da contagem em cima:
+
+| Tela | Onde |
+|---|---|
+| Solicitações | menu **Solicitações** |
+| Cotações | menu **Cotações** |
+| Pedidos | menu **Pedidos** |
+| Entregas conferidas | **Recebimento**, lista de baixo |
+| Extrato do estoque | **Estoque → Extrato** |
+| Notas fiscais | **Financeiro → Notas** |
+| Contas a pagar | **Financeiro**, tabela **Parcelas** |
+| Locação | menu **Locação** |
+| Materiais | **Cadastros → Materiais** |
+| Fornecedores | **Cadastros → Fornecedores** |
+
+**Esperado:** as dez mostram a contagem. Onde houver mais de 20 linhas, aparecem também
+os botões de página.
+
+> As **filas de trabalho** ficaram de fora de propósito: a fila de aprovação, os itens
+> esperando cotação e os pedidos esperando entrega. Fila que cresce é fila parada — ali o
+> número grande é o problema a resolver, não uma lista para navegar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-325 · No celular a barra cabe numa linha
+
+Abra **Solicitações** no modo celular (**Ctrl+Shift+M**), com 420px de largura.
+
+**Esperado:** a barra de páginas cabe em **uma linha**, sem quebrar e sem rolar de lado.
+Ela mostra menos números que no computador — a primeira, a atual e a última.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

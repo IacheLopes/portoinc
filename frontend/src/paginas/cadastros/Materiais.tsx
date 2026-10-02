@@ -19,6 +19,8 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
@@ -41,34 +43,42 @@ export function Materiais() {
   const [familiaId, setFamiliaId] = useState('');
   const [tipo, setTipo] = useState<'' | TipoItem>('');
 
+  // A lista suspensa vale na hora; o campo de digitar espera a
+  // pessoa parar, para nao buscar a cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
+
+  const pag = usePagina(buscaAdiada + '|' + familiaId + '|' + tipo);
+
   const carregar = useCallback(
-    async (filtros: { busca?: string; familiaId?: string; tipo?: TipoItem } = {}) => {
+    async (
+      filtros: { busca?: string; familiaId?: string; tipo?: TipoItem; pagina?: number } = {},
+    ) => {
       setCarregando(true);
       setErro(null);
       try {
         const [m, f] = await Promise.all([listarMateriais(filtros), listarFamilias()]);
         setMateriais(m.materiais);
         setFamilias(f.familias);
+        pag.chegou(m);
       } catch (e) {
         setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+        pag.falhou();
       } finally {
         setCarregando(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-
-  // A lista suspensa vale na hora; o campo de digitar espera a
-  // pessoa parar, para nao buscar a cada tecla.
-  const buscaAdiada = useEsperarDigitar(busca);
 
   useEffect(() => {
     void carregar({
       busca: buscaAdiada || undefined,
       familiaId: familiaId || undefined,
       tipo: tipo || undefined,
+      pagina: pag.pagina,
     });
-  }, [carregar, buscaAdiada, familiaId, tipo]);
+  }, [carregar, buscaAdiada, familiaId, tipo, pag.pagina]);
 
 
   if (carregando && materiais.length === 0) return <Carregando mensagem="Carregando catálogo..." />;
@@ -159,14 +169,27 @@ export function Materiais() {
         />
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="item"
+          oQuePlural="itens"
+          carregando={pag.trocando}
+        />
+
         {materiais.length === 0 ? (
           <Vazio
             titulo="Nenhum item encontrado"
             descricao="Ajuste os filtros ou cadastre um item novo."
           />
         ) : (
-          <Cartao semEspaco>
+          <Cartao
+            semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">
@@ -233,9 +256,18 @@ export function Materiais() {
           </Cartao>
         )}
 
-        <p className="secao__descricao" style={{ marginTop: 'var(--esp-3)' }}>
-          {materiais.length} item(ns) listado(s).
-        </p>
+        {/* Aqui dizia "{materiais.length} item(ns) listado(s)" — o
+            tamanho do que CHEGOU. Com o catalogo cortado em 200,
+            a frase afirmava "200 itens listados" havendo 1.400, e
+            o item 201 nao aparecia em tela nenhuma. O numero agora
+            vem contado no banco, com o mesmo filtro da busca, e
+            mora acima da lista, onde o olho cai. */}
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
       </section>
     </>
   );

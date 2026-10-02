@@ -30,6 +30,8 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
 import {
   mascaraChaveAcesso, mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
@@ -75,12 +77,14 @@ export function NotasFiscais() {
    */
   const [filtroSituacao, setFiltroSituacao] = useState('');
 
-  const canceladas = notas.filter((n) => n.situacao === 'CANCELADA').length;
-
-  /** O que a tabela mostra. */
-  const naTela = filtroSituacao
-    ? notas.filter((n) => n.situacao === filtroSituacao)
-    : notas.filter((n) => n.situacao !== 'CANCELADA');
+  /**
+   * Quantas canceladas existem no total — contado no banco.
+   *
+   * Serve para decidir se vale oferecer "ver canceladas" e para
+   * escolher a frase da tela vazia. Antes vinha de contar a lista
+   * em memoria, o que so funcionava enquanto a lista era inteira.
+   */
+  const [canceladas, setCanceladas] = useState(0);
   const [numero, setNumero] = useState('');
   const [serie, setSerie] = useState('1');
   const [chave, setChave] = useState('');
@@ -94,26 +98,35 @@ export function NotasFiscais() {
   /** Fornecedor identificado pelo CNPJ da nota, quando veio do XML. */
   const [fornecedorDoXml, setFornecedorDoXml] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
-    setCarregando(true);
-    setErro(null);
-    try {
-      const [n, p] = await Promise.all([
-        listarNotas(),
-        podeGerenciar ? listarPedidosParaNota() : Promise.resolve({ pedidos: [] }),
-      ]);
-      setNotas(n.notas);
-      setPedidos(p.pedidos);
-    } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar as notas.');
-    } finally {
-      setCarregando(false);
-    }
-  }, [podeGerenciar]);
+  const pag = usePagina(filtroSituacao);
+
+  const carregar = useCallback(
+    async (situacao = '', pagina = 1) => {
+      setCarregando(true);
+      setErro(null);
+      try {
+        const [n, p] = await Promise.all([
+          listarNotas(situacao || undefined, pagina),
+          podeGerenciar ? listarPedidosParaNota() : Promise.resolve({ pedidos: [] }),
+        ]);
+        setNotas(n.notas);
+        setCanceladas(n.canceladas);
+        setPedidos(p.pedidos);
+        pag.chegou(n);
+      } catch (e) {
+        setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar as notas.');
+        pag.falhou();
+      } finally {
+        setCarregando(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [podeGerenciar],
+  );
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(filtroSituacao, pag.pagina);
+  }, [carregar, filtroSituacao, pag.pagina]);
 
   /**
    * Abre o mesmo formulário com a nota dentro, para corrigir.
@@ -615,8 +628,17 @@ export function NotasFiscais() {
         </Modal>
       )}
 
-      <section className="secao">
-        {naTela.length === 0 ? (
+      <section className="secao secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="nota"
+          oQuePlural="notas"
+          carregando={pag.trocando}
+        />
+
+        {notas.length === 0 ? (
           <Vazio
             titulo={
               canceladas > 0 ? 'Nenhuma nota em aberto' : 'Nenhuma nota lançada'
@@ -628,7 +650,11 @@ export function NotasFiscais() {
             }
           />
         ) : (
-          <Cartao semEspaco>
+          <Cartao
+            semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Notas fiscais lançadas</caption>
@@ -649,7 +675,7 @@ export function NotasFiscais() {
                   </tr>
                 </thead>
                 <tbody>
-                  {naTela.map((n) => (
+                  {notas.map((n) => (
                     <Fragment key={n.id}>
                     <tr>
                       <th scope="row" className="mono">
@@ -842,6 +868,13 @@ export function NotasFiscais() {
             </TabelaArea>
           </Cartao>
         )}
+
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
 
         <Modal
           aberto={paraCancelar !== null}

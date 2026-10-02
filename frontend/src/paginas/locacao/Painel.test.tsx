@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { PainelLocacao } from './Painel';
 import { buscarLocacoes, type Locacao, type PainelDeLocacao } from '../../servicos/locacao';
+import type { DadosDaPagina } from '../../servicos/paginacao';
 
 vi.mock('../../servicos/locacao', async (original) => ({
   ...(await original<typeof import('../../servicos/locacao')>()),
@@ -45,7 +46,11 @@ function contrato(ajustes: Partial<Locacao> = {}): Locacao {
   } as Locacao;
 }
 
-function painel(contratos: Locacao[], resumo: Partial<PainelDeLocacao['resumo']> = {}): PainelDeLocacao {
+function painel(contratos: Locacao[], resumo: Partial<PainelDeLocacao['resumo']> = {}) {
+  const urgentes = contratos.filter(
+    (c) => c.alerta === 'ATRASADA' || c.alerta === 'PERTO' || c.alerta === 'VENCE_HOJE',
+  );
+
   return {
     contratos,
     obras: [{ id: 'o1', codigo: 'OB-01', nome: 'Residencial Aurora' }],
@@ -54,7 +59,18 @@ function painel(contratos: Locacao[], resumo: Partial<PainelDeLocacao['resumo']>
       custoEmAndamento: 0, desperdicio: 0, custoTotal: 0,
       ...resumo,
     },
-  } as PainelDeLocacao;
+    // "O que fazer agora" vem do servidor, nao de filtrar os
+    // contratos da pagina. O mock faz a mesma conta que a rota,
+    // senao o teste mediria uma tela que nao existe.
+    aFazer: urgentes,
+    aFazerTotal: urgentes.length,
+    // Uma pagina so: estes testes falam do atraso e do resumo, nao
+    // da barra de paginas. Com uma pagina a barra nao desenha.
+    total: contratos.length,
+    pagina: 1,
+    porPagina: 20,
+    paginas: 1,
+  } as PainelDeLocacao & DadosDaPagina;
 }
 
 /**

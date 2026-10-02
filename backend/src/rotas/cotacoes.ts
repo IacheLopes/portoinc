@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoObrigatorio, textoOpcional } from '../servicos/util.js';
 import { formatarNumero } from '../servicos/solicitacao.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import {
   podeEditarBid, podeIrPara, formatarNumeroBid, gerarToken, conferirAbertura,
   calcularTotais, descreverPagamento,
@@ -205,14 +206,40 @@ export async function rotasCotacoes(app: FastifyInstance) {
     async (req) => {
       const { situacao } = req.query as { situacao?: string };
 
-      const bids = await banco.bid.findMany({
-        where: situacao ? { situacao: situacao as never } : {},
-        include: INCLUIR,
-        orderBy: { numero: 'desc' },
-        take: 200,
-      });
+      const filtro = situacao ? { situacao: situacao as never } : {};
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
 
-      return { cotacoes: bids.map((b) => formatar(b)) };
+      const [total, bids, abertos, respostas] = await Promise.all([
+        banco.bid.count({ where: filtro }),
+        banco.bid.findMany({
+          where: filtro,
+          include: INCLUIR,
+          orderBy: { numero: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+        // Pacotes com o prazo correndo, em TODO o sistema.
+        banco.bid.count({ where: { situacao: 'ABERTO' } }),
+        // Fornecedores que já responderam nesses pacotes.
+        banco.bidFornecedor.count({
+          where: { bid: { situacao: 'ABERTO' }, respondidoEm: { not: null } },
+        }),
+      ]);
+
+      return {
+        cotacoes: bids.map((b) => formatar(b)),
+        // Os dois números do alto da tela.
+        //
+        // Saíam de filtrar e somar o array da página: com vinte por
+        // página, "Pacotes abertos" passaria a contar só os abertos
+        // que por acaso caíssem na página aberta.
+        //
+        // Eles não seguem o filtro da lista de propósito: são o
+        // estado do trabalho em andamento, e continuam valendo
+        // enquanto a pessoa olha as canceladas do ano passado.
+        resumo: { abertos, respostas },
+        ...camposDaPagina(total, pedido),
+      };
     },
   );
 

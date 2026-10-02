@@ -1,4 +1,4 @@
-<!-- versao: 0.41.0 -->
+<!-- versao: 0.42.0 -->
 
 # 1. Antes de começar
 
@@ -2936,6 +2936,156 @@ nas próximas vezes, inclusive depois de fechar tudo.
 
 ---
 
+# 42.2. As páginas das listas
+
+Até a versão 0.41 **toda lista do sistema cortava num número fixo, em silêncio.**
+
+As consultas pediam `take: 200` — ou 300, ou 500 — e devolviam esse corte como se fosse
+tudo. A solicitação de número 201 continuava no banco e não aparecia em tela nenhuma. E a
+tela ainda dizia:
+
+```
+200 solicitações listadas
+```
+
+**O defeito nunca foi o limite: foi o silêncio.** Quem olha conclui que o sistema perdeu
+a compra antiga.
+
+## O que a tela mostra agora
+
+Duas peças, em lugares diferentes, porque fazem trabalhos diferentes.
+
+**Em cima da lista**, a contagem:
+
+```
+Mostrando 21 a 40 de 68 solicitações
+```
+
+Aquele **68** vem contado no banco, com o mesmo filtro da busca. É o que conserta a
+mentira.
+
+**Embaixo da lista**, a barra:
+
+```
+«  ‹   1  …  6  [7]  8  …  250   ›  »
+```
+
+O `…` é um buraco, e ele é informação: diz que existe coisa pulada ali no meio. O último
+número — `250` — aparece **sempre**, e como número, não como seta: ver "250" conta o
+tamanho do conjunto, uma seta não conta nada.
+
+> **Por que separadas?** A barra inteira ficava embaixo, junto dos botões. O dono clicou
+> no "2" e perguntou *"será que eu mudei de página?"*. A confirmação existia — mas no
+> porão: depois do clique a pessoa continuava embaixo, olhando linhas que não pediu, com a
+> resposta fora de vista.
+
+## O que acontece ao clicar
+
+Três coisas, de propósito:
+
+1. A tela **rola até o começo da lista** — não da página: o cabeçalho e os filtros
+   saírem de vista tirariam o contexto de onde você está
+2. As linhas velhas ficam **esmaecidas** e os botões **travam**, enquanto a página nova
+   não chega
+3. As linhas novas entram com um **fade**, que é o que confirma sem texto que a lista é
+   outra
+
+A rolagem é **instantânea, não suave**. Com a tabela cheia a distância passa de mil
+pixels, e a rolagem suave faz a pessoa assistir à lista inteira voar — o que desorienta em
+vez de orientar. Isso apareceu numa foto tirada no meio da animação.
+
+## As dez listas que paginam
+
+| Tela | Rota |
+|---|---|
+| Solicitações | `/api/solicitacoes` |
+| Cotações | `/api/cotacoes` |
+| Pedidos | `/api/pedidos` |
+| Entregas conferidas | `/api/recebimentos` |
+| Extrato do estoque | `/api/estoque/movimentos` |
+| Notas fiscais | `/api/notas-fiscais` |
+| Contas a pagar | `/api/contas-pagar` |
+| Locação | `/api/locacao` |
+| Materiais | `/api/materiais` |
+| Fornecedores | `/api/fornecedores` |
+
+**20 por página.** Cabe numa tela de computador sem rolar e, no celular — onde cada linha
+vira cartão —, dá uma rolagem curta. Quem quiser pede outro tamanho por `?porPagina=`, com
+**teto de 100**: sem teto, `?porPagina=999999` derruba a API.
+
+## As filas de trabalho ficaram de fora
+
+De propósito: a fila de aprovação, os itens esperando cotação e os pedidos esperando
+entrega continuam sem barra de páginas.
+
+**Fila que cresce é fila parada.** Ali o número grande é o problema a resolver, não uma
+lista para navegar — e paginar uma fila é dar conforto para conviver com ela.
+
+## Como é feito, por dentro
+
+Cada rota paginada faz **duas** consultas: uma `count`, que diz quantas existem, e uma
+`findMany` com `skip`/`take`, que traz as da página.
+
+```ts
+const filtro = { /* …o MESMO filtro nas duas… */ };
+const pedido = lerPaginacao(req.query);
+
+const [total, linhas] = await Promise.all([
+  banco.X.count({ where: filtro }),
+  banco.X.findMany({ where: filtro, skip: pedido.pular, take: pedido.porPagina }),
+]);
+
+return { solicitacoes: linhas.map(formatar), ...camposDaPagina(total, pedido) };
+```
+
+**O filtro tem de ser o mesmo objeto nas duas.** Se divergirem, a barra promete sete
+páginas e a sétima vem vazia. É por isso que ele é declarado uma vez, numa variável.
+
+Na tela, o estado de "em que página eu estou" mora num gancho só —
+`frontend/src/ganchos/pagina.ts` —, usado pelas dez. Repetir aquilo dez vezes não daria
+dez telas iguais: daria dez telas **parecidas**, e cada diferença dessas é um chamado do
+tipo "nessa tela a paginação é esquisita".
+
+## Duas coisas que a régua passou a cobrar
+
+No `scripts/pente-fino.mjs`:
+
+- **PAGINA_SEM_TOTAL** — rota que traz a página e não conta o total. É o defeito antigo
+  com outra roupa: quem escrever a décima primeira lista vai copiar uma das dez
+- **MEIA_BARRA_DE_PAGINAS** — tela com a barra e sem o contador, ou o contrário. As duas
+  peças andam juntas
+
+## Dois casos que não seguem o molde
+
+**Locação** corta a página **na memória**, e é a única. "Atrasada", "vence hoje" e o
+custo acumulado não existem como coluna — são conta feita em cima da data de hoje, e o
+banco não sabe fazê-la. Cortar antes seria filtrar o alerta dentro de uma página só, e o
+resumo de cima contaria apenas as vinte da tela. Contrato de locação é coisa de dezenas
+por ano, então carregar a tabela é aceitável; se um dia passar de alguns milhares, o
+caminho é guardar o alerta como coluna, atualizada por tarefa diária.
+
+**Pedidos** precisou de SQL cru. Os três números do alto da tela — quantos pedidos, o
+valor total e quantos fornecedores distintos — saíam de contar o array que a tela tinha em
+mão. Enquanto a lista vinha inteira isso era quase verdade; com vinte por página, "Valor
+total · Soma de todos" mostraria a soma de vinte com cara de total da empresa.
+
+Os dois primeiros são fáceis: `count` e `groupBy`. O valor total não: o total de um pedido
+não é coluna, é `soma(quantidade × valor unitário) + frete + outros custos`, e o
+`aggregate` do Prisma não multiplica duas colunas. Então ele é uma consulta escrita à mão,
+com a soma dos itens numa subconsulta agrupada por pedido — num JOIN direto, um pedido com
+três itens entraria três vezes e o frete dele seria contado três vezes.
+
+**Cotações** tinha o mesmo problema em dois indicadores, e sem o SQL: "Pacotes abertos" e
+"Respostas recebidas" viraram dois `count`. Eles **não** seguem o filtro da lista, de
+propósito: são o estado do trabalho em andamento, e continuam valendo enquanto a pessoa
+olha as canceladas do ano passado.
+
+> **A lição dos dois.** Paginar uma lista não é só cortar a lista: é conferir todo número
+> na tela que saía de contar o que estava em mão. O contador da lista é o mais óbvio
+> deles, e não é o único.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3071,6 +3221,7 @@ docker compose up -d --build
 | **10 — WhatsApp** | Conexão por QR Code, lista de autorizados, convites e pedidos enviados pelo sistema |
 | **11 — Relatórios** | Orçado × realizado, economia das cotações, desempenho do fornecedor, tempo do processo, consumo, e download em PDF ou Word |
 | **12 — Locação** | Contrato de locação, custo por diária/semana/mês, alerta de equipamento parado e devolução |
+| **13 — Páginas nas listas** | As dez listas que crescem passaram a dizer o total de verdade e a ter barra de páginas. Antes cortavam em 200 e diziam que era tudo |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.
@@ -3140,8 +3291,16 @@ docker compose exec web npm test    # as telas
 
 ## A seguir
 
-Nada de obrigatório. O módulo 1 está fechado e o esqueleto está pronto para receber o
-módulo 2.
+Duas pontas da paginação ficaram combinadas para depois, porque as duas pedem **soma no
+banco**, e não corte de página:
+
+- **A tela inicial** conta as compras do mês somando em memória uma consulta limitada a
+  500. Passando de 500, o número fica errado — e erra para baixo, sem avisar
+- **Os relatórios** têm onze consultas sem limite nenhum. Hoje funcionam porque a base é
+  pequena; a saída é agregar no banco em vez de trazer tudo e somar aqui
+
+Fora essas duas, o módulo 1 está fechado e o esqueleto está pronto para receber o módulo
+2.
 
 ## Finalização (sem data)
 

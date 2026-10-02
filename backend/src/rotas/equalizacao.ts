@@ -14,6 +14,7 @@ import {
   montarComparativo, mensagemUltimaChamada, conferirEscolhas, formatarNumeroPedido,
 } from '../servicos/equalizacao.js';
 import { gerarPdfPedido } from '../servicos/pdf-pedido.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 // Aliás porque três serviços exportam `formatarNumero`, cada um com
 // o prefixo do seu documento.
 import {
@@ -278,6 +279,43 @@ async function carregarFaixasAtivas(): Promise<FaixaAlcada[]> {
     exigeTodas: r.exigeTodas,
     funcoes: r.funcoes.map((f) => ({ codigo: f.funcao.codigo, nome: f.funcao.nome })),
   }));
+}
+
+/**
+ * Quanto somam os pedidos — TODOS eles, não os da página.
+ *
+ * Em SQL cru porque o total de um pedido não é coluna: é
+ * `soma(quantidade × valor unitário) + frete + outros custos`, e o
+ * `aggregate` do Prisma não multiplica duas colunas.
+ *
+ * A soma dos itens vem de uma subconsulta agrupada por pedido, e
+ * não de um JOIN direto: no JOIN, um pedido com três itens
+ * entraria três vezes e o frete dele seria contado três vezes.
+ *
+ * O filtro é um só — a situação —, e entra por parâmetro, nunca
+ * concatenado. O `IS NULL` cobre o caso "sem filtro", para a
+ * consulta ser a mesma nos dois caminhos.
+ */
+async function somaDosPedidos(situacao?: string): Promise<number> {
+  const alvo = situacao ?? null;
+
+  const [linha] = await banco.$queryRaw<Array<{ total: number }>>`
+    SELECT COALESCE(SUM(t.total), 0)::float8 AS total
+      FROM (
+        SELECT COALESCE(i.soma, 0)
+             + COALESCE(p.valor_frete, 0)
+             + COALESCE(p.outros_custos, 0) AS total
+          FROM pedidos p
+          LEFT JOIN (
+            SELECT pedido_id, SUM(quantidade * valor_unitario) AS soma
+              FROM pedido_itens
+             GROUP BY pedido_id
+          ) i ON i.pedido_id = p.id
+         WHERE (${alvo}::text IS NULL OR p.situacao::text = ${alvo}::text)
+      ) t
+  `;
+
+  return linha?.total ?? 0;
 }
 
 export async function rotasEqualizacao(app: FastifyInstance) {
@@ -822,17 +860,41 @@ export async function rotasEqualizacao(app: FastifyInstance) {
     async (req) => {
       const { situacao } = req.query as { situacao?: string };
 
-      const pedidos = await banco.pedido.findMany({
-        where: situacao ? { situacao: situacao as never } : {},
-        include: INCLUIR_PEDIDO,
-        orderBy: { numero: 'desc' },
-        take: 200,
-      });
+      const filtro = situacao ? { situacao: situacao as never } : {};
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      const [total, pedidos, porFornecedor, soma] = await Promise.all([
+        banco.pedido.count({ where: filtro }),
+        banco.pedido.findMany({
+          where: filtro,
+          include: INCLUIR_PEDIDO,
+          orderBy: { numero: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+        // Quantos fornecedores distintos, em TODOS os pedidos.
+        banco.pedido.groupBy({ by: ['fornecedorId'], where: filtro }),
+        somaDosPedidos(situacao),
+      ]);
 
       // A lista é o mesmo documento, resumido. O total somava
       // itens + frete + outros aqui e de novo no PDF; agora a conta
       // mora num lugar só.
       return {
+        // Os três números do alto da tela.
+        //
+        // Eles saíam de contar o array que a tela tinha em mão.
+        // Enquanto a lista vinha inteira isso era quase verdade;
+        // com vinte por página viraria mentira grossa — "Valor
+        // total · Soma de todos" mostrando a soma de vinte.
+        //
+        // Agora os três são contados no banco, com o MESMO filtro
+        // da lista.
+        resumo: {
+          pedidos: total,
+          valorTotal: soma,
+          fornecedores: porFornecedor.length,
+        },
         pedidos: pedidos.map((p) => {
           const d = montarPedido(p);
 
@@ -850,6 +912,7 @@ export async function rotasEqualizacao(app: FastifyInstance) {
             enviadoEm: d.enviadoEm,
           };
         }),
+        ...camposDaPagina(total, pedido),
       };
     },
   );

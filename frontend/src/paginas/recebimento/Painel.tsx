@@ -24,6 +24,8 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 
 export function PainelRecebimento() {
   const navegar = useNavigate();
@@ -35,26 +37,37 @@ export function PainelRecebimento() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  // Esta tela nao tem filtro: a chave e fixa.
+  const pag = usePagina('');
+
+  const carregar = useCallback(async (pagina = 1) => {
     setCarregando(true);
     setErro(null);
     try {
       const [abertos, feitos] = await Promise.all([
         listarPedidosAbertos(),
-        listarRecebimentos(),
+        listarRecebimentos(pagina),
       ]);
       setPedidos(abertos.pedidos);
-      setRecebimentos(feitos.recebimentos.slice(0, 10));
+      // Aqui havia um `.slice(0, 10)`: a tela mostrava as dez
+      // ultimas e o resto do historico nao tinha como ser visto
+      // em lugar nenhum do sistema. Com a barra de paginas, as
+      // dez primeiras continuam sendo as primeiras que aparecem —
+      // a diferenca e que agora da para chegar na centesima.
+      setRecebimentos(feitos.recebimentos);
+      pag.chegou(feitos);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+      pag.falhou();
     } finally {
       setCarregando(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(pag.pagina);
+  }, [carregar, pag.pagina]);
 
   // O leitor de código de barras funciona como um teclado: ele
   // "digita" o número e dá Enter. Deixando o foco aqui, basta
@@ -137,10 +150,13 @@ export function PainelRecebimento() {
             valor={String(itensPendentes)}
             detalhe="Somando todos os pedidos"
           />
+          {/* Este numero vinha de `recebimentos.length`, e a tela
+              mostrava dez: ele dizia "10" para sempre, desde a
+              decima entrega da empresa. Agora e a conta do banco. */}
           <Indicador
             titulo="Entregas registradas"
-            valor={String(recebimentos.length)}
-            detalhe="Últimas conferências"
+            valor={String(pag.dados.total)}
+            detalhe="Desde o começo"
           />
         </div>
       </section>
@@ -209,10 +225,20 @@ export function PainelRecebimento() {
         )}
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
         <div className="secao__cabecalho">
-          <h2>Últimas entregas conferidas</h2>
+          {/* Deixou de ser "Últimas": a lista inteira está aqui. */}
+          <h2>Entregas conferidas</h2>
         </div>
+
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="entrega"
+          oQuePlural="entregas"
+          carregando={pag.trocando}
+        />
 
         {recebimentos.length === 0 ? (
           <Vazio
@@ -220,7 +246,11 @@ export function PainelRecebimento() {
             descricao="O histórico aparece aqui depois da primeira conferência."
           />
         ) : (
-          <Cartao semEspaco>
+          <Cartao
+            semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Entregas já conferidas</caption>
@@ -262,6 +292,13 @@ export function PainelRecebimento() {
             </TabelaArea>
           </Cartao>
         )}
+
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
       </section>
     </>
   );

@@ -12,6 +12,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
 import { formatarNumeroPedido } from '../servicos/equalizacao.js';
@@ -462,23 +463,29 @@ export async function rotasRecebimentos(app: FastifyInstance) {
   app.get(
     '/api/recebimentos',
     { preHandler: app.exigirPermissao('recebimento.registrar', 'pedidos.gerenciar') },
-    async () => {
-      const recebimentos = await banco.recebimento.findMany({
-        include: {
-          almoxarife: { select: { nome: true } },
-          almoxarifado: { select: { codigo: true, nome: true } },
-          pedido: {
-            select: {
-              numero: true,
-              situacao: true,
-              fornecedor: { select: { razaoSocial: true, nomeFantasia: true } },
+    async (req) => {
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      const [total, recebimentos] = await Promise.all([
+        banco.recebimento.count(),
+        banco.recebimento.findMany({
+          include: {
+            almoxarife: { select: { nome: true } },
+            almoxarifado: { select: { codigo: true, nome: true } },
+            pedido: {
+              select: {
+                numero: true,
+                situacao: true,
+                fornecedor: { select: { razaoSocial: true, nomeFantasia: true } },
+              },
             },
+            itens: true,
           },
-          itens: true,
-        },
-        orderBy: { numero: 'desc' },
-        take: 200,
-      });
+          orderBy: { numero: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+      ]);
 
       return {
         recebimentos: recebimentos.map((r) => ({
@@ -494,6 +501,7 @@ export async function rotasRecebimentos(app: FastifyInstance) {
           temRessalva: r.itens.some((i) => i.situacao !== 'CONFORME'),
           recebidoEm: r.recebidoEm,
         })),
+        ...camposDaPagina(total, pedido),
       };
     },
   );

@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { numero, erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroPedido } from '../servicos/equalizacao.js';
 import {
@@ -445,14 +446,42 @@ export async function rotasFiscal(app: FastifyInstance) {
     async (req) => {
       const { situacao } = req.query as { situacao?: string };
 
-      const notas = await banco.notaFiscal.findMany({
-        where: situacao ? { situacao: situacao as never } : {},
-        include: INCLUIR_NOTA,
-        orderBy: { criadoEm: 'desc' },
-        take: 200,
-      });
+      // Sem filtro = as que estao DE PE.
+      //
+      // Nota cancelada nao e apagada — e trilha, e o registro de
+      // que existiu vale numa auditoria. Mas sai da frente por
+      // padrao: no dia a dia ninguem quer ver nota morta.
+      //
+      // Esta regra morava na tela, que escondia as canceladas
+      // depois de receber a lista. Com pagina isso quebra: uma
+      // pagina de vinte notas em que doze estao canceladas mostra
+      // oito linhas enquanto o contador diz vinte. Quem filtra e
+      // quem conta tem de ser o mesmo, e quem conta e o banco.
+      const filtro = situacao
+        ? { situacao: situacao as never }
+        : { situacao: { not: 'CANCELADA' as never } };
 
-      return { notas: notas.map((n) => formatarNota(n)) };
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      const [total, notas, canceladas] = await Promise.all([
+        banco.notaFiscal.count({ where: filtro }),
+        banco.notaFiscal.findMany({
+          where: filtro,
+          include: INCLUIR_NOTA,
+          orderBy: { criadoEm: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+        // Quantas canceladas existem, independente do filtro: e o
+        // que faz a tela saber se vale oferecer "ver canceladas".
+        banco.notaFiscal.count({ where: { situacao: 'CANCELADA' } }),
+      ]);
+
+      return {
+        notas: notas.map((n) => formatarNota(n)),
+        canceladas,
+        ...camposDaPagina(total, pedido),
+      };
     },
   );
 
@@ -595,26 +624,37 @@ export async function rotasFiscal(app: FastifyInstance) {
               }
             : {};
 
-      const titulos = await banco.contaPagar.findMany({
-        where: {
-          ...(situacao ? { situacao: situacao as never } : {}),
-          ...filtroData,
-        },
-        include: {
-          fornecedor: { select: { razaoSocial: true, nomeFantasia: true } },
-          pagoPor: { select: { nome: true } },
-          notaFiscal: {
-            select: {
-              id: true, numero: true, serie: true,
-              pedido: { select: { numero: true } },
+      const filtro = {
+        ...(situacao ? { situacao: situacao as never } : {}),
+        ...filtroData,
+      };
+
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      const [total, titulos] = await Promise.all([
+        banco.contaPagar.count({ where: filtro }),
+        banco.contaPagar.findMany({
+          where: filtro,
+          include: {
+            fornecedor: { select: { razaoSocial: true, nomeFantasia: true } },
+            pagoPor: { select: { nome: true } },
+            notaFiscal: {
+              select: {
+                id: true, numero: true, serie: true,
+                pedido: { select: { numero: true } },
+              },
             },
           },
-        },
-        orderBy: [{ vencimento: 'asc' }, { parcela: 'asc' }],
-        take: 300,
-      });
+          orderBy: [{ vencimento: 'asc' }, { parcela: 'asc' }],
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+      ]);
 
-      return { titulos: titulos.map((t) => formatarTitulo(t, hoje)) };
+      return {
+        titulos: titulos.map((t) => formatarTitulo(t, hoje)),
+        ...camposDaPagina(total, pedido),
+      };
     },
   );
 

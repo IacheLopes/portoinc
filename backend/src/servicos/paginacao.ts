@@ -56,14 +56,38 @@ export function lerPaginacao(q: { pagina?: string; porPagina?: string }): Pedido
   return { pagina, porPagina, pular: (pagina - 1) * porPagina };
 }
 
-export interface Pagina<T> {
-  itens: T[];
+export interface CamposDaPagina {
   /** Quantas existem NO TOTAL, não quantas vieram. */
   total: number;
   pagina: number;
   porPagina: number;
   /** Quantas páginas há. Zero resultados = 1 página vazia. */
   paginas: number;
+}
+
+export interface Pagina<T> extends CamposDaPagina {
+  itens: T[];
+}
+
+/**
+ * Os campos de página, para espalhar na resposta da rota.
+ *
+ * Cada lista devolve os itens na SUA chave — "cotacoes",
+ * "pedidos", "notas" —, porque a tela já lê por esse nome e
+ * trocar tudo por um "itens" genérico seria mexer em quinze
+ * telas para não ganhar nada.
+ *
+ * Então o que se repete entre as rotas são estes quatro campos,
+ * e é por isso que eles moram aqui: quinze cópias da conta de
+ * quantas páginas há divergiriam no dia em que a regra mudasse.
+ */
+export function camposDaPagina(total: number, pedido: PedidoDePagina): CamposDaPagina {
+  return {
+    total,
+    pagina: pedido.pagina,
+    porPagina: pedido.porPagina,
+    paginas: Math.max(1, Math.ceil(total / pedido.porPagina)),
+  };
 }
 
 /**
@@ -77,13 +101,7 @@ export function montarPagina<T>(
   total: number,
   pedido: PedidoDePagina,
 ): Pagina<T> {
-  return {
-    itens,
-    total,
-    pagina: pedido.pagina,
-    porPagina: pedido.porPagina,
-    paginas: Math.max(1, Math.ceil(total / pedido.porPagina)),
-  };
+  return { itens, ...camposDaPagina(total, pedido) };
 }
 
 /**

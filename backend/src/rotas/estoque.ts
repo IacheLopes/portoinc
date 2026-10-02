@@ -5,6 +5,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
 import {
   formatarNumeroMovimento, conferirMovimento, precisaComprar,
@@ -142,19 +143,30 @@ export async function rotasEstoque(app: FastifyInstance) {
         materialId?: string;
       };
 
-      const movimentos = await banco.movimentoEstoque.findMany({
-        where: {
-          almoxarifadoId: almoxarifadoId || undefined,
-          materialId: materialId || undefined,
-        },
-        include: {
-          material: { select: { codigoInterno: true, descricao: true, unidadeMedida: true } },
-          almoxarifado: { select: { codigo: true, nome: true } },
-          usuario: { select: { nome: true } },
-        },
-        orderBy: { numero: 'desc' },
-        take: 200,
-      });
+      // O extrato é a lista que cresce mais rápido do sistema: toda
+      // retirada de saco de cimento vira uma linha aqui, e ela nunca
+      // é apagada. Em 200 ela parava e dizia que era tudo.
+      const filtro = {
+        almoxarifadoId: almoxarifadoId || undefined,
+        materialId: materialId || undefined,
+      };
+
+      const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+      const [total, movimentos] = await Promise.all([
+        banco.movimentoEstoque.count({ where: filtro }),
+        banco.movimentoEstoque.findMany({
+          where: filtro,
+          include: {
+            material: { select: { codigoInterno: true, descricao: true, unidadeMedida: true } },
+            almoxarifado: { select: { codigo: true, nome: true } },
+            usuario: { select: { nome: true } },
+          },
+          orderBy: { numero: 'desc' },
+          skip: pedido.pular,
+          take: pedido.porPagina,
+        }),
+      ]);
 
       return {
         movimentos: movimentos.map((m) => ({
@@ -173,6 +185,7 @@ export async function rotasEstoque(app: FastifyInstance) {
           observacao: m.observacao,
           criadoEm: m.criadoEm,
         })),
+        ...camposDaPagina(total, pedido),
       };
     },
   );

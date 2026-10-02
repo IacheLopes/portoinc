@@ -11,6 +11,22 @@
 // ============================================================
 
 /**
+ * O que toda lista paginada devolve junto com os itens.
+ *
+ * Mora aqui porque são dez listas, em nove serviços diferentes.
+ * Enquanto era uma só, a interface ficava junto da sua tela; dez
+ * cópias do mesmo quarteto divergiriam no dia em que a resposta
+ * ganhasse um campo.
+ */
+export interface DadosDaPagina {
+  /** Quantas existem NO TOTAL, não quantas vieram. */
+  total: number;
+  pagina: number;
+  porPagina: number;
+  paginas: number;
+}
+
+/**
  * Os números que a barra mostra, com os buracos.
  *
  * Com 250 páginas, enfileirar 250 botões é inútil. A janela

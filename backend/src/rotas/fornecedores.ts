@@ -9,6 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import {
   erroDeValidacao, textoObrigatorio, textoOpcional,
   apenasDigitos, cnpjValido, formatarCnpj, UFS,
@@ -88,31 +89,44 @@ export async function rotasFornecedores(app: FastifyInstance) {
       incluirInativos?: string;
     };
 
-    const fornecedores = await banco.fornecedor.findMany({
-      where: {
-        ...(incluirInativos === 'true' ? {} : { ativo: true }),
-        ...(familiaId ? { familias: { some: { familiaId } } } : {}),
-        ...(busca
-          ? {
-              OR: [
-                { razaoSocial: { contains: busca, mode: 'insensitive' } },
-                { nomeFantasia: { contains: busca, mode: 'insensitive' } },
-                // Só procura por CNPJ quando o texto TEM dígito. Sem
-                // isso, buscar 'LocaMaq' vira contains: '' no CNPJ,
-                // que casa com todo mundo — e a busca não filtrava nada.
-                ...(apenasDigitos(busca)
-                  ? [{ cnpj: { contains: apenasDigitos(busca) } }]
-                  : []),
-              ],
-            }
-          : {}),
-      },
-      include: INCLUIR,
-      orderBy: { razaoSocial: 'asc' },
-      take: 200,
-    });
+    // Um filtro só, para a conta e para a busca: se os dois
+    // divergirem, a barra promete páginas que a lista não tem.
+    const filtro = {
+      ...(incluirInativos === 'true' ? {} : { ativo: true }),
+      ...(familiaId ? { familias: { some: { familiaId } } } : {}),
+      ...(busca
+        ? {
+            OR: [
+              { razaoSocial: { contains: busca, mode: 'insensitive' as const } },
+              { nomeFantasia: { contains: busca, mode: 'insensitive' as const } },
+              // Só procura por CNPJ quando o texto TEM dígito. Sem
+              // isso, buscar 'LocaMaq' vira contains: '' no CNPJ,
+              // que casa com todo mundo — e a busca não filtrava nada.
+              ...(apenasDigitos(busca)
+                ? [{ cnpj: { contains: apenasDigitos(busca) } }]
+                : []),
+            ],
+          }
+        : {}),
+    };
 
-    return { fornecedores: fornecedores.map(formatar) };
+    const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+    const [total, fornecedores] = await Promise.all([
+      banco.fornecedor.count({ where: filtro }),
+      banco.fornecedor.findMany({
+        where: filtro,
+        include: INCLUIR,
+        orderBy: { razaoSocial: 'asc' },
+        skip: pedido.pular,
+        take: pedido.porPagina,
+      }),
+    ]);
+
+    return {
+      fornecedores: fornecedores.map(formatar),
+      ...camposDaPagina(total, pedido),
+    };
   });
 
   // --------------------------------------------------------

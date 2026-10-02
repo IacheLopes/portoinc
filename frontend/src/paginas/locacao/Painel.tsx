@@ -33,6 +33,8 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
 import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
@@ -85,16 +87,22 @@ export function PainelLocacao() {
   const [motivo, setMotivo] = useState('');
   const [cancelando, setCancelando] = useState<Locacao | null>(null);
 
-  const carregar = useCallback(async (obra = obraId, filtro = alerta) => {
+  const pag = usePagina<HTMLDivElement>(obraId + '|' + alerta);
+
+  const carregar = useCallback(async (obra = '', filtro = '', pagina = 1) => {
     setCarregando(true);
     setErro(null);
     try {
-      setDados(await buscarLocacoes({
+      const r = await buscarLocacoes({
         obraId: obra || undefined,
         alerta: filtro || undefined,
-      }));
+        pagina,
+      });
+      setDados(r);
+      pag.chegou(r);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar as locações.');
+      pag.falhou();
     } finally {
       setCarregando(false);
     }
@@ -102,8 +110,8 @@ export function PainelLocacao() {
   }, []);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(obraId, alerta, pag.pagina);
+  }, [carregar, obraId, alerta, pag.pagina]);
 
   async function abrirContrato() {
     setContratando(true);
@@ -293,7 +301,7 @@ export function PainelLocacao() {
         <Selecao
           rotulo="Obra"
           valor={obraId}
-          aoMudar={(v) => { setObraId(v); void carregar(v, alerta); }}
+          aoMudar={setObraId}
           semMarcaOpcional
           vazio="Todas as obras"
           opcoes={dados.obras.map((o) => ({ valor: o.id, rotulo: o.codigo + ' — ' + o.nome }))}
@@ -302,7 +310,7 @@ export function PainelLocacao() {
         <Selecao
           rotulo="Situação"
           valor={alerta}
-          aoMudar={(v) => { setAlerta(v); void carregar(obraId, v); }}
+          aoMudar={setAlerta}
           semMarcaOpcional
           opcoes={FILTROS_DE_ALERTA.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
         />
@@ -618,7 +626,19 @@ export function PainelLocacao() {
       {/* ------------------------------------------------------
           A lista
           ------------------------------------------------------ */}
+      <div className="secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="locação"
+          oQuePlural="locações"
+          carregando={pag.trocando}
+        />
+      </div>
+
       {contratos.length === 0 ? (
+
         <Vazio
           titulo={alerta ? 'Nenhuma locação nesta situação' : 'Nenhuma locação registrada'}
           descricao={
@@ -630,6 +650,13 @@ export function PainelLocacao() {
           }
         />
       ) : (
+        /* O esmaecido e o fade vao numa caixa em volta: aqui a
+           lista nao esta dentro de um <Cartao>, como nas outras
+           telas, e o <TabelaArea> nao recebe classe. */
+        <div
+          key={pag.pagina}
+          className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+        >
         <TabelaArea>
           <table className="tabela">
             <caption className="apenas-leitor-tela">
@@ -741,19 +768,35 @@ export function PainelLocacao() {
             </tbody>
           </table>
         </TabelaArea>
+        </div>
       )}
 
-      {contratos.some((c) => c.alerta === 'ATRASADA' || c.alerta === 'PERTO') && (
+      <Paginacao
+        pagina={pag.pagina}
+        paginas={pag.dados.paginas}
+        aoTrocar={pag.irPara}
+        carregando={pag.trocando}
+      />
+
+      {/* Esta lista sai de `aFazer`, que o servidor monta olhando
+          TODAS as páginas. Filtrar `contratos` aqui esconderia um
+          andaime atrasado só porque ele caiu na página 4 — no
+          único bloco da tela cujo trabalho é não deixar esquecer. */}
+      {dados.aFazer.length > 0 && (
         <div className="lista-alertas">
           <h2 className="secao__subtitulo">O que fazer agora</h2>
           <ul>
-            {contratos
-              .filter((c) => c.alerta === 'ATRASADA' || c.alerta === 'PERTO' || c.alerta === 'VENCE_HOJE')
-              .map((c) => (
-                <li key={c.id}>
-                  <strong>{c.numeroFormatado} · {c.descricao}</strong> ({c.obra.codigo}) — {c.leitura}
-                </li>
-              ))}
+            {dados.aFazer.map((c) => (
+              <li key={c.id}>
+                <strong>{c.numeroFormatado} · {c.descricao}</strong> ({c.obra.codigo}) — {c.leitura}
+              </li>
+            ))}
+            {dados.aFazerTotal > dados.aFazer.length && (
+              <li>
+                e mais {dados.aFazerTotal - dados.aFazer.length} precisando de atenção.
+                Filtre por situação para ver.
+              </li>
+            )}
           </ul>
         </div>
       )}

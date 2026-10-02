@@ -7,6 +7,7 @@
 // ============================================================
 
 import { chamar, baixarArquivo } from './api';
+import type { DadosDaPagina } from './paginacao';
 import type { FormatoDeArquivo } from '../componentes/BotaoBaixar';
 
 export type Periodicidade = 'DIARIA' | 'SEMANAL' | 'MENSAL';
@@ -80,6 +81,16 @@ export interface PainelDeLocacao {
   contratos: Locacao[];
   resumo: ResumoDaLocacao;
   obras: ObraResumo[];
+  /**
+   * O que precisa de ação, de todas as páginas.
+   *
+   * Vem do servidor, e não de filtrar `contratos`: aquele é só a
+   * página aberta, e um atraso na página 4 não pode deixar de
+   * aparecer no bloco feito para lembrar dele. Vem no máximo 20.
+   */
+  aFazer: Locacao[];
+  /** Quantos há no total, para a tela dizer "e mais N". */
+  aFazerTotal: number;
 }
 
 export interface ItemComprado {
@@ -146,18 +157,25 @@ export const FILTROS_DE_ALERTA = [
 //  Chamadas
 // ------------------------------------------------------------
 
-function comFiltro(filtro: { obraId?: string; alerta?: string }, formato?: FormatoDeArquivo) {
+function comFiltro(
+  filtro: { obraId?: string; alerta?: string; pagina?: number },
+  formato?: FormatoDeArquivo,
+) {
   const partes: string[] = [];
 
   if (formato) partes.push('formato=' + formato);
   if (filtro.obraId) partes.push('obraId=' + filtro.obraId);
   if (filtro.alerta) partes.push('alerta=' + filtro.alerta);
+  // O arquivo leva tudo: pagina so faz sentido em tela.
+  if (!formato && filtro.pagina && filtro.pagina > 1) partes.push('pagina=' + filtro.pagina);
 
   return partes.length > 0 ? '?' + partes.join('&') : '';
 }
 
-export function buscarLocacoes(filtro: { obraId?: string; alerta?: string } = {}) {
-  return chamar<PainelDeLocacao>('/api/locacao' + comFiltro(filtro));
+export function buscarLocacoes(
+  filtro: { obraId?: string; alerta?: string; pagina?: number } = {},
+) {
+  return chamar<PainelDeLocacao & DadosDaPagina>('/api/locacao' + comFiltro(filtro));
 }
 
 export function buscarLocacao(id: string) {

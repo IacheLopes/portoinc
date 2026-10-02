@@ -15,6 +15,8 @@ import { Indicador } from '../../componentes/Indicador';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
@@ -24,32 +26,40 @@ import { NovaCotacao } from './Nova';
 export function ListaCotacoes() {
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
   const [disponiveis, setDisponiveis] = useState(0);
+  // Os dois números do alto. Vêm contados no banco.
+  const [resumo, setResumo] = useState({ abertos: 0, respostas: 0 });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [situacao, setSituacao] = useState('');
   const [criando, setCriando] = useState(false);
 
-  const carregar = useCallback(async (filtro = '') => {
+  const pag = usePagina(situacao);
+
+  const carregar = useCallback(async (filtro = '', pagina = 1) => {
     setCarregando(true);
     setErro(null);
     try {
       const [c, d] = await Promise.all([
-        listarCotacoes(filtro || undefined),
+        listarCotacoes(filtro || undefined, pagina),
         listarItensDisponiveis(),
       ]);
       setCotacoes(c.cotacoes);
       setDisponiveis(d.itens.length);
+      setResumo(c.resumo);
+      pag.chegou(c);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+      pag.falhou();
     } finally {
       setCarregando(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sem botao: escolher a situacao ja recarrega.
   useEffect(() => {
-    void carregar(situacao);
-  }, [carregar, situacao]);
+    void carregar(situacao, pag.pagina);
+  }, [carregar, situacao, pag.pagina]);
 
   if (carregando && cotacoes.length === 0) {
     return <Carregando mensagem="Carregando cotações..." />;
@@ -58,7 +68,6 @@ export function ListaCotacoes() {
     return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
   }
 
-  const abertas = cotacoes.filter((c) => c.situacao === 'ABERTO');
 
   return (
     <>
@@ -88,14 +97,21 @@ export function ListaCotacoes() {
             valor={String(disponiveis)}
             detalhe="Aprovados e ainda fora de qualquer pacote"
           />
+          {/* Os dois saíam de filtrar o array da página: com vinte
+              por página, contariam só os abertos que por acaso
+              caíssem na página que está na tela. Agora vêm do banco.
+
+              E não seguem o filtro da lista de propósito: são o
+              estado do trabalho em andamento, e continuam valendo
+              enquanto a pessoa olha as canceladas do ano passado. */}
           <Indicador
             titulo="Pacotes abertos"
-            valor={String(abertas.length)}
+            valor={String(resumo.abertos)}
             detalhe="Com o prazo correndo"
           />
           <Indicador
             titulo="Respostas recebidas"
-            valor={String(abertas.reduce((s, c) => s + c.respostasRecebidas, 0))}
+            valor={String(resumo.respostas)}
             detalhe="De fornecedores nos pacotes abertos"
           />
         </div>
@@ -134,14 +150,27 @@ export function ListaCotacoes() {
         )}
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="pacote de cotação"
+          oQuePlural="pacotes de cotação"
+          carregando={pag.trocando}
+        />
+
         {cotacoes.length === 0 ? (
           <Vazio
             titulo="Nenhum pacote de cotação"
             descricao="Monte o primeiro juntando itens aprovados."
           />
         ) : (
-          <Cartao semEspaco>
+          <Cartao
+            semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Pacotes de cotação</caption>
@@ -202,6 +231,13 @@ export function ListaCotacoes() {
             </TabelaArea>
           </Cartao>
         )}
+
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
       </section>
     </>
   );

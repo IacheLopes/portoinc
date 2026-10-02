@@ -37,6 +37,8 @@ import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Modal } from '../../componentes/Modal';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
 import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
 
@@ -117,8 +119,10 @@ export function PainelFinanceiro() {
   const [forma, setForma] = useState('');
   const [valorPago, setValorPago] = useState('');
 
+  const pag = usePagina(quando + '|' + situacao);
+
   const carregar = useCallback(
-    async (filtroQuando = quando, filtroSituacao = situacao) => {
+    async (filtroQuando = '', filtroSituacao = '', pagina = 1) => {
       setCarregando(true);
       setErro(null);
       try {
@@ -127,23 +131,32 @@ export function PainelFinanceiro() {
           listarTitulos({
             quando: filtroQuando || undefined,
             situacao: filtroSituacao || undefined,
+            pagina,
           }),
         ]);
         setDados(p);
         setTitulos(t.titulos);
+        pag.chegou(t);
       } catch (e) {
         setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar o financeiro.');
+        pag.falhou();
       } finally {
         setCarregando(false);
       }
     },
-    [quando, situacao],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
+  // Um caminho so para buscar.
+  //
+  // Antes cada campo de filtro chamava `carregar` na mao, e o
+  // efeito buscava a primeira vez — tres caminhos para a mesma
+  // coisa. Nenhum deles sabia da pagina, e filtrar estando na
+  // pagina 5 pediria a lista errada.
   useEffect(() => {
-    void carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void carregar(quando, situacao, pag.pagina);
+  }, [carregar, quando, situacao, pag.pagina]);
 
   function abrirBaixa(t: Titulo) {
     setPagando(t);
@@ -417,7 +430,7 @@ export function PainelFinanceiro() {
       </section>
 
       {/* ---------- A tabela ---------- */}
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
         <div className="secao__cabecalho">
           <h2>Parcelas</h2>
         </div>
@@ -426,10 +439,7 @@ export function PainelFinanceiro() {
           <Selecao
             rotulo="Mostrar"
             valor={quando}
-            aoMudar={(v) => {
-              setQuando(v);
-              void carregar(v, situacao);
-            }}
+            aoMudar={setQuando}
             opcoes={FILTROS}
             semMarcaOpcional
           />
@@ -437,10 +447,7 @@ export function PainelFinanceiro() {
           <Selecao
             rotulo="Situação"
             valor={situacao}
-            aoMudar={(v) => {
-              setSituacao(v);
-              void carregar(quando, v);
-            }}
+            aoMudar={setSituacao}
             opcoes={[
               { valor: '', rotulo: 'Todas' },
               { valor: 'ABERTA', rotulo: 'Em aberto' },
@@ -540,13 +547,26 @@ export function PainelFinanceiro() {
           </div>
         </Modal>
 
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="parcela"
+          oQuePlural="parcelas"
+          carregando={pag.trocando}
+        />
+
         {titulos.length === 0 ? (
           <Vazio
             titulo="Nenhuma parcela por aqui"
             descricao="Mude o filtro ou gere as parcelas de uma nota fiscal."
           />
         ) : (
-          <Cartao semEspaco>
+          <Cartao
+            semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
+          >
             <TabelaArea>
               <table className="tabela">
                 <caption className="apenas-leitor-tela">Parcelas a pagar</caption>
@@ -618,6 +638,17 @@ export function PainelFinanceiro() {
             </TabelaArea>
           </Cartao>
         )}
+
+        {/* Os indicadores lá em cima — "vence esta semana", "em
+            atraso" — continuam contando TUDO: eles vêm do resumo
+            do financeiro, que soma no banco. A paginação é só da
+            tabela. */}
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
       </section>
     </>
   );

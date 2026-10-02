@@ -9,6 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { integracoes } from '../integracoes/index.js';
 import { gtinValido } from '../integracoes/gtin/porta.js';
 import {
@@ -123,28 +124,41 @@ export async function rotasCatalogo(app: FastifyInstance) {
       incluirInativos?: string;
     };
 
-    const materiais = await banco.material.findMany({
-      where: {
-        ...(incluirInativos === 'true' ? {} : { ativo: true }),
-        ...(familiaId ? { familiaId } : {}),
-        ...(tipo ? { tipo } : {}),
-        ...(busca
-          ? {
-              OR: [
-                { descricao: { contains: busca, mode: 'insensitive' } },
-                { codigoInterno: { contains: busca, mode: 'insensitive' } },
-                { gtin: { contains: busca } },
-                { marca: { contains: busca, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      include: { familia: { select: { id: true, codigo: true, nome: true } } },
-      orderBy: { descricao: 'asc' },
-      take: 300,
-    });
+    // Um filtro só, para a conta e para a busca: se divergissem,
+    // a tela diria "de 347" e mostraria outra coisa.
+    const filtro = {
+      ...(incluirInativos === 'true' ? {} : { ativo: true }),
+      ...(familiaId ? { familiaId } : {}),
+      ...(tipo ? { tipo } : {}),
+      ...(busca
+        ? {
+            OR: [
+              { descricao: { contains: busca, mode: 'insensitive' as const } },
+              { codigoInterno: { contains: busca, mode: 'insensitive' as const } },
+              { gtin: { contains: busca } },
+              { marca: { contains: busca, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
 
-    return { materiais: materiais.map(formatarMaterial) };
+    const pedido = lerPaginacao(req.query as { pagina?: string; porPagina?: string });
+
+    const [total, materiais] = await Promise.all([
+      banco.material.count({ where: filtro }),
+      banco.material.findMany({
+        where: filtro,
+        include: { familia: { select: { id: true, codigo: true, nome: true } } },
+        orderBy: { descricao: 'asc' },
+        skip: pedido.pular,
+        take: pedido.porPagina,
+      }),
+    ]);
+
+    return {
+      materiais: materiais.map(formatarMaterial),
+      ...camposDaPagina(total, pedido),
+    };
   });
 
   app.post('/api/materiais', { preHandler: app.exigirPermissao('materiais.gerenciar') }, async (req, res) => {

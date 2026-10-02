@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar, baixarArquivo } from './api';
+import type { DadosDaPagina } from './paginacao';
 
 export type SituacaoBid =
   | 'RASCUNHO'
@@ -139,9 +140,17 @@ export function listarItensDisponiveis(familiaId?: string) {
   return chamar<{ itens: ItemDisponivel[] }>('/api/cotacoes/itens-disponiveis' + q);
 }
 
-export function listarCotacoes(situacao?: string) {
-  const q = situacao ? '?situacao=' + encodeURIComponent(situacao) : '';
-  return chamar<{ cotacoes: Cotacao[] }>('/api/cotacoes' + q);
+export function listarCotacoes(situacao?: string, pagina?: number) {
+  const q = new URLSearchParams();
+  if (situacao) q.set('situacao', situacao);
+  if (pagina && pagina > 1) q.set('pagina', String(pagina));
+
+  const cauda = q.toString();
+  return chamar<{
+    cotacoes: Cotacao[];
+    /** Contado no banco, não na página. */
+    resumo: { abertos: number; respostas: number };
+  } & DadosDaPagina>('/api/cotacoes' + (cauda ? '?' + cauda : ''));
 }
 
 export function buscarCotacao(id: string) {
@@ -491,8 +500,13 @@ export interface Pedido {
   itens: ItemDoPedido[];
 }
 
-export function listarPedidos() {
-  return chamar<{ pedidos: PedidoResumo[] }>('/api/pedidos');
+export function listarPedidos(pagina?: number) {
+  const cauda = pagina && pagina > 1 ? '?pagina=' + pagina : '';
+  return chamar<{
+    pedidos: PedidoResumo[];
+    /** Contado no banco, não na página. */
+    resumo: { pedidos: number; valorTotal: number; fornecedores: number };
+  } & DadosDaPagina>('/api/pedidos' + cauda);
 }
 
 export function buscarPedido(id: string) {

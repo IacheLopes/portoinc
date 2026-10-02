@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar } from './api';
+import type { DadosDaPagina } from './paginacao';
 
 export type TipoMovimento =
   | 'ENTRADA'
@@ -107,13 +108,18 @@ export function buscarEstoque(almoxarifadoId?: string, busca?: string) {
   return chamar<Estoque>('/api/estoque' + (cauda ? '?' + cauda : ''));
 }
 
-export function listarMovimentos(almoxarifadoId?: string, materialId?: string) {
+export function listarMovimentos(
+  almoxarifadoId?: string,
+  materialId?: string,
+  pagina?: number,
+) {
   const q = new URLSearchParams();
   if (almoxarifadoId) q.set('almoxarifadoId', almoxarifadoId);
   if (materialId) q.set('materialId', materialId);
+  if (pagina && pagina > 1) q.set('pagina', String(pagina));
 
   const cauda = q.toString();
-  return chamar<{ movimentos: Movimento[] }>(
+  return chamar<{ movimentos: Movimento[] } & DadosDaPagina>(
     '/api/estoque/movimentos' + (cauda ? '?' + cauda : ''),
   );
 }

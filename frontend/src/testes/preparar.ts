@@ -15,6 +15,55 @@ afterEach(() => {
 });
 
 // ============================================================
+//  Substituto mínimo do scrollIntoView
+//
+//  O jsdom não rola: ele não tem layout, então não tem para onde
+//  rolar. Sem este substituto, trocar de página estoura com
+//  "scrollIntoView is not a function" — e é justamente a rolagem
+//  que confirma, para quem clicou, que a lista mudou.
+//
+//  O teste confere que a rolagem foi PEDIDA, com os argumentos
+//  certos (instantânea, alinhada no topo). Se ela acontece de
+//  fato, e se para no lugar certo embaixo do cabeçalho fixo, isso
+//  é medido num navegador de verdade.
+// ============================================================
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function rolar() {};
+}
+
+// ============================================================
+//  Substituto mínimo do matchMedia
+//
+//  O jsdom também não tem `window.matchMedia`. Sem isto, QUALQUER
+//  teste que desenhe a barra de páginas estoura — ela pergunta se
+//  a tela é estreita para montar menos botões no celular.
+//
+//  Foi assim que apareceu: o teste do painel de Locação passou a
+//  falhar com "Unable to find LOC-00002", que parecia problema da
+//  tabela. A tabela estava certa; a tela inteira morria antes de
+//  pintar, no primeiro `matchMedia` da barra.
+//
+//  Responde "não é estreita", que é a tela de computador — o
+//  tamanho em que os testes pensam. O comportamento no celular é
+//  conferido medindo num navegador de verdade, em 420px, que é
+//  onde ele existe de fato.
+// ============================================================
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (consulta: string) =>
+    ({
+      media: consulta,
+      matches: false,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      // Os dois antigos, que algumas bibliotecas ainda chamam.
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
+// ============================================================
 //  Substituto mínimo do <dialog>
 //
 //  O navegador de mentira do teste (jsdom) não implementa

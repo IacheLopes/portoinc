@@ -17,6 +17,8 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
@@ -42,30 +44,39 @@ export function Fornecedores() {
   const [busca, setBusca] = useState('');
   const [familiaId, setFamiliaId] = useState('');
 
+  // A lista suspensa vale na hora; o campo de digitar espera a
+  // pessoa parar, para nao buscar a cada tecla.
+  const buscaAdiada = useEsperarDigitar(busca);
+
+  const pag = usePagina(buscaAdiada + '|' + familiaId);
+
   const carregar = useCallback(
-    async (filtros: { busca?: string; familiaId?: string } = {}) => {
+    async (filtros: { busca?: string; familiaId?: string; pagina?: number } = {}) => {
       setCarregando(true);
       setErro(null);
       try {
         const [f, fam] = await Promise.all([listarFornecedores(filtros), listarFamilias()]);
         setFornecedores(f.fornecedores);
         setFamilias(fam.familias);
+        pag.chegou(f);
       } catch (e) {
         setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+        pag.falhou();
       } finally {
         setCarregando(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
-  // A lista suspensa vale na hora; o campo de digitar espera a
-  // pessoa parar, para nao buscar a cada tecla.
-  const buscaAdiada = useEsperarDigitar(busca);
-
   useEffect(() => {
-    void carregar({ busca: buscaAdiada || undefined, familiaId: familiaId || undefined });
-  }, [carregar, buscaAdiada, familiaId]);
+    void carregar({
+      busca: buscaAdiada || undefined,
+      familiaId: familiaId || undefined,
+      pagina: pag.pagina,
+    });
+  }, [carregar, buscaAdiada, familiaId, pag.pagina]);
 
 
   if (carregando && fornecedores.length === 0) {
@@ -146,14 +157,31 @@ export function Fornecedores() {
         />
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="fornecedor"
+          oQuePlural="fornecedores"
+          carregando={pag.trocando}
+        />
+
         {fornecedores.length === 0 ? (
           <Vazio
             titulo="Nenhum fornecedor encontrado"
             descricao="Ajuste os filtros ou cadastre um fornecedor novo."
           />
         ) : (
-          <div className="grade grade--larga">
+          /* Aqui a lista e uma grade de cartoes, nao uma tabela: o
+             esmaecido e o fade vao na grade inteira, que e o
+             equivalente do cartao da tabela. */
+          <div
+            className={
+              'grade grade--larga ' + (pag.trocando ? 'lista-trocando' : 'lista-chegou')
+            }
+            key={pag.pagina}
+          >
             {fornecedores.map((f) => (
               <Cartao
                 key={f.id}
@@ -230,6 +258,13 @@ export function Fornecedores() {
             ))}
           </div>
         )}
+
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
       </section>
     </>
   );

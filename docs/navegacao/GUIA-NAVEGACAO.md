@@ -1,4 +1,4 @@
-<!-- versao: 0.41.0 -->
+<!-- versao: 0.42.0 -->
 
 # Guia de Navegação Simples
 
@@ -82,6 +82,49 @@ aprovar uma compra. Se você não tem mais as senhas, entre em **Usuários**, ab
 ---
 
 # 2 · As telas
+
+## Em toda lista: as páginas
+
+Toda lista grande do sistema mostra **20 linhas por vez**. Isso vale para
+Solicitações, Cotações, Pedidos, Entregas, Extrato do estoque, Notas, Contas a pagar,
+Locação, Materiais e Fornecedores.
+
+**Em cima da lista** tem uma frase dizendo onde você está:
+
+```
+Mostrando 21 a 40 de 68 solicitações
+```
+
+Esse **68** é quantas existem de verdade, contadas no banco. Não é quantas apareceram.
+
+**Embaixo da lista** ficam os botões de página:
+
+```
+«  ‹   1  …  6  [7]  8  …  250   ›  »
+```
+
+| Botão | Vai para |
+|---|---|
+| `«` | A primeira página |
+| `‹` | A página de antes |
+| Um número | Aquela página |
+| `›` | A página seguinte |
+| `»` | A última página |
+
+O `…` quer dizer "tem páginas aqui no meio". E o último número — o `250` ali — **sempre**
+aparece: é assim que você vê de cara o tamanho da lista.
+
+**Quando você clica**, três coisas acontecem juntas: a tela sobe até o começo da lista,
+as linhas velhas ficam apagadinhas por um instante, e as novas entram. É para você não
+ficar na dúvida se mudou de página.
+
+> **Se a lista tem 20 linhas ou menos, os botões não aparecem.** Não está quebrado: não
+> há outra página para ir.
+
+**Mudar um filtro volta para a página 1.** Se você está na página 7 e escolhe "Rascunho",
+não faz sentido continuar na 7 — ela pode nem existir nesse filtro.
+
+---
 
 ## 1. Início
 
@@ -585,6 +628,8 @@ Se o tempo for curto, são estes:
 | A senha não entra | Só `porto@dev.com` e `admin@portoinc.com.br` têm senha conhecida (`admin123`). As outras seis foram criadas por você — gere uma senha nova em **Usuários** |
 | Ele pediu para trocar a senha | É a regra funcionando: conta criada por outra pessoa troca a senha no primeiro acesso |
 | Uma tela está vazia | Leia o que ela diz. Tela vazia sempre explica **por que** está vazia e o que fazer |
+| A lista não mostra tudo | Ela mostra 20 por vez. A frase em cima diz o total, e os botões embaixo levam às outras páginas |
+| Filtrei e a lista ficou vazia | O filtro volta para a página 1 sozinho. Se continua vazia, é que não há nada naquela situação mesmo |
 | Quero recomeçar | Peça para recarregar os dados de teste |
 
 ---

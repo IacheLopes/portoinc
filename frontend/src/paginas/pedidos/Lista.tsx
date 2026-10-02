@@ -20,6 +20,8 @@ import { ErroApi } from '../../servicos/api';
 import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
+import { usePagina } from '../../ganchos/pagina';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { MenuDeAcoes } from '../../componentes/MenuDeAcoes';
@@ -28,6 +30,8 @@ import { Icone } from '../../componentes/Icone';
 
 export function ListaPedidos() {
   const [pedidos, setPedidos] = useState<PedidoResumo[]>([]);
+  // Os três números do alto. Vêm contados no banco.
+  const [resumo, setResumo] = useState({ pedidos: 0, valorTotal: 0, fornecedores: 0 });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [baixando, setBaixando] = useState<string | null>(null);
@@ -35,21 +39,29 @@ export function ListaPedidos() {
   const [zap, setZap] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  // Esta tela nao tem filtro: a chave e fixa.
+  const pag = usePagina('');
+
+  const carregar = useCallback(async (pagina = 1) => {
     setCarregando(true);
     setErro(null);
     try {
-      setPedidos((await listarPedidos()).pedidos);
+      const r = await listarPedidos(pagina);
+      setPedidos(r.pedidos);
+      setResumo(r.resumo);
+      pag.chegou(r);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+      pag.falhou();
     } finally {
       setCarregando(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(pag.pagina);
+  }, [carregar, pag.pagina]);
 
   async function pdf(p: PedidoResumo) {
     setBaixando(p.id);
@@ -111,7 +123,6 @@ export function ListaPedidos() {
     return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
   }
 
-  const total = pedidos.reduce((s, p) => s + p.total, 0);
 
   return (
     <>
@@ -126,12 +137,20 @@ export function ListaPedidos() {
           }
         />
 
+        {/* Os três saíam de contar o array que a tela tinha em
+            mão. Com vinte por página, "Soma de todos" mostraria a
+            soma de vinte — e com a cara de total da empresa. Agora
+            os três são contados no banco. */}
         <div className="grade">
-          <Indicador titulo="Pedidos" valor={String(pedidos.length)} detalhe="Emitidos" />
-          <Indicador titulo="Valor total" valor={dinheiro(total)} detalhe="Soma de todos" />
+          <Indicador titulo="Pedidos" valor={String(resumo.pedidos)} detalhe="Emitidos" />
+          <Indicador
+            titulo="Valor total"
+            valor={dinheiro(resumo.valorTotal)}
+            detalhe="Soma de todos"
+          />
           <Indicador
             titulo="Fornecedores"
-            valor={String(new Set(pedidos.map((p) => p.fornecedor)).size)}
+            valor={String(resumo.fornecedores)}
             detalhe="Distintos"
           />
         </div>
@@ -149,17 +168,31 @@ export function ListaPedidos() {
         )}
       </section>
 
-      <section className="secao">
+      <section className="secao secao-com-ancora" ref={pag.topo}>
+        <ContaDaPagina
+          pagina={pag.pagina}
+          total={pag.dados.total}
+          porPagina={pag.dados.porPagina}
+          oQue="pedido"
+          oQuePlural="pedidos"
+          carregando={pag.trocando}
+        />
+
         {pedidos.length === 0 ? (
           <Vazio
             titulo="Nenhum pedido de compra"
             descricao="Os pedidos aparecem depois que você escolhe os vencedores na equalização."
           />
         ) : (
+          /* A descrição dizia "N pedido(s) · R$ X no total", e as
+             duas contas saíam do array da página. As duas agora
+             estão nos indicadores acima, contadas no banco — repetir
+             aqui só daria dois lugares para divergirem. */
           <Cartao
             titulo="Pedidos emitidos"
-            descricao={pedidos.length + " pedido(s) · " + dinheiro(total) + " no total"}
             semEspaco
+            key={pag.pagina}
+            className={pag.trocando ? 'lista-trocando' : 'lista-chegou'}
           >
             <TabelaArea>
               <table className="tabela">
@@ -256,6 +289,13 @@ export function ListaPedidos() {
             </TabelaArea>
           </Cartao>
         )}
+
+        <Paginacao
+          pagina={pag.pagina}
+          paginas={pag.dados.paginas}
+          aoTrocar={pag.irPara}
+          carregando={pag.trocando}
+        />
 
         <div className="aviso aviso--info" style={{ marginTop: 'var(--esp-4)' }}>
           <Icone nome="dica" className="aviso__icone" />

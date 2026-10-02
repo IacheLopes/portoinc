@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar } from './api';
+import type { DadosDaPagina } from './paginacao';
 
 export type SituacaoPedido =
   | 'RASCUNHO'
@@ -127,8 +128,11 @@ export function registrarRecebimento(dados: {
   }>('/api/recebimentos', { metodo: 'POST', corpo: dados });
 }
 
-export function listarRecebimentos() {
-  return chamar<{ recebimentos: RecebimentoResumo[] }>('/api/recebimentos');
+export function listarRecebimentos(pagina?: number) {
+  const cauda = pagina && pagina > 1 ? '?pagina=' + pagina : '';
+  return chamar<{ recebimentos: RecebimentoResumo[] } & DadosDaPagina>(
+    '/api/recebimentos' + cauda,
+  );
 }
 
 export function marcarPedidoEnviado(id: string) {

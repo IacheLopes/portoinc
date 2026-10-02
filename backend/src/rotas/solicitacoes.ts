@@ -12,7 +12,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
-import { lerPaginacao, montarPagina } from '../servicos/paginacao.js';
+import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import {
   podeEditar, podeIrPara, conferirParaEnvio, calcularTotalEstimado,
   acharFaixa, explicarAprovacao, resumoDaAlcada, formatarNumero,
@@ -287,14 +287,9 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
         }),
       ]);
 
-      const pagina = montarPagina(solicitacoes.map(formatar), total, pedido);
-
       return {
-        solicitacoes: pagina.itens,
-        total: pagina.total,
-        pagina: pagina.pagina,
-        porPagina: pagina.porPagina,
-        paginas: pagina.paginas,
+        solicitacoes: solicitacoes.map(formatar),
+        ...camposDaPagina(total, pedido),
         vendoTodas: req.usuario!.permissoes.includes('solicitacoes.ver_todas'),
       };
     },

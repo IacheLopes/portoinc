@@ -3,6 +3,7 @@
 // ============================================================
 
 import { chamar, baixarArquivo } from './api';
+import type { DadosDaPagina } from './paginacao';
 import type { FormatoDeArquivo } from '../componentes/BotaoBaixar';
 
 export type SituacaoNota = 'LANCADA' | 'CONFERIDA' | 'COM_DIVERGENCIA' | 'CANCELADA';
@@ -147,13 +148,18 @@ export function buscarResumo() {
   return chamar<ResumoFinanceiro>('/api/financeiro/resumo');
 }
 
-export function listarTitulos(filtros: { situacao?: string; quando?: string } = {}) {
+export function listarTitulos(
+  filtros: { situacao?: string; quando?: string; pagina?: number } = {},
+) {
   const q = new URLSearchParams();
   if (filtros.situacao) q.set('situacao', filtros.situacao);
   if (filtros.quando) q.set('quando', filtros.quando);
+  if (filtros.pagina && filtros.pagina > 1) q.set('pagina', String(filtros.pagina));
 
   const cauda = q.toString();
-  return chamar<{ titulos: Titulo[] }>('/api/contas-pagar' + (cauda ? '?' + cauda : ''));
+  return chamar<{ titulos: Titulo[] } & DadosDaPagina>(
+    '/api/contas-pagar' + (cauda ? '?' + cauda : ''),
+  );
 }
 
 export function pagarTitulo(
@@ -166,9 +172,14 @@ export function pagarTitulo(
   });
 }
 
-export function listarNotas(situacao?: string) {
-  return chamar<{ notas: Nota[] }>(
-    '/api/notas-fiscais' + (situacao ? '?situacao=' + situacao : ''),
+export function listarNotas(situacao?: string, pagina?: number) {
+  const q = new URLSearchParams();
+  if (situacao) q.set('situacao', situacao);
+  if (pagina && pagina > 1) q.set('pagina', String(pagina));
+
+  const cauda = q.toString();
+  return chamar<{ notas: Nota[]; canceladas: number } & DadosDaPagina>(
+    '/api/notas-fiscais' + (cauda ? '?' + cauda : ''),
   );
 }
 
