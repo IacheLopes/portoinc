@@ -566,6 +566,25 @@ const arquivosComEmoji = [];
         'a grade do painel voltou a esticar os cartoes — caixa com vazio dentro',
       );
     }
+
+    // E o contrario, para os cartoes de GRAFICO.
+    //
+    // Eles sao a excecao: ficam dois a dois e esticam de proposito,
+    // para os fundos alinharem. Quem faz isso e um `align-self:
+    // stretch` neles, por cima do `start` da grade.
+    //
+    // Sem essa linha os pares voltam a terminar em alturas
+    // diferentes — "veja, n ta alinhado", 05/10/2026 — e a regua
+    // nao acusa junto: sem esticar, nao ha vazio para ela medir.
+    // Por isso a cobranca e aqui, no texto do CSS.
+    if (!/\.painel-relatorio\s*>\s*\.col-meia[\s\S]{0,200}align-self:\s*stretch/.test(css)) {
+      achar(
+        'GRAFICOS_SEM_PAREAR',
+        arq,
+        1,
+        'os cartoes de grafico pararam de esticar — os pares vao terminar desalinhados',
+      );
+    }
   }
 }
 

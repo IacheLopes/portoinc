@@ -1,4 +1,4 @@
-<!-- versao: 0.44.3 -->
+<!-- versao: 0.44.4 -->
 
 # 1. Antes de começar
 
@@ -3431,6 +3431,57 @@ que quatro do outro.
 Consumo ainda tem 78px porque a rosca só tem **três** famílias: com poucas fatias quem
 manda na altura é o desenho de 195px, e nenhum ajuste de ritmo alcança as quatro barras do
 lado.
+
+## O que faltava: ligar o que já estava escrito
+
+Mesmo com os dois ajustes acima, os pares não terminavam na mesma linha — 8px em
+Fornecedores, 78px em Consumo. O dono viu de novo: *"veja, n ta alinhado"*.
+
+Esticar os dois até a mesma altura resolveria o alinhamento e traria de volta o buraco no
+fundo. **A não ser que o conteúdo centralize na sobra** — e a regra para isso já estava no
+sistema, escrita e desligada:
+
+```css
+.ranking {
+  flex: 1;
+  /* Com poucos itens, as barras ficam no meio do cartão em vez de
+     grudadas no topo deixando um vazio embaixo. */
+  justify-content: center;
+}
+```
+
+O `.rosca-area` tem o mesmo `flex: 1`. As duas nunca funcionaram: o `figure.gr` que as
+contém era só `margin: 0` — **não era container flex**, então a altura do cartão nunca
+chegava nelas.
+
+Ligando o `.gr` e devolvendo o esticamento **só aos cartões de gráfico** — os indicadores
+com "?" continuam sem esticar —, os pares passaram a terminar juntos com o conteúdo
+centrado:
+
+| Par | Antes de tudo | Agora |
+|---|---|---|
+| Fornecedores | 44px | **0px** |
+| Consumo | 179px | **0px** |
+| Financeiro, rosca × medidor | 2px | **0px** |
+| Financeiro, 4 barras × 2 barras | 127px | **0px** |
+
+## Uma régua que era teatro
+
+Para vigiar isso escrevi a regra `PAR_DESALINHADO`: cartões esticados da mesma fileira têm
+de ter a mesma altura.
+
+Fui testá-la quebrando o CSS e descobri que **ela nunca poderia acusar** — itens esticados
+pelo CSS Grid têm a mesma altura por definição. Era código morto dando sensação de guarda.
+
+No lugar entrou `CONTEUDO_NO_TOPO`, que mede o que de fato pode dar errado: num cartão
+esticado, o conteúdo grudar no topo com a sobra inteira no fundo. Conferida tirando o
+`justify-content: center` de propósito.
+
+E como apagar a declaração do esticamento não produz vazio nenhum — a régua ficaria muda
+—, o pente-fino ganhou `GRAFICOS_SEM_PAREAR`, que cobra a linha no texto do CSS.
+
+> **A lição, que vale para a próxima régua: regra que não pode falhar é pior que régua
+> nenhuma.** Testar nos dois sentidos não é zelo, é o que separa guarda de enfeite.
 
 ## O que foi tentado e não funcionou
 

@@ -845,29 +845,102 @@ const MEDIR = `(() => {
   //  Quem garante que os paineis continuem declarando start e o
   //  pente-fino, com uma regra estatica. Esta aqui mede o
   //  resultado; aquela cobra a intencao.
+  //  DOIS TIPOS DE CARTAO, DOIS DEFEITOS DIFERENTES.
+  //
+  //  Nos paineis convivem duas familias, e o que e defeito numa e
+  //  o normal da outra:
+  //
+  //    · INDICADOR — o numero com o "?". Todos tem o mesmo tamanho
+  //      de conteudo, entao NAO esticam: so cresce o que foi
+  //      aberto. Ali, altura esticada alem do natural e vazio
+  //      dentro da caixa, que e o defeito.
+  //
+  //    · GRAFICO — rosca, ranking, medidor. Ficam dois a dois e
+  //      ESTICAM de proposito, para os fundos alinharem; o conteudo
+  //      centraliza no espaco em vez de grudar no topo. Ali o
+  //      defeito e o contrario: par que nao pareia.
+  //
+  //  Uma regra so nao serve para as duas, e foi o que me fez
+  //  escrever a regra errada duas vezes. A casa declara a familia
+  //  no CSS — align-self: stretch no cartao de grafico —, entao a
+  //  regua le a declaracao e cobra o que cabe.
   const SOBRA_QUE_INCOMODA = 24;
 
   for (const grade of document.querySelectorAll('.grade, .painel-financeiro, .painel-relatorio')) {
     const alinhamento = getComputedStyle(grade).alignItems;
-    if (alinhamento !== 'start' && alinhamento !== 'flex-start') continue;
+    const gradeEstica = alinhamento === 'stretch' || alinhamento === 'normal';
+
+    const esticados = [];
 
     for (const item of grade.children) {
-      const esticado = item.getBoundingClientRect().height;
-      if (esticado <= 0) continue;
+      const altura = item.getBoundingClientRect().height;
+      if (altura <= 0) continue;
 
+      const proprio = getComputedStyle(item).alignSelf;
+      const itemEstica = gradeEstica
+        ? proprio !== 'start' && proprio !== 'flex-start'
+        : proprio === 'stretch';
+
+      if (itemEstica) {
+        esticados.push({ item, altura: Math.round(altura), topo: Math.round(item.getBoundingClientRect().top) });
+        continue;
+      }
+
+      // Nao estica: qualquer altura alem do natural e vazio.
       const antes = item.style.alignSelf;
       item.style.alignSelf = 'start';
       const natural = item.getBoundingClientRect().height;
       item.style.alignSelf = antes;
 
-      const sobra = Math.round(esticado - natural);
+      const sobra = Math.round(altura - natural);
 
       if (sobra > SOBRA_QUE_INCOMODA) {
         achados.push({
           tipo: 'CARTAO_COM_VAZIO',
           detalhe: sobra + 'px de nada dentro de ' + (grade.className || 'grade'),
-          culpados: [nomear(item) + ' esticado=' + Math.round(esticado) + ' natural=' + Math.round(natural)],
+          culpados: [nomear(item) + ' esticado=' + Math.round(altura) + ' natural=' + Math.round(natural)],
         });
+      }
+    }
+
+    // Estica: entao o conteudo tem de CENTRALIZAR na sobra.
+    //
+    //  Cobrar que os esticados terminem juntos nao serve: o CSS
+    //  Grid ja garante isso por definicao, entao a regra nunca
+    //  poderia acusar. Regra que nao pode falhar e pior que regra
+    //  nenhuma — ela da a sensacao de guarda sem guardar nada.
+    //
+    //  O que PODE dar errado num cartao esticado e o conteudo ficar
+    //  grudado no topo, com a sobra inteira num buraco no fundo.
+    //  Foi o defeito que o dono achou: "grandes e com espaco em
+    //  branco que torna feio".
+    //
+    //  Entao a medida e a simetria: dentro da area que cresce — a
+    //  da rosca, a do ranking —, o espaco acima do conteudo tem de
+    //  bater com o de baixo.
+    for (const { item } of esticados) {
+      for (const area of item.querySelectorAll('.rosca-area, .ranking')) {
+        const caixa = area.getBoundingClientRect();
+
+        const filhos = [...area.children]
+          .map((f) => f.getBoundingClientRect())
+          .filter((r) => r.height > 0);
+
+        if (filhos.length === 0) continue;
+
+        const acima = Math.min(...filhos.map((r) => r.top)) - caixa.top;
+        const abaixo = caixa.bottom - Math.max(...filhos.map((r) => r.bottom));
+        const torto = Math.round(Math.abs(acima - abaixo));
+
+        // Só vale olhar quando ha sobra de verdade: um cartao em que
+        // o conteudo preenche nao tem o que centralizar.
+        if (acima + abaixo > SOBRA_QUE_INCOMODA * 2 && torto > SOBRA_QUE_INCOMODA) {
+          achados.push({
+            tipo: 'CONTEUDO_NO_TOPO',
+            detalhe: torto + 'px a mais de um lado — o cartao estica e o conteudo nao centraliza',
+            culpados: [nomear(area) + ' acima=' + Math.round(acima) + ' abaixo=' + Math.round(abaixo)],
+          });
+        }
       }
     }
   }

@@ -214,6 +214,22 @@ p { margin: 0; }
 
 .cartao__corpo { padding: var(--esp-5); }
 
+/* Num cartão esticado pela grade, o corpo cresce junto — senão a
+   altura para na borda e o gráfico lá dentro não tem de quem
+   crescer. Só nos painéis: é lá que os cartões pareiam. */
+.painel-financeiro > .cartao,
+.painel-relatorio > .cartao {
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-financeiro > .cartao > .cartao__corpo,
+.painel-relatorio > .cartao > .cartao__corpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* O corpo encosta na borda: é o caso da tabela, que já tem o próprio
    espaçamento por dentro. O do cartão criaria moldura dupla. */
 .cartao--sem-espaco > .cartao__corpo { padding: 0; }

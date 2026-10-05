@@ -31,23 +31,43 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: var(--esp-5);
 
-  /* Cada cartão com a SUA altura.
+  /* Cada cartão com a SUA altura — menos os de gráfico.
 
      O padrão da grade é esticar todo mundo até a altura do mais
-     alto da fileira. Isso produzia dois defeitos que pareciam
-     diferentes e eram o mesmo:
+     alto da fileira, e isso produzia caixa com borda e vazio
+     dentro: abrir o "?" de UM indicador levava os quatro da
+     fileira de 154px para 248px, e três ficavam com 94px de nada.
 
-       · abrir o "?" de UM indicador levava os quatro da fileira de
-         154px para 248px — três caixas com 94px de vazio, de uma
-         explicação que ninguém pediu para ver. Quem olhava concluía
-         que o botão tinha aberto todos
-       · o cartão da rosca, ao lado de um ranking mais alto, ficava
-         com 172px de nada embaixo do desenho
-
-     Caixa com borda e vazio dentro parece quebrada; caixas de
-     alturas diferentes parecem o que são — conteúdos de tamanhos
-     diferentes. Medido em 05/10/2026, aba por aba. */
+     Para os INDICADORES, não esticar é a resposta: eles têm todos
+     o mesmo tamanho de conteúdo, e o que cresce é só o que foi
+     aberto. */
   align-items: start;
+}
+
+/* OS CARTÕES DE GRÁFICO SÃO OUTRA HISTÓRIA.
+
+   Eles ficam dois a dois, e o dono quer os fundos alinhados — com
+   razão: duas caixas lado a lado terminando em alturas diferentes
+   lêem como desencontro, não como conteúdo diferente.
+
+   Esticar os dois só não podia enquanto o conteúdo ficava grudado
+   no topo, deixando o vão embaixo. E a solução para isso já estava
+   escrita: `.ranking` tem `justify-content: center` com o
+   comentário "com poucos itens, as barras ficam no meio do cartão
+   em vez de grudadas no topo deixando um vazio embaixo", e
+   `.rosca-area` tem `flex: 1`.
+
+   As duas regras nunca funcionaram. O `figure.gr` que as contém
+   era só `margin: 0` — não era container flex, então a altura do
+   cartão nunca chegava nelas. Estava tudo pronto e desligado.
+
+   Ligando (ver `.gr` logo abaixo), esticar passa a centralizar em
+   vez de empurrar para cima: fundos alinhados E sem buraco. */
+.painel-financeiro > .col-meia,
+.painel-relatorio > .col-meia,
+.painel-financeiro > .col-cheia,
+.painel-relatorio > .col-cheia {
+  align-self: stretch;
 }
 
 @media (max-width: 1180px) {
@@ -212,7 +232,21 @@
 /* ------------------------------------------------------------
    Comum aos gráficos
    ------------------------------------------------------------ */
-.gr { margin: 0; }
+/* O gráfico ocupa o cartão inteiro, em coluna.
+
+   Sem isto, `.rosca-area { flex: 1 }` e `.ranking { flex: 1 }` não
+   tinham pai flex de quem crescer, e o conteúdo ficava colado no
+   topo com o vão embaixo — o "espaço em branco que torna feio". */
+.gr {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* O título não estica: ele é uma linha, e o que sobra é do
+   desenho. */
+.gr > .gr__titulo { flex: 0 0 auto; }
 
 /* As listas dos graficos nao levam marcador: o quadradinho
    colorido ja e o marcador. */
