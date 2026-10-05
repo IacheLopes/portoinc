@@ -14,9 +14,8 @@
 
 import type { FastifyInstance } from 'fastify';
 import { banco } from '../plugins/banco.js';
-import { numero } from '../servicos/util.js';
-import { diasAte } from '../servicos/fiscal.js';
-import { precisaComprar } from '../servicos/estoque.js';
+import { inicioDoDiaBr, inicioDoDiaBrMais } from '../servicos/fiscal.js';
+import { TOLERANCIA } from '../servicos/estoque.js';
 import { podeDecidir } from '../servicos/aprovacao.js';
 import {
   montarInicio, CONTAGENS_ZERADAS, type ContagensDoInicio,
@@ -32,6 +31,43 @@ const ANDANDO = ['RASCUNHO', 'AGUARDANDO_APROVACAO', 'EM_REVISAO', 'APROVADA', '
 
 /** Pedido emitido que ainda espera o material chegar. */
 const ESPERANDO_ENTREGA = ['ENVIADO', 'CONFIRMADO', 'RECEBIDO_PARCIAL'] as const;
+
+/**
+ * Quantos saldos estão no ponto de repor — contados NO BANCO.
+ *
+ * Antes isto trazia todo saldo de material que tem ponto de pedido
+ * e filtrava aqui com `precisaComprar`. O número saía certo; o que
+ * não dava era carregar a tabela inteira a cada abertura da tela
+ * inicial, que é a primeira coisa que abre de manhã.
+ *
+ * Em SQL cru porque a comparação é entre DUAS COLUNAS — o saldo e o
+ * ponto de pedido do material —, e o Prisma não compara coluna com
+ * coluna.
+ *
+ * E AQUI MORA O RISCO DESTA FUNÇÃO: a regra de `precisaComprar`
+ * passa a existir em dois lugares, um em TypeScript e outro em SQL.
+ * A folga do ponto flutuante é a mesma constante, passada como
+ * parâmetro, para pelo menos o NÚMERO não divergir. O resto é
+ * cobrado por teste: `estoque.test.ts` roda os dois caminhos sobre
+ * os mesmos dados e exige o mesmo resultado.
+ *
+ * Conta SALDOS, não materiais — igualzinho ao que fazia antes. O
+ * mesmo material em dois almoxarifados, ambos no vermelho, conta
+ * duas vezes. Deixei como estava de propósito: mudar isso é mudar
+ * o que o cartão significa, e não é o que esta etapa se propôs.
+ */
+async function contarNoPontoDeRepor(): Promise<number> {
+  const [linha] = await banco.$queryRaw<Array<{ quantos: bigint }>>`
+    SELECT COUNT(*) AS quantos
+      FROM saldos_estoque s
+      JOIN materiais m ON m.id = s.material_id
+     WHERE m.ponto_pedido IS NOT NULL
+       AND m.ponto_pedido > 0
+       AND s.quantidade <= m.ponto_pedido + ${TOLERANCIA}::numeric
+  `;
+
+  return Number(linha?.quantos ?? 0);
+}
 
 export async function rotasInicio(app: FastifyInstance) {
   app.get(
@@ -52,15 +88,45 @@ export async function rotasInicio(app: FastifyInstance) {
 
       // ----- Aprovações esperando a MINHA assinatura -----
       //
-      // Não dá para contar no banco: "espera você" depende das
-      // regras de alçada, de quem já assinou e de quem é o autor.
-      // A mesma função que monta a fila decide aqui, senão a tela
-      // inicial e a fila diriam números diferentes.
+      // Esta é a única contagem da tela que NÃO vai para o banco, e
+      // é de propósito.
+      //
+      // "Espera você" depende das regras de alçada: qual faixa o
+      // valor pegou, quais funções ela exige, quem já assinou e
+      // quem é o autor. Essa regra está escrita UMA vez, em
+      // `podeDecidir`, e a fila de Aprovações usa a mesma — senão a
+      // tela inicial e a fila diriam números diferentes sobre a
+      // mesma compra. Reescrevê-la em SQL criaria uma segunda
+      // cópia, em outra linguagem, e no dia em que uma faixa
+      // mudasse alguém atualizaria uma e esqueceria a outra.
+      //
+      // O QUE MUDOU AQUI: havia um `take: 500`.
+      //
+      // Acima de 500 na fila, o cartão contava 500 e mostrava o
+      // resultado como se fossem todas — um número MENOR que o
+      // certo, sem nada em tela avisando. Mesma doença das listas
+      // que paravam em 200 e diziam que era tudo.
+      //
+      // Agora vem tudo, e vem menos: "não sou o autor" é regra de
+      // segurança (ninguém aprova o próprio pedido), não de alçada,
+      // então ela desce para o banco em vez de ser filtrada aqui.
+      //
+      // Sem teto, a fila inteira entra na memória para ser contada.
+      // Cada linha são quatro campos pequenos; a conta só pesa com
+      // dezenas de milhares de compras paradas esperando
+      // assinatura, e aí o problema não é o sistema. SE um dia a
+      // fila passar de algumas centenas com frequência, ou o Início
+      // demorar a abrir, o caminho é guardar "quem falta assinar"
+      // como coluna, atualizada a cada assinatura — resolve de vez,
+      // e em troca toda decisão passa a ter o dever de mantê-la.
       if (pode('solicitacoes.aprovar')) {
         const candidatas = await banco.solicitacao.findMany({
           where: {
             situacao: 'AGUARDANDO_APROVACAO',
             funcoesExigidas: { hasSome: eu.funcoes },
+            // Ninguém aprova o próprio pedido. `podeDecidir` já
+            // recusa essas; filtrar aqui é só não carregá-las.
+            solicitanteId: { not: eu.id },
           },
           select: {
             solicitanteId: true,
@@ -73,7 +139,6 @@ export async function rotasInicio(app: FastifyInstance) {
               },
             },
           },
-          take: 500,
         });
 
         contagens.aprovacoesEsperando = candidatas.filter((s) => podeDecidir({
@@ -118,19 +183,7 @@ export async function rotasInicio(app: FastifyInstance) {
       // catálogo. A decisão de "está no vermelho" é a mesma função
       // que a tela de estoque usa.
       if (pode('estoque.ver')) {
-        const saldos = await banco.saldoEstoque.findMany({
-          where: { material: { pontoPedido: { not: null } } },
-          select: {
-            quantidade: true,
-            material: { select: { pontoPedido: true } },
-          },
-        });
-
-        contagens.materiaisAbaixoDoMinimo = saldos.filter((s) => precisaComprar({
-          materialId: '', codigo: '', descricao: '', unidadeMedida: '', custoMedio: null,
-          quantidade: numero(s.quantidade) ?? 0,
-          pontoPedido: numero(s.material.pontoPedido),
-        })).length;
+        contagens.materiaisAbaixoDoMinimo = await contarNoPontoDeRepor();
       }
 
       // ----- Contas vencidas e vencendo -----
@@ -139,16 +192,33 @@ export async function rotasInicio(app: FastifyInstance) {
       // a hora — senão uma parcela de hoje de manhã apareceria como
       // vencida à tarde.
       if (pode('financeiro.ver')) {
-        const abertas = await banco.contaPagar.findMany({
-          where: { situacao: 'ABERTA' },
-          select: { vencimento: true },
-        });
+        // Antes isto trazia TODA conta em aberto para contar aqui.
+        // Agora são dois `count`, e a fronteira das datas é a única
+        // coisa que atravessa — calculada no calendário de São
+        // Paulo, porque o banco responderia em UTC.
+        //
+        //   vencida   : vence antes da meia-noite de hoje
+        //   vencendo  : de hoje até o fim do sétimo dia
+        //
+        // O fim do sétimo dia é o COMEÇO do oitavo: assim a conta
+        // que vence às 23h do sétimo dia entra, e a do oitavo não.
+        const comecoDeHoje = inicioDoDiaBr(hoje);
+        const fimDaSemana = inicioDoDiaBrMais(8, hoje);
 
-        for (const c of abertas) {
-          const dias = diasAte(c.vencimento, hoje);
-          if (dias < 0) contagens.contasVencidas += 1;
-          else if (dias <= 7) contagens.contasVencendoEm7Dias += 1;
-        }
+        const [vencidas, vencendo] = await Promise.all([
+          banco.contaPagar.count({
+            where: { situacao: 'ABERTA', vencimento: { lt: comecoDeHoje } },
+          }),
+          banco.contaPagar.count({
+            where: {
+              situacao: 'ABERTA',
+              vencimento: { gte: comecoDeHoje, lt: fimDaSemana },
+            },
+          }),
+        ]);
+
+        contagens.contasVencidas = vencidas;
+        contagens.contasVencendoEm7Dias = vencendo;
       }
 
       // ----- Equipamento que passou da devolução -----

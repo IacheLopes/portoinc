@@ -1,4 +1,4 @@
-<!-- versao: 0.42.0 -->
+<!-- versao: 0.43.0 -->
 
 # 1. Antes de começar
 
@@ -3086,6 +3086,112 @@ olha as canceladas do ano passado.
 
 ---
 
+# 42.3. Os números da tela inicial
+
+A tela inicial mostra nove cartões: "3 aprovações esperando você", "2 contas vencidas",
+"4 materiais no ponto de repor". Seis deles já perguntavam ao banco **quantos são**. Três
+faziam diferente: traziam as linhas para a memória e contavam aqui.
+
+Um desses três mentia.
+
+## O que mentia
+
+O cartão de **aprovações** pedia no máximo 500 solicitações e contava quantas esperavam
+a sua assinatura. Com 600 na fila, ele contava 500 e mostrava o resultado como se fossem
+todas — **um número menor que o certo, e calado**.
+
+É a mesma doença das listas que paravam em 200 e diziam que era tudo. O problema nunca
+foi o limite: foi o silêncio.
+
+Os outros dois — **material no ponto de repor** e **contas a pagar** — acertavam o
+número. O que eles faziam era trazer a tabela inteira para contar, a cada abertura da
+tela que abre primeiro de manhã.
+
+## Contas a pagar: dois `count`, e uma armadilha de fuso
+
+Viraram duas perguntas ao banco: quantas vencem antes da meia-noite de hoje, e quantas
+vencem de hoje até o fim do sétimo dia.
+
+A armadilha está em **quem decide que dia é hoje**. O `CURRENT_DATE` do Postgres responde
+em UTC, e o container roda assim. Depois das 21h de São Paulo o UTC já virou o dia — e a
+tela que existe para avisar prazo passaria a marcar como vencida, toda noite, a conta que
+vence amanhã.
+
+É o mesmo defeito de 27/09/2026 que levou `diaDeHoje` a existir, e ele viajaria para
+dentro da consulta sem ninguém ver.
+
+Por isso a fronteira das datas é calculada **no sistema**, pelo mesmo caminho de sempre, e
+vai ao banco como parâmetro:
+
+```ts
+const comecoDeHoje = inicioDoDiaBr(hoje);
+const fimDaSemana  = inicioDoDiaBrMais(8, hoje);
+```
+
+O banco não precisa saber onde fica São Paulo. E o "fim do sétimo dia" é o **começo do
+oitavo**: assim a conta que vence às 23h do sétimo dia entra, e a do oitavo não.
+
+## Material no ponto de repor: SQL, e uma regra em dois lugares
+
+A comparação é entre **duas colunas** — o saldo e o ponto de pedido do material —, e o
+Prisma não compara coluna com coluna. Então essa é uma consulta escrita à mão.
+
+E aqui mora o preço: a regra de `precisaComprar` passou a existir **duas vezes**, uma em
+TypeScript e outra em SQL. Ela não é um `<=` simples:
+
+```ts
+if (pontoPedido === null || pontoPedido <= 0) return false;
+return quantidade <= pontoPedido + TOLERANCIA;
+```
+
+A folga do ponto flutuante é a **mesma constante**, exportada e passada como parâmetro —
+duas cópias desse número divergiriam no dia em que ele mudasse.
+
+O resto é cobrado por teste. Em `testes/inicio.test.ts` os dois caminhos rodam sobre os
+mesmos dados e têm de dar o mesmo número, incluindo os casos de borda: saldo exatamente
+igual ao ponto de pedido, um acima, zerado, ponto de pedido zero.
+
+> **Duas coisas que o teste revelou, e que ficaram como estão.** O cartão conta
+> **saldos**, não materiais: o mesmo material no vermelho em dois almoxarifados conta
+> duas vezes. E material cadastrado com ponto de pedido mas **nunca comprado** não
+> aparece, porque não há linha de saldo. Os dois são comportamento antigo; mudá-los é
+> mudar o que o cartão significa, e isso é outra conversa.
+
+## Aprovações: o número conserta, a conta fica
+
+Essa foi a única que **não** foi para o banco, e de propósito.
+
+"Espera você" depende das regras de alçada: qual faixa o valor pegou, quais funções ela
+exige, quem já assinou, quem é o autor. Essa regra está escrita **uma vez**, em
+`podeDecidir`, e a fila de Aprovações usa a mesma função — senão a tela inicial e a fila
+diriam números diferentes sobre a mesma compra.
+
+Reescrevê-la em SQL criaria uma segunda cópia, em outra linguagem. No dia em que uma
+faixa de alçada mudasse, alguém atualizaria uma e esqueceria a outra — e o sistema
+começaria a se contradizer sobre dinheiro.
+
+O que mudou foi o teto:
+
+- **Caiu o `take: 500`.** O número passa a estar certo sempre.
+- **"Não sou o autor" desceu para o banco.** Ninguém aprova o próprio pedido — isso é
+  regra de segurança, não de alçada, então ela filtra na consulta em vez de aqui. Vem
+  menos coisa do que vinha antes.
+
+### O que isso custa, e quando revisitar
+
+Sem teto, a fila inteira entra na memória para ser contada. Cada linha são quatro campos
+pequenos — quem abriu, a situação, quais cargos assinam, quem já assinou —, então isso só
+pesa com **dezenas de milhares** de compras paradas esperando assinatura. E uma empresa
+nessa situação tem um problema maior que o do sistema.
+
+**Se um dia a fila passar de algumas centenas com frequência, ou a tela inicial demorar a
+abrir**, o caminho é guardar "quem falta assinar" como coluna da solicitação, atualizada a
+cada assinatura. Resolve de vez — e em troca toda decisão (assinar, devolver, reprovar)
+passa a ter o dever de mantê-la. Se um caminho esquecer, a coluna mente, e aí o erro é
+pior do que o de hoje: silencioso e permanente.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3222,6 +3328,7 @@ docker compose up -d --build
 | **11 — Relatórios** | Orçado × realizado, economia das cotações, desempenho do fornecedor, tempo do processo, consumo, e download em PDF ou Word |
 | **12 — Locação** | Contrato de locação, custo por diária/semana/mês, alerta de equipamento parado e devolução |
 | **13 — Páginas nas listas** | As dez listas que crescem passaram a dizer o total de verdade e a ter barra de páginas. Antes cortavam em 200 e diziam que era tudo |
+| **14 — Contas da tela inicial** | Os cartões do Início passaram a contar no banco. O de aprovações parava em 500 e mostrava um número menor que o certo, sem avisar |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.
@@ -3291,16 +3398,12 @@ docker compose exec web npm test    # as telas
 
 ## A seguir
 
-Duas pontas da paginação ficaram combinadas para depois, porque as duas pedem **soma no
-banco**, e não corte de página:
+Falta uma ponta, a maior delas:
 
-- **A tela inicial** conta as compras do mês somando em memória uma consulta limitada a
-  500. Passando de 500, o número fica errado — e erra para baixo, sem avisar
 - **Os relatórios** têm onze consultas sem limite nenhum. Hoje funcionam porque a base é
   pequena; a saída é agregar no banco em vez de trazer tudo e somar aqui
 
-Fora essas duas, o módulo 1 está fechado e o esqueleto está pronto para receber o módulo
-2.
+Fora essa, o módulo 1 está fechado e o esqueleto está pronto para receber o módulo 2.
 
 ## Finalização (sem data)
 

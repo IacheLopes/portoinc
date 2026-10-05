@@ -1,4 +1,4 @@
-<!-- versao: 0.42.0 -->
+<!-- versao: 0.43.0 -->
 
 # Guia de Navegação Simples
 

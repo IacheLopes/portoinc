@@ -11,7 +11,19 @@
 //     tela responder rápido "tem ou não tem".
 // ============================================================
 
-const TOLERANCIA = 0.0001;
+/**
+ * Folga para a imprecisão do ponto flutuante.
+ *
+ * `0.1 + 0.2` não dá `0.3` em computador nenhum, e um saldo que
+ * deveria bater exato com o ponto de pedido ficaria de fora do
+ * alerta por um fio.
+ *
+ * É EXPORTADA porque a tela inicial conta "material no ponto de
+ * repor" com uma consulta ao banco, e a consulta precisa da mesma
+ * folga. Duas cópias deste número divergiriam no dia em que ele
+ * mudasse — assim há uma só, e ela viaja como parâmetro.
+ */
+export const TOLERANCIA = 0.0001;
 
 export type TipoMovimento =
   | 'ENTRADA'

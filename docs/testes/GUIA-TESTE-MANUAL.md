@@ -1,4 +1,4 @@
-<!-- versao: 0.42.0 -->
+<!-- versao: 0.43.0 -->
 
 # 1. Como usar este guia
 
@@ -4932,6 +4932,71 @@ Abra **Solicitações** no modo celular (**Ctrl+Shift+M**), com 420px de largura
 
 **Esperado:** a barra de páginas cabe em **uma linha**, sem quebrar e sem rolar de lado.
 Ela mostra menos números que no computador — a primeira, a atual e a última.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-326 · A tela inicial conta a empresa inteira
+
+Entre com `porto@dev.com` e olhe os cartões do **Início**.
+
+**Esperado:** o aviso do topo diz que **os números são da empresa inteira**, e não de uma
+pessoa. Cada cartão tem o número, uma frase explicando, e abre a tela onde ele mora.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-327 · "Abaixo do mínimo" bate com o Estoque
+
+Anote o número do cartão **Abaixo do mínimo**. Agora vá em **Estoque** e, para cada
+almoxarifado, conte as linhas marcadas como abaixo do mínimo. Some.
+
+**Esperado:** os dois números são iguais.
+
+> O cartão conta **saldos**, não materiais: se o mesmo material estiver no vermelho em
+> dois almoxarifados, ele conta duas vezes. É de propósito — é a mesma conta que a tela
+> de Estoque faz.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-328 · "Contas vencidas" bate com o Financeiro
+
+Anote o cartão **Contas vencidas**. Vá em **Financeiro**, filtre **Mostrar → Vencidas** e
+olhe a contagem acima da tabela.
+
+**Esperado:** o mesmo número nos dois lugares.
+
+Repita com **Vence em 7 dias** e o filtro **Vencem esta semana**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-329 · A conta que vence hoje não aparece como vencida
+
+Este é o caso que já quebrou uma vez. Deixe uma parcela vencendo **hoje** e abra o Início
+**no fim da tarde ou à noite**.
+
+**Esperado:** ela aparece em **Vence em 7 dias**, nunca em **Vencidas**.
+
+> O servidor roda num fuso diferente do nosso. Se quem decidisse "que dia é hoje" fosse o
+> banco, toda noite a conta de amanhã apareceria como vencida.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-330 · Ninguém aprova o próprio pedido, nem no contador
+
+Entre como **gestor** (ou outra conta que aprove), abra uma solicitação você mesmo e
+envie-a para aprovação — de um valor que exija a sua função.
+
+**Esperado:** o cartão **Esperando sua assinatura** **não** aumenta. Em **Aprovações**,
+a solicitação ou não aparece, ou aparece sem botão de decidir.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 

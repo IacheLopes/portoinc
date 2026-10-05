@@ -339,6 +339,37 @@ export function diasAte(vencimento: Date, hoje = new Date()): number {
   return diaDoVencimento(vencimento) - diaDeHoje(hoje);
 }
 
+/**
+ * A meia-noite de HOJE, no calendário de quem lê a tela.
+ *
+ * Serve para contar vencimento no BANCO em vez de trazer toda
+ * conta aberta para contar aqui.
+ *
+ * Ela existe para não deixar o banco decidir que dia é hoje. O
+ * `CURRENT_DATE` do Postgres responde em UTC — o container roda
+ * assim —, e depois das 21h de São Paulo o UTC já virou o dia. A
+ * tela que existe para avisar prazo passaria a marcar como vencida,
+ * toda noite, a conta que vence amanhã. É o mesmo defeito de
+ * 27/09/2026, que levou `diaDeHoje` a existir; a diferença é que
+ * agora ele viajaria para dentro da consulta.
+ *
+ * Então a fronteira é calculada AQUI, pelo mesmo caminho de
+ * `diaDeHoje`, e vai para o banco como parâmetro. O banco não
+ * precisa saber onde fica São Paulo.
+ *
+ * O `vencimento` é gravado como data sem fuso, e o Prisma devolve
+ * em UTC — por isso a fronteira também é meia-noite UTC: os dois
+ * lados da comparação falam a mesma língua.
+ */
+export function inicioDoDiaBr(hoje = new Date()): Date {
+  return new Date(diaDeHoje(hoje) * 86400000);
+}
+
+/** A meia-noite daqui a `dias` dias. */
+export function inicioDoDiaBrMais(dias: number, hoje = new Date()): Date {
+  return new Date((diaDeHoje(hoje) + dias) * 86400000);
+}
+
 /** "vence em 5 dias", "venceu há 3 dias", "vence hoje". */
 export function descreverVencimento(vencimento: Date, hoje = new Date()): string {
   const dias = diasAte(vencimento, hoje);
