@@ -687,7 +687,30 @@ function AbaFornecedores() {
         />
       </div>
 
+      {/* A ROSCA VEM PRIMEIRO, COMO NAS OUTRAS TELAS.
+
+          Aqui ela estava em segundo, e esta era a única assim:
+          Consumo e o painel do Financeiro abrem com a rosca e
+          seguem com o ranking. Quem trocava de aba via os dois
+          blocos pularem de lado.
+
+          E a ordem tem razão de ser: a rosca mostra a REPARTIÇÃO —
+          quanto do bolo é de cada um —, e o ranking mostra o
+          DETALHE ordenado. Do geral para o detalhe é como se lê. */}
       <div className="painel-relatorio">
+        <Cartao className="col-meia">
+          <GraficoRosca
+            titulo="Concentração das compras"
+            centroValor={dinheiro(totalComprado)}
+            centroRotulo="comprados"
+            rotuloFatia="Fornecedor"
+            fatias={fatiasComResto(
+              lista.map((f) => ({ nome: f.nome, valor: f.valorComprado })),
+              totalComprado,
+            )}
+          />
+        </Cartao>
+
         <Cartao className="col-meia">
           {/* Só quem de fato vendeu.
 
@@ -715,19 +738,6 @@ function AbaFornecedores() {
                 aberto: 0,
                 total: f.valorComprado,
               }))}
-          />
-        </Cartao>
-
-        <Cartao className="col-meia">
-          <GraficoRosca
-            titulo="Concentração das compras"
-            centroValor={dinheiro(totalComprado)}
-            centroRotulo="comprados"
-            rotuloFatia="Fornecedor"
-            fatias={fatiasComResto(
-              lista.map((f) => ({ nome: f.nome, valor: f.valorComprado })),
-              totalComprado,
-            )}
           />
         </Cartao>
       </div>

@@ -1,4 +1,4 @@
-<!-- versao: 0.44.1 -->
+<!-- versao: 0.44.2 -->
 
 # 1. Antes de começar
 
@@ -3355,6 +3355,25 @@ Então ela passou a medir o que de fato dói: **vazio dentro da caixa**.
 >
 > A medição certa não chuta padding: ela **solta o cartão do esticamento, mede, e
 > devolve**. A diferença é exatamente o que a grade impôs.
+
+## Dois acertos dentro dos gráficos
+
+Com o vazio resolvido, sobraram duas coisas que a régua não mede — ela cobra transbordo e
+sobra, não desalinho nem ordem.
+
+**A legenda da rosca estava torta quando o nome quebrava.** A coluna do nome tem 128px;
+"Bandeirantes Elétrica" e "Cimento e Argamassas" não cabem e passam para duas linhas. Com
+o alinhamento no meio, o quadradinho de cor e o valor ficavam boiando entre as duas
+linhas, e a linha inteira destoava das vizinhas.
+
+Agora alinham pela **primeira linha**, como marcador de lista faz.
+
+**Os dois gráficos apareciam em ordem trocada.** Consumo e o painel do Financeiro abrem com
+a rosca e seguem com o ranking; Fornecedores fazia o contrário, e era o único. Quem
+trocava de aba via os dois blocos pularem de lado.
+
+A ordem tem razão de ser: a rosca mostra a **repartição** — quanto do bolo é de cada um —,
+e o ranking mostra o **detalhe ordenado**. Do geral para o detalhe é como se lê.
 
 ## Onde a régua cobra, e onde não cobra
 

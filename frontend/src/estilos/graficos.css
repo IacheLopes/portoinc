@@ -524,11 +524,32 @@
   cursor: pointer;
   display: grid;
   grid-template-columns: 11px 1fr auto auto;
-  align-items: center;
+  /* Alinhado pela PRIMEIRA LINHA, não pelo meio.
+
+     A coluna do nome tem 128px; "Bandeirantes Elétrica" e "Cimento
+     e Argamassas" não cabem e quebram em duas. Com o alinhamento
+     no meio, o quadradinho de cor e o valor ficavam boiando entre
+     as duas linhas — e a linha inteira destoava das vizinhas, onde
+     tudo senta na mesma base.
+
+     Marcador de lista alinha com a primeira linha do item. É assim
+     numa lista com marcador, e é assim aqui. */
+  align-items: start;
   gap: var(--esp-2);
   font-size: var(--txt-sm);
   text-align: left;
 }
+
+/* O quadrado tem 11px e a linha de texto tem ~18px: sem este
+   empurrão ele encosta no topo em vez de olhar para o meio da
+   primeira linha. */
+.rosca__item i { margin-top: 4px; }
+
+/* Os números acompanham a primeira linha do nome, e não o meio do
+   bloco — senão alinhar o quadrado e desalinhar o valor só troca
+   um torto por outro. */
+.rosca__item strong,
+.rosca__item small { line-height: 1.45; }
 
 .rosca__item:hover,
 .rosca__item:focus-visible {
