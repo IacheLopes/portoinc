@@ -1,4 +1,4 @@
-<!-- versao: 0.44.0 -->
+<!-- versao: 0.44.1 -->
 
 # 1. Antes de começar
 
@@ -3298,6 +3298,81 @@ dado, e não chute.
 
 ---
 
+# 42.6. Cartão esticado, com vazio dentro
+
+O dono abriu os Relatórios e achou duas coisas no mesmo dia:
+
+- clicar no **"?"** de um indicador fazia **todos os blocos da fileira crescerem**
+- os cartões de gráfico tinham **muito espaço em branco**, em mais de um lugar
+
+Eram o mesmo defeito, com duas caras.
+
+## A causa
+
+A grade do painel usava o padrão do navegador: **esticar todo item até a altura do mais
+alto da fileira.** Medido, aba por aba:
+
+| Onde | O que acontecia |
+|---|---|
+| Qualquer fileira de indicadores | abrir UM "?" levava os quatro de 154px para 248px — três caixas com **94px de nada** |
+| Consumo · "Para onde vai o dinheiro" | **180px** de vazio |
+| Fornecedores · "Concentração das compras" | **172px** de vazio |
+
+O estado do "?" sempre foi individual. Quem crescia era a fileira, e por isso parecia que
+o botão tinha aberto todos.
+
+A correção é uma linha: a grade deixou de esticar.
+
+> **Caixa com borda e vazio dentro parece quebrada. Caixas de alturas diferentes parecem
+> o que são:** conteúdos de tamanhos diferentes.
+
+## O terceiro, que apareceu ao olhar a foto
+
+O ranking "Quanto a empresa comprou de cada um" listava **Constrular R$ 0,00** e **Hidro
+Sul R$ 0,00** — barras vazias num gráfico sobre quanto se comprou.
+
+E a rosca ao lado já os omitia. **Os dois cartões falavam da mesma coisa e discordavam
+sobre quem estava na lista**: um mostrava seis nomes, o outro quatro.
+
+Tirados os zerados, os dois passaram a concordar — e as alturas ficaram quase iguais
+sozinhas, sem regra nenhuma forçando. Quem foi convidado e não vendeu continua na tabela
+abaixo, com a leitura explicando.
+
+## O que a régua aprendeu, e o que ela desaprendeu
+
+A régua cobrava **alturas iguais** na mesma fileira: mais de 2px de diferença era achado.
+Fazia sentido enquanto a grade esticava — ali, diferença era bug. Depois da correção ela
+acusaria para sempre.
+
+Então ela passou a medir o que de fato dói: **vazio dentro da caixa**.
+
+> **A primeira versão dessa medição estava errada, e isso quase passou.** Ela media a
+> distância entre o fim do conteúdo e o fim da caixa — e o **padding do cartão caía nessa
+> conta como se fosse vazio**. Resultado: 60 achados em 15 telas que estavam certas.
+>
+> Régua que acusa o sistema inteiro não é régua, é ruído; e confiar nela teria levado a
+> "consertar" quinze telas sadias.
+>
+> A medição certa não chuta padding: ela **solta o cartão do esticamento, mede, e
+> devolve**. A diferença é exatamente o que a grade impôs.
+
+## Onde a régua cobra, e onde não cobra
+
+Só nas grades que declararam **não** esticar — e a distinção é da casa:
+
+- **Nos painéis** de Relatórios e Financeiro, cada cartão é uma coisa diferente: um
+  gráfico, um número, uma rosca. Esticar só produz vazio. Qualquer sobra é defeito.
+- **Nas grades de catálogo** — famílias, fornecedores, cadastros — os cartões são do mesmo
+  tipo, lado a lado. Ali alinhar a base é o acordo, e o vão de quem tem menos texto é o
+  preço dele.
+
+Como a régua só cobra onde a grade declara `align-items: start`, apagar essa linha calaria
+as duas ao mesmo tempo. Por isso o **pente-fino** ganhou a regra `PAINEL_SEM_ALINHAMENTO`:
+ela cobra a intenção no texto do CSS, em 0,2 segundo. Uma mede o resultado, a outra cobra
+a decisão.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3437,6 +3512,7 @@ docker compose up -d --build
 | **14 — Contas da tela inicial** | Os cartões do Início passaram a contar no banco. O de aprovações parava em 500 e mostrava um número menor que o certo, sem avisar |
 | **15 — Peso dos relatórios** | Estoque parado deixou de carregar o extrato inteiro; Fornecedores deixou de trazer quem nunca foi convidado. Nenhum número mudou |
 | **16 — Data no desempenho** | O relatório de Fornecedores ganhou a data da última entrega e o período que a história cobre. Era o único dos seis sem noção de tempo |
+| **17 — Cartão sem vazio** | A grade dos painéis parou de esticar os cartões. Abrir um "?" crescia a fileira inteira, e os gráficos tinham até 180px de nada dentro |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.

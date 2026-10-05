@@ -689,17 +689,32 @@ function AbaFornecedores() {
 
       <div className="painel-relatorio">
         <Cartao className="col-meia">
+          {/* Só quem de fato vendeu.
+
+              A lista traz também quem foi convidado e nunca vendeu,
+              e eles entravam aqui como barras de R$ 0,00 — ruído num
+              gráfico chamado "quanto a empresa comprou de cada um".
+
+              Pior: a rosca ao lado já os omite. Os dois cartões
+              falam da mesma coisa e discordavam sobre quem está na
+              lista — um mostrava seis nomes, o outro quatro.
+
+              Quem foi convidado e não vendeu continua na tabela
+              abaixo, com a leitura explicando. */}
           <GraficoRanking
             titulo="Quanto a empresa comprou de cada um"
             vazio="Nenhuma compra registrada."
             unico
             rotuloValor="Comprado"
-            linhas={lista.slice(0, 6).map((f) => ({
-              nome: f.nome,
-              pago: f.valorComprado,
-              aberto: 0,
-              total: f.valorComprado,
-            }))}
+            linhas={lista
+              .filter((f) => f.valorComprado > 0)
+              .slice(0, 6)
+              .map((f) => ({
+                nome: f.nome,
+                pago: f.valorComprado,
+                aberto: 0,
+                total: f.valorComprado,
+              }))}
           />
         </Cartao>
 

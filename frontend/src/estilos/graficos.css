@@ -30,6 +30,24 @@
   gap: var(--esp-4);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: var(--esp-5);
+
+  /* Cada cartão com a SUA altura.
+
+     O padrão da grade é esticar todo mundo até a altura do mais
+     alto da fileira. Isso produzia dois defeitos que pareciam
+     diferentes e eram o mesmo:
+
+       · abrir o "?" de UM indicador levava os quatro da fileira de
+         154px para 248px — três caixas com 94px de vazio, de uma
+         explicação que ninguém pediu para ver. Quem olhava concluía
+         que o botão tinha aberto todos
+       · o cartão da rosca, ao lado de um ranking mais alto, ficava
+         com 172px de nada embaixo do desenho
+
+     Caixa com borda e vazio dentro parece quebrada; caixas de
+     alturas diferentes parecem o que são — conteúdos de tamanhos
+     diferentes. Medido em 05/10/2026, aba por aba. */
+  align-items: start;
 }
 
 @media (max-width: 1180px) {

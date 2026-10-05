@@ -787,28 +787,86 @@ const MEDIR = `(() => {
     achados.push({ tipo: 'TEXTO_ESTOURANDO', detalhe: estourando.length + ' elemento(s)', culpados: estourando });
   }
 
-  // 5. Cartões de alturas diferentes na mesma fileira de uma grade.
+  // 5. Cartão esticado, com vazio sobrando dentro.
+  //
+  //  ESTA REGRA MUDOU EM 05/10/2026, e vale saber por quê.
+  //
+  //  Antes ela cobrava ALTURAS IGUAIS na mesma fileira: mais de 2px
+  //  de diferença era achado. Fazia sentido enquanto a grade usava
+  //  align-items: stretch, que iguala todo mundo — ali, diferença
+  //  era sinal de bug.
+  //
+  //  Só que o stretch era ele próprio o defeito. O dono achou dois
+  //  casos no mesmo dia: abrir o ? de UM indicador esticava os
+  //  quatro da fileira, deixando três caixas com 94px de nada
+  //  dentro; e o cartão da rosca, ao lado de um ranking mais alto,
+  //  ficava com 172px de vazio embaixo do desenho. Palavras dele:
+  //  "quebra, ta feio".
+  //
+  //  Com align-items: start, altura diferente passou a ser normal
+  //  e desejada — é conteúdo de tamanho diferente. A régua velha
+  //  acusaria isso para sempre.
+  //
+  //  Então a régua passou a medir o que de fato é defeito: CAIXA
+  //  COM BORDA E VAZIO DENTRO. Caixas de alturas diferentes parecem
+  //  o que são; caixa com vazio parece quebrada.
+  //
+  //  A regra nova é mais específica, e cobre o caso antigo: com
+  //  stretch, o cartão mais baixo da fileira ficava justamente com
+  //  sobra interna — e era isso que doía, não o número na régua.
+  //  COMO SE MEDE O VAZIO, e a primeira tentativa que deu errado.
+  //
+  //  Tentei medir a distancia entre o fundo do ultimo filho e o
+  //  fundo da caixa. Acusou 60 vezes em 15 telas que estavam
+  //  certas: o PADDING do cartao caia nessa conta como se fosse
+  //  vazio. Regra que acusa a tela inteira nao e regra, e ruido.
+  //
+  //  O que interessa nao e "sobra espaco", e sim "o esticamento
+  //  acrescentou altura que o conteudo nao pediu". Isso se mede
+  //  direto: solta o item do esticamento, ve de que tamanho ele
+  //  fica, devolve. A diferenca e exatamente o que a grade impos —
+  //  sem chutar padding, margem nem nada.
+  //  ONDE ELA COBRA, e onde nao cobra.
+  //
+  //  So nas grades que declararam NAO esticar. A distincao e da
+  //  casa, e esta escrita no CSS dos dois lados:
+  //
+  //    · nos paineis de Relatorios e Financeiro, cada cartao e uma
+  //      coisa diferente — um grafico, um numero, uma rosca. Ali
+  //      esticar so produz caixa com vazio dentro, e a grade
+  //      declara align-items: start. Qualquer vazio e defeito.
+  //
+  //    · nas grades de catalogo — familias, fornecedores, cadastros
+  //      — os cartoes sao do MESMO tipo, lado a lado. Ali alinhar a
+  //      base e o acordo, e o vao de quem tem menos texto e o preco
+  //      dele. Ver o comentario do .indicador__rodape no global.css,
+  //      que conta a historia dessa escolha.
+  //
+  //  Quem garante que os paineis continuem declarando start e o
+  //  pente-fino, com uma regra estatica. Esta aqui mede o
+  //  resultado; aquela cobra a intencao.
+  const SOBRA_QUE_INCOMODA = 24;
+
   for (const grade of document.querySelectorAll('.grade, .painel-financeiro, .painel-relatorio')) {
-    const filhos = [...grade.children].filter((el) => el.getBoundingClientRect().height > 0);
-    const fileiras = new Map();
+    const alinhamento = getComputedStyle(grade).alignItems;
+    if (alinhamento !== 'start' && alinhamento !== 'flex-start') continue;
 
-    for (const el of filhos) {
-      const r = el.getBoundingClientRect();
-      const chave = Math.round(r.top / 8) * 8;
-      if (!fileiras.has(chave)) fileiras.set(chave, []);
-      fileiras.get(chave).push({ el, h: Math.round(r.height) });
-    }
+    for (const item of grade.children) {
+      const esticado = item.getBoundingClientRect().height;
+      if (esticado <= 0) continue;
 
-    for (const [, itens] of fileiras) {
-      if (itens.length < 2) continue;
-      const alturas = itens.map((i) => i.h);
-      const desvio = Math.max(...alturas) - Math.min(...alturas);
+      const antes = item.style.alignSelf;
+      item.style.alignSelf = 'start';
+      const natural = item.getBoundingClientRect().height;
+      item.style.alignSelf = antes;
 
-      if (desvio > 2) {
+      const sobra = Math.round(esticado - natural);
+
+      if (sobra > SOBRA_QUE_INCOMODA) {
         achados.push({
-          tipo: 'CARTOES_DESIGUAIS',
-          detalhe: desvio + 'px de diferenca em ' + (grade.className || 'grade'),
-          culpados: itens.map((i) => nomear(i.el) + ' h=' + i.h),
+          tipo: 'CARTAO_COM_VAZIO',
+          detalhe: sobra + 'px de nada dentro de ' + (grade.className || 'grade'),
+          culpados: [nomear(item) + ' esticado=' + Math.round(esticado) + ' natural=' + Math.round(natural)],
         });
       }
     }

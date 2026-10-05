@@ -523,6 +523,53 @@ const arquivosComEmoji = [];
 }
 
 // ------------------------------------------------------------
+//  14. Painel que volta a esticar os cartoes
+//
+//  As grades de Relatorios e Financeiro declaram
+//  `align-items: start` de proposito. Sem isso, o navegador estica
+//  todo cartao ate a altura do mais alto da fileira, e o resultado
+//  e caixa com borda e vazio dentro.
+//
+//  O dono achou dois casos no mesmo dia, em 05/10/2026: abrir o "?"
+//  de UM indicador esticava os quatro da fileira, deixando tres
+//  caixas com 94px de nada; e o cartao da rosca, ao lado de um
+//  ranking mais alto, ficava com 172px vazios embaixo do desenho.
+//  Palavras dele: "quebra, ta feio".
+//
+//  A regua mede o RESULTADO, e so cobra onde a grade declarou nao
+//  esticar — nas grades de catalogo alinhar e o acordo. Entao se
+//  alguem apagar esta linha, a regua para de cobrar junto, e as
+//  duas silenciam ao mesmo tempo. Esta regra existe para isso nao
+//  passar: ela cobra a INTENCAO, no texto do CSS.
+// ------------------------------------------------------------
+{
+  const arq = join(RAIZ, 'frontend/src/estilos/graficos.css');
+
+  if (existsSync(arq)) {
+    const css = readFileSync(arq, 'utf8');
+
+    // O bloco que declara as duas grades, ate a chave de fechar.
+    const bloco = css.match(/\.painel-financeiro,\s*\n\.painel-relatorio\s*\{[\s\S]*?\n\}/);
+
+    if (!bloco) {
+      achar(
+        'PAINEL_SEM_ALINHAMENTO',
+        arq,
+        1,
+        'nao achei o bloco das grades de painel — a regra abaixo nao esta cobrando nada',
+      );
+    } else if (!/align-items:\s*(start|flex-start)/.test(bloco[0])) {
+      achar(
+        'PAINEL_SEM_ALINHAMENTO',
+        arq,
+        linhaDe(css, bloco.index),
+        'a grade do painel voltou a esticar os cartoes — caixa com vazio dentro',
+      );
+    }
+  }
+}
+
+// ------------------------------------------------------------
 //  4 a 8. Os sinais de design generico, da skill frontend-design
 // ------------------------------------------------------------
 const usoDeRaio = {};
