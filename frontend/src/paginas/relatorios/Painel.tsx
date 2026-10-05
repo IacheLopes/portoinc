@@ -37,6 +37,7 @@ import {
 import type { FatiaDoGrafico } from '../../componentes/Graficos';
 import { dinheiro, quantidade as quantidadeOficial } from '../../servicos/cadastros';
 import { plural, porcento, dias } from '../../servicos/texto';
+import { dataBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
@@ -613,6 +614,7 @@ function AbaEconomia() {
 
 function AbaFornecedores() {
   const [lista, setLista] = useState<DesempenhoDoFornecedor[] | null>(null);
+  const [periodoDaHistoria, setPeriodoDaHistoria] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [baixando, setBaixando] = useState(false);
@@ -623,6 +625,7 @@ function AbaFornecedores() {
     try {
       const r = await buscarFornecedores();
       setLista(r.fornecedores);
+      setPeriodoDaHistoria(r.periodoDaHistoria);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar os fornecedores.');
     } finally {
@@ -666,9 +669,16 @@ function AbaFornecedores() {
       {erro && <p className="aviso aviso--erro" role="alert"><Icone nome="alerta" /> {erro}</p>}
 
       <div className="barra-acoes">
+        {/* O período de que este relatório fala.
+            Os outros cinco imprimem "de X a Y" porque têm faixa de
+            datas escolhida na tela. Este olha a vida inteira de
+            cada fornecedor — decisão da casa, para o histórico não
+            apagar quem foi ruim nem prender quem melhorou —, então
+            o período dele é o que a própria história cobre. */}
         <p className="barra-acoes__nota">
-          {lista.length} fornecedor(es) com histórico. A leitura só vira veredito
-          a partir de 3 entregas.
+          {plural(lista.length, 'fornecedor', 'fornecedores')} com histórico.
+          {periodoDaHistoria ? ' Entregas de ' + periodoDaHistoria + '.' : ''}
+          {' '}A leitura só vira veredito a partir de 3 entregas.
         </p>
         <BotaoExportar
           aoEscolher={(f) => void baixar(f)}
@@ -727,7 +737,24 @@ function AbaFornecedores() {
           <tbody>
             {lista.map((f) => (
               <tr key={f.nome}>
-                <th scope="row" className="celula-texto">{f.nome}</th>
+                {/* A data vai aqui, e não numa coluna nova.
+                    Ela não é mais um número do fornecedor: ela diz
+                    de QUANDO fala tudo o que está à direita nesta
+                    linha. Cem por cento de pontualidade com a
+                    última entrega em 2023 é outra conversa. */}
+                <th scope="row" className="celula-texto">
+                  {f.nome}
+                  {f.ultimaEntrega && (
+                    <span className="celula-extra">
+                      {/* "última em", e não "última entrega em": o
+                          rótulo longo não cabia na coluna e quebrava
+                          separando o "em" da data, numa linha só
+                          para ela. A coluna "Entregas" está ao lado;
+                          aqui o que falta dizer é quando. */}
+                      última em {dataBr(f.ultimaEntrega)}
+                    </span>
+                  )}
+                </th>
                 <td className="celula-valor">
                   {dinheiro(f.valorComprado)}
                   <span className="celula-extra">{plural(f.pedidos, 'pedido', 'pedidos')}</span>

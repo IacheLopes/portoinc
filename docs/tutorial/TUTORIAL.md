@@ -1,4 +1,4 @@
-<!-- versao: 0.43.1 -->
+<!-- versao: 0.44.0 -->
 
 # 1. Antes de começar
 
@@ -3257,6 +3257,47 @@ voltar nisso é quando houver base grande o bastante para medir o quanto dói.
 
 ---
 
+# 42.5. ## A memória do fornecedor: longa, com data
+
+O relatório de Fornecedores olha a **vida inteira** de cada um, desde o primeiro convite.
+Os outros três que têm faixa de datas olham os últimos 12 meses; este não.
+
+**É decisão da casa, e está certa.** Histórico que apaga não protege de fornecedor ruim
+nem deixa ver quem melhorou. O status acompanha: quem era bom e piorou vai piorando na
+conta; quem era ruim e melhorou vai subindo.
+
+O que faltava era **quando**. A tabela dizia "64% no prazo" e quem lia não tinha como
+saber se aquilo era de agosto ou de três anos atrás — era o único dos seis relatórios sem
+data nenhuma, nem na tela nem no PDF.
+
+Agora:
+
+- Sob o nome de cada fornecedor, **última em 27/09/2026**
+- No alto da tabela e no PDF, **o período que a história cobre**
+- E quando a última entrega passa de um ano, a frase diz: *"Cumpre prazo e entrega certo
+  — mas não entrega há 14 meses"*
+
+> **Doze meses, e não um número novo.** É o mesmo período que Economia, Tempos e Consumo
+> usam por padrão. Quem não entrega há mais de um ano saiu da faixa que o resto do sistema
+> chama de "como estamos indo".
+
+### O que foi considerado e descartado
+
+Cogitou-se uma **janela das últimas 10 entregas** para o veredito. Foi descartado depois
+de medir:
+
+- **A tela de convidar não mostra desempenho nenhum** — nome, CNPJ, famílias e nada mais,
+  com todos marcados por padrão. Nenhuma rota de cotação, pedido ou recebimento lê o
+  desempenho. O veredito não decide convite; ele informa quem lê o relatório.
+- **Na escala da empresa, "últimas 10" é a vida inteira.** No ritmo modelado — pouco mais
+  de uma compra por mês na empresa toda —, um fornecedor leva uns dois anos para chegar a
+  10 entregas. A janela não faria nada por dois anos.
+
+A janela volta à mesa quando algum fornecedor passar de ~15 entregas. Aí a conversa tem
+dado, e não chute.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3395,6 +3436,7 @@ docker compose up -d --build
 | **13 — Páginas nas listas** | As dez listas que crescem passaram a dizer o total de verdade e a ter barra de páginas. Antes cortavam em 200 e diziam que era tudo |
 | **14 — Contas da tela inicial** | Os cartões do Início passaram a contar no banco. O de aprovações parava em 500 e mostrava um número menor que o certo, sem avisar |
 | **15 — Peso dos relatórios** | Estoque parado deixou de carregar o extrato inteiro; Fornecedores deixou de trazer quem nunca foi convidado. Nenhum número mudou |
+| **16 — Data no desempenho** | O relatório de Fornecedores ganhou a data da última entrega e o período que a história cobre. Era o único dos seis sem noção de tempo |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.
@@ -3464,10 +3506,11 @@ docker compose exec web npm test    # as telas
 
 ## A seguir
 
-Uma decisão está esperando a Porto Inc., e não código:
+Uma pergunta ficou em aberto, e é de produto, não de código:
 
-- **O relatório de Fornecedores deve lembrar a vida inteira de cada um, ou só os últimos
-  12 meses?** Ver a seção 42.4. Enquanto não houver resposta, fica como está.
+- **O comprador precisa ver algo sobre o fornecedor na hora de convidar?** Hoje ele
+  escolhe sem nenhuma informação de desempenho, e a tela marca todos por padrão. O
+  relatório existe, mas fica a dois cliques de distância do momento da decisão.
 
 Fora essa, o módulo 1 está fechado e o esqueleto está pronto para receber o módulo 2.
 

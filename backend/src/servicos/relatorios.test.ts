@@ -11,7 +11,8 @@ import {
   medirTempos, tempoTotal, consumoPorFamilia, materiaisMaisComprados,
   acharEstoqueParado,
   type LinhaDeOrcamento, type CotacaoParaAnalise,
-  type FornecedorParaAnalise, type PassagemDaSolicitacao, type ItemComprado,
+  type FornecedorParaAnalise, type EntregaDoFornecedor,
+  type PassagemDaSolicitacao, type ItemComprado,
   type MaterialNaPrateleira,
 } from './relatorios.js';
 
@@ -165,6 +166,31 @@ describe('Economia nas cotações', () => {
 });
 
 describe('Desempenho do fornecedor', () => {
+  /**
+   * Um dia fixo, para os testes não mudarem de resultado conforme a
+   * hora em que rodam.
+   */
+  const HOJE = new Date('2026-10-05T12:00:00.000Z');
+
+  /** Dias antes de HOJE. */
+  function diasAtras(dias: number): Date {
+    return new Date(HOJE.getTime() - dias * 86400000);
+  }
+
+  /**
+   * Uma entrega.
+   *
+   * O `quando` é obrigatório na interface — sem ele o relatório
+   * volta a não ter noção de tempo —, mas a maioria destes testes
+   * não fala de data. Então o padrão é "hoje", e quem precisa de
+   * data diz qual.
+   */
+  function entrega(
+    e: Omit<EntregaDoFornecedor, 'quando'> & { quando?: Date },
+  ): EntregaDoFornecedor {
+    return { quando: HOJE, ...e };
+  }
+
   function fornecedor(extra: Partial<FornecedorParaAnalise> = {}): FornecedorParaAnalise {
     return {
       nome: 'Marquilip',
@@ -181,9 +207,9 @@ describe('Desempenho do fornecedor', () => {
     const [f] = analisarFornecedores([
       fornecedor({
         entregas: [
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 7, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 12, comRessalva: false, devolvido: false },
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 7, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 12, comRessalva: false, devolvido: false }),
         ],
       }),
     ]);
@@ -197,10 +223,10 @@ describe('Desempenho do fornecedor', () => {
     const [f] = analisarFornecedores([
       fornecedor({
         entregas: [
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: true, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: true },
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false },
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: true, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: true }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false }),
         ],
       }),
     ]);
@@ -214,8 +240,8 @@ describe('Desempenho do fornecedor', () => {
     const [f] = analisarFornecedores([
       fornecedor({
         entregas: [
-          { prazoPrometido: null, prazoReal: 30, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false },
+          entrega({ prazoPrometido: null, prazoReal: 30, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false }),
         ],
       }),
     ]);
@@ -223,13 +249,110 @@ describe('Desempenho do fornecedor', () => {
     assert.equal(f.pontualidade, 100, 'só a entrega com prazo combinado conta');
   });
 
+  // ----------------------------------------------------------
+  //  A noção de tempo
+  //
+  //  Este era o único dos seis relatórios sem data nenhuma: dizia
+  //  "64% no prazo" e quem lia não tinha como saber se aquilo era
+  //  de agosto ou de três anos atrás.
+  //
+  //  A decisão da casa foi MANTER a memória longa — histórico que
+  //  apaga não protege de fornecedor ruim nem deixa ver quem
+  //  melhorou. O que entrou foi o contexto: quando foi a última, e
+  //  um aviso na frase quando a opinião ficou velha.
+  // ----------------------------------------------------------
+  it('diz quando foi a primeira e a última entrega', () => {
+    const [f] = analisarFornecedores([
+      fornecedor({
+        entregas: [
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(400) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(10) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(200) }),
+        ],
+      }),
+    ], HOJE);
+
+    assert.deepEqual(f.ultimaEntrega, diasAtras(10), 'a última é a mais recente, não a última da lista');
+    assert.deepEqual(f.primeiraEntrega, diasAtras(400));
+  });
+
+  it('sem entrega nenhuma, as duas datas são nulas', () => {
+    const [f] = analisarFornecedores([fornecedor({ entregas: [] })], HOJE);
+
+    assert.equal(f.ultimaEntrega, null);
+    assert.equal(f.primeiraEntrega, null);
+  });
+
+  it('a frase avisa quando a opinião ficou velha', () => {
+    const entregasBoas = [
+      entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(500) }),
+      entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(520) }),
+      entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(540) }),
+    ];
+
+    const [sumido] = analisarFornecedores([fornecedor({ entregas: entregasBoas })], HOJE);
+
+    // O elogio continua — o histórico dele é bom mesmo. O que a
+    // frase acrescenta é que ele parou de aparecer.
+    assert.match(sumido.leitura, /Cumpre prazo e entrega certo/);
+    assert.match(sumido.leitura, /não entrega há/);
+  });
+
+  it('quem entregou mês passado não leva o aviso', () => {
+    const [ativo] = analisarFornecedores([
+      fornecedor({
+        entregas: [
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(30) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(60) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(90) }),
+        ],
+      }),
+    ], HOJE);
+
+    assert.equal(ativo.leitura, 'Cumpre prazo e entrega certo.');
+  });
+
+  it('onze meses ainda não é velho; treze é', () => {
+    // A fronteira é 12 meses — o mesmo período que os outros três
+    // relatórios usam por padrão, e não um número novo inventado
+    // para esta frase.
+    const comUltimaEm = (dias: number) => analisarFornecedores([
+      fornecedor({
+        entregas: [
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(dias) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(dias + 20) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(dias + 40) }),
+        ],
+      }),
+    ], HOJE)[0].leitura;
+
+    assert.doesNotMatch(comUltimaEm(330), /não entrega há/, '11 meses: ainda é relação viva');
+    assert.match(comUltimaEm(400), /não entrega há/, '13 meses: a opinião está velha');
+  });
+
+  it('acima de dois anos a frase fala em anos, não em meses', () => {
+    const [f] = analisarFornecedores([
+      fornecedor({
+        entregas: [
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(900) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(920) }),
+          entrega({ prazoPrometido: 7, prazoReal: 5, comRessalva: false, devolvido: false, quando: diasAtras(940) }),
+        ],
+      }),
+    ], HOJE);
+
+    // "não entrega há 30 meses" é uma conta que o leitor precisa
+    // fazer; "há mais de 2 anos" ele entende de imediato.
+    assert.match(f.leitura, /há mais de 2 anos/);
+  });
+
   it('a leitura aponta o problema mais grave primeiro', () => {
     const ruim = analisarFornecedores([
       fornecedor({
         entregas: [
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: true },
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: false },
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: true }),
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: true, devolvido: false }),
         ],
       }),
     ])[0];
@@ -239,9 +362,9 @@ describe('Desempenho do fornecedor', () => {
     const atrasado = analisarFornecedores([
       fornecedor({
         entregas: [
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false },
-          { prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false },
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false }),
+          entrega({ prazoPrometido: 7, prazoReal: 30, comRessalva: false, devolvido: false }),
         ],
       }),
     ])[0];
@@ -250,15 +373,15 @@ describe('Desempenho do fornecedor', () => {
   });
 
   it('elogia quem cumpre tudo', () => {
-    const boa = { prazoPrometido: 7, prazoReal: 6, comRessalva: false, devolvido: false };
+    const boa = entrega({ prazoPrometido: 7, prazoReal: 6, comRessalva: false, devolvido: false });
     const [f] = analisarFornecedores([fornecedor({ entregas: [boa, boa, boa] })]);
 
     assert.match(f.leitura, /Cumpre prazo e entrega certo/);
   });
 
   it('não dá veredito com uma ou duas entregas', () => {
-    const ruim = { prazoPrometido: 7, prazoReal: 40, comRessalva: true, devolvido: true };
-    const boa = { prazoPrometido: 7, prazoReal: 6, comRessalva: false, devolvido: false };
+    const ruim = entrega({ prazoPrometido: 7, prazoReal: 40, comRessalva: true, devolvido: true });
+    const boa = entrega({ prazoPrometido: 7, prazoReal: 6, comRessalva: false, devolvido: false });
 
     // Uma ressalva isolada não é "com frequência"...
     const uma = analisarFornecedores([fornecedor({ entregas: [ruim] })])[0];

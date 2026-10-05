@@ -208,6 +208,14 @@ export interface EntregaDoFornecedor {
   prazoReal: number | null;
   comRessalva: boolean;
   devolvido: boolean;
+  /**
+   * Quando o caminhão chegou.
+   *
+   * Sem isto, o relatório de fornecedores era o único dos seis sem
+   * nenhuma noção de tempo: dizia "64% no prazo" e quem lia não
+   * tinha como saber se aquilo era de agosto ou de três anos atrás.
+   */
+  quando: Date;
 }
 
 export interface FornecedorParaAnalise {
@@ -235,6 +243,17 @@ export interface DesempenhoDoFornecedor {
   devolucoes: number;
   /** Entregas sem ressalva e sem devolução. */
   qualidade: number;
+  /**
+   * Quando ele entregou pela última vez. `null` = nunca entregou.
+   *
+   * É o dado que faltava para a tabela ser lida direito. Um
+   * fornecedor com 64% de pontualidade e última entrega em março
+   * conta uma história; o mesmo 64% com a última entrega há dois
+   * anos conta outra, e a tabela mostrava as duas igual.
+   */
+  ultimaEntrega: Date | null;
+  /** Desde quando há história dele. `null` = nunca entregou. */
+  primeiraEntrega: Date | null;
   /** Uma frase curta resumindo o fornecedor. */
   leitura: string;
   /** Quanto das compras da empresa passou por ele, em %. */
@@ -259,8 +278,20 @@ export interface DesempenhoDoFornecedor {
  */
 const CONCENTRACAO_DE_RISCO = 40;
 
+/**
+ * Quantos meses inteiros entre duas datas.
+ *
+ * Arredonda para baixo: 45 dias é "1 mês", não "2". A frase do
+ * relatório prefere errar para menos — dizer que sumiu há mais
+ * tempo do que sumiu seria acusar sem base.
+ */
+function mesesEntre(de: Date, ate: Date): number {
+  return Math.max(0, Math.floor((ate.getTime() - de.getTime()) / (30 * 86400000)));
+}
+
 export function analisarFornecedores(
   fornecedores: FornecedorParaAnalise[],
+  hoje = new Date(),
 ): DesempenhoDoFornecedor[] {
   // Quanto a empresa comprou ao todo, para medir de quem ela
   // depende. A conta é feita ANTES do mapa porque cada fornecedor
@@ -287,6 +318,14 @@ export function analisarFornecedores(
       const taxaDeResposta = porcentagem(f.respostas, f.convites);
       const participacao = porcentagem(f.valorComprado, totalDaEmpresa);
 
+      const datas = f.entregas.map((e) => e.quando);
+      const ultimaEntrega = datas.length > 0
+        ? datas.reduce((a, b) => (b > a ? b : a))
+        : null;
+      const primeiraEntrega = datas.length > 0
+        ? datas.reduce((a, b) => (b < a ? b : a))
+        : null;
+
       return {
         nome: f.nome,
         convites: f.convites,
@@ -302,6 +341,8 @@ export function analisarFornecedores(
         devolucoes,
         qualidade,
         participacao,
+        ultimaEntrega,
+        primeiraEntrega,
         // Só acusa quem de fato comprou: um fornecedor com 100% de
         // zero não é dependência, é lista vazia.
         concentracao:
@@ -314,6 +355,9 @@ export function analisarFornecedores(
           taxaDeResposta,
           pontualidade,
           qualidade,
+          mesesSemEntregar: ultimaEntrega === null
+            ? null
+            : mesesEntre(ultimaEntrega, hoje),
         }),
       };
     })
@@ -341,6 +385,8 @@ function lerFornecedor(d: {
   taxaDeResposta: number;
   pontualidade: number;
   qualidade: number;
+  /** Há quantos meses não entrega. `null` = nunca entregou. */
+  mesesSemEntregar: number | null;
 }): string {
   if (d.entregas === 0 && d.convites === 0) return 'Ainda sem histórico.';
   if (d.entregas === 0) return 'Convidado, mas ainda não entregou nada.';
@@ -354,10 +400,41 @@ function lerFornecedor(d: {
   if (d.pontualidade < 60) return 'Atrasa com frequência. Combine prazo com folga.';
   if (d.taxaDeResposta < 50 && d.convites >= 3) return 'Responde pouco às cotações.';
 
-  if (d.pontualidade === 100 && d.qualidade === 100) return 'Cumpre prazo e entrega certo.';
-  if (d.pontualidade >= 80 && d.qualidade >= 80) return 'Bom histórico, sem problema relevante.';
+  const veredito =
+    d.pontualidade === 100 && d.qualidade === 100
+      ? 'Cumpre prazo e entrega certo'
+      : d.pontualidade >= 80 && d.qualidade >= 80
+        ? 'Bom histórico, sem problema relevante'
+        : 'Histórico misto: vale acompanhar';
 
-  return 'Histórico misto: vale acompanhar.';
+  return veredito + envelhecimento(d.mesesSemEntregar) + '.';
+}
+
+/**
+ * Há quanto tempo essa opinião parou no tempo.
+ *
+ * O relatório olha a vida inteira do fornecedor — foi decisão da
+ * casa, para o histórico não apagar fornecedor ruim nem prender
+ * fornecedor que melhorou. O preço disso é que a frase pode estar
+ * falando de uma relação que acabou: "cumpre prazo e entrega certo"
+ * sobre quem não entrega desde 2023.
+ *
+ * Então a frase diz. Não esconde número nenhum, não inventa janela:
+ * acrescenta o fato que faltava para quem lê julgar.
+ *
+ * DOZE MESES, e não um número novo: é o mesmo período que os outros
+ * três relatórios usam por padrão. Um fornecedor que não entrega há
+ * mais de um ano saiu da faixa que o resto do sistema chama de
+ * "como estamos indo".
+ */
+const MESES_PARA_ENVELHECER = 12;
+
+function envelhecimento(meses: number | null): string {
+  if (meses === null || meses < MESES_PARA_ENVELHECER) return '';
+
+  return meses >= 24
+    ? ' — mas não entrega há mais de ' + Math.floor(meses / 12) + ' anos'
+    : ' — mas não entrega há ' + meses + ' meses';
 }
 
 // ------------------------------------------------------------

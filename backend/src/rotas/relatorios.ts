@@ -680,6 +680,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
                 prazoReal: diasEntre(saida, conferido.recebimento.recebidoEm),
                 comRessalva: conferido.situacao === 'COM_RESSALVA',
                 devolvido: conferido.situacao === 'DEVOLVIDO',
+                quando: conferido.recebimento.recebidoEm,
               };
 
               if (!jaTem) {
@@ -722,6 +723,36 @@ export async function rotasRelatorios(app: FastifyInstance) {
 
     const desempenho = analisarFornecedores(entrada);
 
+    // Desde quando há história aqui.
+    //
+    // Este é o único dos seis relatórios sem faixa de datas: ele
+    // olha a vida inteira de cada fornecedor, por decisão da casa —
+    // histórico que apaga não protege de fornecedor ruim nem deixa
+    // ver quem melhorou.
+    //
+    // O preço disso é que a tabela não dizia QUANDO nada daquilo
+    // aconteceu. Os outros cinco imprimem "Período: de X a Y" no
+    // cabeçalho; este não imprimia porque não tem período. Agora
+    // imprime o período que a própria história cobre.
+    const todasAsEntregas = desempenho
+      .flatMap((f) => [f.primeiraEntrega, f.ultimaEntrega])
+      .filter((d): d is Date => d instanceof Date);
+
+    const comecoDaHistoria = todasAsEntregas.length > 0
+      ? todasAsEntregas.reduce((a, b) => (b < a ? b : a))
+      : null;
+    const fimDaHistoria = todasAsEntregas.length > 0
+      ? todasAsEntregas.reduce((a, b) => (b > a ? b : a))
+      : null;
+
+    // `null` quando não há entrega nenhuma, e não um texto de
+    // consolo: quem monta a frase é a tela, e ela precisa saber que
+    // não há período para emendar. Com texto, a frase saía "com
+    // entregas de sem entregas registradas".
+    const periodoDaHistoria = comecoDaHistoria && fimDaHistoria
+      ? periodo(isoBr(comecoDaHistoria), isoBr(fimDaHistoria))
+      : null;
+
     const formato = lerFormato(q);
     if (formato === 'invalido') return reply.status(400).send(RECUSA_DE_FORMATO);
 
@@ -735,6 +766,9 @@ export async function rotasRelatorios(app: FastifyInstance) {
         resumo: [
           { rotulo: 'Fornecedores com histórico', valor: String(desempenho.length) },
           { rotulo: 'Total comprado', valor: dinheiro(total) },
+          // Sem isto o PDF era lido em reunião sem ninguém saber de
+          // que época ele falava.
+          { rotulo: 'Entregas de', valor: periodoDaHistoria ?? 'nenhuma registrada' },
         ],
         tabelas: [{
           colunas: [
@@ -745,6 +779,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
             { titulo: 'Participação', campo: 'participacao', peso: 1.1, numero: true },
             { titulo: 'Respostas', campo: 'respostas', peso: 1.2, numero: true },
             { titulo: 'Entregas', campo: 'entregas', peso: 0.8, numero: true },
+            { titulo: 'Última', campo: 'ultima', peso: 1.1 },
             { titulo: 'Pontualidade', campo: 'pontualidade', peso: 1.3, numero: true },
             { titulo: 'Atraso médio', campo: 'atraso', peso: 1, numero: true },
             { titulo: 'Qualidade', campo: 'qualidade', peso: 0.9, numero: true },
@@ -762,6 +797,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
                 : '—',
             respostas: f.respostas + ' de ' + f.convites + ' (' + pct(f.taxaDeResposta) + ')',
             entregas: String(f.entregas),
+            ultima: f.ultimaEntrega ? dataBr(f.ultimaEntrega) : '—',
             pontualidade: f.entregas === 0
               ? '—'
               : pct(f.pontualidade) + ' (' + f.noPrazo + ' de ' + f.entregas + ')',
@@ -780,7 +816,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
       }, formato);
     }
 
-    return { fornecedores: desempenho };
+    return { fornecedores: desempenho, periodoDaHistoria };
   });
 
   // ==========================================================

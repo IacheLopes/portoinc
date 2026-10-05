@@ -149,6 +149,15 @@ export interface DesempenhoDoFornecedor {
   devolucoes: number;
   qualidade: number;
   leitura: string;
+  /**
+   * Quando ele entregou pela última vez. `null` = nunca entregou.
+   *
+   * Sem isto a tabela dizia "64% no prazo" e quem lia não tinha
+   * como saber se era de agosto ou de três anos atrás.
+   */
+  ultimaEntrega: string | null;
+  /** Desde quando há história dele. `null` = nunca entregou. */
+  primeiraEntrega: string | null;
   /** Quanto das compras da empresa passou por ele, em %. */
   participacao: number;
   /** Depender demais dele é risco? */
@@ -156,7 +165,11 @@ export interface DesempenhoDoFornecedor {
 }
 
 export function buscarFornecedores() {
-  return chamar<{ fornecedores: DesempenhoDoFornecedor[] }>('/api/relatorios/fornecedores');
+  return chamar<{
+    fornecedores: DesempenhoDoFornecedor[];
+    /** O período que a história cobre. `null` = nenhuma entrega. */
+    periodoDaHistoria: string | null;
+  }>('/api/relatorios/fornecedores');
 }
 
 export function exportarFornecedores(formato: FormatoDeArquivo) {
