@@ -1,4 +1,4 @@
-<!-- versao: 0.44.4 -->
+<!-- versao: 0.44.5 -->
 
 # 1. Antes de começar
 
@@ -3464,6 +3464,45 @@ centrado:
 | Consumo | 179px | **0px** |
 | Financeiro, rosca × medidor | 2px | **0px** |
 | Financeiro, 4 barras × 2 barras | 127px | **0px** |
+
+## O defeito que morava na largura que ninguém media
+
+Mesmo com tudo acima, o dono abriu os relatórios e disse: *"cara, ta muito errado isso"*.
+
+A tela dele é mais larga que 1440. Medido, com o cartão indo de 490px a 810px:
+
+| Largura | Rosca | Coluna do nome na legenda |
+|---|---|---|
+| 1280 | 195px | a legenda cai para baixo do desenho |
+| 1440 | 195px | **128px** — nomes longos quebram em duas linhas |
+| 1600 | 195px | 208px |
+| 1920 | 195px | **368px** — "Marquilip" a trezentos pixels do próprio valor |
+
+**A rosca tinha 195px fixos em qualquer tela.** Num cartão de 810px vira um anelzinho
+perdido, enquanto a legenda engole toda a sobra e afasta o nome do valor. O layout só
+ficava bom numa faixa estreita de largura — justamente a que eu media.
+
+Agora a rosca é uma fração da área, presa entre 160 e 280px: cresce com o cartão e encolhe
+quando aperta. E a legenda ganhou teto de largura — lista de pares nome → valor só se lê
+enquanto os dois estão perto.
+
+| Largura | Rosca antes | Rosca agora | Coluna do nome |
+|---|---|---|---|
+| 1440 | 195 | 160 | 163 *(era 128)* |
+| 1920 | 195 | **228** | **247** *(era 368)* |
+
+### A régua ganhou a largura que faltava
+
+Este é o conserto que vale mais que o CSS.
+
+A régua media **1440 e 420** — o computador de quem desenvolve e o celular. Monitor de
+1920 é o mais comum em escritório, e era exatamente onde o defeito morava: em 1440 o mesmo
+layout estava justo, em 420 estava certo.
+
+Ela passou a medir **1920, 1440 e 420**.
+
+> **Medir só até 1440 é medir a máquina de quem escreve o código, não a de quem usa o
+> sistema.**
 
 ## Uma régua que era teatro
 

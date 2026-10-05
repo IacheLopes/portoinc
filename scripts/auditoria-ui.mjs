@@ -1176,7 +1176,24 @@ const relatorio = [];
  */
 const LARGURAS = process.argv.includes('--so-uma')
   ? [LARGURA]
-  : [1440, 420];
+  : [1920, 1440, 420];
+
+/*
+ * POR QUE 1920 ENTROU, em 05/10/2026.
+ *
+ * A regua media 1440 e 420 — o computador e o celular. O dono abriu
+ * os relatorios numa tela maior e viu o que nenhuma medicao minha
+ * pegava: o desenho da rosca ficava com 195px fixos num cartao de
+ * 810px, um anelzinho perdido, e a coluna do nome da legenda
+ * esticava para 368px, deixando "Marquilip" a trezentos pixels do
+ * proprio valor.
+ *
+ * Em 1440 o mesmo layout estava justo, e em 420 estava certo. O
+ * defeito morava so na largura que ninguem olhava.
+ *
+ * Monitor de 1920 e o mais comum em escritorio. Medir so ate 1440 e
+ * medir o computador de quem desenvolve, nao o de quem usa.
+ */
 
 for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
   try {

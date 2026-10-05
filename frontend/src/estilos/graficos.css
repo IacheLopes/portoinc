@@ -503,8 +503,30 @@
      Nesta largura de cartao, 195 e perto do teto. Quem foi
      aproximado em vez dela foi o ritmo das linhas — ver
      .rosca__item logo abaixo. */
-  width: 195px;
-  height: 195px;
+  /* ACOMPANHA O CARTAO, com piso e teto.
+
+     195 fixos so funcionavam numa faixa estreita de largura.
+     Medido, com o cartao indo de 490px a 810px:
+
+       1280px  cartao 490  rosca 195  — a legenda nao cabe ao lado
+                                        e cai para BAIXO do desenho
+       1440px  cartao 570  rosca 195  — aperta: a coluna do nome
+                                        fica com 128px e os nomes
+                                        longos quebram em duas linhas
+       1920px  cartao 810  rosca 195  — o desenho vira um anelzinho
+                                        perdido, e a coluna do nome
+                                        chega a 368px: um rio de
+                                        espaco entre o nome e o valor
+
+     Agora ela e uma fracao da area, presa entre 160 e 280: cresce
+     com o cartao e encolhe quando o espaco aperta, sem nunca
+     empurrar a legenda para baixo.
+
+     `aspect-ratio` no lugar da altura fixa, para o desenho
+     continuar redondo em qualquer tamanho. */
+  width: clamp(160px, 30%, 280px);
+  aspect-ratio: 1;
+  height: auto;
   flex-shrink: 0;
   /* Começa às 12 horas, como todo mundo espera. */
   transform: rotate(-90deg);
@@ -554,8 +576,19 @@
 .rosca__lista {
   display: grid;
   gap: var(--esp-1);
+  /* TETO DE LARGURA.
+
+     Sem ele a legenda engolia toda a sobra do cartao: em 1920px a
+     coluna do nome chegava a 368px, e "Marquilip" ficava a trezentos
+     pixels do proprio valor. Lista de pares nome -> valor so se le
+     enquanto os dois estao perto. */
   flex: 1 1 200px;
+  max-width: 420px;
 }
+
+/* Com a rosca e a legenda limitadas, sobra espaco em cartao largo.
+   Ele fica nas pontas, e nao no meio da leitura. */
+.rosca-area { justify-content: center; }
 
 .rosca__item {
   appearance: none;
