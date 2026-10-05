@@ -954,6 +954,71 @@ describe('Estoque parado', () => {
     assert.equal(r.corpo.resumo.nuncaSairam, 1);
   });
 
+  // --------------------------------------------------------
+  //  A data que conta é a do PRIMEIRO MOVIMENTO, de qualquer tipo
+  //
+  //  O relatório guarda isso numa variável chamada
+  //  `primeiraEntrada` — e o nome mente. O código sempre pegou o
+  //  primeiro movimento, fosse ele entrada, saída, ajuste ou
+  //  transferência.
+  //
+  //  Isso quase virou defeito ao mover a conta para o banco: uma
+  //  consulta escrita pelo NOME da variável filtraria `tipo =
+  //  'ENTRADA'`, e o material que chegou a um almoxarifado por
+  //  TRANSFERÊNCIA ficaria sem data nenhuma. O relatório
+  //  continuaria aparecendo, bonitinho, com o tempo errado.
+  //
+  //  Este teste existe para quem um dia resolver "arrumar" aquela
+  //  consulta para combinar com o nome.
+  // --------------------------------------------------------
+  it('material que chegou por transferência conta desde que chegou', async () => {
+    const { banco } = await import('../src/plugins/banco.js');
+
+    await limparCompras();
+    await comprar({ quantidade: 10, preco: 90 });
+
+    const destino = await banco.almoxarifado.findFirst({
+      where: { id: { not: (await banco.saldoEstoque.findFirstOrThrow()).almoxarifadoId } },
+    });
+
+    if (!destino) {
+      // Só há um almoxarifado neste banco de teste: sem segundo
+      // destino não há transferência para medir. Melhor dizer isso
+      // em voz alta do que passar sem provar nada.
+      assert.fail('o teste precisa de dois almoxarifados');
+    }
+
+    const saldo = await banco.saldoEstoque.findFirstOrThrow({ where: { quantidade: { gt: 0 } } });
+
+    const t = await chamar('/api/estoque/transferir', {
+      metodo: 'POST',
+      token: almoxarife,
+      corpo: {
+        materialId: saldo.materialId,
+        origemId: saldo.almoxarifadoId,
+        destinoId: destino.id,
+        quantidade: 4,
+        observacao: 'Transferência do teste do estoque parado.',
+      },
+    });
+    assert.equal(t.status, 200, 'nao transferiu: ' + JSON.stringify(t.corpo));
+
+    await envelhecer(150);
+
+    const r = await chamar('/api/relatorios/estoque-parado', { token: admin });
+
+    const noDestino = r.corpo.linhas.find(
+      (l: { almoxarifado: string }) => l.almoxarifado === destino.nome,
+    );
+
+    assert.ok(noDestino, 'o que chegou por transferência não apareceu no relatório');
+    assert.equal(
+      noDestino.diasParado,
+      150,
+      'sem a data do primeiro movimento, o tempo parado sai errado',
+    );
+  });
+
   it('sai em PDF e em Word', async () => {
     const pdf = await chamar('/api/relatorios/estoque-parado?formato=pdf', { token: admin });
     const docx = await chamar('/api/relatorios/estoque-parado?formato=docx', { token: admin });

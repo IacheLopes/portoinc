@@ -591,6 +591,19 @@ export async function rotasRelatorios(app: FastifyInstance) {
     const q = req.query as Filtro;
 
     const fornecedores = await banco.fornecedor.findMany({
+      // Fornecedor nunca convidado e sem pedido nenhum não entra na
+      // tabela — e agora nem sai do banco. Antes vinham todos, com
+      // a árvore inteira pendurada (convites, pedidos, itens,
+      // recebimentos), para serem descartados na linha de baixo.
+      //
+      // Num cadastro com centenas de fornecedores, a maioria nunca
+      // foi convidada para nada.
+      where: {
+        OR: [
+          { convites: { some: {} } },
+          { pedidos: { some: PEDIDO_VALE } },
+        ],
+      },
       orderBy: [{ razaoSocial: 'asc' }],
       select: {
         razaoSocial: true, nomeFantasia: true,
@@ -623,7 +636,11 @@ export async function rotasRelatorios(app: FastifyInstance) {
     });
 
     const entrada: FornecedorParaAnalise[] = fornecedores
-      // Fornecedor nunca convidado só faria barulho na tabela.
+      // A mesma recusa de antes, agora como rede de segurança: a
+      // consulta já descarta quem não tem convite nem pedido, mas
+      // `PEDIDO_VALE` lá em cima filtra os pedidos que contam, e um
+      // fornecedor pode entrar pela consulta e chegar aqui com as
+      // duas listas vazias.
       .filter((f) => f.convites.length > 0 || f.pedidos.length > 0)
       .map((f) => {
         let valorComprado = 0;
@@ -1032,34 +1049,63 @@ export async function rotasRelatorios(app: FastifyInstance) {
       },
     });
 
-    // Uma consulta só para todos os movimentos que interessam, em vez
-    // de uma por material: com o estoque cheio isso seria uma
-    // consulta por linha da tela.
-    const movimentos = await banco.movimentoEstoque.findMany({
-      where: {
-        almoxarifadoId: { in: [...new Set(saldos.map((s) => s.almoxarifado.id))] },
-        materialId: { in: [...new Set(saldos.map((s) => s.material.id))] },
-      },
-      orderBy: { criadoEm: 'asc' },
-      select: { almoxarifadoId: true, materialId: true, tipo: true, criadoEm: true },
-    });
+    // Deste relatório o extrato só precisa de DUAS DATAS por
+    // material em cada almoxarifado: quando saiu pela última vez e
+    // qual foi o primeiro movimento dele ali.
+    //
+    // Antes isso vinha de carregar o extrato INTEIRO e percorrer. O
+    // extrato é a tabela que mais cresce no sistema — toda retirada
+    // de saco de cimento é uma linha, e nenhuma é apagada. Em três
+    // anos de uso são dezenas de milhares de linhas trazidas para
+    // achar duas datas por item.
+    //
+    // Agora são duas consultas agrupadas, e o banco devolve uma
+    // linha por par (almoxarifado, material).
+    //
+    // ATENÇÃO AO SEGUNDO AGRUPAMENTO: ele NÃO filtra por tipo.
+    //
+    // A variável se chamava `primeiraEntrada`, mas o laço que ela
+    // substitui guardava o primeiro movimento de QUALQUER tipo —
+    // podia ser uma saída, um ajuste, uma transferência. Escrever a
+    // consulta pelo nome da variável mudaria o relatório em
+    // silêncio: o número continuaria aparecendo, e errado. Fica o
+    // que o código fazia; o nome é que estava mentindo.
+    const pares = {
+      almoxarifadoId: { in: [...new Set(saldos.map((s) => s.almoxarifado.id))] },
+      materialId: { in: [...new Set(saldos.map((s) => s.material.id))] },
+    };
+
+    const [saidas, primeiros] = await Promise.all([
+      banco.movimentoEstoque.groupBy({
+        by: ['almoxarifadoId', 'materialId'],
+        where: {
+          ...pares,
+          // Transferência é o material andando dentro da empresa, e
+          // conta: saiu deste almoxarifado, está parado no outro.
+          tipo: { in: ['SAIDA', 'TRANSFERENCIA_SAIDA'] },
+        },
+        _max: { criadoEm: true },
+      }),
+      banco.movimentoEstoque.groupBy({
+        by: ['almoxarifadoId', 'materialId'],
+        where: pares,
+        _min: { criadoEm: true },
+      }),
+    ]);
 
     const chave = (almoxarifado: string, material: string) => almoxarifado + '|' + material;
 
-    const ultimaSaida = new Map<string, Date>();
-    const primeiraEntrada = new Map<string, Date>();
+    const ultimaSaida = new Map<string, Date>(
+      saidas
+        .filter((g) => g._max.criadoEm !== null)
+        .map((g) => [chave(g.almoxarifadoId, g.materialId), g._max.criadoEm as Date]),
+    );
 
-    for (const m of movimentos) {
-      const k = chave(m.almoxarifadoId, m.materialId);
-
-      // Transferência é o material andando dentro da empresa, e
-      // conta: saiu deste almoxarifado, está parado no outro.
-      if (m.tipo === 'SAIDA' || m.tipo === 'TRANSFERENCIA_SAIDA') {
-        ultimaSaida.set(k, m.criadoEm);
-      }
-
-      if (!primeiraEntrada.has(k)) primeiraEntrada.set(k, m.criadoEm);
-    }
+    const primeiraEntrada = new Map<string, Date>(
+      primeiros
+        .filter((g) => g._min.criadoEm !== null)
+        .map((g) => [chave(g.almoxarifadoId, g.materialId), g._min.criadoEm as Date]),
+    );
 
     const prateleira: MaterialNaPrateleira[] = saldos.map((s) => {
       const k = chave(s.almoxarifado.id, s.material.id);

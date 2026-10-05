@@ -1,4 +1,4 @@
-<!-- versao: 0.43.0 -->
+<!-- versao: 0.43.1 -->
 
 # 1. Antes de começar
 
@@ -3192,6 +3192,71 @@ pior do que o de hoje: silencioso e permanente.
 
 ---
 
+# 42.4. Os relatórios: o que foi mexido, e o que não foi
+
+Os seis relatórios buscam linhas e fazem a conta aqui dentro. **Nenhum deles mente** — o
+número sai certo. O que havia era o tamanho do que eles carregam, que cresce junto com a
+empresa.
+
+Por isso esta etapa foi cirúrgica, e não uma reescrita.
+
+## Como estavam
+
+| Relatório | O que buscava | Risco |
+|---|---|---|
+| Fornecedores | Todo fornecedor × convites × pedidos × itens × recebimentos, **sem filtro** | O maior |
+| Estoque parado | Todos os saldos, e **o extrato inteiro** | Segundo |
+| Orçamento | Quatro consultas, todas presas a **uma obra** | Cresce com a obra |
+| Economia, Tempos, Consumo | Presos a uma **faixa de datas**, 12 meses por padrão | Já contidos |
+
+## O que foi feito
+
+**Estoque parado.** Ele carregava o extrato inteiro para achar duas datas por material em
+cada almoxarifado: a última saída e o primeiro movimento. Viraram duas consultas
+agrupadas — o banco devolve uma linha por par, em vez de dezenas de milhares.
+
+O extrato é a tabela que mais cresce no sistema: toda retirada de saco de cimento é uma
+linha, e nenhuma é apagada.
+
+> **A armadilha que quase passou.** A variável se chama `primeiraEntrada`, mas o código
+> sempre pegou o primeiro movimento de **qualquer tipo** — podia ser uma saída, um ajuste,
+> uma transferência. Uma consulta escrita pelo nome da variável filtraria `tipo =
+> 'ENTRADA'`, e o material que chegou a um almoxarifado por **transferência** sumiria do
+> relatório — não erraria a data: sumiria.
+>
+> Ficou o que o código fazia. O nome é que estava mentindo, e há teste guardando isso para
+> quem um dia resolver "arrumar" a consulta para combinar com ele.
+
+**Fornecedores, metade.** Ele trazia todos e descartava, na linha seguinte, quem nunca foi
+convidado nem teve pedido. O descarte desceu para o banco. Num cadastro com centenas de
+fornecedores, a maioria nunca foi convidada para nada.
+
+## O que NÃO foi feito, e por quê
+
+**O relatório de Fornecedores continua ignorando a faixa de datas.** Ele mede a vida
+inteira de cada fornecedor, desde o primeiro convite. É o que o torna o mais pesado — e
+consertar isso **muda o que o relatório diz**:
+
+> A Marquilip atendeu mal em 2023 (8 atrasos em 10 entregas), trocou de dono e melhorou
+> (12 entregas sem atraso em 2025).
+>
+> Hoje: 20 entregas, 40% de atraso. "Fornecedor problemático."
+> Com faixa de 12 meses: 12 entregas, 0% de atraso. "Cumpre prazo."
+
+Memória longa protege contra fornecedor ruim; memória curta deixa fornecedor melhorar.
+**Quem decide é a Porto Inc.**, e enquanto não decidir fica como está.
+
+**As análises não foram reescritas em SQL.** Economia, tempos e desempenho são funções
+puras em `servicos/relatorios.ts`, com teste — e com histórico: foi ali que apareceu o
+"3 entregas" que eram um caminhão só, achado pelo dono lendo o PDF, justamente no número
+a partir do qual o sistema se permite opinar.
+
+Trocar código testado por código novo, para ganhar velocidade num sistema que ainda não
+está lento, nos relatórios que decidem dinheiro, é risco maior que o ganho. A hora de
+voltar nisso é quando houver base grande o bastante para medir o quanto dói.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3329,6 +3394,7 @@ docker compose up -d --build
 | **12 — Locação** | Contrato de locação, custo por diária/semana/mês, alerta de equipamento parado e devolução |
 | **13 — Páginas nas listas** | As dez listas que crescem passaram a dizer o total de verdade e a ter barra de páginas. Antes cortavam em 200 e diziam que era tudo |
 | **14 — Contas da tela inicial** | Os cartões do Início passaram a contar no banco. O de aprovações parava em 500 e mostrava um número menor que o certo, sem avisar |
+| **15 — Peso dos relatórios** | Estoque parado deixou de carregar o extrato inteiro; Fornecedores deixou de trazer quem nunca foi convidado. Nenhum número mudou |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.
@@ -3398,10 +3464,10 @@ docker compose exec web npm test    # as telas
 
 ## A seguir
 
-Falta uma ponta, a maior delas:
+Uma decisão está esperando a Porto Inc., e não código:
 
-- **Os relatórios** têm onze consultas sem limite nenhum. Hoje funcionam porque a base é
-  pequena; a saída é agregar no banco em vez de trazer tudo e somar aqui
+- **O relatório de Fornecedores deve lembrar a vida inteira de cada um, ou só os últimos
+  12 meses?** Ver a seção 42.4. Enquanto não houver resposta, fica como está.
 
 Fora essa, o módulo 1 está fechado e o esqueleto está pronto para receber o módulo 2.
 
