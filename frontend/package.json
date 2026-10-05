@@ -1,6 +1,6 @@
 {
   "name": "portoink-web",
-  "version": "0.44.2",
+  "version": "0.44.3",
   "private": true,
   "type": "module",
   "description": "Interface do sistema de compras e almoxarifado da Porto Inc.",

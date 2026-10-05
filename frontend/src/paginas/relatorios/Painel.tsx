@@ -496,10 +496,12 @@ function AbaEconomia() {
     );
   }
 
+  // Sem corte aqui: quem decide quantas barras cabem e o proprio
+  // GraficoRanking, para as cinco telas mostrarem a mesma
+  // quantidade. Ele tambem diz quantas ficaram de fora.
   const melhores = [...cotacoes]
     .filter((c) => c.economia > 0)
-    .sort((a, b) => b.economia - a.economia)
-    .slice(0, 6);
+    .sort((a, b) => b.economia - a.economia);
 
   return (
     <>
@@ -731,7 +733,6 @@ function AbaFornecedores() {
             rotuloValor="Comprado"
             linhas={lista
               .filter((f) => f.valorComprado > 0)
-              .slice(0, 6)
               .map((f) => ({
                 nome: f.nome,
                 pago: f.valorComprado,
@@ -1114,7 +1115,7 @@ function AbaConsumo() {
                 vazio="Nenhum item comprado no período."
                 unico
                 rotuloValor="Comprado"
-                linhas={materiais.slice(0, 6).map((m) => ({
+                linhas={materiais.map((m) => ({
                   nome: m.descricao,
                   pago: m.valor,
                   aberto: 0,

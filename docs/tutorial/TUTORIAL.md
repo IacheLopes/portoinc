@@ -1,4 +1,4 @@
-<!-- versao: 0.44.2 -->
+<!-- versao: 0.44.3 -->
 
 # 1. Antes de começar
 
@@ -3392,6 +3392,64 @@ a decisão.
 
 ---
 
+# 42.7. Os blocos de gráfico, dois a dois
+
+Os gráficos dos Relatórios e do Financeiro ficam **lado a lado, dois por fileira**. O dono
+reclamou de como eles se comparavam: *"ou os blocos estão pequenos em relação aos outros,
+ou grandes e com espaço em branco que torna feio"*.
+
+## Por que um era maior que o outro
+
+A altura de cada bloco é escrava de **quantas linhas ele tem** — e ninguém escolhe isso: é
+quantos itens o banco devolveu.
+
+Medido: cada barra de ranking ocupava **56px**, cada linha de legenda da rosca **44px**, e
+o desenho da rosca é um piso de **195px**.
+
+| Par | Antes |
+|---|---|
+| Consumo | 3 famílias (278px) × 6 itens (457px) — **179px de degrau** |
+| Fornecedores | 4 fornecedores (286px) × 4 (330px) — 44px |
+| Financeiro | 4 credores (363px) × 2 obras (236px) — 127px |
+
+## As duas alavancas
+
+**Teto de 4 barras no ranking**, e ele mora dentro do componente, não em cada tela — padrão
+escrito em cinco lugares dura até alguém escrever o sexto. O gráfico diz o que não
+mostrou: *"Os 4 maiores de 6"*.
+
+**O mesmo ritmo de linha nos dois.** A legenda da rosca passou de 44px para 56px por
+linha, igual à barra do ranking. Quatro linhas de um lado passaram a dar a mesma altura
+que quatro do outro.
+
+| Par | Antes | Agora |
+|---|---|---|
+| Fornecedores | 44px | **8px** |
+| Consumo | 179px | **78px** |
+| Financeiro, rosca × medidor | 2px | 2px |
+
+Consumo ainda tem 78px porque a rosca só tem **três** famílias: com poucas fatias quem
+manda na altura é o desenho de 195px, e nenhum ajuste de ritmo alcança as quatro barras do
+lado.
+
+## O que foi tentado e não funcionou
+
+**Aumentar a rosca de 195px para 240px.** A ideia era óbvia: se o desenho é o piso, sobe o
+piso. Deu errado na primeira foto — com 240 a legenda deixa de caber ao lado e o
+`flex-wrap` a joga **para baixo** do desenho. O cartão foi de 286px para **535px**, e o
+degrau de 44 para 205.
+
+**Deixar a rosca ceder largura em vez de empurrar** (`flex-shrink`). Também não: quem
+decide a quebra é o conteúdo **mínimo** da legenda, não a vontade da rosca.
+
+Nesta largura de cartão, 195px é perto do teto. Ficou escrito no CSS, para ninguém tentar
+de novo.
+
+**Esticar os cartões até a mesma altura** é o que havia antes, e produz exatamente a caixa
+com vazio dentro da seção 42.6.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3532,6 +3590,7 @@ docker compose up -d --build
 | **15 — Peso dos relatórios** | Estoque parado deixou de carregar o extrato inteiro; Fornecedores deixou de trazer quem nunca foi convidado. Nenhum número mudou |
 | **16 — Data no desempenho** | O relatório de Fornecedores ganhou a data da última entrega e o período que a história cobre. Era o único dos seis sem noção de tempo |
 | **17 — Cartão sem vazio** | A grade dos painéis parou de esticar os cartões. Abrir um "?" crescia a fileira inteira, e os gráficos tinham até 180px de nada dentro |
+| **18 — Blocos que pareiam** | Os gráficos lado a lado passaram a nascer do mesmo tamanho: teto de 4 barras e o mesmo ritmo de linha nos dois |
 
 > **O copiar e colar acabou.** O convite da cotação e o PDF do pedido saem de dentro do
 > sistema, e tudo o que sai fica registrado — inclusive o que foi bloqueado.

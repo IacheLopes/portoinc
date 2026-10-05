@@ -644,6 +644,38 @@ export interface LinhaDoRanking {
   total: number;
 }
 
+/**
+ * Quantas barras o gráfico mostra.
+ *
+ * O NÚMERO EXISTE PARA OS BLOCOS PAREAREM.
+ *
+ * Os cartões de meia fileira ficam dois a dois, e a altura de cada
+ * um é escrava de quantas linhas ele tem — que ninguém escolhe, é
+ * quantos itens o banco devolveu. Medido em 05/10/2026: cada barra
+ * ocupa ~64px, cada linha da legenda da rosca ~44px.
+ *
+ * Dava isto, com a rosca de um lado e o ranking do outro:
+ *
+ *   Consumo          3 famílias (278px)  x  6 itens (457px)
+ *   Financeiro       4 credores (363px)  x  2 obras (236px)
+ *
+ * Cento e setenta e nove pixels de degrau entre dois blocos que
+ * deviam ser um par. Palavras do dono: "ou os blocos estão
+ * pequenos em relação aos outros, ou grandes e com espaço em
+ * branco que torna feio".
+ *
+ * Quatro foi escolhido medindo: a rosca mostra no máximo 4 fatias
+ * mais "Outros", e 4 barras dão 330px contra os 323px dela. Os
+ * dois blocos passam a nascer do mesmo tamanho.
+ *
+ * ESTICAR OS CARTÕES NÃO SERVE: era o que havia antes, e produzia
+ * justamente a caixa com vazio dentro. Ver a seção 42.6 do manual.
+ *
+ * O teto mora AQUI, e não em cada tela, porque padronizar escrito
+ * em cinco lugares dura até alguém escrever o sexto.
+ */
+const BARRAS_NO_GRAFICO = 4;
+
 export function GraficoRanking({
   linhas,
   titulo,
@@ -664,7 +696,14 @@ export function GraficoRanking({
   rotuloValor?: string;
 }) {
   const { area, dica, ligar } = useDica();
+
+  // A régua da barra é o MAIOR DA LISTA INTEIRA, e não o maior dos
+  // quatro que aparecem: cortar e depois reescalar faria a quarta
+  // barra crescer só por ter sumido a primeira.
   const maior = Math.max(...linhas.map((l) => l.total), 1);
+
+  const mostradas = linhas.slice(0, BARRAS_NO_GRAFICO);
+  const escondidas = linhas.length - mostradas.length;
 
   if (linhas.length === 0) {
     return (
@@ -688,7 +727,7 @@ export function GraficoRanking({
 
       <div className="ranking" ref={area}>
         <ol className="ranking__linhas">
-          {linhas.map((l, i) => (
+          {mostradas.map((l, i) => (
             <li key={l.nome}>
               <button
                 type="button"
@@ -733,6 +772,23 @@ export function GraficoRanking({
             </li>
           ))}
         </ol>
+
+        {/* O que ficou de fora.
+
+            Sem esta linha o gráfico cortaria em silêncio — e
+            silêncio sobre o que não está na tela é o defeito que
+            este sistema passou um mês caçando.
+
+            "Os 4 maiores de 6", e não "e mais 2 na lista completa":
+            a segunda promete uma lista que nem toda tela tem. Nos
+            Relatórios a tabela vem logo abaixo; no Financeiro, não.
+            Esta frase é verdadeira nas duas, e usa a fórmula que as
+            listas paginadas já usam — "mostrando x de y". */}
+        {escondidas > 0 && (
+          <p className="ranking__resto">
+            Os {mostradas.length} maiores de {linhas.length}
+          </p>
+        )}
 
         <CamadaDaDica dica={dica} />
       </div>

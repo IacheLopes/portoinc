@@ -454,6 +454,21 @@
 }
 
 .rosca {
+  /* 195, E NAO MAIS.
+
+     Tentei subir para 240 para a rosca parear com o ranking ao
+     lado. Nao cabe: com 240 a legenda deixa de caber na mesma
+     linha e o `flex-wrap` a joga PARA BAIXO do desenho — o cartao
+     foi de 286px para 535px, e o degrau de 44 para 205. A foto
+     mostrou na hora.
+
+     Tentei depois deixa-la ceder largura em vez de empurrar
+     (`flex-shrink`), e tambem nao resolve: quem decide a quebra e
+     o conteudo MINIMO da legenda, nao a vontade da rosca.
+
+     Nesta largura de cartao, 195 e perto do teto. Quem foi
+     aproximado em vez dela foi o ritmo das linhas — ver
+     .rosca__item logo abaixo. */
   width: 195px;
   height: 195px;
   flex-shrink: 0;
@@ -516,7 +531,15 @@
   /* Cada linha da legenda é um botão: mostra os números da fatia
      ao apontar ou tocar. Como é alvo de dedo, vale a mesma régua
      dos 44px. */
-  min-height: 44px;
+  /* 56px, o mesmo da linha do ranking ao lado.
+
+     Os dois cartoes ficam lado a lado e listam a mesma coisa; com
+     44 contra 56, a legenda era mais apertada e o bloco dela
+     nascia mais baixo. Igualando o ritmo, quatro linhas de legenda
+     dao a mesma altura que quatro barras — medido, 327 contra 330.
+
+     Continua acima dos 44px que a regra do dedo pede. */
+  min-height: 56px;
   padding: var(--esp-2);
   border-radius: var(--raio-sm);
   font: inherit;
@@ -562,6 +585,14 @@
   color: var(--texto-secundario);
   min-width: 2.6rem;
   text-align: right;
+}
+
+/* O que o grafico nao mostrou. Em voz baixa: e nota de rodape, nao
+   alerta — a lista inteira esta na tabela abaixo. */
+.ranking__resto {
+  margin: var(--esp-2) 0 0;
+  font-size: var(--txt-xs);
+  color: var(--texto-secundario);
 }
 
 /* ------------------------------------------------------------
