@@ -1,4 +1,4 @@
-<!-- versao: 0.44.5 -->
+<!-- versao: 0.45.0 -->
 
 # 1. Antes de começar
 
@@ -3537,6 +3537,54 @@ de novo.
 
 **Esticar os cartões até a mesma altura** é o que havia antes, e produz exatamente a caixa
 com vazio dentro da seção 42.6.
+
+---
+
+# 42.8. A tela de diagnóstico saiu da vista
+
+"Status do sistema" mostra a memória da API, o estado do banco e **quais integrações ainda
+são simuladas**. Para quem desenvolve é a primeira tela a abrir quando algo cheira mal.
+Para quem usa o sistema, ela só denuncia o que ainda é maquete.
+
+Pedido do dono, em 08/10/2026: *"deixe apenas na conta DEV, as outras contas não podem ver
+de maneira nenhuma"*.
+
+## Por que não bastava esconder o menu
+
+Três tentativas óbvias, e por que cada uma falha:
+
+| Tentativa | Problema |
+|---|---|
+| Tirar o item do menu | o endereço continua funcionando: `/admin/status` |
+| Tirar a permissão do ADMINISTRADOR | **a conta DEV também é administradora** — perderia junto |
+| Deixar como está e pedir para não clicar | não é trava, é combinado |
+
+## O que foi feito
+
+A permissão `sistema.status` **mudou de casa**: saiu do ADMINISTRADOR e foi para uma função
+nova, **DESENVOLVEDOR**, que a migração `0021` dá só à conta de desenvolvimento.
+
+Essa função **não aparece na tela de Usuários**. Se aparecesse, o administrador se daria a
+função e veria tudo de novo.
+
+E não aparecer também não bastava: a atribuição é por **id**, não por nome. Quem
+descobrisse o id se daria a função pela API. Então criar e editar usuário **recusam** essa
+função explicitamente, com 403.
+
+## O que isso garante
+
+| | Administrador | Conta DEV |
+|---|---|---|
+| Vê o item no menu | não | sim |
+| Abre `/api/status` direto | **403** | 200 |
+| Enxerga a função na lista | não | — |
+| Consegue se dar a função | **403** | — |
+
+Quatro provas guardam isso em `testes/acesso.test.ts`.
+
+> **Um teste antigo quebrou, e estava certo quebrar.** Ele usava `/api/status` para provar
+> que "quem entrou passa" — e o administrador deixou de passar ali. A intenção dele era o
+> crachá, não a permissão; passou a usar outra rota, e ganhou um irmão que prova o 403.
 
 ---
 

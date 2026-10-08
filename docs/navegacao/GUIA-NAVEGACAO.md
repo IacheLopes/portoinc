@@ -1,4 +1,4 @@
-<!-- versao: 0.44.5 -->
+<!-- versao: 0.45.0 -->
 
 # Guia de Navegação Simples
 
@@ -60,6 +60,10 @@ Abra **http://localhost:5173** e use uma destas contas:
 
 > **Use a `porto@dev.com` para tudo.** Ela enxerga o sistema inteiro, então nenhum botão
 > some da sua frente no meio de uma demonstração.
+
+> **Uma tela só existe nela: "Status do sistema".** É a tela de diagnóstico — memória do
+> servidor, estado do banco e quais integrações ainda são simuladas. Ela não aparece para
+> mais ninguém, nem para o administrador, e não abre nem digitando o endereço.
 
 **E as contas de cada papel?** Existem seis — comprador, gestor, engenheiro, fundador,
 almoxarife e solicitante —, mas **elas foram criadas por você**, na tela de Usuários, cada

@@ -11,6 +11,42 @@ import { banco } from '../plugins/banco.js';
 import { gerarHash, validarForcaSenha } from '../servicos/senha.js';
 import { encerrarTodasSessoes } from '../servicos/autenticacao.js';
 
+/**
+ * A função que não se dá pela tela.
+ *
+ * DESENVOLVEDOR não pertence ao fluxo de compras da Porto Inc.:
+ * ela existe só para enxergar as telas de diagnóstico, que mostram
+ * memória da API e quais integrações ainda são simuladas. Para
+ * quem usa o sistema, essas telas só denunciam o que é maquete.
+ *
+ * Ela sai da listagem de `/api/funcoes` E é recusada na criação e
+ * na edição de usuário. Esconder não bastava: a atribuição é por
+ * id, e um administrador que descobrisse o id se daria a função.
+ *
+ * Quem entra nela é a migração 0021, na conta de desenvolvimento.
+ */
+const SO_DO_DESENVOLVEDOR = 'DESENVOLVEDOR';
+
+/**
+ * Alguma das funções pedidas é a do desenvolvedor?
+ *
+ * Devolve a recusa pronta, ou `null` quando está tudo certo.
+ */
+async function recusarFuncaoDeDesenvolvedor(
+  ids: string[] | undefined,
+): Promise<string | null> {
+  if (!ids || ids.length === 0) return null;
+
+  const proibida = await banco.funcao.findFirst({
+    where: { codigo: SO_DO_DESENVOLVEDOR, id: { in: ids } },
+    select: { id: true },
+  });
+
+  if (!proibida) return null;
+
+  return 'Esta função não é atribuída pela tela: ela pertence a quem mantém o sistema.';
+}
+
 const esquemaNovoUsuario = z.object({
   nome: z.string().min(3, 'O nome precisa ter pelo menos 3 caracteres.'),
   email: z.string().email('Informe um e-mail válido.'),
@@ -103,6 +139,9 @@ export async function rotasUsuarios(app: FastifyInstance) {
         return res.status(409).send({ erro: 'Já existe um usuário com este e-mail.' });
       }
 
+      const recusa = await recusarFuncaoDeDesenvolvedor(dados.data.funcoes);
+      if (recusa) return res.status(403).send({ erro: recusa });
+
       const usuario = await banco.usuario.create({
         data: {
           nome: dados.data.nome.trim(),
@@ -141,6 +180,9 @@ export async function rotasUsuarios(app: FastifyInstance) {
       if (dados.data.ativo === false && id === req.usuario!.id) {
         return res.status(400).send({ erro: 'Você não pode desativar a si mesmo.' });
       }
+
+      const recusa = await recusarFuncaoDeDesenvolvedor(dados.data.funcoes);
+      if (recusa) return res.status(403).send({ erro: recusa });
 
       const usuario = await banco.usuario.update({
         where: { id },
@@ -213,7 +255,20 @@ export async function rotasUsuarios(app: FastifyInstance) {
     '/api/funcoes',
     { preHandler: app.exigirPermissao('usuarios.ver', 'funcoes.gerenciar') },
     async () => {
+      // A função DESENVOLVEDOR não entra na lista.
+      //
+      // Ela não pertence ao fluxo de compras: existe só para
+      // enxergar as telas de diagnóstico, que mostram memória da
+      // API e quais integrações ainda são simuladas. Isso é
+      // assunto de quem mantém o sistema, não de quem trabalha
+      // nele.
+      //
+      // Escondida da lista, ninguém a atribui pela tela de
+      // Usuários — nem o administrador, que de outro modo se daria
+      // a função e veria o que não deveria. Quem entra nela é a
+      // migração 0021, para a conta de desenvolvimento.
       const funcoes = await banco.funcao.findMany({
+        where: { codigo: { not: SO_DO_DESENVOLVEDOR } },
         include: {
           permissoes: { include: { permissao: true } },
           _count: { select: { usuarios: true } },

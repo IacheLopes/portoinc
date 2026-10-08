@@ -96,11 +96,15 @@ describe('Rotas protegidas', () => {
   });
 
   it('deixa passar quem entrou', async () => {
+    // Era `/api/status` aqui. Deixou de servir em 08/10/2026,
+    // quando o diagnóstico passou a ser só do desenvolvedor: o
+    // administrador leva 403, e o teste mediria a permissão nova
+    // em vez do crachá, que é o assunto deste bloco.
     const token = await entrarComo('admin@teste.com.br');
-    const r = await chamar('/api/status', { token });
+    const r = await chamar('/api/usuarios', { token });
 
     assert.equal(r.status, 200);
-    assert.equal(r.corpo.banco.conectado, true);
+    assert.ok(Array.isArray(r.corpo.usuarios));
   });
 
   it('/health continua aberto, pois é o Docker que consulta', async () => {
@@ -144,6 +148,96 @@ describe('Permissões', () => {
     assert.ok(r.corpo.usuario.permissoes.includes('solicitacoes.aprovar'));
     // Vem do Solicitante:
     assert.ok(r.corpo.usuario.permissoes.includes('solicitacoes.criar'));
+  });
+});
+
+// ------------------------------------------------------------
+//  A tela de diagnóstico não é de quem usa o sistema
+//
+//  "Status do sistema" mostra memória da API, estado do banco e
+//  QUAIS INTEGRAÇÕES AINDA SÃO SIMULADAS. Para o dono da obra ela
+//  só denuncia o que é maquete — ele pediu, em 08/10/2026, que
+//  ficasse só na conta de desenvolvimento: "as outras contas não
+//  podem ver de maneira nenhuma".
+//
+//  Esconder do menu não bastava, e tirar a permissão do
+//  ADMINISTRADOR também não: a conta de desenvolvimento é
+//  administradora e perderia junto. A permissão mudou de casa,
+//  para a função DESENVOLVEDOR, que não se atribui pela tela.
+// ------------------------------------------------------------
+describe('O diagnóstico do sistema é só do desenvolvedor', () => {
+  it('o administrador NÃO enxerga o status do sistema', async () => {
+    const token = await entrarComo('admin@teste.com.br');
+    const eu = await chamar('/api/autenticacao/eu', { token });
+
+    assert.ok(
+      !eu.corpo.usuario.permissoes.includes('sistema.status'),
+      'o administrador ainda tem sistema.status',
+    );
+  });
+
+  it('a rota do status barra o administrador', async () => {
+    // A permissão some do crachá, mas o que vale é a porta: se a
+    // rota continuasse aberta, bastava digitar o endereço.
+    const token = await entrarComo('admin@teste.com.br');
+    const r = await chamar('/api/status', { token });
+
+    assert.equal(r.status, 403, 'o administrador ainda entra na tela de diagnóstico');
+  });
+
+  it('a função do desenvolvedor não aparece na lista de funções', async () => {
+    // Se aparecesse, o administrador se daria a função pela tela de
+    // Usuários e veria tudo de novo.
+    const token = await entrarComo('admin@teste.com.br');
+    const r = await chamar('/api/funcoes', { token });
+
+    const codigos = r.corpo.funcoes.map((f: { codigo: string }) => f.codigo);
+    assert.ok(!codigos.includes('DESENVOLVEDOR'), 'a função apareceu na lista');
+  });
+
+  it('recusa dar a função do desenvolvedor, mesmo sabendo o id', async () => {
+    // Esconder da lista não basta: a atribuição é por id, e quem
+    // descobrisse o id se daria a função. Aqui o teste pega o id
+    // direto do banco — como faria quem fosse procurar.
+    const { banco } = await import('../src/plugins/banco.js');
+    const dev = await banco.funcao.findUnique({ where: { codigo: 'DESENVOLVEDOR' } });
+    assert.ok(dev, 'a função DESENVOLVEDOR precisa existir');
+
+    const token = await entrarComo('admin@teste.com.br');
+
+    const r = await chamar('/api/usuarios', {
+      metodo: 'POST',
+      token,
+      corpo: {
+        nome: 'Curioso',
+        email: 'curioso@teste.com.br',
+        senha: 'Provisoria123',
+        funcoes: [dev.id],
+      },
+    });
+
+    assert.equal(r.status, 403, 'deixou criar usuário com a função do desenvolvedor');
+  });
+
+  it('recusa também na edição de quem já existe', async () => {
+    const { banco } = await import('../src/plugins/banco.js');
+    const dev = await banco.funcao.findUnique({ where: { codigo: 'DESENVOLVEDOR' } });
+    assert.ok(dev);
+
+    const token = await entrarComo('admin@teste.com.br');
+    const lista = await chamar('/api/usuarios', { token });
+    const alvo = lista.corpo.usuarios.find(
+      (u: { email: string }) => u.email !== 'admin@teste.com.br',
+    );
+    assert.ok(alvo, 'o teste precisa de outro usuário');
+
+    const r = await chamar('/api/usuarios/' + alvo.id, {
+      metodo: 'PATCH',
+      token,
+      corpo: { funcoes: [dev.id] },
+    });
+
+    assert.equal(r.status, 403, 'deixou dar a função do desenvolvedor na edição');
   });
 });
 

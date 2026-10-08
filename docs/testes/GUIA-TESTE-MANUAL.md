@@ -1,4 +1,4 @@
-<!-- versao: 0.44.5 -->
+<!-- versao: 0.45.0 -->
 
 # 1. Como usar este guia
 
