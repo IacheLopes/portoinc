@@ -97,3 +97,43 @@ describe('O número na tela', () => {
     assert.equal(normalizarTelefone('+55 (83) 99999-4448'), '5583999994448');
   });
 });
+
+describe('O 55 do Brasil entra sozinho', () => {
+  //  Pedido dele em 10/10/2026, depois de a primeira mensagem de
+  //  teste sair como `8399•••••48`: digitou com DDD e sem país,
+  //  que é como a gente fala, e o WhatsApp não entende assim.
+
+  it('celular com DDD e sem país ganha o 55', () => {
+    assert.equal(normalizarTelefone('83999994448'), '5583999994448');
+  });
+
+  it('fixo com DDD e sem país também', () => {
+    assert.equal(normalizarTelefone('8333334444'), '558333334444');
+  });
+
+  it('quem já veio com o país não ganha outro', () => {
+    assert.equal(normalizarTelefone('5583999994448'), '5583999994448');
+    assert.equal(normalizarTelefone('558333334444'), '558333334444');
+  });
+
+  it('A ARMADILHA: o DDD 55 existe, e é de Santa Maria (RS)', () => {
+    //  `55999994448` COMEÇA com 55 e mesmo assim está sem o país.
+    //  Uma regra que olhasse o começo deixaria passar, e a
+    //  mensagem nunca chegaria. São 11 dígitos: falta o país.
+    assert.equal(normalizarTelefone('55999994448'), '5555999994448');
+
+    //  E com o país, são 13 — não se mexe.
+    assert.equal(normalizarTelefone('5555999994448'), '5555999994448');
+  });
+
+  it('número de outro país fica como está', () => {
+    //  14 dígitos: não é brasileiro, e forçar o 55 quebraria.
+    assert.equal(normalizarTelefone('351912345678901'), '351912345678901');
+  });
+
+  it('a máscara continua escondendo o que deve', () => {
+    //  O número ganha o país ANTES de ser mascarado, então a tela
+    //  passa a mostrar `5583` no lugar de `8399`.
+    assert.equal(mascarar(normalizarTelefone('83999994448')), '5583•••••••48');
+  });
+});

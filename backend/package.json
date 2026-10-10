@@ -4,6 +4,7 @@
   "private": true,
   "description": "API do sistema de compras e almoxarifado da Porto Inc.",
   "type": "module",
+  "_porque_WHATSAPP_MODO_TESTE_nos_testes": "A suite FIXA a trava em true em vez de herdar do .env. Em 10/10/2026 a trava foi desligada para um teste de envio real, e sete testes de integracao quebraram — entre eles o que prova que 'a trava vem ligada por padrao'. Teste cujo resultado depende de um botao de producao nao prova nada.",
   "scripts": {
     "dev": "tsx watch src/servidor.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
@@ -14,8 +15,8 @@
     "seed": "tsx prisma/seed-desenvolvimento.ts && tsx prisma/seed-cadastros.ts",
     "seed-se-vazio": "tsx prisma/semear-se-vazio.ts",
     "test": "npm run test:unidade && npm run test:integracao",
-    "test:unidade": "WHATSAPP_ADAPTER=mock EMAIL_ADAPTER=mock node --import tsx --test \"src/**/*.test.ts\"",
-    "test:integracao": "npm run test:preparar && NODE_ENV=test DATABASE_URL=$DATABASE_URL_TESTE WHATSAPP_ADAPTER=mock EMAIL_ADAPTER=mock node --import tsx --test --test-concurrency=1 \"testes/**/*.test.ts\"",
+    "test:unidade": "WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock node --import tsx --test \"src/**/*.test.ts\"",
+    "test:integracao": "npm run test:preparar && NODE_ENV=test DATABASE_URL=$DATABASE_URL_TESTE WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock node --import tsx --test --test-concurrency=1 \"testes/**/*.test.ts\"",
     "test:preparar": "DATABASE_URL=$DATABASE_URL_TESTE prisma migrate deploy",
     "tipos": "tsc --noEmit -p tsconfig.test.json",
     "seed:historico": "tsx prisma/seed-historico.ts",

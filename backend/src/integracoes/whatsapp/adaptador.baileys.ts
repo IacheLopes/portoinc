@@ -101,6 +101,34 @@ export function normalizarTelefone(entrada: string): string {
     );
   }
 
+  return comDdiDoBrasil(digitos);
+}
+
+/**
+ * Poe o 55 na frente quando ele nao foi digitado.
+ *
+ * Pedido dele em 10/10/2026, depois de a primeira mensagem de
+ * teste sair como `8399•••••48`: ele digitou o numero do jeito
+ * que a gente fala no Brasil, com DDD e sem pais. O WhatsApp nao
+ * entende assim, e o envio morre dizendo que o numero nao existe.
+ *
+ * A ARMADILHA, E POR QUE ISTO OLHA O TAMANHO E NAO O COMECO
+ *
+ * "Comeca com 55" NAO prova que o DDI esta la: o DDD 55 existe,
+ * e e o de Santa Maria, no Rio Grande do Sul. O numero
+ * `55999994448` comeca com 55 e mesmo assim esta SEM o pais — a
+ * regra ingenua o deixaria passar e a mensagem nunca chegaria.
+ *
+ * O tamanho nao tem essa ambiguidade:
+ *
+ *     10  DDD + fixo (8)          falta o pais
+ *     11  DDD + celular (9)       falta o pais
+ *     12  55 + DDD + fixo         completo
+ *     13  55 + DDD + celular      completo
+ *     14+ numero de outro pais    nao se mexe
+ */
+function comDdiDoBrasil(digitos: string): string {
+  if (digitos.length === 10 || digitos.length === 11) return '55' + digitos;
   return digitos;
 }
 

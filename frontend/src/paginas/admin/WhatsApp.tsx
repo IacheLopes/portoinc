@@ -178,7 +178,7 @@ export function ConfiguracaoWhatsApp() {
             <strong>
               {situacao.modoTeste
                 ? 'Envio restrito: só os números desta lista recebem mensagem.'
-                : 'Envio liberado: o sistema manda para qualquer número de fornecedor.'}
+                : 'Envio online: a mensagem vai mesmo, para o celular de quem estiver no cadastro.'}
             </strong>
             {/* UMA LINHA, NAO TRES.
                 A explicacao longa — "os fornecedores de
@@ -197,7 +197,10 @@ export function ConfiguracaoWhatsApp() {
                   )}. Qualquer outro é barrado antes de sair.
                 </>
               ) : (
-                <>Todo envio vai para o número real do fornecedor, sem conferência.</>
+                <>
+                  Não há lista de autorizados filtrando nada. Confira o número antes de
+                  clicar em enviar.
+                </>
               )}
             </p>
           </div>
@@ -355,7 +358,28 @@ export function ConfiguracaoWhatsApp() {
         </section>
       )}
 
-      {/* ---------- Lista de autorizados ---------- */}
+      {/* ---------- Lista de autorizados ----------
+
+          A LISTA SO APARECE QUANDO ELA MANDA EM ALGUMA COISA.
+
+          Com o envio liberado, esta lista nao filtra nada: quem
+          decide quem recebe passa a ser o cadastro do fornecedor.
+          Deixa-la na tela — com formulario, botao e a frase "so
+          estes numeros recebem mensagem" — seria oferecer um
+          controle desligado a quem esta procurando justamente o
+          controle. Pior que esconder: faz a pessoa acreditar que
+          se protegeu.
+
+          No lugar dela fica uma linha dizendo onde ela foi parar. */}
+      {!situacao.modoTeste ? (
+        <section className="secao">
+          <p className="texto-fraco">
+            A lista de números autorizados não está em uso: com o envio liberado, quem
+            recebe é definido pelo <strong>cadastro de cada fornecedor</strong>. Ela volta
+            a valer quando o envio for restrito de novo.
+          </p>
+        </section>
+      ) : (
       <section className="secao">
         <div className="secao__cabecalho">
           <h2>Números autorizados</h2>
@@ -370,9 +394,9 @@ export function ConfiguracaoWhatsApp() {
               rotulo="Número"
               valor={numero}
               aoMudar={setNumero}
-              exemplo="5511987654321"
+              exemplo="DDD + número, ex: 83999994448"
               obrigatorio
-              ajuda="Com DDI e DDD, só números."
+              ajuda="Comece pelo DDD. O 55 do Brasil o sistema põe sozinho."
             />
             <Campo
               rotulo="De quem é"
@@ -452,6 +476,7 @@ export function ConfiguracaoWhatsApp() {
           </Cartao>
         )}
       </section>
+      )}
 
       {/* ---------- Envio de teste ---------- */}
       <section className="secao">
@@ -465,7 +490,8 @@ export function ConfiguracaoWhatsApp() {
               rotulo="Para o número"
               valor={paraTeste}
               aoMudar={setParaTeste}
-              exemplo="5511987654321"
+              exemplo="DDD + número, ex: 83999994448"
+              ajuda="Comece pelo DDD. O 55 do Brasil o sistema põe sozinho."
               obrigatorio
             />
             <Campo rotulo="Mensagem" valor={textoTeste} aoMudar={setTextoTeste} maximo={1000} />
@@ -493,8 +519,9 @@ export function ConfiguracaoWhatsApp() {
         <div className="secao__cabecalho">
           <h2>Histórico de envios</h2>
           <p className="secao__descricao">
-            Inclui o que foi <strong>bloqueado</strong>: se alguém tentou mandar para fora da
-            lista, aparece aqui.
+            {situacao.modoTeste
+              ? 'Inclui o que foi bloqueado: se alguém tentou mandar para fora da lista, aparece aqui.'
+              : 'Cada tentativa fica aqui, com o resultado — inclusive as que falharam.'}
           </p>
         </div>
 
