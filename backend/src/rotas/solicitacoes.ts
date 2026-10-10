@@ -21,6 +21,7 @@ import {
 } from '../servicos/solicitacao.js';
 import { gerarPdfSolicitacao } from '../servicos/pdf-solicitacao.js';
 import { calcularEstado, type Decisao } from '../servicos/aprovacao.js';
+import { fimDoDiaBr } from '../servicos/data-br.js';
 
 const esquemaItem = z.object({
   materialId: z.string().uuid('Escolha um item do catálogo.'),
@@ -451,7 +452,11 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
           solicitanteId: req.usuario!.id,
           justificativa: dados.data.justificativa,
           observacoes: dados.data.observacoes,
-          dataDesejada: dados.data.dataDesejada ? new Date(dados.data.dataDesejada) : null,
+          //  "Precisa ate" e prazo, e e ele que ordena a fila de quem
+          //  aprova. Um dia a menos aqui muda a ordem da fila.
+          dataDesejada: dados.data.dataDesejada
+            ? fimDoDiaBr(dados.data.dataDesejada)
+            : null,
           itens: {
             create: dados.data.itens.map((item, indice) => ({
               materialId: item.materialId,
@@ -517,7 +522,9 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
         data: {
           justificativa: dados.data.justificativa,
           observacoes: dados.data.observacoes,
-          dataDesejada: dados.data.dataDesejada ? new Date(dados.data.dataDesejada) : undefined,
+          dataDesejada: dados.data.dataDesejada
+            ? fimDoDiaBr(dados.data.dataDesejada)
+            : undefined,
           ...(dados.data.obraId ? { obraId: dados.data.obraId } : {}),
         },
         include: INCLUIR,

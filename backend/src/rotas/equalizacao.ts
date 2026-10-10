@@ -24,6 +24,7 @@ import {
 } from '../servicos/solicitacao.js';
 import { enviarPeloWhatsApp } from '../servicos/whatsapp.js';
 import { ambiente } from '../config/ambiente.js';
+import { fimDoDiaBr } from '../servicos/data-br.js';
 
 const INCLUIR_BID = {
   itens: {
@@ -562,7 +563,8 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         });
       }
 
-      const prazo = new Date(dados.data.novoPrazo);
+      //  O novo prazo da ultima chamada e prazo igual: dia inteiro.
+      const prazo = fimDoDiaBr(dados.data.novoPrazo);
 
       if (prazo <= new Date()) {
         return res.status(400).send({ erro: 'O novo prazo precisa ser no futuro.' });

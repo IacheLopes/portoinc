@@ -13,6 +13,7 @@ import {
   numero, erroDeValidacao, textoObrigatorio, textoOpcional, UFS,
 } from '../servicos/util.js';
 import { lerCsvOrcamento } from '../servicos/orcamento.js';
+import { inicioDoDiaBr } from '../servicos/data-br.js';
 
 const SITUACOES = ['PLANEJAMENTO', 'EM_ANDAMENTO', 'PARALISADA', 'CONCLUIDA'] as const;
 
@@ -133,9 +134,10 @@ export async function rotasObras(app: FastifyInstance) {
       data: {
         ...dados.data,
         codigo,
-        dataInicio: dados.data.dataInicio ? new Date(dados.data.dataInicio) : null,
+        //  Data de calendario, nao prazo: o comeco do dia basta.
+        dataInicio: dados.data.dataInicio ? inicioDoDiaBr(dados.data.dataInicio) : null,
         dataPrevisaoFim: dados.data.dataPrevisaoFim
-          ? new Date(dados.data.dataPrevisaoFim)
+          ? inicioDoDiaBr(dados.data.dataPrevisaoFim)
           : null,
         // Toda obra nasce com o próprio almoxarifado (decisão D3).
         almoxarifados: {
@@ -175,9 +177,11 @@ export async function rotasObras(app: FastifyInstance) {
         data: {
           ...dados.data,
           codigo: codigoNovo,
-          dataInicio: dados.data.dataInicio ? new Date(dados.data.dataInicio) : undefined,
+          dataInicio: dados.data.dataInicio
+            ? inicioDoDiaBr(dados.data.dataInicio)
+            : undefined,
           dataPrevisaoFim: dados.data.dataPrevisaoFim
-            ? new Date(dados.data.dataPrevisaoFim)
+            ? inicioDoDiaBr(dados.data.dataPrevisaoFim)
             : undefined,
         },
         include: { _count: { select: { linhas: true, almoxarifados: true } } },

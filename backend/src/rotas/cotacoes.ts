@@ -13,7 +13,7 @@ import {
   calcularTotais, descreverPagamento,
   type SituacaoBid,
 } from '../servicos/cotacao.js';
-import { dataBr } from '../servicos/data-br.js';
+import { dataBr, fimDoDiaBr } from '../servicos/data-br.js';
 
 const esquemaBid = z.object({
   titulo: textoObrigatorio(3, 'O título'),
@@ -283,7 +283,11 @@ export async function rotasCotacoes(app: FastifyInstance) {
 
       if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
 
-      const prazo = new Date(dados.data.prazoResposta);
+      //  PRAZO usa o FIM do dia: quem responde ate 17/10 tem o dia
+      //  17 inteiro. Com `new Date` cru isto virava meia-noite em
+      //  UTC — 21h do dia 16 no Brasil —, e o link do portal morria
+      //  um dia antes do que o comprador tinha marcado.
+      const prazo = fimDoDiaBr(dados.data.prazoResposta);
 
       if (Number.isNaN(prazo.getTime())) {
         return res.status(400).send({ erro: 'Prazo de resposta inválido.' });

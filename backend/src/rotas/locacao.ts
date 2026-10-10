@@ -19,7 +19,7 @@ import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import {
   numero, erroDeValidacao, textoOpcional, textoObrigatorio, reaisBr, plural,
 } from '../servicos/util.js';
-import { dataBr } from '../servicos/data-br.js';
+import { dataBr, inicioDoDiaBr } from '../servicos/data-br.js';
 import {
   custoAcumulado, custoPrevisto, custoDoAtraso, diasDeAtraso, diasDeUso,
   periodosCobrados, alertaDe, lerContrato, resumirLocacoes,
@@ -54,9 +54,19 @@ const esquemaDevolucao = z.object({
   motivo: textoOpcional(500),
 });
 
-/** Data que veio como "2026-09-22", no fuso de quem digitou. */
+/**
+ * Data que veio como "2026-09-22", no fuso de quem digitou.
+ *
+ * Isto era `new Date(iso + 'T12:00:00')` — meio-dia, para ficar
+ * longe das duas bordas e escapar do deslocamento. Funcionava, e
+ * era remendo de UM lugar para um problema de nove. Em 10/10/2026
+ * o mesmo defeito apareceu no prazo da cotacao, e aí virou
+ * funcao de verdade em `data-br.ts`.
+ *
+ * Devolucao e data de calendario: o dia e o dado.
+ */
 function data(iso: string): Date {
-  return new Date(iso + 'T12:00:00');
+  return inicioDoDiaBr(iso);
 }
 
 function hojeAoMeioDia(): Date {
