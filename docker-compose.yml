@@ -74,6 +74,12 @@ services:
       SHADOW_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/portoink_sombra?schema=public
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGIN: ${CORS_ORIGIN}
+      # O endereco que entra nos LINKS que saem do sistema — o
+      # portal do fornecedor no convite de cotacao, por exemplo.
+      # `localhost` funciona no computador de quem desenvolve e NAO
+      # abre no celular de ninguem: la, localhost e o proprio
+      # telefone. Em producao, o dominio da empresa.
+      URL_PUBLICA: ${URL_PUBLICA:-http://localhost:5173}
       # --- Adaptadores de integracao (trocar aqui liga a integracao real) ---
       WHATSAPP_ADAPTER: ${WHATSAPP_ADAPTER}
       WHATSAPP_SESSAO_DIR: /app/sessao-whatsapp
