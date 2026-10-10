@@ -83,7 +83,7 @@ export function aoDeslogar(callback: () => void) {
 }
 
 async function interpretarErro(resposta: Response): Promise<never> {
-  let corpo: { erro?: string; detalhes?: DetalheErro[] | string[] } = {};
+  let corpo: { erro?: string; mensagem?: string; detalhes?: DetalheErro[] | string[] } = {};
 
   try {
     corpo = await resposta.json();
@@ -104,8 +104,34 @@ async function interpretarErro(resposta: Response): Promise<never> {
   //  os detalhes continuam funcionando — elas leem `detalhes`, que
   //  segue intacto.
   // ----------------------------------------------------------
+  // ----------------------------------------------------------
+  //  `mensagem` TAMBÉM É UMA EXPLICAÇÃO, e estava sendo jogada fora
+  //
+  //  141 rotas respondem erro no campo `erro`. QUATRO respondem no
+  //  campo `mensagem` — e são justamente as quatro de envio:
+  //  WhatsApp de teste, pedido por WhatsApp, e-mail de teste e
+  //  pedido por e-mail. Elas devolvem o resultado inteiro do envio
+  //  (`{sucesso, bloqueado, mensagem}`) com 403 ou 502.
+  //
+  //  O resultado: TODO envio bloqueado do sistema mostrava
+  //
+  //      "O servidor respondeu com erro 403."
+  //
+  //  no lugar de
+  //
+  //      "O número 5583•••••48 não está na lista de autorizados.
+  //       Enquanto o envio estiver restrito, o sistema só envia
+  //       para os números que você liberar."
+  //
+  //  A frase certa existia, estava pronta e bem escrita, e morria
+  //  aqui. Descoberto em 10/10/2026, quando o dono mandou a
+  //  primeira mensagem de teste e só soube que "não chegou nada".
+  // ----------------------------------------------------------
   throw new ErroApi(
-    comCampos(corpo.erro ?? 'O servidor respondeu com erro ' + resposta.status + '.', corpo.detalhes),
+    comCampos(
+      corpo.erro ?? corpo.mensagem ?? 'O servidor respondeu com erro ' + resposta.status + '.',
+      corpo.detalhes,
+    ),
     resposta.status,
     corpo.detalhes,
   );
