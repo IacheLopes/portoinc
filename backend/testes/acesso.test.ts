@@ -9,8 +9,9 @@ import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar, SENHA_TESTE,
+  limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar, SENHA_TESTE, pegarApp,
 } from './ajuda.js';
+import { banco } from '../src/plugins/banco.js';
 
 before(async () => {
   await limparDados();
@@ -183,6 +184,20 @@ describe('O diagnóstico do sistema é só do desenvolvedor', () => {
     const r = await chamar('/api/status', { token });
 
     assert.equal(r.status, 403, 'o administrador ainda entra na tela de diagnóstico');
+  });
+
+  it('o status não anuncia mais a integração de código de barras', async () => {
+    // A tela de diagnóstico listava cinco integrações; a de código de
+    // barras era a GS1, que saiu em 08/10/2026. Anunciar uma tomada
+    // que não existe é prometer o que não se vai entregar.
+    await criarUsuarioTeste('dev.gs1@teste.com.br', ['DESENVOLVEDOR']);
+    const token = await entrarComo('dev.gs1@teste.com.br');
+
+    const r = await chamar('/api/status', { token });
+    assert.equal(r.status, 200);
+
+    const areas = r.corpo.integracoes.map((i: { area: string }) => i.area);
+    assert.deepEqual(areas, ['WhatsApp', 'Fiscal (NF-e)', 'Pagamento', 'E-mail']);
   });
 
   it('a função do desenvolvedor não aparece na lista de funções', async () => {
@@ -361,5 +376,412 @@ describe('Administração de usuários', () => {
       token: admin,
       corpo: { ativo: true },
     });
+  });
+});
+
+describe('Renovar a sessão', () => {
+  // SEM COOKIE NENHUM NÃO É FALHA, é "não há sessão para renovar".
+  //
+  // A tela chama esta rota ao abrir, para saber se dá para
+  // reaproveitar a sessão. Respondendo 401, o navegador escrevia
+  // "Failed to load resource: 401" em vermelho toda primeira visita
+  // — achado pela varredura de 09/10/2026, nas sete contas.
+  //
+  // Medido: de 6 chamadas (navegador novo, login e cinco telas), só
+  // a primeira levava 401.
+  it('sem cookie responde 204, e não 401', async () => {
+    const r = await chamar('/api/autenticacao/renovar', { metodo: 'POST' });
+
+    assert.equal(r.status, 204, 'navegador que nunca entrou nao esta em falha');
+    assert.equal(r.corpo, null, '204 nao leva corpo');
+  });
+
+  it('com cookie inválido responde 401, porque aí houve falha mesmo', async () => {
+    const app = await pegarApp();
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/autenticacao/renovar',
+      cookies: { portoink_sessao: 'isto-nao-e-uma-chave-de-verdade' },
+    });
+
+    assert.equal(r.statusCode, 401, 'chave recusada E falha de autenticacao');
+  });
+});
+
+// ============================================================
+//  SENHA PROVISÓRIA NÃO ABRE O SISTEMA
+//
+//  A conta criada por outra pessoa nasce marcada, e a mensagem
+//  da tela de redefinir promete: "a pessoa deverá criar uma nova
+//  no próximo acesso".
+//
+//  Até 09/10/2026 a marca era escrita, enviada no login e
+//  declarada no tipo do frontend — e nenhuma tela a lia. As sete
+//  contas da simulação entraram direto no painel com a senha que
+//  o administrador tinha digitado.
+//
+//  Estes testes existem para que isso não volte em silêncio.
+// ============================================================
+describe('Senha provisória', () => {
+  it('a conta criada pelo administrador nasce obrigada a trocar', async () => {
+    const token = await entrarComo('admin@teste.com.br');
+
+    const r = await chamar('/api/usuarios', {
+      metodo: 'POST',
+      token,
+      corpo: {
+        nome: 'Recém-chegada',
+        email: 'recem@teste.com.br',
+        senha: 'Provisoria@1',
+        funcoes: (await chamar('/api/funcoes', { token })).corpo.funcoes
+          .filter((f: { codigo: string }) => f.codigo === 'SOLICITANTE')
+          .map((f: { id: string }) => f.id),
+      },
+    });
+
+    assert.equal(r.status, 201);
+    assert.equal(
+      r.corpo.usuario.precisaTrocarSenha, true,
+      'conta criada por outra pessoa tem de nascer marcada',
+    );
+  });
+
+  it('com a marca ligada, o servidor recusa o resto do sistema', async () => {
+    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+
+    for (const rota of ['/api/obras', '/api/solicitacoes', '/api/fornecedores']) {
+      const r = await chamar(rota, { token });
+      assert.equal(r.status, 403, rota + ' deveria estar fechada');
+      assert.equal(r.corpo.precisaTrocarSenha, true, rota + ' deveria dizer o motivo');
+    }
+  });
+
+  it('mas deixa passar o que ela precisa para sair desse estado', async () => {
+    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+
+    const eu = await chamar('/api/autenticacao/eu', { token });
+    assert.equal(eu.status, 200, 'ela precisa saber quem e');
+    assert.equal(eu.corpo.usuario.precisaTrocarSenha, true);
+  });
+
+  it('criou a senha dela, e o sistema inteiro abre', async () => {
+    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+
+    const troca = await chamar('/api/autenticacao/senha', {
+      metodo: 'POST',
+      token,
+      corpo: { senhaAtual: 'Provisoria@1', senhaNova: 'MinhaPropria@9' },
+    });
+    assert.equal(troca.status, 200);
+
+    // Trocar derruba as sessoes: o cracha de antes nao vale mais.
+    const novo = await entrarComo('recem@teste.com.br', 'MinhaPropria@9');
+
+    const r = await chamar('/api/obras', { token: novo });
+    assert.equal(r.status, 200, 'depois de criar a senha, o sistema tem de abrir');
+  });
+
+  it('redefinir pelo administrador religa a marca', async () => {
+    const admin = await entrarComo('admin@teste.com.br');
+
+    const lista = await chamar('/api/usuarios', { token: admin });
+    const alvo = (lista.corpo.usuarios as Array<{ id: string; email: string }>)
+      .find((u) => u.email === 'recem@teste.com.br');
+    assert.ok(alvo, 'nao achei a conta na lista');
+
+    const r = await chamar('/api/usuarios/' + alvo.id + '/senha', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { senha: 'OutraVez@2' },
+    });
+    assert.equal(r.status, 200);
+
+    const dela = await entrarComo('recem@teste.com.br', 'OutraVez@2');
+    const fechado = await chamar('/api/obras', { token: dela });
+    assert.equal(fechado.status, 403, 'senha redefinida fecha o sistema de novo');
+  });
+});
+
+// ============================================================
+//  CRIAR FUNÇÃO DENTRO DO SISTEMA
+//
+//  Está na primeira página do fluxo de compras da Porto Inc.,
+//  como regra confirmada: "um usuário pode acumular mais de uma
+//  função, E AS FUNÇÕES DEVEM SER CRIÁVEIS DENTRO DO SISTEMA".
+//
+//  A metade de cima existia desde a Etapa 1. A de baixo não:
+//  havia rota para listar funções e nenhuma para criar, e a
+//  permissão `funcoes.gerenciar` só servia para ler a lista.
+//  Achado na análise de coerência de 09/10/2026.
+// ============================================================
+interface Funcao {
+  id: string;
+  codigo: string;
+  permissoes: Array<{ codigo: string }>;
+}
+
+describe('Criar função', () => {
+  let admin = '';
+  let almoxarife = '';
+  let permissoes: Array<{ id: string; codigo: string; nome: string }> = [];
+  /** Como as funções estavam antes deste bloco mexer nelas. */
+  let comoEstava: Array<{ id: string; codigo: string; permissoes: string[] }> = [];
+
+  before(async () => {
+    await criarUsuarioTeste('adm.fn@teste.com.br', ['ADMINISTRADOR']);
+    admin = await entrarComo('adm.fn@teste.com.br');
+
+    await criarUsuarioTeste('alm.fn@teste.com.br', ['ALMOXARIFE']);
+    almoxarife = await entrarComo('alm.fn@teste.com.br');
+
+    const r = await chamar('/api/permissoes', { token: admin });
+    permissoes = r.corpo.permissoes;
+
+    // O QUE ESTE BLOCO PEGAR EMPRESTADO, ELE DEVOLVE.
+    //
+    // As funções vêm de migração e a suíte inteira compartilha um
+    // banco: `limparDados` não as toca, e os arquivos rodam em
+    // sequência. A primeira versão daqui tirou permissões do
+    // ALMOXARIFE e deixou a função nova de pé — e quatro testes
+    // de OUTROS arquivos quebraram, porque o almoxarife deles
+    // perdeu `materiais.ver`.
+    //
+    // Mesmo tropeço que o bloco de alçadas deu em 09/10/2026. Duas
+    // vezes é padrão: teste que mexe em dado de migração devolve
+    // antes de sair.
+    const antes = await chamar('/api/funcoes', { token: admin });
+    comoEstava = (antes.corpo.funcoes as Funcao[]).map((f) => ({
+      id: f.id,
+      codigo: f.codigo,
+      permissoes: f.permissoes.map((p) => p.codigo),
+    }));
+  });
+
+  after(async () => {
+    const agora = await chamar('/api/funcoes', { token: admin });
+
+    for (const f of agora.corpo.funcoes as Funcao[]) {
+      const original = comoEstava.find((o) => o.id === f.id);
+
+      // Nasceu aqui: sai.
+      //
+      // Pelo banco, e não pela rota: a rota recusa apagar função
+      // com gente dentro — e com razão, porque sumir levaria junto
+      // a resposta de "quem assinou isto?". Mas um destes testes
+      // dá a função nova a alguém de propósito, e a limpeza
+      // precisa passar por cima disso.
+      if (!original) {
+        await banco.usuarioFuncao.deleteMany({ where: { funcaoId: f.id } });
+        await banco.funcaoPermissao.deleteMany({ where: { funcaoId: f.id } });
+        await banco.funcao.delete({ where: { id: f.id } });
+        continue;
+      }
+
+      // Mudou de permissões: volta ao que era.
+      const mudou = original.permissoes.slice().sort().join()
+        !== f.permissoes.map((p) => p.codigo).sort().join();
+
+      if (mudou) {
+        await chamar('/api/funcoes/' + f.id, {
+          metodo: 'PATCH',
+          token: admin,
+          corpo: {
+            permissoes: permissoes
+              .filter((p) => original.permissoes.includes(p.codigo))
+              .map((p) => p.id),
+          },
+        });
+      }
+    }
+  });
+
+  const idDe = (codigo: string) => permissoes.find((p) => p.codigo === codigo)!.id;
+
+  it('só quem tem funcoes.gerenciar enxerga a lista de permissões', async () => {
+    const r = await chamar('/api/permissoes', { token: almoxarife });
+    assert.equal(r.status, 403);
+  });
+
+  it('o almoxarife não cria função', async () => {
+    const r = await chamar('/api/funcoes', {
+      metodo: 'POST',
+      token: almoxarife,
+      corpo: { codigo: 'ENCARREGADO', nome: 'Encarregado', permissoes: [idDe('estoque.ver')] },
+    });
+
+    assert.equal(r.status, 403);
+  });
+
+  it('o administrador cria, e a função já nasce com o que ela pode', async () => {
+    const r = await chamar('/api/funcoes', {
+      metodo: 'POST',
+      token: admin,
+      corpo: {
+        codigo: 'ENCARREGADO',
+        nome: 'Encarregado de obra',
+        descricao: 'Vê o estoque da obra e abre solicitação.',
+        permissoes: [idDe('estoque.ver'), idDe('solicitacoes.criar')],
+      },
+    });
+
+    assert.equal(r.status, 201, JSON.stringify(r.corpo));
+    assert.equal(r.corpo.funcao.codigo, 'ENCARREGADO');
+    assert.equal(r.corpo.funcao.sistema, false, 'função da empresa não é de sistema');
+    assert.equal(r.corpo.funcao.permissoes.length, 2);
+    assert.equal(r.corpo.funcao.usuarios, 0);
+  });
+
+  it('o código sobe para maiúscula e não se repete', async () => {
+    const r = await chamar('/api/funcoes', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { codigo: 'encarregado', nome: 'Outro', permissoes: [idDe('estoque.ver')] },
+    });
+
+    assert.equal(r.status, 409);
+  });
+
+  it('função sem nenhuma permissão é um nome sem conteúdo', async () => {
+    const r = await chamar('/api/funcoes', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { codigo: 'VAZIA', nome: 'Função vazia', permissoes: [] },
+    });
+
+    assert.equal(r.status, 400);
+  });
+
+  it('a permissão da tela de diagnóstico não é oferecida', async () => {
+    // O guia de navegação promete que "Status do sistema" não
+    // aparece para mais ninguém, nem para o administrador.
+    assert.equal(
+      permissoes.some((p) => p.codigo === 'sistema.status'), false,
+      'sistema.status nao pode estar na lista de caixas',
+    );
+  });
+
+  it('a pessoa criada com a função nova recebe o que a função dá', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const nova = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ENCARREGADO')!;
+
+    const criada = await chamar('/api/usuarios', {
+      metodo: 'POST',
+      token: admin,
+      corpo: {
+        nome: 'Encarregado Teste',
+        email: 'encarregado@teste.com.br',
+        senha: 'Provisoria@1',
+        funcoes: [nova.id],
+      },
+    });
+
+    assert.equal(criada.status, 201, JSON.stringify(criada.corpo));
+    assert.deepEqual(
+      criada.corpo.usuario.funcoes.map((f: { codigo: string }) => f.codigo),
+      ['ENCARREGADO'],
+    );
+  });
+
+  it('ajustar as permissões da função nova vale', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const nova = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ENCARREGADO')!;
+
+    const r = await chamar('/api/funcoes/' + nova.id, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { permissoes: [idDe('estoque.ver')] },
+    });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.funcao.permissoes.length, 1);
+  });
+
+  it('nas nove de fábrica, o nome e o código não mudam', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const almox = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ALMOXARIFE')!;
+
+    const r = await chamar('/api/funcoes/' + almox.id, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { nome: 'Almoxarife-chefe' },
+    });
+
+    assert.equal(r.status, 409);
+    assert.ok((r.corpo.erro as string).includes('veio com o sistema'));
+  });
+
+  it('mas as permissões delas, sim', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const almox = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ALMOXARIFE')!;
+
+    const r = await chamar('/api/funcoes/' + almox.id, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { permissoes: [idDe('estoque.ver'), idDe('estoque.movimentar'), idDe('relatorios.ver')] },
+    });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.funcao.permissoes.length, 3);
+  });
+
+  // ----------------------------------------------------------
+  //  A TRAVA QUE IMPEDE O SISTEMA DE SE TRANCAR POR FORA
+  // ----------------------------------------------------------
+  it('não deixa o administrador tirar a chave da casa de si mesmo', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const adm = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ADMINISTRADOR')!;
+
+    // Uma permissão inofensiva só: some `usuarios.gerenciar` e
+    // `funcoes.gerenciar`, e ninguém mais cria conta nem função.
+    const r = await chamar('/api/funcoes/' + adm.id, {
+      metodo: 'PATCH',
+      token: admin,
+      corpo: { permissoes: [idDe('relatorios.ver')] },
+    });
+
+    assert.equal(r.status, 409);
+    assert.ok((r.corpo.erro as string).includes('NINGUÉM'));
+  });
+
+  it('função de sistema não se apaga', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const almox = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ALMOXARIFE')!;
+
+    const r = await chamar('/api/funcoes/' + almox.id, { metodo: 'DELETE', token: admin });
+    assert.equal(r.status, 409);
+  });
+
+  it('função com gente dentro também não', async () => {
+    const lista = await chamar('/api/funcoes', { token: admin });
+    const nova = (lista.corpo.funcoes as Array<{ id: string; codigo: string }>)
+      .find((f) => f.codigo === 'ENCARREGADO')!;
+
+    const r = await chamar('/api/funcoes/' + nova.id, { metodo: 'DELETE', token: admin });
+
+    assert.equal(r.status, 409);
+    assert.ok((r.corpo.erro as string).includes('pessoa'));
+  });
+
+  it('função nova e sem ninguém, sim', async () => {
+    const criada = await chamar('/api/funcoes', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { codigo: 'PASSAGEIRA', nome: 'Passageira', permissoes: [idDe('relatorios.ver')] },
+    });
+    assert.equal(criada.status, 201);
+
+    const r = await chamar('/api/funcoes/' + criada.corpo.funcao.id, {
+      metodo: 'DELETE',
+      token: admin,
+    });
+
+    assert.equal(r.status, 200);
   });
 });

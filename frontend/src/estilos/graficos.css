@@ -204,6 +204,15 @@
 }
 
 .indicador-grafico__valor {
+  /* O sinal NUNCA se separa do número.
+
+     Com "− R$ 19.705.971,70" o navegador quebrava depois do sinal,
+     e o cartão mostrava um traço sozinho numa linha e o valor na
+     outra. Quem bate o olho lê um traço.
+
+     O tamanho vem do componente, por comprimento do texto; esta
+     linha e a garantia de que, encolhido ou não, ele fica inteiro. */
+  white-space: nowrap;
   font-size: var(--txt-2xl);
   font-weight: var(--peso-forte);
   letter-spacing: -0.02em;
@@ -377,12 +386,22 @@
   justify-content: flex-end;
 }
 
+/* AS GUIAS FICAM ATRÁS.
+
+   Elas são `position: absolute` e as colunas não eram posicionadas
+   — e, em CSS, o posicionado pinta por cima. Com barras baixas
+   ninguém via; na primeira barra que foi ao topo, as quatro linhas
+   tracejadas apareceram CRUZANDO a barra, como se ela estivesse
+   partida em pedaços.
+
+   Achado em 08/10/2026, olhando a foto do fluxo com entrada. */
 .fluxo__guias {
   position: absolute;
   inset: 0 0 3.4rem 0;
   display: grid;
   grid-template-rows: repeat(4, 1fr);
   pointer-events: none;
+  z-index: 0;
 }
 
 .fluxo__guias span {
@@ -395,6 +414,8 @@
   grid-auto-columns: 1fr;
   align-items: stretch;
   min-height: 240px;
+  position: relative;
+  z-index: 1;
 }
 
 .fluxo__mes { display: flex; }
@@ -432,16 +453,47 @@
   background: var(--fundo-suave);
 }
 
+/* O MÊS INTEIRO: uma barra, ou duas lado a lado.
+
+   O gráfico mostrava só saída, e uma pilha por mês bastava. Com a
+   entrada junto, cada mês vira um PAR: entra à esquerda, sai à
+   direita.
+
+   A direção é contada pela posição, e não pela cor — as três
+   cores daqui já significam o ESTADO do que sai (pago, vencido, a
+   vencer), e pintar a entrada de verde faria o verde dizer duas
+   coisas opostas no mesmo desenho.
+
+   Sem entrada nenhuma lançada, `--par` não entra e a barra fica
+   exatamente como sempre foi. */
+.fluxo__barras {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  padding: 0 18%;
+  transform-origin: bottom;
+  animation: fluxo-crescer 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--atraso, 0ms);
+}
+
+/* As duas barras dividem o lugar de uma, com um fio entre elas.
+
+   O vão do PAR é menor que o vão entre MESES — 2px contra os 36%
+   de fora. Igual, os doze meses virariam vinte e quatro barras
+   soltas, e ninguém saberia quais duas são do mesmo mês. */
+.fluxo__barras--par {
+  gap: 2px;
+  padding: 0 10%;
+}
+
 .fluxo__pilha {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: stretch;
   gap: 1px;
-  padding: 0 18%;
-  transform-origin: bottom;
-  animation: fluxo-crescer 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-  animation-delay: var(--atraso, 0ms);
+  flex: 1;
+  height: 100%;
 }
 
 @keyframes fluxo-crescer {
@@ -807,7 +859,54 @@
 /* ------------------------------------------------------------
    Movimento reduzido: quem pediu, recebe tudo parado
    ------------------------------------------------------------ */
+/* A RECEBER: listrado, não só mais claro.
+
+   Promessa e dinheiro não têm a mesma altura de certeza, e isso
+   precisa aparecer. Um tom mais claro do mesmo azul some em quem
+   não distingue bem as cores e, no tema claro, quase some para
+   todo mundo. A textura diz a mesma coisa sem depender da cor. */
+.fluxo__pedaco--promessa {
+  background-color: var(--info-leve);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--info-texto) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* O saldo do mês, embaixo do par de barras.
+
+   A cor é reforço: o "+" e o "−" na frente do número dizem a
+   mesma coisa para quem não distingue as duas. */
+.fluxo__saldo--sobrou { color: var(--sucesso-texto); }
+.fluxo__saldo--faltou { color: var(--erro-texto); }
+
+/* A mesma listra na legenda, para a chave parecer com a barra. */
+.gr__promessa {
+  background-color: var(--info-leve);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--info-texto) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* A nota ao lado da legenda: "próximas 6 semanas". Nao e chave,
+   entao nao leva quadradinho, e fala baixo. */
+.gr__chave--nota {
+  color: var(--texto-secundario);
+  font-style: italic;
+}
+
+/* "Entra:" e "Sai:" não são chaves — são os nomes dos dois grupos.
+   Sem quadradinho, e um pouco mais fortes que o resto. */
+.gr__chave--grupo {
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .fluxo__barras,
   .fluxo__pilha,
   .rosca__fatia,
   .ranking__barra,
@@ -892,6 +991,24 @@
      O mês de hoje aparece SEMPRE, mesmo fora do ritmo: ele é a
      âncora de leitura do gráfico. */
   .fluxo__mes:not(:nth-child(3n + 1)):not(.fluxo__mes--hoje) .fluxo__rotulo {
+    visibility: hidden;
+  }
+
+  /* O VIZINHO DO MÊS DE HOJE SAI DE CENA.
+
+     A exceção acima — "o mês de hoje aparece sempre, mesmo fora do
+     ritmo" — cria um caso que ela mesma não previu: quando hoje cai
+     ao lado de um mês do ritmo, os dois rótulos aparecem colados e
+     viram "out/26nov/26".
+
+     Visto em 08/10/2026 na foto do fluxo a 420px: outubro é hoje,
+     novembro é o 3n+1.
+
+     Entre os dois, quem fica é hoje: ele é a âncora de leitura do
+     gráfico. O do ritmo cede o lugar, e o buraco que sobra é menos
+     ruim que texto por cima de texto. */
+  .fluxo__mes--hoje + .fluxo__mes .fluxo__rotulo,
+  .fluxo__mes:has(+ .fluxo__mes--hoje) .fluxo__rotulo {
     visibility: hidden;
   }
 

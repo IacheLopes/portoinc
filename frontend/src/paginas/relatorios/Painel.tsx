@@ -35,13 +35,16 @@ import {
   type RelatorioDeEstoqueParado,
 } from '../../servicos/relatorios';
 import type { FatiaDoGrafico } from '../../componentes/Graficos';
-import { dinheiro, quantidade as quantidadeOficial } from '../../servicos/cadastros';
-import { plural, porcento, dias } from '../../servicos/texto';
+import {
+  plural, porcento, dias, dinheiro, quantidade as quantidadeOficial,
+} from '../../servicos/texto';
 import { dataBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
-import { CartaoIndicador, GraficoRosca, GraficoRanking } from '../../componentes/Graficos';
+import {
+  CartaoIndicador, GraficoRosca, GraficoRanking, CORES_DE_CATEGORIA,
+} from '../../componentes/Graficos';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
@@ -82,7 +85,17 @@ function quantidade(v: number): string {
   return quantidadeOficial(v, 2);
 }
 
-const TONS = ['info', 'sucesso', 'atencao', 'erro'] as const;
+/* As roscas destes relatórios repartem ASSUNTOS — fornecedores,
+   famílias, obras —, e assunto não tem estado.
+
+   Elas usavam as cores de significado, e a quarta da fila era
+   `erro`: "Bandeirantes Elétrica" saía em VERMELHO num gráfico
+   chamado "Concentração das compras", como se houvesse algo errado
+   com ela. Não há — ela só é a menor fatia.
+
+   Visto na foto em 08/10/2026, o mesmo defeito que a rosca de
+   categorias do caixa já tinha resolvido. A paleta sem significado
+   mora em `tokens.css`. */
 
 /** "2026-09-22" vira "22/09/2026". */
 function data(iso: string): string {
@@ -109,7 +122,11 @@ function fatiasComResto(
     rotulo: i.nome,
     valor: i.valor,
     percentual: parte(i.valor),
-    tom: TONS[indice % TONS.length],
+    // O tom nunca é lido: a `cor` vence. Vai 'info' porque o campo
+    // é obrigatório no tipo, que serve também à carteira do
+    // financeiro — lá vermelho É vencida.
+    tom: 'info' as const,
+    cor: CORES_DE_CATEGORIA[indice % CORES_DE_CATEGORIA.length],
   }));
 
   const resto = itens.slice(quantas).reduce((s, i) => s + i.valor, 0);
@@ -123,7 +140,7 @@ function fatiasComResto(
       percentual: parte(resto),
       // Cinza de propósito: se "Outros" repetisse a cor de uma
       // família, as duas fatias virariam um arco só no anel.
-      tom: 'neutro',
+      tom: 'neutro' as const,
     },
   ];
 }
@@ -714,30 +731,46 @@ function AbaFornecedores() {
         </Cartao>
 
         <Cartao className="col-meia">
-          {/* Só quem de fato vendeu.
+          {/* ESTE GRÁFICO MOSTRAVA O MESMO NÚMERO DA ROSCA.
 
-              A lista traz também quem foi convidado e nunca vendeu,
-              e eles entravam aqui como barras de R$ 0,00 — ruído num
-              gráfico chamado "quanto a empresa comprou de cada um".
+              Ele se chamava "Quanto a empresa comprou de cada um" e
+              desenhava `valorComprado` — exatamente o que a rosca ao
+              lado reparte. Dois cartões, duas formas, UM dado.
 
-              Pior: a rosca ao lado já os omite. Os dois cartões
-              falam da mesma coisa e discordavam sobre quem está na
-              lista — um mostrava seis nomes, o outro quatro.
+              E a aba se chama "Em quem dá para confiar?". Nenhum dos
+              dois respondia: comprar muito de alguém não diz se ele
+              entrega.
 
-              Quem foi convidado e não vendeu continua na tabela
-              abaixo, com a leitura explicando. */}
+              O dado para responder já existia — `pontualidade` vem
+              calculada do prazo prometido na cotação contra o dia em
+              que o caminhão chegou. Só não estava desenhado.
+
+              Agora a rosca responde "depender dele é risco?" e a
+              barra responde "ele entrega?". Duas perguntas, dois
+              gráficos.
+
+              Só entra quem JÁ ENTREGOU: pontualidade de quem nunca
+              entregou não é zero, é desconhecida — e uma barra vazia
+              ao lado do nome acusaria o inocente. Quem foi convidado
+              e nunca vendeu continua na tabela abaixo, com a leitura
+              explicando. */}
           <GraficoRanking
-            titulo="Quanto a empresa comprou de cada um"
-            vazio="Nenhuma compra registrada."
+            titulo="Quem entrega no prazo"
+            vazio="Ninguém entregou ainda. A pontualidade começa a ser medida na primeira entrega."
             unico
-            rotuloValor="Comprado"
+            rotuloValor="No prazo"
+            // `porcentagem()` no backend devolve UMA casa decimal, e
+            // colar o numero no texto usa o ponto: saia "66.7%". A
+            // rosca desta mesma tela foi corrigida em 08/10; esta
+            // barra, ao lado dela, passou.
+            formatar={porcento}
             linhas={lista
-              .filter((f) => f.valorComprado > 0)
+              .filter((f) => f.entregas > 0)
               .map((f) => ({
                 nome: f.nome,
-                pago: f.valorComprado,
+                pago: f.pontualidade,
                 aberto: 0,
-                total: f.valorComprado,
+                total: f.pontualidade,
               }))}
           />
         </Cartao>

@@ -13,7 +13,7 @@ import {
   listarSolicitacoes, ROTULO_SITUACAO, COR_SITUACAO, dataBr,
   type Solicitacao, type SituacaoSolicitacao,
 } from '../../servicos/solicitacoes';
-import { dinheiro } from '../../servicos/cadastros';
+import { dinheiro } from '../../servicos/texto';
 import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
 import { usePagina } from '../../ganchos/pagina';
 import { ErroApi } from '../../servicos/api';

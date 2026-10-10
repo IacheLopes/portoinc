@@ -20,7 +20,6 @@ import {
   type Cotacao, type FornecedorSugerido,
 } from '../../servicos/cotacoes';
 import { dataBr, dataHoraBr } from '../../servicos/solicitacoes';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { enviarConvites } from '../../servicos/whatsapp';
 import { convidarPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';
@@ -34,6 +33,7 @@ import { Icone } from '../../componentes/Icone';
 import { ConfirmarEnvio } from '../../componentes/ConfirmarEnvio';
 import { telefoneCompleto } from '../../servicos/mascaras';
 import { buscarSituacao } from '../../servicos/whatsapp';
+import { plural, dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 
 export function DetalheCotacao() {
   const { id = '' } = useParams();
@@ -93,7 +93,10 @@ export function DetalheCotacao() {
     setErro(null);
     try {
       const r = await convidarFornecedores(id, marcados);
-      setAviso(r.convidados + ' fornecedor(es) adicionado(s) ao pacote.');
+      setAviso(
+        plural(r.convidados, 'fornecedor adicionado', 'fornecedores adicionados') +
+        ' ao pacote.',
+      );
       await carregar();
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao convidar.');

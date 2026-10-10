@@ -1,0 +1,114 @@
+# ============================================================
+#  A PILHA DE PRODUÇÃO, PARA CONFERIR EM LOCALHOST
+#
+#  Os dois Dockerfile têm o estágio `prod` escrito desde a
+#  Fundação, e ele nunca tinha sido construído: durante dois
+#  meses tudo rodou no estágio `dev`. Esta é a diferença entre
+#  ACHAR que entrega e entregar.
+#
+#  O que muda do `dev` para o `prod`:
+#
+#    · a API vira JavaScript compilado (`tsc`), sem o `tsx` e
+#      sem as bibliotecas de desenvolvimento, rodando como o
+#      usuário `node` em vez de root;
+#    · a API NÃO semeia: o banco nasce vazio, que é o que a
+#      empresa recebe;
+#    · o React vira HTML, CSS e JS prontos, servidos pelo Nginx
+#      em ~15 MB — sem Node nenhum do lado do navegador.
+#
+#  COMO SUBIR, sem atrapalhar o que já está rodando:
+#
+#    docker compose stop api web
+#    docker compose -f docker-compose.producao.yml up -d --build
+#
+#  E para voltar ao normal:
+#
+#    docker compose -f docker-compose.producao.yml down
+#    docker compose up -d
+#
+#  Por que `stop api web` antes: o Nginx de produção encaminha
+#  `/api/` para `http://api:3000` — pelo NOME do container. Dois
+#  containers chamados `api` na mesma rede brigam pelo nome, e o
+#  proxy acertaria um deles por sorteio.
+# ============================================================
+
+name: portoink-producao
+
+services:
+  api:
+    build:
+      context: ./backend
+      target: prod
+    container_name: portoink-api-prod
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=640
+      PORT: 3000
+      # O MESMO BANCO do desenvolvimento, de propósito: o que se
+      # confere aqui é o EMPACOTAMENTO, não o banco. Ele é o
+      # mesmo Postgres nos dois casos.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public&connection_limit=10
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      # As quatro integrações seguem em `mock`, como combinado.
+      WHATSAPP_ADAPTER: ${WHATSAPP_ADAPTER}
+      WHATSAPP_SESSAO_DIR: /app/sessao-whatsapp
+      WHATSAPP_MODO_TESTE: ${WHATSAPP_MODO_TESTE:-true}
+      FISCAL_ADAPTER: ${FISCAL_ADAPTER}
+      PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}
+    ports:
+      # 3001 no computador, para não disputar com a de desenvolvimento.
+      - "3001:3000"
+    volumes:
+      - portoink_arquivos:/app/arquivos
+      - portoink_whatsapp:/app/sessao-whatsapp
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    # O MESMO TETO DO DESENVOLVIMENTO: 1 vCPU e 1 GB.
+    #
+    # Sem isto, o container pega a máquina inteira — e a medição
+    # diria que cabe numa folga que a entrega não vai ter. A
+    # restrição é do contrato de infraestrutura, não do ambiente.
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  web:
+    build:
+      context: ./frontend
+      target: prod
+    container_name: portoink-web-prod
+    restart: "no"
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # 8080 no computador; dentro do container o Nginx ouve a 80.
+      - "8080:80"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+# A rede e os volumes são os que já existem: o banco continua
+# sendo o mesmo container `db`, e os arquivos enviados também.
+networks:
+  default:
+    name: portoink
+    external: true
+
+volumes:
+  portoink_arquivos:
+    name: portoink_arquivos
+    external: true
+  portoink_whatsapp:
+    name: portoink_whatsapp
+    external: true

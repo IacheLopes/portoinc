@@ -9,8 +9,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  buscarObra, criarLinha, apagarLinha, importarOrcamento,
-  dinheiro, quantidade, ROTULO_SITUACAO, opcoesDeUnidade,
+  buscarObra, criarLinha, apagarLinha, importarOrcamento, ROTULO_SITUACAO, opcoesDeUnidade,
   type ObraDetalhe as Detalhe,
 } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
@@ -24,6 +23,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
+import { plural, dinheiro, quantidade } from '../../servicos/texto';
 
 const MODELO_CSV =
   'codigo;descricao;unidade;quantidade;valor_unitario\n' +
@@ -96,7 +96,7 @@ export function ObraDetalhe() {
           <Indicador
             titulo="Orçamento previsto"
             valor={dinheiro(obra.orcamentoTotal)}
-            detalhe={obra.linhas.length + ' linha(s) cadastrada(s)'}
+            detalhe={plural(obra.linhas.length, 'linha cadastrada', 'linhas cadastradas')}
           />
           <Indicador
             titulo="Almoxarifados"
@@ -378,9 +378,11 @@ function FormularioImportacao({
     try {
       const r = await importarOrcamento(obraId, csv);
 
-      const partes = [r.importadas + ' linha(s) importada(s)'];
+      const partes = [plural(r.importadas, 'linha importada', 'linhas importadas')];
       if (r.ignoradas > 0) partes.push(r.ignoradas + ' já existiam e foram ignoradas');
-      if (r.totalDeProblemas > 0) partes.push(r.totalDeProblemas + ' linha(s) com problema');
+      if (r.totalDeProblemas > 0) {
+        partes.push(plural(r.totalDeProblemas, 'linha com problema', 'linhas com problema'));
+      }
 
       if (r.problemas.length > 0) {
         setProblemas(r.problemas);
@@ -455,7 +457,11 @@ function FormularioImportacao({
           />
           {linhasDetectadas > 1 && (
             <p className="campo__ajuda">
-              {linhasDetectadas - 1} linha(s) de dados detectada(s), além do cabeçalho.
+              {plural(
+                linhasDetectadas - 1,
+                'linha de dados detectada',
+                'linhas de dados detectadas',
+              )}, além do cabeçalho.
             </p>
           )}
         </div>

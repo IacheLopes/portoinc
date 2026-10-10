@@ -20,6 +20,19 @@ import { carregarUsuario, type UsuarioAutenticado } from '../servicos/autenticac
 
 export const COOKIE_RENOVACAO = 'portoink_sessao';
 
+/**
+ * O que uma conta de senha provisória ainda alcança.
+ *
+ * Só o necessário para ela criar a própria senha e sair:
+ * saber quem é, trocar a senha, e encerrar a sessão. Qualquer
+ * outra rota responde 403 enquanto a marca estiver ligada.
+ */
+const LIBERADAS = new Set([
+  '/api/autenticacao/eu',
+  '/api/autenticacao/senha',
+  '/api/autenticacao/sair',
+]);
+
 declare module 'fastify' {
   interface FastifyInstance {
     exigirLogin: (req: FastifyRequest, res: FastifyReply) => Promise<void>;
@@ -62,6 +75,39 @@ async function identificar(
   }
 
   req.usuario = usuario;
+
+  // ----------------------------------------------------------
+  //  SENHA PROVISÓRIA NÃO ABRE O SISTEMA
+  //
+  //  Quem cria uma conta escolhe uma senha de entrada, e a rota
+  //  de redefinir sorteia outra. Nos dois casos a conta nasce
+  //  marcada com `precisaTrocarSenha`, e a própria mensagem da
+  //  tela promete: "a pessoa deverá criar uma nova no próximo
+  //  acesso".
+  //
+  //  Até 09/10/2026 a marca era escrita, enviada no login e
+  //  declarada no tipo do frontend — e NENHUMA TELA A LIA. As
+  //  sete contas da simulação entraram direto no painel com a
+  //  senha que o administrador digitou. Na prática, quem cria
+  //  contas sabia a senha de todo mundo, para sempre.
+  //
+  //  A trava fica AQUI, e não só na tela, porque é a regra da
+  //  casa (`02-plano-e-arquitetura.md`, §2.4): "permissão por
+  //  função, verificada no servidor — nunca só escondendo botão
+  //  na tela". Esconder a tela e deixar a API aberta seria um
+  //  cadeado pintado na porta.
+  //
+  //  As quatro portas que continuam abertas são as que a pessoa
+  //  precisa para SAIR desse estado, e nenhuma a mais.
+  // ----------------------------------------------------------
+  if (usuario.precisaTrocarSenha && !LIBERADAS.has(req.url.split('?')[0])) {
+    await res.status(403).send({
+      erro: 'Crie uma senha sua antes de usar o sistema.',
+      precisaTrocarSenha: true,
+    });
+    return null;
+  }
+
   return usuario;
 }
 

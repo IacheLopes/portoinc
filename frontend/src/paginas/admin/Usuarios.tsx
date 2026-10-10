@@ -29,6 +29,7 @@ import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { mascaraTelefone, telefoneParaGuardar } from '../../servicos/mascaras';
+import { palavra } from '../../servicos/texto';
 
 interface FuncaoItem {
   id: string;
@@ -253,8 +254,10 @@ export function Usuarios() {
             <Cartao key={f.id} titulo={f.nome}>
               <p className="funcao__descricao">{f.descricao}</p>
               <p className="linha-de-resumo">
-                <strong>{f.permissoes.length}</strong> permissões ·{' '}
-                <strong>{f.usuarios}</strong> usuário(s)
+                <strong>{f.permissoes.length}</strong>{' '}
+                {palavra(f.permissoes.length, 'permissão', 'permissões')} ·{' '}
+                <strong>{f.usuarios}</strong>{' '}
+                {palavra(f.usuarios, 'usuário', 'usuários')}
               </p>
             </Cartao>
           ))}

@@ -14,6 +14,7 @@ import { existsSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 
@@ -72,6 +73,8 @@ const DOCUMENTOS = {
       'Os casos são acrescentados a cada etapa concluída.',
   },
 };
+
+import { matarOrfaos, MARCA_DO_PERFIL } from './orfaos.mjs';
 
 const CAMINHOS_EDGE = [
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
@@ -291,12 +294,26 @@ ${corpo}
   await mkdir(dirname(htmlTemp), { recursive: true });
   await writeFile(htmlTemp, html, 'utf8');
 
+  // PERFIL PROPRIO, COM A MARCA DA CASA.
+  //
+  // Sem `--user-data-dir`, este Edge usa o perfil padrao — e a
+  // faxina de `orfaos.mjs`, que procura '' + MARCA_DO_PERFIL + '' na
+  // linha de comando, nao consegue reconhece-lo. Gerar os cinco
+  // documentos abre cinco navegadores; um `npm run pdfs`
+  // interrompido deixava cinco orfaos invisiveis.
+  //
+  // Achado em 09/10/2026: 9 processos vivos, um deles de 14 horas
+  // antes. A regua ja tinha faxina; o gerador de PDF e que nao
+  // entrava nela.
+  const perfil = join(tmpdir(), MARCA_DO_PERFIL + 'pdf-' + Date.now());
+
   await executar(
     acharEdge(),
     [
       '--headless',
       '--disable-gpu',
       '--no-pdf-header-footer',
+      '--user-data-dir=' + perfil,
       '--print-to-pdf=' + doc.saida,
       'file:///' + htmlTemp.replace(/\\/g, '/'),
     ],
@@ -309,6 +326,11 @@ ${corpo}
   console.log('  Arquivo: ' + doc.saida);
   console.log('');
 }
+
+// Faxina antes de abrir, como a regua ja faz: geracao
+// interrompida deixa navegador vivo, e um  abre
+// cinco.
+matarOrfaos();
 
 principal().catch((erro) => {
   console.error('\n  [ERRO] Não foi possível gerar o PDF:\n  ' + erro.message + '\n');

@@ -192,10 +192,17 @@ async function principal() {
     });
   }
 
-  // Almoxarifado central da empresa (sem obra vinculada).
-  await banco.almoxarifado.create({
-    data: { codigo: 'CENTRAL', nome: 'Almoxarifado Central', central: true },
-  });
+  // O ALMOXARIFADO CENTRAL SAIU DAQUI.
+  //
+  // Ele é da decisão D3 — "por obra, com um Almoxarifado Central
+  // como mais um local" —, e enquanto nascia aqui ele só existia
+  // em ambiente de teste: a semente não roda em produção. A
+  // empresa recebia o sistema sem lugar para o que não é de obra
+  // nenhuma.
+  //
+  // Passou para a migração `0024_o_almoxarifado_que_nao_e_de_obra`,
+  // onde nasce com a instalação, como as faixas de alçada.
+  // Criá-lo aqui de novo quebraria a semente no código único.
 
   // ---------- Orçamento da primeira obra ----------
   const primeira = await banco.obra.findUnique({ where: { codigo: 'OB-001' } });

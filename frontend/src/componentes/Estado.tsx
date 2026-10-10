@@ -6,6 +6,7 @@
 //  o usuário não sabe se travou, se deu erro ou se não há dados.
 // ============================================================
 
+import type { ReactNode } from 'react';
 import { Icone } from './Icone';
 
 interface PropsCarregando {
@@ -44,7 +45,15 @@ export function Erro({ mensagem, aoTentarNovamente }: PropsErro) {
 
 interface PropsVazio {
   titulo: string;
-  descricao?: string;
+  /**
+   * Texto ou conteúdo.
+   *
+   * Era `string`, e por isso tela vazia nenhuma conseguia dar o
+   * CAMINHO: "lance em Receitas e despesas" sem o link é uma
+   * instrução para a pessoa procurar sozinha. `ReactNode` aceita
+   * string igual — nenhuma chamada existente muda.
+   */
+  descricao?: ReactNode;
 }
 
 export function Vazio({ titulo, descricao }: PropsVazio) {

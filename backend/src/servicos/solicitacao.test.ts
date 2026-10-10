@@ -66,26 +66,33 @@ describe('Conferência antes do envio', () => {
     primeiraCompra: false,
     especificacaoTecnica: null,
     descricao: 'Cimento Portland',
+    valorEstimado: 34,
+    ...extra,
+  });
+
+  /** Uma solicitação com prazo, que é o caso normal. */
+  const pedido = (extra: Partial<Parameters<typeof conferirParaEnvio>[1]> = {}) => ({
+    dataDesejada: new Date('2026-11-30'),
     ...extra,
   });
 
   it('bloqueia solicitação sem itens', () => {
-    const problemas = conferirParaEnvio([]);
+    const problemas = conferirParaEnvio([], pedido());
     assert.equal(problemas.length, 1);
     assert.ok(problemas[0].includes('pelo menos um item'));
   });
 
   it('libera item normal', () => {
-    assert.deepEqual(conferirParaEnvio([item()]), []);
+    assert.deepEqual(conferirParaEnvio([item()], pedido()), []);
   });
 
   it('bloqueia quantidade zero ou negativa', () => {
-    assert.equal(conferirParaEnvio([item({ quantidade: 0 })]).length, 1);
-    assert.equal(conferirParaEnvio([item({ quantidade: -5 })]).length, 1);
+    assert.equal(conferirParaEnvio([item({ quantidade: 0 })], pedido()).length, 1);
+    assert.equal(conferirParaEnvio([item({ quantidade: -5 })], pedido()).length, 1);
   });
 
   it('exige especificação quando é a primeira compra', () => {
-    const problemas = conferirParaEnvio([item({ primeiraCompra: true })]);
+    const problemas = conferirParaEnvio([item({ primeiraCompra: true })], pedido());
 
     assert.equal(problemas.length, 1);
     assert.ok(problemas[0].includes('nunca foi comprado'));
@@ -95,7 +102,7 @@ describe('Conferência antes do envio', () => {
   it('libera primeira compra quando a especificação foi preenchida', () => {
     const problemas = conferirParaEnvio([
       item({ primeiraCompra: true, especificacaoTecnica: 'CP-II-Z-32, saco de 50kg' }),
-    ]);
+    ], pedido());
 
     assert.deepEqual(problemas, []);
   });
@@ -103,7 +110,7 @@ describe('Conferência antes do envio', () => {
   it('não aceita especificação só com espaços', () => {
     const problemas = conferirParaEnvio([
       item({ primeiraCompra: true, especificacaoTecnica: '   ' }),
-    ]);
+    ], pedido());
 
     assert.equal(problemas.length, 1);
   });
@@ -113,11 +120,52 @@ describe('Conferência antes do envio', () => {
       item({ quantidade: 0, descricao: 'Areia' }),
       item({ primeiraCompra: true, descricao: 'Brita' }),
       item({ descricao: 'Cimento' }),
-    ]);
+    ], pedido());
 
     assert.equal(problemas.length, 2);
     assert.ok(problemas[0].includes('Areia'));
     assert.ok(problemas[1].includes('Brita'));
+  });
+
+  // ----------------------------------------------------------
+  //  O PREÇO E O PRAZO
+  //
+  //  Os dois eram opcionais, e os dois estão na lista de campos
+  //  obrigatórios da análise do fluxo de compras, §2.1.
+  //
+  //  O do preço não é formalidade: na simulação de 09/10/2026 um
+  //  pedido de 800 tubos — R$ 25.200 — foi para a fila de quem
+  //  assina até R$ 2.000, porque sem preço o total dá R$ 0,00 e
+  //  R$ 0,00 cai na menor faixa.
+  // ----------------------------------------------------------
+  it('bloqueia item sem preço estimado, porque a alçada decidiria sobre zero', () => {
+    const problemas = conferirParaEnvio([item({ valorEstimado: null })], pedido());
+
+    assert.equal(problemas.length, 1);
+    assert.ok(problemas[0].includes('sem preço estimado'));
+    assert.ok(problemas[0].includes('quem assina'));
+  });
+
+  it('aceita preço zero de verdade, que é diferente de preço em branco', () => {
+    // Brinde, amostra, item de garantia: custa zero e é uma
+    // informação, não a ausência dela.
+    assert.deepEqual(conferirParaEnvio([item({ valorEstimado: 0 })], pedido()), []);
+  });
+
+  it('bloqueia solicitação sem prazo', () => {
+    const problemas = conferirParaEnvio([item()], pedido({ dataDesejada: null }));
+
+    assert.equal(problemas.length, 1);
+    assert.ok(problemas[0].includes('até quando'));
+  });
+
+  it('cobra o prazo uma vez só, mesmo com dez itens', () => {
+    const problemas = conferirParaEnvio(
+      [item(), item(), item()],
+      pedido({ dataDesejada: null }),
+    );
+
+    assert.equal(problemas.length, 1, 'prazo é da solicitação, não do item');
   });
 });
 

@@ -1,4 +1,4 @@
-<!-- versao: 0.45.0 -->
+<!-- versao: 0.58.0 -->
 
 # Design do sistema — Porto Inc.
 
@@ -187,6 +187,29 @@ que funciona no claro vira mancha ilegível.
 
 Quando o olho vê três botões "principais", nenhum é principal.
 
+### A exceção: fila de trabalho
+
+A regra vale para a ação **da página**. Numa **fila**, cada linha *é* um próximo passo, e a
+pessoa escolhe qual — não há competição, há escolha.
+
+**Aprovações** pinta de azul a linha que espera a assinatura **de quem está olhando**, e
+deixa branca a que não espera. É a diferença entre *"Analisar"* e *"Ver"* dita antes do
+clique, e sem ela a pessoa abre três solicitações para descobrir que só uma é dela.
+
+> **Onde a exceção NÃO vale:** se a página também tem um botão principal no cabeçalho, ele
+> volta a competir com as linhas. Fila com ação de criar em cima não pinta linha de azul.
+
+Esta exceção nasceu de uma contradição da própria casa. Em 09/10/2026 a régua acusou
+`VARIOS_BOTOES_PRINCIPAIS` em Aprovações, nas três larguras, porque a varredura funcional
+encheu a fila: antes havia **uma** solicitação, passou a haver **três**, duas delas
+esperando assinatura. A régua cobrava a tabela acima ao pé da letra — *ação de linha de
+tabela é discreta* —, e a tabela estava escrita larga demais: ela descrevia o caso comum
+(abrir, ver detalhe) como se fosse o único.
+
+A régua passou a ignorar botão principal dentro de `tr` ou `li`, e foi conferida nos dois
+sentidos: com a fila de três linhas, passa; com dois botões plantados no cabeçalho da
+mesma página, acusa nas três larguras.
+
 ## 1.9 Modal
 
 **Modal serve para interromper. Se não há motivo para interromper, ele atrapalha.**
@@ -272,7 +295,7 @@ A divisão de trabalho que ficou:
 | Ferramenta | O que faz | Custo |
 |---|---|---|
 | `pente-fino` | acha classe de defeito, lendo | 0,14s |
-| `padrao` | as 7 regras do padrão, lendo | ~0s |
+| `padrao` | as 9 regras do padrão, lendo | ~0s |
 | `auditoria-ui` | confirma **uma vez**, no fim | ~25s por largura |
 
 O navegador serve para **ver**, não para acusar.
@@ -297,6 +320,28 @@ npm run padrao
 
 Lê o código-fonte e acusa o que foge do combinado. É o que faz o padrão durar depois que
 esta fase acabar.
+
+**As nove regras:**
+
+| Regra | O que cobra |
+|---|---|
+| Cartões escritos à mão | bloco de indicador montado fora do componente `Indicador` |
+| Dinheiro ou data formatados fora das funções oficiais | `toLocaleString` solto, em vez de `dinheiro`/`dataBr` |
+| **Percentual colado no texto, fora da função oficial** | `'+' + n + '%'`, que escreve `7.8%` com o ponto do inglês |
+| Plural resolvido com "(s)" | `3 dia(s)` em vez de `3 dias` |
+| Telas sem título | página sem `<h1>` |
+| Telas sem o cabeçalho padrão | página sem `CabecalhoDePagina` |
+| Telas de lista sem os três estados | falta carregando, erro **ou** vazio |
+| Cor escrita direto no CSS, fora dos tokens | `#1d4ed8` em vez de `var(--cor-...)` |
+| Espaçamento em px fora da escala | `margin: 13px` |
+
+A nona nasceu em 09/10/2026, do defeito que passou por 1.320 testes e por sete regras: a
+Equalização escrevia `+7.8%` ao lado de `R$ 339,50`, dois separadores decimais na mesma
+linha. As outras regras procuravam formatador **duplicado**, e ali não havia formatador
+nenhum — havia número colado em texto.
+
+> **CSS fica de fora da regra, e não por conveniência:** `style={{ height: 50 + '%' }}`
+> *tem* de usar o ponto, senão o navegador não entende.
 
 **A dívida conhecida.** O sistema foi construído antes do padrão existir, então já nasce
 com violações. Um conferidor que reprova desde o primeiro dia é um conferidor que todo
@@ -1728,9 +1773,78 @@ escondido:
 
 ---
 
-# Parte 4 — As dez vezes em que o defeito era a medição
+# Parte 3.2 — Como um formulário se defende
 
-É a lição mais cara desta obra, e ela se repetiu **dez vezes** em dez etapas. Vale estar
+A varredura funcional de 09/10/2026 abriu os catorze formulários de cadastro do sistema e
+mandou cada um vazio. **Nenhum gravou calado, e nenhum fechou engolindo o erro.** Mas eles
+se defendem de duas maneiras diferentes, e isso não é descuido: é a forma certa para cada
+caso.
+
+| defesa | onde | por quê |
+|---|---|---|
+| **O botão principal nasce desabilitado** | Solicitações, Cotações, Locação, Famílias, Materiais, Fornecedores, Obras, Alçadas, Usuários | cadastro curto, com poucos campos obrigatórios. A pessoa vê o botão morto e entende o que falta só de olhar o formulário |
+| **O botão deixa clicar e a tela reclama** | Notas fiscais, Lançar entrada, Lançar saída, Estoque → Retirar, Estoque → Contar | formulário longo, com campos que dependem uns dos outros. Botão morto aqui não diz **qual** dos doze campos falta |
+
+> **A regra, em uma linha: trava onde a pessoa consegue ver o que falta; explica onde ela
+> não consegue.**
+
+E duas condições valem para as duas defesas:
+
+- **A mensagem usa a voz da casa**, não a do navegador. O `required` do HTML fica no
+  campo — ele ajuda quem navega por teclado e é a rede embaixo da checagem —, mas quem
+  fala com a pessoa é a tela. "Estoque → Contar" era a única que deixava o balãozinho
+  cinza do sistema operacional responder; passou a dizer *"Escreva o que a contagem
+  encontrou. Ajuste sem motivo ninguém audita depois."*
+- **A mensagem nasce DENTRO do formulário aberto.** Um `<dialog>` modal desenha por cima
+  de tudo, com véu. Em Notas fiscais o aviso nascia fora dele, em `y=374`, enquanto o
+  modal cobria de `y=48` a `y=852`: quem clicava em "Lançar nota" com o formulário vazio
+  via o modal continuar aberto e nada mais acontecer. Fora do formulário quando ele está
+  fechado, dentro quando aberto — e nunca os dois ao mesmo tempo, senão o leitor de tela
+  anuncia a mensagem duas vezes.
+
+# Parte 3.3 — As peças que nasceram da entrega
+
+A simulação de entrega de 09/10/2026 — sistema zerado, empresa fictícia entrando pela
+tela — produziu duas peças novas e uma mudança no `Vazio`.
+
+## `PainelDeImportacao`
+
+Nasceu dentro de `ObraDetalhe`, para o orçamento, e virou peça quando catálogo e
+fornecedores ganharam a mesma porta. Copiá-lo três vezes garantiria três redações
+diferentes na primeira correção — é a história dos 29 cartões que deram origem ao
+`Cartao`.
+
+O que muda de uma importação para outra é **só** o título, o modelo de arquivo, a
+explicação e a chamada. Escolher o arquivo ou colar o conteúdo, contar as linhas, mostrar
+os problemas com o número da linha: idêntico, e idêntico é o ponto.
+
+> **Importar com ressalva não fecha a tela.** Quando alguma linha ficou de fora, o painel
+> continua aberto com a lista: quem mandou a planilha precisa ver **quais** linhas, com o
+> número delas, para corrigir o arquivo.
+
+## O terceiro estado do `App`
+
+Entre *sem conta* e *com conta* faltava **precisa criar senha**. Sem ele, a marca
+`precisaTrocarSenha` era escrita no banco, mandada no login, declarada no tipo do
+frontend — e nenhuma tela a lia.
+
+Ali não há menu, não há barra lateral e não há endereço que escape; só "sair" continua
+valendo, porque prender alguém dentro do sistema seria pior que o problema original. E a
+trava de verdade mora no **servidor**, pela regra do plano §2.4: *"permissão verificada no
+servidor, nunca só escondendo botão na tela"*.
+
+A mesma tela serve os dois momentos — criar a primeira senha e trocar depois —, com a
+redação mudando: *"A senha que você recebeu"* no lugar de *"Senha atual"*, porque quem
+está ali não tem uma senha dela ainda.
+
+## `Vazio` passou a aceitar conteúdo, não só texto
+
+A descrição era `string`, e por isso tela vazia nenhuma conseguia dar o **caminho**:
+"lance em Receitas e despesas" sem o link é uma instrução para a pessoa procurar sozinha.
+
+# Parte 4 — As vinte e três vezes em que o defeito era a medição
+
+É a lição mais cara desta obra, e ela se repetiu **vinte e três vezes**. Vale estar
 escrita junta, porque separada cada uma parece azar.
 
 | # | Onde | A régua dizia | A verdade |
@@ -1745,6 +1859,65 @@ escrita junta, porque separada cada uma parece azar.
 | 8 | Design 8 | a régua de hover "enxergava" | `:hover` nunca casava — o controle era falso positivo |
 | 9 | Revisão 1 | um campo estourava a caixa em Avisos ao fornecedor | era o texto DENTRO do `<input>` rolando, que é o comportamento correto de campo de texto |
 | 10 | Revisão 1 | o Financeiro saía com as barras quase invisíveis e a rosca pela metade | fotografava no meio da animação (barras 600ms com atraso até ~1,1s, rosca 800ms, medidor 900ms) |
+| 11 | Varredura 09/10 | um cabeçalho de tabela estourava a caixa no celular | o cabeçalho em modo cartão tem 1px de largura: está escondido de propósito, e eu só olhava o elemento, não os pais |
+| 12 | Varredura 09/10 | dois rótulos de gráfico transbordando | eram `<text>` de **SVG**, onde `scrollWidth` não quer dizer nada. A régua já tinha essa guarda; eu copiei três das quatro |
+| 13 | Varredura 09/10 | a coluna "Valor" do PDF embrulhava a partir de R$ 20 milhões | calculei a página em retrato. O gerador já vira a página deitada para tabelas de 6+ colunas, e lá cabe até R$ 15 bilhões |
+| 14 | Varredura 09/10 | "Estoque → Contar" se defendia com o balãozinho do navegador | a tela **mostrava** a mensagem da casa; meu teste é que a reconhecia pelas palavras ("obrigatório", "informe") e a minha redação não tinha nenhuma delas |
+| 15 | Varredura 09/10 | Aprovações com "dois botões principais ao mesmo tempo" | eram as ações de **linha** da fila, e o azul ali é deliberado. A régua cobrava a regra 1.8 ao pé da letra, e a regra estava escrita larga demais |
+| 16 | Varredura 09/10 | a régua morreu com "não apareceu `.menu__lista` em 40s" | não era a barra lateral: a senha padrão embutida na régua (`Porto@2026`) não serve para a conta `admin@`, a única do sistema cuja senha é `admin123`. A mensagem mandou procurar defeito no lugar errado |
+| 17 | Entrega 09/10 | "a solicitação de R$ 25.200 caiu na faixa errada" | eu é que não achei o campo: ele se chama **"Valor unitário (R$)"**, e eu procurei "Valor estimado", que é o nome da coluna do banco. O pedido foi ao ar valendo R$ 0,00, e o roteamento estava certo |
+| 18 | Entrega 09/10 | "importei 3 materiais e nenhum apareceu" | o painel de importação **fica aberto** mostrando as ressalvas, e a lista atrás não entra na leitura da tela. Os três estavam no banco |
+| 19 | Entrega 09/10 | a lista de cotações estava com "tabela sem cabeçalho" no computador | a tabela culpada é a do **modal fechado** de nova cotação: as linhas estão no DOM e tudo ali tem tamanho zero, cabeçalho incluído. Só apareceu quando o teste de alçada aprovou três solicitações e encheu a lista |
+| 20 | Funções 10/10 | a varredura das 41 telas travou na tela 31, sem dizer por quê | eu rodei a régua numa tela só enquanto ela estava no ar, e a **faxina de órfãos da segunda matou os navegadores da primeira**. A marca do perfil diz "este é do PortoInk"; não diz de qual execução. Hoje a faxina só mata o que está parado há mais de 25 minutos |
+| 21 | Produção 10/10 | "a assinatura do Gestor não mudou a situação da solicitação" | a solicitação valia R$ 7.440 e cai na faixa que pede **duas** assinaturas — a própria tela avisa, em "Quem aprova: 2 assinaturas · Gestor de obra e Engenheiro". Uma de duas deixa parado de propósito. O teste é que só sabia assinar uma vez |
+| 22 | Produção 10/10 | "R$ 25.200 não caiu em faixa nenhuma" | o teste carregava faixas que eu inventei (0–5k / 5k–50k / 50k+). As **cadastradas** são 0–2.000, 2.000–15.000 com as duas assinaturas, e acima de 15.000 com o Fundador. R$ 25.200 foi para o Fundador, que é o certo |
+| 23 | Produção 10/10 | "o Recebimento não tem atalho para «chegou tudo»" | o botão "Preencher com o saldo" existe e a varredura anterior o listou. Nesta o pedido **já estava recebido por inteiro**, e aí a tela não oferece botão nenhum — que é a trava funcionando |
+
+### Três delas nasceram do mesmo lugar: o teste envelheceu junto com o sistema
+
+As de nº 21 a 23 vieram todas da mesma rodada, e têm a mesma causa: **o sistema melhorou e
+o teste ficou para trás**. A alçada passou a exigir duas assinaturas, o campo mudou de nome
+(de "Valor estimado" para "Valor unitário"), o prazo virou obrigatório para enviar, o botão
+da primeira senha passou a dizer "Criar minha senha". Cada uma dessas melhorias apareceu na
+varredura **vestida de defeito**.
+
+> Teste que não acompanha a tela vira uma segunda fonte de verdade — e a mais velha das
+> duas. Quando ele discorda do sistema, a primeira pergunta é qual dos dois está velho.
+
+### A décima terceira foi diferente, e vale separar
+
+As outras treze acusaram defeito que não existia. A décima terceira **escondeu um que
+existe**: enquanto eu media a tabela errada, a coluna estreita de verdade — a do relatório
+de Fornecedores, com 59,3pt úteis — embrulhava `R$ 1.894.926,96`, que é um valor da
+planilha do próprio fluxo de compras.
+
+O conserto que eu tinha escrito pelo motivo errado (encolher a fonte da célula em vez de
+deixar embrulhar) acabou servindo pelo motivo certo. Mas isso foi sorte, não método.
+
+> Medição errada não só acusa o inocente: ela **ocupa o lugar** da medição que acharia o
+> culpado.
+
+### E uma vigésima, de outra espécie: o conserto para o que não estava quebrado
+
+Em 09/10/2026, fechando a lista de achados da entrega, eu ia bloquear a criação de faixas
+de alçada que se sobrepõem — porque tinha criado a mesma faixa duas vezes, por engano, e
+as duas ficaram de pé.
+
+Escrevi a trava, escrevi oito testes, e aí li o código que já existia. O sistema **já
+trata** sobreposição, e trata melhor:
+
+- `acharFaixa` resolve o empate de forma determinística — vale a faixa de **maior mínimo** —,
+  e isso tem teste desde sempre;
+- `conferirCobertura` avisa na tela, nomeando as faixas que se cruzam;
+- e **bloquear impediria reorganizar a escada**: para trocar três faixas de lugar é preciso
+  uma sobreposição temporária.
+
+Desfiz tudo. A lição é irmã das dezenove acima, mas não é a mesma: ali eu media errado;
+aqui eu media certo e **concluí errado**, porque li o sintoma sem ler a decisão que já
+estava tomada — e documentada, com o motivo, a dez linhas de distância.
+
+> Antes de consertar o que parece torto, **procure o comentário**. Nesta obra, o que é
+> deliberado diz que é.
 
 ### O padrão
 

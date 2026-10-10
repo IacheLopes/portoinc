@@ -8,6 +8,43 @@
 // ============================================================
 
 /**
+ * Dinheiro em português: "R$ 1.234,56".
+ *
+ * MOROU EM `servicos/cadastros.ts` ATE 09/10/2026 — um cliente de
+ * API, com dois formatadores pendurados no fim. O resto da
+ * formatação sempre morou aqui, e duas casas para a mesma coisa e
+ * como nasce "1.234,5" num lugar e "1.234,50" no outro.
+ *
+ * O ESPAÇO DEPOIS DO R$ É NÃO SEPARÁVEL, porque `style: 'currency'`
+ * devolve assim — e na tela isso é o certo: impede o "R$" de
+ * quebrar linha para longe do número. O backend usa espaço comum
+ * de propósito, porque lá o texto vai para arquivo, onde quem
+ * aperta Ctrl+F digita espaço comum. A diferença é deliberada, e
+ * está escrita nos dois lados.
+ */
+export function dinheiro(valor: number): string {
+  return valor.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Quantidade com separador de milhar.
+ *
+ * As casas são um argumento porque as duas precisões são legítimas
+ * e diferentes: no estoque uma quantidade pode ter 4 casas (0,0025
+ * de um insumo), num relatório de consumo 4 casas viram ruído.
+ *
+ * Elas eram duas funções com o mesmo nome em arquivos diferentes —
+ * e é assim que um lugar mostra "1.234,5" e outro "1.234,50".
+ */
+export function quantidade(valor: number, casas = 4): string {
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: casas });
+}
+
+/**
  * Concorda o número com o substantivo.
  *
  *   plural(1, 'parcela', 'parcelas')  ->  "1 parcela"
@@ -18,8 +55,18 @@
  * isso — "nota/notas" funciona, mas "solicitação/solicitações" e
  * "função/funções" não.
  */
-export function plural(quantidade: number, um: string, muitos: string): string {
-  return quantidade === 1 ? '1 ' + um : quantidade + ' ' + muitos;
+export function plural(quantos: number, um: string, muitos: string): string {
+  // O NÚMERO SAI FORMATADO. Colado cru, `plural(1234, 'nota',
+  // 'notas')` escrevia "1234 notas", sem o ponto do milhar — e com
+  // número quebrado escreveria "1.5 dias", com o ponto do inglês.
+  //
+  // Só deu para fazer isto quando `quantidade` veio morar aqui: antes
+  // ela estava em `servicos/cadastros.ts`, e importar o cliente de
+  // API dentro do módulo de texto arrastaria código de rede para cá.
+  //
+  // O parâmetro deixou de se chamar `quantidade` para não encobrir a
+  // função de mesmo nome.
+  return quantidade(quantos, 2) + ' ' + (quantos === 1 ? um : muitos);
 }
 
 /**
@@ -62,6 +109,47 @@ export function porcento(valor: number): string {
   return valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
 }
 
+/**
+ * Só a palavra que concorda, sem o número: "usuário", "usuários".
+ *
+ * `plural` escreve o número junto, e na maioria dos casos é o que se
+ * quer. Em dois ela não serve:
+ *
+ * 1. **O número está em outro elemento.** `<strong>{n}</strong>
+ *    usuários` põe negrito só no número. Usar `plural` ali
+ *    engrossaria a palavra também, mudando o desenho da tela para
+ *    consertar a gramática.
+ *
+ * 2. **O verbo vem ANTES do número.** "Falta 1 dia" e "Faltam 2
+ *    dias" — o verbo concorda e aparece primeiro, onde `plural` não
+ *    alcança.
+ *
+ * Fora desses dois, use `plural`: uma chamada em vez de duas.
+ */
+export function palavra(quantidade: number, um: string, muitos: string): string {
+  return quantidade === 1 ? um : muitos;
+}
+
+/**
+ * A taxa de juros do mês: "2,0% ao mês".
+ *
+ * A CASA DECIMAL É FORÇADA, e é o que a separa de `porcento`.
+ *
+ * As taxas oferecidas na equalização vão de meio em meio ponto —
+ * 0,5 · 1 · 1,5 · 2 · 2,5 · 3. Com `porcento`, a lista sai
+ * "0,5% · 1% · 1,5% · 2%": metade com vírgula e metade sem, e o
+ * que é uma escala de passo fixo parece um punhado de números
+ * soltos.
+ *
+ * Morava escrita à mão dentro da tela de Equalização.
+ */
+export function jurosAoMes(taxa: number): string {
+  return taxa.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }) + '% ao mês';
+}
+
 /** "1 dia", "4,5 dias". */
 export function dias(valor: number): string {
   const n = valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
@@ -77,7 +165,33 @@ export function dias(valor: number): string {
  */
 export function dinheiroCurto(valor: number): string {
   const absoluto = Math.abs(valor);
-  if (absoluto >= 1000000) return 'R$ ' + (valor / 1000000).toFixed(1).replace('.', ',') + 'M';
-  if (absoluto >= 1000) return 'R$ ' + (valor / 1000).toFixed(1).replace('.', ',') + 'k';
-  return 'R$ ' + valor.toFixed(0);
+
+  // O SINAL VEM ANTES DO SÍMBOLO, como em todo o resto do sistema.
+  // Montando o 'R$ ' à mão, o menos ficava preso no meio:
+  // "R$ -20,0M". A tela e os arquivos já escrevem "-R$"; o eixo do
+  // gráfico era o último lugar que discordava.
+  const sinal = valor < 0 ? '-' : '';
+
+  // BILHÃO ENTRA, e não é hipótese: a planilha "Análise de
+  // aprovação" do fluxo de compras traz linhas de R$ 1,5 milhão e
+  // R$ 2,0 milhões. Somando uma obra ou um ano, dezenas de milhões
+  // são plausíveis — e sem este degrau o eixo escrevia
+  // "R$ 1000,0M" para um bilhão, e "R$ 15000,0M" para quinze.
+  //
+  // Acima de bilhão o eixo volta a crescer ("R$ 1.000,0B" para um
+  // trilhão), e está combinado: a casa dos bilhões é o teto.
+  const escala = (divisor: number, letra: string) =>
+    sinal + 'R$ ' + (absoluto / divisor).toLocaleString('pt-BR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }) + letra;
+
+  if (absoluto >= 1e9) return escala(1e9, 'B');
+  if (absoluto >= 1e6) return escala(1e6, 'M');
+  if (absoluto >= 1000) return escala(1000, 'k');
+
+  // Abaixo de mil não há abreviação: o número cabe inteiro.
+  // `toLocaleString` no lugar de `toFixed`, que é o que põe o
+  // separador certo quando o eixo chega a "R$ 999".
+  return sinal + 'R$ ' + absoluto.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 }

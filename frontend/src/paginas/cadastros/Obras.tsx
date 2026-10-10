@@ -137,7 +137,21 @@ export function Obras() {
 
       <section className="secao">
         {obras.length === 0 ? (
-          <Vazio titulo="Nenhuma obra cadastrada" descricao="Cadastre a primeira obra para começar." />
+          /* A TELA VAZIA DIZ A QUEM PEDIR.
+             Abrir obra é do Administrador e do Comprador: obra tem
+             contrato, cliente e orçamento, e é registro da empresa,
+             não do canteiro. Mas o gestor de obra ABRE esta tela e
+             via "cadastre a primeira obra" sem nenhum botão para
+             fazer isso — instrução para uma ação que ele não tem. */
+          <Vazio
+            titulo="Nenhuma obra cadastrada"
+            descricao={
+              podeEditar
+                ? 'Cadastre a primeira obra para começar.'
+                : 'Quem abre obra é o administrador ou o comprador — obra tem contrato, '
+                  + 'cliente e orçamento. Peça a um deles para cadastrar a sua.'
+            }
+          />
         ) : (
           <Cartao semEspaco>
             <TabelaArea>

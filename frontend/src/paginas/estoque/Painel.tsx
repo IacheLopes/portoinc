@@ -17,7 +17,7 @@ import {
   type Estoque, type LinhaEstoque, type ItemDeReposicao,
 } from '../../servicos/estoque';
 import { criarSolicitacao } from '../../servicos/solicitacoes';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
@@ -181,6 +181,21 @@ export function PainelEstoque() {
     const numero = Number(valor.replace(',', '.'));
     if (!Number.isFinite(numero)) {
       setErro('Escreva a quantidade usando só números.');
+      return;
+    }
+
+    // A CONTAGEM EXIGE O MOTIVO, e quem cobrava era o navegador.
+    //
+    // O campo tem `obrigatorio`, que vira `required` no HTML — então
+    // o Edge mostrava o balãozinho dele, cinza, com a letra do
+    // sistema operacional, no meio de uma tela que avisa em vermelho
+    // com a letra da casa. Era a única das catorze telas de cadastro
+    // que se defendia com voz emprestada.
+    //
+    // O `required` fica: ele ajuda quem navega por teclado e é a
+    // rede embaixo desta checagem.
+    if (acao === 'AJUSTE' && observacao.trim() === '') {
+      setErro('Escreva o que a contagem encontrou. Ajuste sem motivo ninguém audita depois.');
       return;
     }
 

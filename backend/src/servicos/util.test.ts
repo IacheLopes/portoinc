@@ -9,8 +9,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cnpjValido, formatarCnpj, apenasDigitos } from './util.js';
-import { gtinValido } from '../integracoes/gtin/porta.js';
+import {
+  cnpjValido, formatarCnpj, apenasDigitos, gtinValido,
+  reaisBr, quantidadeBr, porcentoBr, porcentoEmFrase, plural,
+} from './util.js';
 import { validarForcaSenha } from './senha.js';
 import { lerNumero, detectarSeparador, lerCsvOrcamento } from './orcamento.js';
 
@@ -73,6 +75,168 @@ describe('Código de barras (GTIN)', () => {
 
   it('ignora pontuação e espaços', () => {
     assert.equal(gtinValido('7 899888 400575'), true);
+  });
+});
+
+describe('Dinheiro, quantidade e percentual', () => {
+  // Estas tres funcoes formatam TUDO o que o backend escreve em
+  // numero: 83 chamadas, em doze arquivos. Antes do dia 08/10/2026
+  // cada arquivo tinha a sua copia — onze copias do dinheiro —, e
+  // nenhuma tinha teste. Duas arredondavam diferente das outras.
+
+  it('escreve real com duas casas, sempre', () => {
+    assert.equal(reaisBr(0), 'R$ 0,00');
+    assert.equal(reaisBr(1800), 'R$ 1.800,00');
+    assert.equal(reaisBr(1234567.8), 'R$ 1.234.567,80');
+    assert.equal(reaisBr(-250.5), '-R$ 250,50');
+    assert.equal(reaisBr(-1234567.8), '-R$ 1.234.567,80');
+  });
+
+  it('arredonda o centavo em vez de mostrar o terceiro', () => {
+    // ESTE ERA O DEFEITO. Duas copias — a do e-mail do fornecedor e a
+    // da saida fiscal — pediam `minimumFractionDigits` e esqueciam o
+    // `maximum`. O JavaScript entao mostra ate tres casas, e um preco
+    // de media ponderada saia "R$ 1.234,567" para o fornecedor ler.
+    assert.equal(reaisBr(1234.567), 'R$ 1.234,57');
+    assert.equal(reaisBr(0.005), 'R$ 0,01');
+    assert.equal(reaisBr(10 / 3), 'R$ 3,33');
+  });
+
+  it('poe o menos antes do simbolo, como a tela', () => {
+    // A funcao montava o 'R$ ' a mao, o que prendia o sinal entre o
+    // simbolo e o numero: "R$ -250,50". A tela usa `Intl` e sempre
+    // escreveu "-R$ 250,50". A mesma linha de caixa saia diferente na
+    // tabela e no PDF da tabela.
+    assert.ok(reaisBr(-1).startsWith('-R$ '), 'o menos vem antes do R$');
+    assert.ok(!reaisBr(-1).includes('R$ -'), 'e nunca depois');
+  });
+
+  it('nao escreve negativo que, arredondado, e zero', () => {
+    // Subtrair dois valores de dois decimais devolve -4,5e-13 com
+    // frequencia, e "-R$ 0,00" nao quer dizer nada para quem le.
+    assert.equal(reaisBr(-0.004), 'R$ 0,00');
+    assert.equal(reaisBr(-0), 'R$ 0,00');
+    assert.equal(reaisBr(-(0.3 - 0.1 - 0.2)), 'R$ 0,00');
+  });
+
+  it('arredonda o meio centavo igual dos dois lados', () => {
+    // `Math.round(-0.5)` devolve -0 no JavaScript. Arredondando o
+    // valor COM sinal, meio centavo negativo virava zero enquanto o
+    // positivo virava um centavo. Arredondar o modulo resolve.
+    assert.equal(reaisBr(0.005), 'R$ 0,01');
+    assert.equal(reaisBr(-0.005), '-R$ 0,01');
+  });
+
+  it('separa o R$ do numero com espaco comum, nao com o invisivel', () => {
+    // `style: 'currency'` devolve ESPACO NAO SEPARAVEL (U+00A0) entre
+    // o R$ e o numero. Na tela os dois sao identicos; para quem busca
+    // "R$ 1.800" no log, nao. Duas copias usavam currency, nove
+    // montavam o 'R$ ' a mao — e as duas familias nunca casavam.
+    assert.equal(reaisBr(1800).charCodeAt(2), 32, 'tem de ser espaco comum');
+    assert.ok(!reaisBr(1800).includes('\u00a0'));
+  });
+
+  it('escreve quantidade com quatro casas, e sem casa nenhuma quando e inteiro', () => {
+    // Quantidade nao forca decimal: "10 sacos" e nao "10,0000 sacos".
+    assert.equal(quantidadeBr(10), '10');
+    assert.equal(quantidadeBr(0.5), '0,5');
+    assert.equal(quantidadeBr(1234.5678), '1.234,5678');
+    assert.equal(quantidadeBr(1.00005), '1,0001');
+  });
+
+  it('aceita menos casas onde a coluna e estreita', () => {
+    // O relatorio em PDF pede duas: a coluna nao cabe quatro.
+    assert.equal(quantidadeBr(1234.5678, 2), '1.234,57');
+    assert.equal(quantidadeBr(4.5, 2), '4,5');
+  });
+
+  it('em FRASE, nao forca casa decimal', () => {
+    // "50,0% de entrada" soa de robo. Numa COLUNA a casa fixa e que
+    // faz a virgula cair sempre no mesmo lugar — sao duas
+    // necessidades, e por isso sao duas funcoes.
+    assert.equal(porcentoEmFrase(50), '50%');
+    assert.equal(porcentoEmFrase(100), '100%');
+    assert.equal(porcentoEmFrase(33.33), '33,33%');
+
+    // O DEFEITO que ela mata: `percentualEntrada` aceita decimal
+    // (z.coerce.number().min(0).max(100), sem travar inteiro), entao
+    // o fornecedor pode digitar 33,33 no portal — e colar o numero
+    // no texto escrevia "33.33% de entrada", com ponto.
+    assert.ok(!porcentoEmFrase(33.33).includes('.'));
+  });
+
+  it('escreve percentual com uma casa FORCADA', () => {
+    // A casa fixa existe para a virgula cair no mesmo lugar em toda a
+    // coluna. Sem ela a coluna sai "5%", "5,2%", "4,9%" e o olho perde
+    // a referencia ao descer.
+    assert.equal(porcentoBr(5), '5,0%');
+    assert.equal(porcentoBr(4.92), '4,9%');
+    assert.equal(porcentoBr(0), '0,0%');
+    assert.equal(porcentoBr(4900), '4.900,0%');
+  });
+});
+
+describe('Concordancia de numero', () => {
+  // O backend escrevia `n + ' dia(s)'` em doze frases, sete delas
+  // dentro de PDF. O comentario de `rotas/relatorios.ts` ja dizia a
+  // regra desde antes: "o (s) e a saida preguicosa de quem nao quis
+  // contar: sobra escrito no papel que vai para a diretoria, e quando
+  // o numero e 1 esta simplesmente errado".
+
+  it('concorda no singular e no plural', () => {
+    assert.equal(plural(1, 'dia', 'dias'), '1 dia');
+    assert.equal(plural(3, 'dia', 'dias'), '3 dias');
+  });
+
+  it('zero vai para o plural, como se fala', () => {
+    // "0 dia" ninguem diz.
+    assert.equal(plural(0, 'dia', 'dias'), '0 dias');
+  });
+
+  it('da conta do plural irregular, que um "s" no fim nao daria', () => {
+    assert.equal(plural(1, 'devolução', 'devoluções'), '1 devolução');
+    assert.equal(plural(2, 'devolução', 'devoluções'), '2 devoluções');
+    assert.equal(plural(2, 'item', 'itens'), '2 itens');
+  });
+
+  it('leva a frase inteira quando a concordancia passa do substantivo', () => {
+    // Em portugues ela contamina o adjetivo e o verbo. Partir isso em
+    // pedacos e remendar com `?:` no meio da frase e como nasce
+    // "1 itens marcados".
+    assert.equal(
+      plural(1, 'item não recebeu', 'itens não receberam'),
+      '1 item não recebeu',
+    );
+    assert.equal(
+      plural(3, 'item não recebeu', 'itens não receberam'),
+      '3 itens não receberam',
+    );
+    assert.equal(
+      plural(1, 'item marcado como disponível está', 'itens marcados como disponíveis estão'),
+      '1 item marcado como disponível está',
+    );
+  });
+
+  it('poe o ponto do milhar, porque isto vai para dentro de PDF', () => {
+    // Era `n + ' pedido(s)'`: concatenacao crua, sem separador.
+    assert.equal(plural(1234, 'pedido', 'pedidos'), '1.234 pedidos');
+  });
+
+  it('aceita media, com as casas que o lugar pede', () => {
+    // O tempo medio de uma solicitacao e o unico chamador que passa
+    // numero quebrado. Sem as casas ele sairia arredondado.
+    assert.equal(plural(4.53, 'dia', 'dias', 2), '4,53 dias');
+    assert.equal(plural(1, 'dia', 'dias', 2), '1 dia');
+  });
+
+  it('o singular segue o numero ESCRITO, nao o calculado', () => {
+    // 1,4 com zero casas sai escrito "1", e "1 dias" e exatamente o
+    // defeito que esta funcao existe para matar.
+    assert.equal(plural(1.4, 'dia', 'dias'), '1 dia');
+    // E 1,04 com duas casas tambem sai "1".
+    assert.equal(plural(1.004, 'dia', 'dias', 2), '1 dia');
+    // Mas 1,5 com uma casa e plural, porque escrito ele nao e 1.
+    assert.equal(plural(1.5, 'dia', 'dias', 1), '1,5 dias');
   });
 });
 

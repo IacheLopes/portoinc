@@ -13,16 +13,73 @@ import type { NomeDoIcone } from './componentes/Icone';
 // ============================================================
 
 /**
- * Os grupos do menu, na ordem do caminho que o trabalho percorre:
- * pedir, comprar, receber, guardar, pagar.
+ * A BARRA LATERAL NÃO LISTA TELAS. LISTA QUATRO DESTINOS.
  *
- * É assim que as pessoas da obra já pensam, então é assim que o
- * menu se organiza. Grupo nenhum passa de quatro itens — é o
- * tamanho que o olho lê sem precisar contar.
+ * Ela listava as 14 telas, agrupadas sob quatro títulos: 18 linhas
+ * para quem administra. Emerson, na reunião de 08/10/2026: "vai
+ * tudo ficar meio que encolhido, pra parecer que é pouca coisa, e
+ * ele querer colocar mais... fica coisa demais... é pra dar uma
+ * resumida no tanto de aba que tem aí".
+ *
+ * O pedido NÃO era ter menos telas — era o sistema PARECER enxuto,
+ * para o cliente querer pedir mais. Juntar alguns itens resolveria
+ * por dois módulos e a conta voltaria a crescer.
+ *
+ * Então a barra passou a listar DESTINOS, e cada destino é uma tela
+ * índice com cartões. Seis linhas para todo mundo — Início,
+ * Relatórios e estes quatro — e seis linhas depois de dez telas
+ * novas.
+ *
+ * NÃO É PADRÃO NOVO: o Cadastros já funcionava assim, escondendo
+ * cinco telas atrás de uma linha, e ninguém nunca reclamou. O que
+ * mudou foi aplicar ao menu inteiro.
+ *
+ * A ordem é a do caminho do trabalho: pedir, receber, pagar, e
+ * depois o que sustenta tudo.
+ *
+ * A REGRA QUE FAZ ISSO DURAR: tela nova vira cartão num índice que
+ * já existe. Índice novo é decisão do dono, não conveniência de
+ * quem programa. Há teste cobrando isso em `navegacao.test.ts`.
  */
-export const GRUPOS = ['Compras', 'Almoxarifado', 'Gestão', 'Administração'] as const;
+export const DESTINOS = ['Compras', 'Almoxarifado', 'Financeiro', 'Administração'] as const;
 
-export type Grupo = (typeof GRUPOS)[number];
+export type Destino = (typeof DESTINOS)[number];
+
+export interface Indice {
+  destino: Destino;
+  /** O endereço da tela índice. */
+  para: string;
+  icone: NomeDoIcone;
+  /** A linha sob o título da tela índice. */
+  descricao: string;
+}
+
+export const INDICES: Indice[] = [
+  {
+    destino: 'Compras',
+    para: '/compras',
+    icone: 'prancheta',
+    descricao: 'O caminho de uma compra, do pedido da obra até o pedido ao fornecedor.',
+  },
+  {
+    destino: 'Almoxarifado',
+    para: '/almoxarifado',
+    icone: 'caixa',
+    descricao: 'O material depois que ele chega: conferir, guardar e devolver o que é alugado.',
+  },
+  {
+    destino: 'Financeiro',
+    para: '/financeiro',
+    icone: 'dinheiro',
+    descricao: 'O dinheiro que sai pelas compras e o que entra e sai por fora delas.',
+  },
+  {
+    destino: 'Administração',
+    para: '/administracao',
+    icone: 'engrenagem',
+    descricao: 'A base que o resto do sistema usa, e quem tem acesso a ela.',
+  },
+];
 
 export interface Modulo {
   /** Nome curto, para o menu lateral. */
@@ -40,11 +97,45 @@ export interface Modulo {
    * na tela de início.
    */
   noInicio?: boolean;
-  /** Sem grupo, o item fica solto no alto do menu. É o caso do Início. */
-  grupo?: Grupo;
+  /**
+   * Em qual tela índice este módulo aparece como cartão.
+   *
+   * Sem destino, o item fica SOLTO na barra lateral. São dois, e não
+   * crescem: Início e Relatórios. O Início porque é a casa; os
+   * Relatórios porque falam de tudo e não cabem num destino só —
+   * enfiar em "Financeiro" diria que o relatório de consumo é
+   * assunto de dinheiro.
+   */
+  grupo?: Destino;
+  /**
+   * Onde este item SOLTO aparece na barra.
+   *
+   * Sem isto ele vai para o alto, junto do Início. Com isto, ele
+   * desce e fica logo abaixo do destino indicado.
+   *
+   * É o caso dos Relatórios: eles falam do sistema inteiro e não
+   * cabem dentro de um destino só — enfiar em "Financeiro" diria que
+   * o relatório de consumo é assunto de dinheiro, e o engenheiro e o
+   * gestor de obra, que leem relatório e NÃO abrem o financeiro,
+   * perderiam o acesso.
+   *
+   * Mas o lugar deles é perto do Financeiro, e não no alto da barra.
+   * Então: solto, e ancorado.
+   *
+   * Se o destino da âncora não aparecer para a pessoa, o item cai no
+   * lugar onde ele TERIA ficado — a ordem relativa se mantém.
+   */
+  aposNaBarra?: Destino;
+  /**
+   * A ordem do cartão no índice, quando a lista for mesmo uma
+   * SEQUÊNCIA. O número some onde não for: numerar 1-2-3 coisas que
+   * são paralelas promete uma ordem que não existe.
+   */
+  ordem?: number;
 }
 
 export const MODULOS: Modulo[] = [
+  // ---------- Soltos na barra: são dois, e não crescem ----------
   {
     rotulo: 'Início',
     titulo: 'Início',
@@ -55,19 +146,32 @@ export const MODULOS: Modulo[] = [
     noInicio: false,
   },
   {
+    rotulo: 'Relatórios',
+    aposNaBarra: 'Financeiro',
+    titulo: 'Relatórios',
+    descricao: 'Orçamento, economia, fornecedores, tempos e consumo',
+    para: '/relatorios',
+    icone: 'grafico',
+    permissoes: ['relatorios.ver'],
+  },
+
+  // ---------- Compras: é uma sequência, e por isso vai numerada ----------
+  {
     rotulo: 'Solicitações',
     grupo: 'Compras',
+    ordem: 1,
     titulo: 'Abrir solicitação',
-    descricao: 'Pedir material ou serviço para a obra',
+    descricao: 'Pedir material ou serviço para uma obra',
     para: '/solicitacoes',
-    icone: 'escrever',
+    icone: 'prancheta',
     permissoes: ['solicitacoes.criar', 'solicitacoes.ver_todas'],
   },
   {
     rotulo: 'Aprovações',
     grupo: 'Compras',
-    titulo: 'Aprovações pendentes',
-    descricao: 'Liberar ou devolver pedidos de compra',
+    ordem: 2,
+    titulo: 'Aprovar pedidos',
+    descricao: 'Assinar o que espera a sua decisão, dentro da sua alçada',
     para: '/aprovacoes',
     icone: 'certo',
     permissoes: ['solicitacoes.aprovar'],
@@ -75,24 +179,25 @@ export const MODULOS: Modulo[] = [
   {
     rotulo: 'Cotações',
     grupo: 'Compras',
-    titulo: 'Cotações',
-    descricao: 'Montar pacote e convidar fornecedores',
+    ordem: 3,
+    titulo: 'Cotar com fornecedores',
+    descricao: 'Montar o pacote, convidar e comparar as propostas',
     para: '/cotacoes',
-    icone: 'conversa',
-    // `ver` entra junto: o engenheiro precisa abrir o mapa
-    // comparativo para conferir se o que foi cotado atende à
-    // especificação, sem poder escolher vencedor.
-    permissoes: ['cotacoes.gerenciar', 'cotacoes.ver'],
+    icone: 'balanca',
+    permissoes: ['cotacoes.gerenciar'],
   },
   {
     rotulo: 'Pedidos',
     grupo: 'Compras',
+    ordem: 4,
     titulo: 'Pedidos de compra',
     descricao: 'Ver os pedidos emitidos e baixar o PDF',
     para: '/pedidos',
     icone: 'documento',
     permissoes: ['pedidos.gerenciar', 'financeiro.ver'],
   },
+
+  // ---------- Almoxarifado: NÃO é sequência, então sem número ----------
   {
     rotulo: 'Recebimento',
     grupo: 'Almoxarifado',
@@ -106,46 +211,109 @@ export const MODULOS: Modulo[] = [
     rotulo: 'Estoque',
     grupo: 'Almoxarifado',
     titulo: 'Estoque',
-    descricao: 'Ver saldo, retirar material e conferir o mínimo',
+    descricao: 'Saldos por almoxarifado e o extrato de movimentos',
     para: '/estoque',
-    icone: 'obra',
+    icone: 'tijolo',
     permissoes: ['estoque.ver'],
   },
   {
     rotulo: 'Locação',
     grupo: 'Almoxarifado',
     titulo: 'Locação de equipamentos',
-    descricao: 'Ver o que está alugado e o que já passou do prazo',
+    descricao: 'O que está alugado, por quanto tempo e quanto já custou',
     para: '/locacao',
     icone: 'maquina',
     permissoes: ['locacao.ver'],
   },
+
+  // ---------- Financeiro ----------
   {
-    rotulo: 'Financeiro',
-    grupo: 'Gestão',
+    rotulo: 'Contas a pagar',
+    grupo: 'Financeiro',
     titulo: 'Contas a pagar',
-    descricao: 'Notas fiscais, parcelas e vencimentos',
-    para: '/financeiro',
+    descricao: 'As parcelas que nasceram das notas fiscais, e os vencimentos',
+    para: '/financeiro/contas',
     icone: 'dinheiro',
     permissoes: ['financeiro.ver'],
   },
   {
-    rotulo: 'Relatórios',
-    grupo: 'Gestão',
-    titulo: 'Relatórios',
-    descricao: 'Orçamento, economia, fornecedores, tempos e consumo',
-    para: '/relatorios',
-    icone: 'grafico',
-    permissoes: ['relatorios.ver'],
+    rotulo: 'Notas fiscais',
+    grupo: 'Financeiro',
+    titulo: 'Notas fiscais',
+    descricao: 'Lançar a nota do fornecedor e gerar as parcelas',
+    para: '/financeiro/notas',
+    icone: 'documento',
+    permissoes: ['financeiro.ver'],
   },
   {
-    rotulo: 'Cadastros',
+    rotulo: 'Receitas e despesas',
+    grupo: 'Financeiro',
+    titulo: 'Lançar receita ou despesa',
+    descricao: 'O dinheiro que entra e o gasto que não vem de compra',
+    para: '/financeiro/lancamentos',
+    icone: 'balanca',
+    permissoes: ['financeiro.ver'],
+  },
+
+  // ---------- Administração ----------
+  //
+  //  Os cinco cadastros SÃO uma sequência: material precisa de
+  //  família, fornecedor é ligado a famílias, obra precisa de
+  //  orçamento. Numerados. O resto não é, e vai sem número.
+  {
+    rotulo: 'Famílias',
     grupo: 'Administração',
-    titulo: 'Cadastros',
-    descricao: 'Obras, materiais, fornecedores e alçadas',
-    para: '/cadastros',
-    icone: 'pasta',
-    permissoes: ['materiais.ver', 'obras.ver'],
+    ordem: 1,
+    titulo: 'Famílias',
+    descricao: 'Agrupam os itens por tipo. É por elas que o sistema sabe quem convidar para cada cotação.',
+    para: '/cadastros/familias',
+    icone: 'arquivos',
+    permissoes: ['materiais.ver'],
+    noInicio: false,
+  },
+  {
+    rotulo: 'Materiais',
+    grupo: 'Administração',
+    ordem: 2,
+    titulo: 'Materiais e serviços',
+    descricao: 'O catálogo da empresa, com código Porto, código de barras e unidade de medida.',
+    para: '/cadastros/materiais',
+    icone: 'tijolo',
+    permissoes: ['materiais.ver'],
+    noInicio: false,
+  },
+  {
+    rotulo: 'Fornecedores',
+    grupo: 'Administração',
+    ordem: 3,
+    titulo: 'Fornecedores',
+    descricao: 'Quem vende para a Porto Inc., e quais famílias cada um atende.',
+    para: '/cadastros/fornecedores',
+    icone: 'caminhao',
+    permissoes: ['fornecedores.ver'],
+    noInicio: false,
+  },
+  {
+    rotulo: 'Obras',
+    grupo: 'Administração',
+    ordem: 4,
+    titulo: 'Obras',
+    descricao: 'Os empreendimentos, com o orçamento e o almoxarifado de cada um.',
+    para: '/cadastros/obras',
+    icone: 'obra',
+    permissoes: ['obras.ver'],
+    noInicio: false,
+  },
+  {
+    rotulo: 'Limites de alçada',
+    grupo: 'Administração',
+    ordem: 5,
+    titulo: 'Limites de alçada',
+    descricao: 'Até quanto cada função aprova sozinha, e a partir de quanto sobe para o fundador.',
+    para: '/cadastros/alcadas',
+    icone: 'balanca',
+    permissoes: ['alcadas.gerenciar'],
+    noInicio: false,
   },
   {
     rotulo: 'Usuários',
@@ -155,6 +323,15 @@ export const MODULOS: Modulo[] = [
     para: '/admin/usuarios',
     icone: 'pessoas',
     permissoes: ['usuarios.ver'],
+  },
+  {
+    rotulo: 'Funções',
+    grupo: 'Administração',
+    titulo: 'Funções e permissões',
+    descricao: 'Criar funções e escolher o que cada uma faz',
+    icone: 'engrenagem',
+    para: '/admin/funcoes',
+    permissoes: ['funcoes.gerenciar'],
   },
   {
     rotulo: 'Avisos',
@@ -173,6 +350,7 @@ export const MODULOS: Modulo[] = [
     para: '/admin/status',
     icone: 'engrenagem',
     permissoes: ['sistema.status'],
+    noInicio: false,
   },
 ];
 
@@ -243,24 +421,116 @@ export function oQueFalta(): string {
   return 'Ainda falta: ' + faltando.join(', ') + '.';
 }
 
+/** Uma linha da barra lateral: ou uma tela solta, ou um destino. */
+export interface LinhaDaBarra {
+  rotulo: string;
+  para: string;
+  icone: NomeDoIcone;
+  /** Verdadeiro quando a linha leva a uma tela índice. */
+  ehDestino: boolean;
+  /** O primeiro destino leva o fio que o separa do Início. */
+  primeiroDestino?: boolean;
+}
+
 /**
- * Monta o menu agrupado, com o que a pessoa pode ver.
+ * As linhas da barra lateral, para quem a pessoa é.
  *
- * Grupo que ficou sem nenhum item some junto com o rótulo: para o
- * almoxarife não faz sentido aparecer um título "Gestão" sozinho,
- * sem nada embaixo.
+ * São seis no máximo: Início, Relatórios e os quatro destinos. E
+ * continuam seis quando o sistema dobrar de tamanho — tela nova é
+ * cartão dentro de um índice, não linha nova aqui.
+ *
+ * Destino sem nenhum cartão visível some: para o almoxarife não faz
+ * sentido um "Financeiro" que abre uma tela vazia.
  */
-export function menuAgrupado(
-  podeVer: (m: Modulo) => boolean,
-): { soltos: Modulo[]; grupos: Array<{ nome: Grupo; itens: Modulo[] }> } {
+export function barraLateral(podeVer: (m: Modulo) => boolean): LinhaDaBarra[] {
   const visiveis = MODULOS.filter(podeVer);
 
-  return {
-    soltos: visiveis.filter((m) => !m.grupo),
-    grupos: GRUPOS
-      .map((nome) => ({ nome, itens: visiveis.filter((m) => m.grupo === nome) }))
-      .filter((g) => g.itens.length > 0),
-  };
+  const comoLinha = (m: Modulo): LinhaDaBarra => ({
+    rotulo: m.rotulo,
+    para: m.para,
+    icone: m.icone,
+    ehDestino: false,
+  });
+
+  // No alto: os soltos sem âncora. Hoje é só o Início.
+  const linhas: LinhaDaBarra[] = visiveis
+    .filter((m) => !m.grupo && !m.aposNaBarra)
+    .map(comoLinha);
+
+  let primeiro = true;
+
+  for (const indice of INDICES) {
+    if (visiveis.some((m) => m.grupo === indice.destino)) {
+      linhas.push({
+        rotulo: indice.destino,
+        para: indice.para,
+        icone: indice.icone,
+        ehDestino: true,
+        primeiroDestino: primeiro,
+      });
+      primeiro = false;
+    }
+
+    // Os ancorados caem aqui mesmo quando o destino da âncora não
+    // aparece — senão o engenheiro, que não vê o Financeiro, teria os
+    // Relatórios jogados para o fim da barra.
+    for (const solto of visiveis.filter((m) => m.aposNaBarra === indice.destino)) {
+      linhas.push(comoLinha(solto));
+    }
+  }
+
+  return linhas;
+}
+
+/**
+ * Os cartões de uma tela índice, na ordem.
+ *
+ * Quem tem `ordem` vem primeiro, em sequência; o resto vem depois,
+ * na ordem em que foi declarado. É o caso da Administração: os
+ * cinco cadastros têm ordem entre si, e Usuários, Avisos e Status
+ * não entram nessa conta.
+ */
+export function cartoesDoIndice(
+  destino: Destino,
+  podeVer: (m: Modulo) => boolean,
+): Modulo[] {
+  const meus = MODULOS.filter((m) => m.grupo === destino && podeVer(m));
+
+  return [
+    ...meus.filter((m) => m.ordem !== undefined).sort((a, b) => a.ordem! - b.ordem!),
+    ...meus.filter((m) => m.ordem === undefined),
+  ];
+}
+
+/** O índice a que uma tela pertence. Nulo para as soltas. */
+export function indiceDe(para: string): Indice | null {
+  const modulo = MODULOS.find((m) => m.para === para);
+  if (!modulo?.grupo) return null;
+  return INDICES.find((i) => i.destino === modulo.grupo) ?? null;
+}
+
+/**
+ * A porta acesa na barra, para o endereço em que a pessoa está.
+ *
+ * SEM ISTO, A BARRA APAGA ENQUANTO SE TRABALHA. Estando em Contas a
+ * pagar, nenhuma das seis linhas ficava marcada — e a barra, que é
+ * o mapa, deixava de dizer em que parte do sistema a pessoa está.
+ *
+ * Casa por PREFIXO, e pelo mais longo primeiro: `/cadastros/obras/123`
+ * é a tela de Obras, que é da Administração. Sem o "mais longo
+ * primeiro", `/financeiro/contas` cairia em `/financeiro` e daria
+ * certo por sorte; com dois módulos aninhados de verdade, daria
+ * errado em silêncio.
+ */
+export function porteDaTela(caminho: string): string | null {
+  const modulo = MODULOS
+    .filter((m) => m.grupo)
+    .sort((a, b) => b.para.length - a.para.length)
+    .find((m) => caminho === m.para || caminho.startsWith(m.para + '/'));
+
+  if (!modulo) return null;
+
+  return INDICES.find((i) => i.destino === modulo.grupo)?.para ?? null;
 }
 
 // ============================================================
@@ -294,42 +564,56 @@ export const PAGINAS: Pagina[] = [
   { rota: '/', titulo: 'Início' },
   { rota: '/minha-senha', titulo: 'Minha senha', mae: '/' },
 
+  // A MÃE DE CADA TELA É O ÍNDICE DELA, e não mais o Início.
+  //
+  // Enquanto a barra listava as 14 telas, "Início › Cotações" era
+  // a verdade: dava para ir direto. Agora passa-se por Compras, e a
+  // migalha tem de contar o mesmo caminho que o botão de Voltar faz
+  // — senão o Voltar pula um degrau que a pessoa acabou de subir.
+
   // --- Compras ---
-  { rota: '/solicitacoes', titulo: 'Solicitações', mae: '/' },
+  { rota: '/compras', titulo: 'Compras', mae: '/' },
+  { rota: '/solicitacoes', titulo: 'Solicitações', mae: '/compras' },
   { rota: '/solicitacoes/nova', titulo: 'Nova solicitação', mae: '/solicitacoes' },
   { rota: '/solicitacoes/:id', titulo: 'Solicitação', mae: '/solicitacoes' },
-  { rota: '/aprovacoes', titulo: 'Aprovações', mae: '/' },
-  { rota: '/cotacoes', titulo: 'Cotações', mae: '/' },
+  { rota: '/aprovacoes', titulo: 'Aprovações', mae: '/compras' },
+  { rota: '/cotacoes', titulo: 'Cotações', mae: '/compras' },
   { rota: '/cotacoes/nova', titulo: 'Novo pacote', mae: '/cotacoes' },
   { rota: '/cotacoes/:id', titulo: 'Pacote de cotação', mae: '/cotacoes' },
   { rota: '/cotacoes/:id/equalizacao', titulo: 'Equalização', mae: '/cotacoes/:id' },
-  { rota: '/pedidos', titulo: 'Pedidos', mae: '/' },
+  { rota: '/pedidos', titulo: 'Pedidos', mae: '/compras' },
   { rota: '/pedidos/:id', titulo: 'Pedido de compra', mae: '/pedidos' },
 
   // --- Almoxarifado ---
-  { rota: '/recebimento', titulo: 'Recebimento', mae: '/' },
+  { rota: '/almoxarifado', titulo: 'Almoxarifado', mae: '/' },
+  { rota: '/recebimento', titulo: 'Recebimento', mae: '/almoxarifado' },
   { rota: '/recebimento/:numero', titulo: 'Conferência', mae: '/recebimento' },
-  { rota: '/estoque', titulo: 'Estoque', mae: '/' },
+  { rota: '/estoque', titulo: 'Estoque', mae: '/almoxarifado' },
   { rota: '/estoque/movimentos', titulo: 'Extrato', mae: '/estoque' },
-  { rota: '/locacao', titulo: 'Locação', mae: '/' },
+  { rota: '/locacao', titulo: 'Locação', mae: '/almoxarifado' },
 
-  // --- Gestão ---
+  // --- Financeiro ---
   { rota: '/financeiro', titulo: 'Financeiro', mae: '/' },
+  { rota: '/financeiro/contas', titulo: 'Contas a pagar', mae: '/financeiro' },
   { rota: '/financeiro/notas', titulo: 'Notas fiscais', mae: '/financeiro' },
+  { rota: '/financeiro/lancamentos', titulo: 'Receitas e despesas', mae: '/financeiro' },
+
+  // --- Relatórios: solto, então a mãe é o Início ---
   { rota: '/relatorios', titulo: 'Relatórios', mae: '/' },
 
   // --- Administração ---
-  { rota: '/cadastros', titulo: 'Cadastros', mae: '/' },
-  { rota: '/cadastros/familias', titulo: 'Famílias', mae: '/cadastros' },
-  { rota: '/cadastros/materiais', titulo: 'Materiais', mae: '/cadastros' },
-  { rota: '/cadastros/fornecedores', titulo: 'Fornecedores', mae: '/cadastros' },
-  { rota: '/cadastros/obras', titulo: 'Obras', mae: '/cadastros' },
+  { rota: '/administracao', titulo: 'Administração', mae: '/' },
+  { rota: '/cadastros/familias', titulo: 'Famílias', mae: '/administracao' },
+  { rota: '/cadastros/materiais', titulo: 'Materiais', mae: '/administracao' },
+  { rota: '/cadastros/fornecedores', titulo: 'Fornecedores', mae: '/administracao' },
+  { rota: '/cadastros/obras', titulo: 'Obras', mae: '/administracao' },
   { rota: '/cadastros/obras/:id', titulo: 'Obra', mae: '/cadastros/obras' },
-  { rota: '/cadastros/alcadas', titulo: 'Limites de alçada', mae: '/cadastros' },
-  { rota: '/admin/usuarios', titulo: 'Usuários', mae: '/' },
-  { rota: '/admin/avisos', titulo: 'Avisos ao fornecedor', mae: '/' },
-  { rota: '/admin/whatsapp', titulo: 'Avisos ao fornecedor', mae: '/' },
-  { rota: '/admin/status', titulo: 'Status do sistema', mae: '/' },
+  { rota: '/cadastros/alcadas', titulo: 'Limites de alçada', mae: '/administracao' },
+  { rota: '/admin/usuarios', titulo: 'Usuários', mae: '/administracao' },
+  { rota: '/admin/funcoes', titulo: 'Funções e permissões', mae: '/administracao' },
+  { rota: '/admin/avisos', titulo: 'Avisos ao fornecedor', mae: '/administracao' },
+  { rota: '/admin/whatsapp', titulo: 'Avisos ao fornecedor', mae: '/administracao' },
+  { rota: '/admin/status', titulo: 'Status do sistema', mae: '/administracao' },
 ];
 
 /** Quebra o endereço em pedaços, sem os vazios das barras. */

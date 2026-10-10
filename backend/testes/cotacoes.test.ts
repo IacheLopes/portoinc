@@ -26,6 +26,7 @@ async function solicitacaoAprovada(materiais: Array<{ id: string; qtd: number }>
     token: solicitante,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       justificativa: 'Para cotação',
       itens: materiais.map((m) => ({
         materialId: m.id,

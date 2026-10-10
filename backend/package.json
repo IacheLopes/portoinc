@@ -1,6 +1,6 @@
 {
   "name": "portoink-api",
-  "version": "0.45.0",
+  "version": "0.58.0",
   "private": true,
   "description": "API do sistema de compras e almoxarifado da Porto Inc.",
   "type": "module",
@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed-desenvolvimento.ts && tsx prisma/seed-cadastros.ts",
+    "seed-se-vazio": "tsx prisma/semear-se-vazio.ts",
     "test": "npm run test:unidade && npm run test:integracao",
     "test:unidade": "WHATSAPP_ADAPTER=mock EMAIL_ADAPTER=mock node --import tsx --test \"src/**/*.test.ts\"",
     "test:integracao": "npm run test:preparar && NODE_ENV=test DATABASE_URL=$DATABASE_URL_TESTE WHATSAPP_ADAPTER=mock EMAIL_ADAPTER=mock node --import tsx --test --test-concurrency=1 \"testes/**/*.test.ts\"",

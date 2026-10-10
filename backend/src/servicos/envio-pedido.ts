@@ -11,7 +11,7 @@
 // ============================================================
 
 import { banco } from '../plugins/banco.js';
-import { numero as decimal } from './util.js';
+import { numero as decimal, reaisBr } from './util.js';
 import { formatarNumeroBid, descreverPagamento } from './cotacao.js';
 import { formatarNumeroPedido } from './equalizacao.js';
 import { gerarPdfPedido } from './pdf-pedido.js';
@@ -116,7 +116,7 @@ export async function prepararPedidoParaEnvio(id: string): Promise<PedidoPronto 
     email: pedido.fornecedor.email,
     situacao: pedido.situacao,
     total,
-    totalEmReais: 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+    totalEmReais: reaisBr(total),
     pagamento,
     pdf,
   };

@@ -65,6 +65,7 @@ export async function limparDados(): Promise<void> {
 
   await banco.$executeRawUnsafe(`
     TRUNCATE TABLE
+      lancamentos_financeiros,
       sessoes,
       usuarios_funcoes,
       usuarios,
@@ -102,14 +103,21 @@ export async function criarUsuarioTeste(
   return usuario.id;
 }
 
-/** Entra no sistema e devolve o crachá para usar nas chamadas. */
-export async function entrarComo(email: string): Promise<string> {
+/**
+ * Entra no sistema e devolve o crachá para usar nas chamadas.
+ *
+ * A senha é opcional porque quase toda conta de teste usa a
+ * padrão. A exceção nasceu com a trava da senha provisória: ali
+ * a conta entra com a senha que o administrador digitou, e
+ * depois com a que ela mesma criou.
+ */
+export async function entrarComo(email: string, senha = SENHA_TESTE): Promise<string> {
   const app = await pegarApp();
 
   const resposta = await app.inject({
     method: 'POST',
     url: '/api/autenticacao/entrar',
-    payload: { email, senha: SENHA_TESTE },
+    payload: { email, senha },
   });
 
   if (resposta.statusCode !== 200) {

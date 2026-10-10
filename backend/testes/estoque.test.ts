@@ -63,6 +63,7 @@ async function pedidoPronto(quantidades = { a: 100, b: 40 }, preco = 25) {
     token: solicitante,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       itens: [
         { materialId: materialA, quantidade: quantidades.a, valorEstimado: preco, especificacaoTecnica: 'Padrão.' },
         { materialId: materialB, quantidade: quantidades.b, valorEstimado: preco, especificacaoTecnica: 'Padrão.' },
@@ -612,6 +613,7 @@ describe('Ponto de pedido', () => {
       metodo: 'POST', token: almoxarife,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         justificativa: 'Reposição: material no ponto de pedido.',
         itens: [
           {

@@ -9,7 +9,8 @@
 
 import PDFDocument from 'pdfkit';
 import { dataBr, geradoEm } from './data-br.js';
-import { formatarTelefone } from './util.js';
+import { formatarTelefone, reaisBr, quantidadeBr } from './util.js';
+import { paraOPdf } from './pdf-texto.js';
 import { formatarNumeroPedido } from './equalizacao.js';
 import { formatarCnpj } from './util.js';
 
@@ -50,18 +51,12 @@ export interface DadosPedido {
   }>;
 }
 
-function dinheiro(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+export function gerarPdfPedido(entrada: DadosPedido): Promise<Buffer> {
+  // Saneia na porta, uma vez: os geradores tem dezenas de
+  // `doc.text()`, e a chamada que alguem esquecesse seria a que
+  // ninguem olha.
+  const dados = paraOPdf(entrada);
 
-function numeroBr(valor: number): string {
-  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
-}
-
-export function gerarPdfPedido(dados: DadosPedido): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
@@ -206,9 +201,9 @@ export function gerarPdfPedido(dados: DadosPedido): Promise<Buffer> {
 
       doc.fillColor('#16202b').fontSize(9);
       doc.text(item.unidadeMedida, 304, y + 5, { width: 20 });
-      doc.text(numeroBr(item.quantidade), 330, y + 5, { width: 40, align: 'right' });
-      doc.text(dinheiro(item.valorUnitario), 376, y + 5, { width: 56, align: 'right' });
-      doc.font('Helvetica-Bold').text(dinheiro(total), 438, y + 5, { width: 64, align: 'right' });
+      doc.text(quantidadeBr(item.quantidade), 330, y + 5, { width: 40, align: 'right' });
+      doc.text(reaisBr(item.valorUnitario), 376, y + 5, { width: 56, align: 'right' });
+      doc.font('Helvetica-Bold').text(reaisBr(total), 438, y + 5, { width: 64, align: 'right' });
 
       y += altura;
       doc.moveTo(45, y).lineTo(doc.page.width - 45, y).strokeColor(BORDA).lineWidth(0.5).stroke();
@@ -236,14 +231,14 @@ export function gerarPdfPedido(dados: DadosPedido): Promise<Buffer> {
       y += destaque ? 20 : 15;
     };
 
-    linhaTotal('Subtotal', dinheiro(subtotal));
-    if (dados.frete > 0) linhaTotal('Frete', dinheiro(dados.frete));
-    if (dados.outrosCustos > 0) linhaTotal('Outros custos', dinheiro(dados.outrosCustos));
+    linhaTotal('Subtotal', reaisBr(subtotal));
+    if (dados.frete > 0) linhaTotal('Frete', reaisBr(dados.frete));
+    if (dados.outrosCustos > 0) linhaTotal('Outros custos', reaisBr(dados.outrosCustos));
 
     doc.moveTo(300, y).lineTo(doc.page.width - 45, y).strokeColor(MARINHO).lineWidth(1).stroke();
     y += 8;
 
-    linhaTotal('Total do pedido', dinheiro(subtotal + dados.frete + dados.outrosCustos), true);
+    linhaTotal('Total do pedido', reaisBr(subtotal + dados.frete + dados.outrosCustos), true);
 
     // ---------- Pagamento ----------
     y += 10;

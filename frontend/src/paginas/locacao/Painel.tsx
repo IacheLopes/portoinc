@@ -20,9 +20,9 @@ import {
   ROTULO_PERIODICIDADE, COR_ALERTA, FILTROS_DE_ALERTA,
   type PainelDeLocacao, type Locacao, type ItemComprado, type Periodicidade,
 } from '../../servicos/locacao';
-import { listarFornecedores, dinheiro, opcoesDeUnidade, type Fornecedor } from '../../servicos/cadastros';
+import { listarFornecedores, opcoesDeUnidade, type Fornecedor } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
-import { plural } from '../../servicos/texto';
+import { plural, dinheiro } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';

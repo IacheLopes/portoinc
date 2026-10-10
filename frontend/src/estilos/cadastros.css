@@ -3,7 +3,11 @@
    ============================================================ */
 
 /* ------------------------------------------------------------
-   Cartões da página de Cadastros
+   Cartões das telas índice
+
+   Nasceram na tela de Cadastros e passaram a servir aos quatro
+   destinos do menu, quando a barra lateral deixou de listar telas
+   e passou a listar portas.
    ------------------------------------------------------------ */
 .cadastro-cartao {
   position: relative;
@@ -11,7 +15,6 @@
   align-items: flex-start;
   gap: var(--esp-3);
   padding: var(--esp-5);
-  padding-top: var(--esp-6);
   background: var(--fundo-elevado);
   border: 1px solid var(--borda);
   border-radius: var(--raio-lg);
@@ -24,6 +27,16 @@
 .cadastro-cartao:hover {
   border-color: var(--azul-600);
   transform: translateY(-2px);
+}
+
+/* SÓ O CARTÃO NUMERADO ABRE ESPAÇO EM CIMA.
+
+   O `padding-top` maior era fixo, porque todo cartão daqui tinha
+   número. Com os índices novos passou a haver cartão sem —
+   Recebimento, Estoque, Usuários — e neles a folga virava um vazio
+   de 8px no alto, do tipo que faz a caixa parecer quebrada. */
+.cadastro-cartao:has(.cadastro-cartao__ordem) {
+  padding-top: var(--esp-6);
 }
 
 /* O número mostra a ordem recomendada de preenchimento. */
@@ -67,6 +80,101 @@
   color: var(--info-texto);
 }
 
+/* A conta da página e a soma dela, na mesma linha.
+
+   A conta ("mostrando 1 a 20 de 68") fica à esquerda e a soma do
+   que está na tela, à direita. No celular empilham. */
+.conta-da-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+}
+
+.conta-da-lista__soma {
+  margin: 0;
+  font-size: var(--txt-sm);
+  color: var(--texto-secundario);
+}
+
+.conta-da-lista__soma strong { margin-left: var(--esp-2); }
+
+/* A TRILHA DE UM LANÇAMENTO.
+
+   Uma linha do tempo simples: quando e quem à esquerda, o que
+   aconteceu à direita. Sem ícone, sem bolinha, sem fio vertical —
+   quem abre isto quer ler, não admirar.
+
+   O fio entre os itens basta para dizer "são eventos separados". */
+.trilha {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--esp-3);
+}
+
+.trilha__item {
+  display: grid;
+  grid-template-columns: minmax(104px, auto) 1fr;
+  gap: var(--esp-3);
+  padding-bottom: var(--esp-3);
+  border-bottom: 1px solid var(--borda);
+}
+
+.trilha__item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.trilha__quando {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
+.trilha__quando small {
+  font-weight: var(--peso-normal);
+  color: var(--texto-secundario);
+}
+
+.trilha__texto {
+  font-size: var(--txt-sm);
+  color: var(--texto);
+  line-height: 1.6;
+}
+
+/* No celular a coluna da data vira linha própria: 104px ao lado de
+   "Valor: R$ 1.500,00 -> R$ 1.800,00" deixava o texto em coluna de
+   duas palavras. */
+@media (max-width: 640px) {
+  .trilha__item { grid-template-columns: 1fr; gap: var(--esp-1); }
+}
+
+/* O ar entre dois blocos da mesma tela índice.
+
+   Sem isto, o título "Sistema" nascia colado no fim da fileira de
+   cima — e um título grudado no bloco anterior parece pertencer a
+   ele. */
+.indice__bloco + .indice__bloco {
+  margin-top: var(--esp-7);
+}
+
+/* O CARTÃO QUE PEDE ATENÇÃO.
+
+   Quando o número que vem do servidor é de algo atrasado — conta
+   vencida, locação em atraso —, a borda esquerda avisa antes de a
+   pessoa ler. A frase embaixo do título continua dizendo o quê,
+   então quem não distingue a cor não perde nada. */
+.cadastro-cartao--atencao { border-left: 4px solid var(--atencao-texto); }
+.cadastro-cartao--erro { border-left: 4px solid var(--erro-texto); }
+
+.cadastro-cartao--atencao .cadastro-cartao__contagem { color: var(--atencao-texto); }
+.cadastro-cartao--erro .cadastro-cartao__contagem { color: var(--erro-texto); }
+
 /* O caminho de navegação mudou de casa no Design 1: agora vive em
    painel.css, junto do cabeçalho de tela que o desenha. Duas
    definições da mesma classe em arquivos diferentes é justamente o
@@ -107,6 +215,41 @@
    Grade e campos
    ------------------------------------------------------------ */
 .grade--larga { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+/* A larga que NÃO estica quando sobra um.
+
+   Compõe duas regras que já existiam: a largura de `--larga`
+   (320px, porque aqui cabem etiquetas lado a lado) e o `auto-fill`
+   de `--destaque`, que guarda as colunas vazias em vez de apagá-las.
+
+   Sem isso, a tela de Funções mostrava a única função criada pela
+   empresa como uma faixa da largura da tela, parecendo mais
+   importante que as nove de fábrica logo abaixo — o mesmo defeito
+   que o dono viu na tela de Início em 28/09/2026, e pelo mesmo
+   motivo: o cartão ficava grande por estar sozinho.
+
+   `--larga` continua com `auto-fit` porque Fornecedores e
+   Equalização dependem disso: lá, uma proposta sozinha OCUPA a
+   comparação inteira, e estreitá-la esconderia o que se foi
+   comparar. */
+.grade--larga-firme { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+/* O nome do grupo dentro de um conjunto de caixas.
+
+   Em Funções e permissões são 27 caixas repartidas em 7 grupos.
+   Escritos com `campo__rotulo`, os nomes dos grupos pesavam o
+   mesmo que a legenda do conjunto — e a legenda, a ajuda e o
+   primeiro grupo viravam um bloco só de quatro linhas, sem dizer
+   quem manda em quem.
+
+   Menor e secundário: a legenda é a pergunta, o grupo é a gaveta,
+   a caixa é a resposta. */
+.grupo-de-opcoes {
+  margin-top: var(--esp-4);
+  font-size: var(--txt-xs);
+  font-weight: var(--peso-medio);
+  color: var(--texto-secundario);
+}
 
 .campo--curto { flex: 0 1 220px; min-width: 160px; }
 
@@ -1378,6 +1521,34 @@ input[type='file'].campo__entrada {
 .painel-movimento .opcoes {
   margin-bottom: var(--esp-4);
 }
+
+/* ------------------------------------------------------------
+   Receitas e despesas
+
+   O SINAL FICA NO VALOR, e nao numa coluna de tipo.
+
+   A tabela mistura entrada e saida na mesma lista, porque e assim
+   que o caixa acontece. Quem corre o olho pela coluna de valores
+   precisa saber num relance para que lado o dinheiro foi, sem ir
+   conferir outra coluna a cada linha.
+
+   A COR NAO E A UNICA PISTA: o "+" e o "-" vem no texto do valor, o
+   selo diz "Recebido" ou "Pago", e a linha extra sob o numero diz
+   "entrada" ou "saida". Cor sozinha deixaria de fora quem nao a
+   distingue — e a regua de contraste nao mede isso.
+
+   Os dois tokens ja tem versao clara e escura, entao o tema trocado
+   nao pede regra nova.
+   ------------------------------------------------------------ */
+.tabela .valor-entrada { color: var(--sucesso-texto); }
+.tabela .valor-saida { color: var(--erro-texto); }
+
+/* Lancamento cancelado: continua na lista, e nao se confunde com os
+   vivos. O risco no texto e o sinal universal de "isto nao vale
+   mais"; o cinza tira o peso da linha sem esconde-la. */
+.linha-cancelada > * { color: var(--texto-secundario); }
+.linha-cancelada .celula-texto,
+.linha-cancelada .numero { text-decoration: line-through; }
 
 /* ------------------------------------------------------------
    Financeiro (Etapa 9)

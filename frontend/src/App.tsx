@@ -13,9 +13,9 @@ import { Entrar } from './paginas/Entrar';
 import { Inicio } from './paginas/Inicio';
 import { MinhaSenha } from './paginas/MinhaSenha';
 import { Usuarios } from './paginas/admin/Usuarios';
+import { Funcoes } from './paginas/admin/Funcoes';
 import { StatusSistema } from './paginas/admin/StatusSistema';
 import { Avisos } from './paginas/admin/Avisos';
-import { CadastrosIndice } from './paginas/cadastros/Indice';
 import { Familias } from './paginas/cadastros/Familias';
 import { Materiais } from './paginas/cadastros/Materiais';
 import { Fornecedores } from './paginas/cadastros/Fornecedores';
@@ -36,8 +36,12 @@ import { PainelEstoque } from './paginas/estoque/Painel';
 import { MovimentosEstoque } from './paginas/estoque/Movimentos';
 import { PainelFinanceiro } from './paginas/financeiro/Painel';
 import { NotasFiscais } from './paginas/financeiro/Notas';
+import { Lancamentos } from './paginas/financeiro/Lancamentos';
 import { PainelRelatorios } from './paginas/relatorios/Painel';
 import { PainelLocacao } from './paginas/locacao/Painel';
+import {
+  IndiceCompras, IndiceAlmoxarifado, IndiceFinanceiro, IndiceAdministracao,
+} from './paginas/Indices';
 import { Portal } from './paginas/Portal';
 import { Icone } from './componentes/Icone';
 
@@ -54,6 +58,11 @@ function Protegida({
   if (permissoes.length > 0 && !pode(...permissoes)) {
     return (
       <section className="secao">
+        {/* O <h1> existe para esta tela ter título como todas as
+            outras. Era a única sem — e quem navega por leitor de tela
+            usa o <h1> para saber onde caiu. A classe o esconde do
+            olho: o aviso abaixo já diz a mesma coisa, em voz alta. */}
+        <h1 className="apenas-leitor-tela">Sem acesso a esta tela</h1>
         <div className="aviso aviso--erro" role="alert">
           <Icone nome="cadeado" className="aviso__icone" />
           <div>
@@ -89,6 +98,50 @@ function Rotas() {
         <Route path="/portal/:token" element={<Portal />} />
         <Route path="/entrar" element={<Entrar />} />
         <Route path="*" element={<Navigate to="/entrar" replace />} />
+      </Routes>
+    );
+  }
+
+  // ----------------------------------------------------------
+  //  O ESTADO DO MEIO: entrou, mas a senha não é dela
+  //
+  //  Entre "sem conta" e "com conta" falta um terceiro estado, e
+  //  a falta dele custava a promessa inteira: até 09/10/2026 a
+  //  marca `precisaTrocarSenha` era escrita no banco, mandada no
+  //  login e declarada no tipo — e nenhuma tela a lia. Quem
+  //  recebia uma senha do administrador entrava com ela e seguia
+  //  usando o sistema para sempre.
+  //
+  //  Aqui não há menu, não há barra lateral e não há endereço que
+  //  escape: qualquer rota cai na troca de senha. Sair continua
+  //  valendo, porque prender alguém dentro do sistema seria pior
+  //  que o problema original.
+  //
+  //  O servidor recusa o resto por conta própria (ver o porteiro
+  //  em `plugins/autenticacao.ts`). Esta tela é o conforto; a
+  //  trava é lá.
+  // ----------------------------------------------------------
+  if (usuario.precisaTrocarSenha) {
+    return (
+      <Routes>
+        <Route path="/portal/:token" element={<Portal />} />
+        <Route
+          path="*"
+          element={
+            /* Mesmo pano de fundo da tela de entrada, e de
+               propósito: quem está aqui ainda não entrou de
+               verdade. */
+            <div className="entrada">
+              {/* Sem moldura propria: quem desenha a caixa e o
+                  `Cartao` do formulario, la dentro. Duas molduras
+                  uma dentro da outra e o defeito que a Parte 1.11
+                  do DESIGN chama de hierarquia de borda dobrada. */}
+              <main className="entrada__sozinha">
+                <MinhaSenha primeiroAcesso />
+              </main>
+            </div>
+          }
+        />
       </Routes>
     );
   }
@@ -234,6 +287,18 @@ function Rotas() {
           path="financeiro"
           element={
             <Protegida permissoes={['financeiro.ver']}>
+              <IndiceFinanceiro />
+            </Protegida>
+          }
+        />
+
+        {/* O painel de contas a pagar MORAVA em /financeiro. Saiu de
+            lá para o endereço dele deixar de ser a porta de um
+            destino inteiro. */}
+        <Route
+          path="financeiro/contas"
+          element={
+            <Protegida permissoes={['financeiro.ver']}>
               <PainelFinanceiro />
             </Protegida>
           }
@@ -249,13 +314,63 @@ function Rotas() {
         />
 
         <Route
-          path="cadastros"
+          path="financeiro/lancamentos"
           element={
-            <Protegida permissoes={['materiais.ver', 'obras.ver', 'fornecedores.ver']}>
-              <CadastrosIndice />
+            <Protegida permissoes={['financeiro.ver']}>
+              <Lancamentos />
             </Protegida>
           }
         />
+
+        {/* ---------- As quatro telas índice ----------
+
+            São as portas dos quatro destinos da barra lateral. A
+            permissão de cada uma é a UNIÃO das permissões dos
+            cartões que ela mostra: quem vê pelo menos um cartão
+            entra; quem não vê nenhum é barrado aqui, e não numa
+            tela índice vazia.
+            --------------------------------------------------- */}
+        <Route
+          path="compras"
+          element={
+            <Protegida
+              permissoes={[
+                'solicitacoes.criar', 'solicitacoes.ver_todas', 'solicitacoes.aprovar',
+                'cotacoes.gerenciar', 'pedidos.gerenciar', 'financeiro.ver',
+              ]}
+            >
+              <IndiceCompras />
+            </Protegida>
+          }
+        />
+
+        <Route
+          path="almoxarifado"
+          element={
+            <Protegida permissoes={['recebimento.registrar', 'estoque.ver', 'locacao.ver']}>
+              <IndiceAlmoxarifado />
+            </Protegida>
+          }
+        />
+
+        <Route
+          path="administracao"
+          element={
+            <Protegida
+              permissoes={[
+                'materiais.ver', 'obras.ver', 'fornecedores.ver', 'alcadas.gerenciar',
+                'usuarios.ver', 'sistema.integracoes', 'sistema.status',
+              ]}
+            >
+              <IndiceAdministracao />
+            </Protegida>
+          }
+        />
+
+        {/* O endereço antigo do índice de cadastros. As telas FILHAS
+            continuam em /cadastros/... — só a porta mudou de nome,
+            e manter o atalho custa três linhas. */}
+        <Route path="cadastros" element={<Navigate to="/administracao" replace />} />
 
         <Route
           path="cadastros/familias"
@@ -316,6 +431,15 @@ function Rotas() {
           element={
             <Protegida permissoes={['usuarios.ver']}>
               <Usuarios />
+            </Protegida>
+          }
+        />
+
+        <Route
+          path="admin/funcoes"
+          element={
+            <Protegida permissoes={['funcoes.gerenciar']}>
+              <Funcoes />
             </Protegida>
           }
         />

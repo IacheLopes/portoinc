@@ -162,12 +162,18 @@ describe('A frase do contrato', () => {
   it('atrasada diz quanto o atraso custou', () => {
     const frase = lerContrato(contrato(), dia('2026-09-22'));
 
-    assert.match(frase, /12 dia\(s\) além do combinado/);
+    assert.match(frase, /12 dias além do combinado/);
     assert.match(frase, /R\$ 780,00/, 'o valor é o que faz alguém agir');
   });
 
   it('perto do fim pede providência', () => {
-    assert.match(lerContrato(contrato(), dia('2026-09-08')), /Vence em 2 dia\(s\)/);
+    assert.match(lerContrato(contrato(), dia('2026-09-08')), /Vence em 2 dias/);
+  });
+
+  it('no singular diz "1 dia", e nao "1 dias"', () => {
+    // A frase escrevia "1 dia(s)" ate 08/10/2026. Este e o caso que
+    // pega a concordancia: com 12 dias qualquer uma das duas passa.
+    assert.match(lerContrato(contrato(), dia('2026-09-09')), /Vence em 1 dia\./);
   });
 
   it('devolvida no prazo não acusa ninguém', () => {
@@ -179,8 +185,18 @@ describe('A frase do contrato', () => {
   it('devolvida com atraso registra o que custou', () => {
     const c = contrato({ devolvidoEm: dia('2026-09-13'), situacao: 'DEVOLVIDA' });
 
-    assert.match(lerContrato(c, dia('2026-09-30')), /3 dia\(s\) de atraso/);
+    assert.match(lerContrato(c, dia('2026-09-30')), /3 dias de atraso/);
     assert.match(lerContrato(c, dia('2026-09-30')), /R\$ 195,00/);
+    // O VERBO tambem concorda: "que custaram" no plural.
+    assert.match(lerContrato(c, dia('2026-09-30')), /dias de atraso, que custaram/);
+  });
+
+  it('com um dia de atraso, o verbo vai para o singular', () => {
+    // "1 dias de atraso, que custou" e o defeito de meio caminho: quem
+    // conserta o substantivo e esquece o verbo.
+    const c = contrato({ devolvidoEm: dia('2026-09-11'), situacao: 'DEVOLVIDA' });
+
+    assert.match(lerContrato(c, dia('2026-09-30')), /1 dia de atraso, que custou/);
   });
 });
 

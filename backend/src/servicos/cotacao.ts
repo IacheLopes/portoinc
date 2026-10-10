@@ -10,6 +10,7 @@
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
+import { porcentoEmFrase } from './util.js';
 
 export type SituacaoBid =
   | 'RASCUNHO'
@@ -205,7 +206,7 @@ export function descreverPagamento(
   const partes: string[] = [];
 
   if (percentualEntrada && percentualEntrada > 0) {
-    partes.push(percentualEntrada + '% de entrada');
+    partes.push(porcentoEmFrase(percentualEntrada) + ' de entrada');
   }
 
   if (parcelas && parcelas > 0) {

@@ -16,7 +16,9 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
-import { numero, erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
+import {
+  numero, erroDeValidacao, textoOpcional, textoObrigatorio, reaisBr, plural,
+} from '../servicos/util.js';
 import { dataBr } from '../servicos/data-br.js';
 import {
   custoAcumulado, custoPrevisto, custoDoAtraso, diasDeAtraso, diasDeUso,
@@ -399,7 +401,8 @@ export async function rotasLocacao(app: FastifyInstance) {
     return {
       contrato: pronto,
       mensagem: pronto.diasDeAtraso > 0
-        ? 'Devolução registrada com ' + pronto.diasDeAtraso + ' dia(s) de atraso.'
+        ? 'Devolução registrada com ' +
+          plural(pronto.diasDeAtraso, 'dia', 'dias') + ' de atraso.'
         : 'Devolução registrada no prazo.',
     };
   });
@@ -435,12 +438,6 @@ export async function rotasLocacao(app: FastifyInstance) {
 //  O arquivo, em PDF ou Word
 // ------------------------------------------------------------
 
-function reais(v: number): string {
-  return 'R$ ' + v.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  });
-}
-
 // O `dataBr` local, sem fuso, saiu: quem responde agora e data-br.ts.
 
 async function entregarArquivo(
@@ -462,8 +459,8 @@ async function entregarArquivo(
       { rotulo: 'Locações ativas', valor: String(resumo.ativas) },
       { rotulo: 'Atrasadas', valor: String(resumo.atrasadas) },
       { rotulo: 'Vencendo', valor: String(resumo.vencendo) },
-      { rotulo: 'Custo em andamento', valor: reais(resumo.custoEmAndamento) },
-      { rotulo: 'Custo do atraso', valor: reais(resumo.desperdicio) },
+      { rotulo: 'Custo em andamento', valor: reaisBr(resumo.custoEmAndamento) },
+      { rotulo: 'Custo do atraso', valor: reaisBr(resumo.desperdicio) },
     ],
     tabelas: [{
       colunas: [
@@ -482,12 +479,12 @@ async function entregarArquivo(
         equipamento: c.descricao + (c.identificacao ? ' (' + c.identificacao + ')' : ''),
         obra: c.obra.codigo + ' · ' + c.obra.nome,
         fornecedor: c.fornecedor.nomeFantasia ?? c.fornecedor.razaoSocial,
-        periodo: reais(c.valorPeriodo) + ' ' + c.periodicidadeRotulo,
+        periodo: reaisBr(c.valorPeriodo) + ' ' + c.periodicidadeRotulo,
         devolucao: dataBr(c.previsaoDevolucao) +
           (c.devolvidoEm ? ' · voltou ' + dataBr(c.devolvidoEm) : ''),
-        custo: reais(c.custoAcumulado),
+        custo: reaisBr(c.custoAcumulado),
         atraso: c.diasDeAtraso > 0
-          ? c.diasDeAtraso + ' dia(s) · ' + reais(c.custoDoAtraso)
+          ? plural(c.diasDeAtraso, 'dia', 'dias') + ' · ' + reaisBr(c.custoDoAtraso)
           : '—',
         situacao: c.alertaRotulo,
       })),

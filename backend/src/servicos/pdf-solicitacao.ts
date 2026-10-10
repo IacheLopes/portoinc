@@ -11,6 +11,8 @@
 import PDFDocument from 'pdfkit';
 import { dataBr, geradoEm } from './data-br.js';
 import { formatarNumero, ROTULO_SITUACAO, type Situacao } from './solicitacao.js';
+import { reaisBr, quantidadeBr } from './util.js';
+import { paraOPdf } from './pdf-texto.js';
 
 const MARINHO = '#0f2942';
 const AZUL = '#2f6fed';
@@ -46,19 +48,10 @@ export interface DadosPdf {
 // O fuso agora e dito em voz alta, em data-br.ts.
 const data = dataBr;
 
-function dinheiro(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function numeroBr(valor: number): string {
-  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
-}
-
 /** Monta o PDF e devolve como Buffer, pronto para download. */
-export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
+export function gerarPdfSolicitacao(entrada: DadosPdf): Promise<Buffer> {
+  const dados = paraOPdf(entrada);
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
@@ -188,9 +181,9 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
 
       doc.fillColor('#16202b').fontSize(9);
       doc.text(item.unidadeMedida, 350, y + 5, { width: 22 });
-      doc.text(numeroBr(item.quantidade), 378, y + 5, { width: 49, align: 'right' });
+      doc.text(quantidadeBr(item.quantidade), 378, y + 5, { width: 49, align: 'right' });
       doc.text(
-        item.valorEstimado !== null ? dinheiro(item.quantidade * item.valorEstimado) : '—',
+        item.valorEstimado !== null ? reaisBr(item.quantidade * item.valorEstimado) : '—',
         433, y + 5, { width: 74, align: 'right' },
       );
 
@@ -202,7 +195,7 @@ export function gerarPdfSolicitacao(dados: DadosPdf): Promise<Buffer> {
     y += 8;
     doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(10)
       .text('Total estimado', 45, y, { width: 385, align: 'right' });
-    doc.fontSize(11).text(dinheiro(dados.totalEstimado), 433, y - 1, { width: 74, align: 'right' });
+    doc.fontSize(11).text(reaisBr(dados.totalEstimado), 433, y - 1, { width: 74, align: 'right' });
 
     y += 24;
 

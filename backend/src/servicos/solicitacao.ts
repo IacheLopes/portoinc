@@ -5,6 +5,8 @@
 //  possam ser testadas sem banco e sem rede.
 // ============================================================
 
+import { reaisBr, porcentoBr } from './util.js';
+
 /**
  * Todas as situações, em ordem de vida.
  *
@@ -103,18 +105,50 @@ export interface ItemParaConferir {
   primeiraCompra: boolean;
   especificacaoTecnica?: string | null;
   descricao: string;
+  /** Preço unitário estimado. Sem ele, a alçada decide sobre zero. */
+  valorEstimado?: number | null;
+}
+
+/** O que a solicitação inteira precisa ter, fora os itens. */
+export interface PedidoParaConferir {
+  /** Para quando o material precisa estar na obra. */
+  dataDesejada: Date | null;
 }
 
 /**
  * Confere se a solicitação pode ser enviada para aprovação.
  * Devolve a lista de impedimentos — vazia significa "pode enviar".
+ *
+ * O segundo parâmetro não tem valor padrão de propósito: um
+ * padrão silencioso faria a conferência do prazo sumir no dia em
+ * que alguém escrevesse um terceiro chamador.
  */
-export function conferirParaEnvio(itens: ItemParaConferir[]): string[] {
+export function conferirParaEnvio(
+  itens: ItemParaConferir[],
+  pedido: PedidoParaConferir,
+): string[] {
   const impedimentos: string[] = [];
 
   if (itens.length === 0) {
     impedimentos.push('Adicione pelo menos um item antes de enviar.');
     return impedimentos;
+  }
+
+  // ------------------------------------------------------
+  //  O PRAZO É CAMPO OBRIGATÓRIO DA SOLICITAÇÃO.
+  //
+  //  Está assim na análise do fluxo de compras, §2.1: família,
+  //  descrição, quantidade, PRAZO DESEJADO, linha do orçamento e
+  //  obra. No sistema ele era opcional, e sem ele a tela inicial
+  //  não consegue dizer o que está atrasado — o cartão "Prazo
+  //  apertado" conta zero e a fila de aprovação perde a ordem de
+  //  urgência.
+  // ------------------------------------------------------
+  if (!pedido.dataDesejada) {
+    impedimentos.push(
+      'Falta dizer até quando o material precisa estar na obra. ' +
+      'É esse prazo que coloca a solicitação na frente da fila de quem aprova.',
+    );
   }
 
   for (const item of itens) {
@@ -128,6 +162,28 @@ export function conferirParaEnvio(itens: ItemParaConferir[]): string[] {
       impedimentos.push(
         '"' + item.descricao + '" nunca foi comprado antes. ' +
         'Descreva a especificação técnica (marca, qualidade, dimensões) para o comprador saber o que cotar.',
+      );
+    }
+
+    // ------------------------------------------------------
+    //  SEM PREÇO, A ALÇADA DECIDE SOBRE ZERO.
+    //
+    //  O valor estimado era opcional, e o total de uma
+    //  solicitação sem preço nenhum dá R$ 0,00 — que cai na
+    //  faixa mais BAIXA. Na simulação de 09/10/2026 um pedido de
+    //  800 tubos, R$ 25.200, foi para a fila de quem assina até
+    //  R$ 2.000, porque ninguém digitou o preço.
+    //
+    //  O valor não precisa ser exato: é estimativa, e existe
+    //  justamente porque ainda não se cotou. Precisa existir.
+    //  Quem tem linha de orçamento apontada já recebe o preço
+    //  previsto dela sem digitar nada (ver `completarValores`,
+    //  em `rotas/solicitacoes.ts`).
+    // ------------------------------------------------------
+    if (item.valorEstimado === null || item.valorEstimado === undefined) {
+      impedimentos.push(
+        '"' + item.descricao + '" está sem preço estimado. ' +
+        'É ele que decide quem assina: sem preço, a compra vai para a menor alçada.',
       );
     }
   }
@@ -342,15 +398,10 @@ export function conferirAlcadaDoFechamento(entrada: {
     ...base,
     precisaReaprovar: true,
     motivo:
-      'Fechou em ' + dinheiroBr(valorReal) + ', ' + variacao.toLocaleString('pt-BR') +
-      '% acima dos ' + dinheiroBr(estimado) + ' estimados, e mudou de faixa de alçada. ' +
+      'Fechou em ' + reaisBr(valorReal) + ', ' + porcentoBr(variacao) +
+      ' acima dos ' + reaisBr(estimado) + ' estimados, e mudou de faixa de alçada. ' +
       explicarAprovacao(faixaAgora),
   };
 }
 
-/** R$ 1.234,56 — só para as frases daqui. */
-function dinheiroBr(v: number): string {
-  return v.toLocaleString('pt-BR', {
-    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
-  });
-}
+

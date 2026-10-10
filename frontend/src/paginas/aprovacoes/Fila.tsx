@@ -13,7 +13,6 @@ import { Link } from 'react-router-dom';
 import {
   listarFilaAprovacao, nomeDaFuncao, dataBr, dataHoraBr, type ItemDaFila,
 } from '../../servicos/solicitacoes';
-import { dinheiro } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
@@ -21,6 +20,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
+import { plural, palavra, dinheiro } from '../../servicos/texto';
 
 /** Quantos dias faltam até a data em que o material é necessário. */
 function diasAte(iso: string | null): number | null {
@@ -36,9 +36,19 @@ function Prazo({ data }: { data: string | null }) {
   const dias = diasAte(data);
 
   if (dias === null) return <span className="texto-fraco">Sem prazo</span>;
-  if (dias < 0) return <Selo tipo="erro">Atrasada há {Math.abs(dias)} dia(s)</Selo>;
+  if (dias < 0) {
+    return (
+      <Selo tipo="erro">Atrasada há {plural(Math.abs(dias), 'dia', 'dias')}</Selo>
+    );
+  }
   if (dias === 0) return <Selo tipo="erro">É para hoje</Selo>;
-  if (dias <= 7) return <Selo tipo="atencao">Faltam {dias} dia(s)</Selo>;
+  if (dias <= 7) {
+    return (
+      <Selo tipo="atencao">
+        {palavra(dias, 'Falta', 'Faltam')} {plural(dias, 'dia', 'dias')}
+      </Selo>
+    );
+  }
 
   return <span>{dataBr(data)}</span>;
 }

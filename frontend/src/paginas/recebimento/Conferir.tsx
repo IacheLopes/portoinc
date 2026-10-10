@@ -16,7 +16,7 @@ import {
   ROTULO_SITUACAO_PEDIDO, COR_SITUACAO_PEDIDO,
   type PedidoParaConferir, type SituacaoItemRecebido,
 } from '../../servicos/recebimentos';
-import { quantidade as qtdBr } from '../../servicos/cadastros';
+import { quantidade as qtdBr } from '../../servicos/texto';
 import { dataBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao } from '../../componentes/Campo';

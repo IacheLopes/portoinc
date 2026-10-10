@@ -9,6 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerCsvFornecedores } from '../servicos/importacao-cadastros.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import {
   erroDeValidacao, textoObrigatorio, textoOpcional,
@@ -44,7 +45,18 @@ const esquemaFornecedor = z.object({
   cidade: textoOpcional(120),
   uf: z.enum(UFS).optional(),
   observacoes: textoOpcional(1000),
-  familias: z.array(z.string().uuid()).default([]),
+  //  PELO MENOS UMA FAMÍLIA.
+  //
+  //  É a família que decide quem é convidado para cada cotação:
+  //  um pacote de elétrica só chama quem vende elétrica. Sem
+  //  nenhuma, o fornecedor fica no cadastro e nunca é chamado —
+  //  cadastro que não serve para nada e ninguém percebe.
+  //
+  //  A tela avisava disso desde sempre, embaixo da lista, e
+  //  deixava salvar. Na simulação de 09/10/2026 os dois
+  //  fornecedores nasceram assim, e a cotação só travou três
+  //  telas adiante.
+  familias: z.array(z.string().uuid()).min(1, 'Marque pelo menos uma família que ele atende.'),
 });
 
 const esquemaContato = z.object({
@@ -132,6 +144,107 @@ export async function rotasFornecedores(app: FastifyInstance) {
   // --------------------------------------------------------
   //  Criar
   // --------------------------------------------------------
+  // --------------------------------------------------------
+  //  Importar fornecedores de planilha (CSV)
+  //
+  //  Mesma forma da importação de orçamento e da de materiais.
+  //
+  //  A coluna das FAMÍLIAS é a que faz o fornecedor existir de
+  //  verdade: sem ela ele fica no cadastro e nunca é convidado a
+  //  cotar. Por isso a linha sem família é recusada aqui, do
+  //  mesmo jeito que o formulário recusa.
+  // --------------------------------------------------------
+  app.post(
+    '/api/fornecedores/importar',
+    { preHandler: app.exigirPermissao('fornecedores.gerenciar') },
+    async (req, res) => {
+      const corpo = z.object({ csv: z.string().min(1).max(2_000_000) }).safeParse(req.body);
+      if (!corpo.success) return res.status(400).send(erroDeValidacao(corpo.error));
+
+      const { linhas: lidas, problemas } = lerCsvFornecedores(corpo.data.csv);
+
+      if (lidas.length === 0) {
+        return res.status(400).send({
+          erro: 'Nenhuma linha válida encontrada no arquivo.',
+          detalhes: problemas.slice(0, 10),
+        });
+      }
+
+      const familias = await banco.familiaMaterial.findMany({
+        select: { id: true, codigo: true },
+      });
+      const porCodigo = new Map(familias.map((f) => [f.codigo.toUpperCase(), f.id]));
+
+      const jaExistem = new Set(
+        (await banco.fornecedor.findMany({
+          where: { cnpj: { in: lidas.map((f) => f.cnpj) } },
+          select: { cnpj: true },
+        })).map((f) => f.cnpj),
+      );
+
+      let importados = 0;
+      let ignorados = 0;
+
+      // UM A UM, e não `createMany`: cada fornecedor leva as
+      // famílias dele numa tabela de ligação, e `createMany` não
+      // cria relação. São dezenas de linhas, não milhares.
+      for (const f of lidas) {
+        if (jaExistem.has(f.cnpj)) {
+          ignorados += 1;
+          continue;
+        }
+
+        const ids = f.familiasCodigos
+          .map((c) => porCodigo.get(c))
+          .filter((id): id is string => !!id);
+
+        if (ids.length === 0) {
+          problemas.push(
+            f.razaoSocial + ': nenhuma das famílias (' + f.familiasCodigos.join(', ') +
+            ') existe. Cadastre-as antes, em Administração > Famílias.',
+          );
+          continue;
+        }
+
+        const faltando = f.familiasCodigos.filter((c) => !porCodigo.has(c));
+        if (faltando.length > 0) {
+          problemas.push(
+            f.razaoSocial + ': a família ' + faltando.join(', ') +
+            ' não existe e foi ignorada; as outras entraram.',
+          );
+        }
+
+        await banco.fornecedor.create({
+          data: {
+            cnpj: f.cnpj,
+            razaoSocial: f.razaoSocial,
+            nomeFantasia: f.nomeFantasia,
+            email: f.email,
+            whatsapp: f.whatsapp,
+            cidade: f.cidade,
+            uf: f.uf,
+            familias: { create: ids.map((familiaId) => ({ familiaId })) },
+          },
+        });
+        importados += 1;
+      }
+
+      if (importados === 0) {
+        return res.status(400).send({
+          erro: 'Nenhuma linha pôde ser importada.',
+          detalhes: problemas.slice(0, 10),
+        });
+      }
+
+      return {
+        importados,
+        ignorados,
+        problemas: problemas.slice(0, 20),
+        totalDeProblemas: problemas.length,
+      };
+    },
+  );
+
   app.post('/api/fornecedores', { preHandler: app.exigirPermissao('fornecedores.gerenciar') }, async (req, res) => {
     const dados = esquemaFornecedor.safeParse(req.body);
     if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));

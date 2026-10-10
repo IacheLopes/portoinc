@@ -260,7 +260,7 @@ describe('Mensagem da última chamada', () => {
 
     const texto = mensagemUltimaChamada('BID-1', muitos, prazo);
 
-    assert.ok(texto.includes('e mais 5 item(ns)'));
+    assert.ok(texto.includes('e mais 5 itens'), texto);
   });
 });
 
@@ -288,7 +288,12 @@ describe('Conferência antes de gerar os pedidos', () => {
       { bidItemId: '2', descricao: 'Item raro', escolhido: false, temCotacao: false },
     ]);
 
-    assert.ok(p.some((x) => x.includes('não receberam nenhuma cotação')));
+    // UM item sem cotacao: o verbo vai para o singular. Escrito
+    // assim, o teste prova a concordancia em vez de so passar.
+    assert.ok(
+      p.some((x) => x.includes('1 item não recebeu nenhuma cotação')),
+      p.join(' | '),
+    );
   });
 
   it('bloqueia pacote vazio', () => {

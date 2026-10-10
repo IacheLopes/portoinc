@@ -7,10 +7,10 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
-  listarMateriais, listarFamilias, criarMaterial, editarMaterial, biparCodigo,
-  quantidade, opcoesDeUnidade,
+  listarMateriais, listarFamilias, importarMateriais, criarMaterial, editarMaterial, biparCodigo, opcoesDeUnidade,
   type Material, type Familia, type TipoItem,
 } from '../../servicos/cadastros';
+import { quantidade } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao, ErroFormulario } from '../../componentes/Campo';
@@ -18,6 +18,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { PainelDeImportacao } from '../../componentes/PainelDeImportacao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
 import { usePagina } from '../../ganchos/pagina';
@@ -25,6 +26,11 @@ import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
+
+const MODELO_MATERIAIS =
+  'familia;codigo;descricao;unidade;marca;norma;gtin;ponto_pedido;linha_orcamento\n' +
+  'CIM;00119;Cimento Portland CP-II-Z-32 saco 50kg;SC;Votoran;NBR 16697;;50;03.01.001\n' +
+  'ELE;00087;Cabo flexivel 2,5mm2 750V rolo 100m;RL;Sil;NBR NM 247-3;;8;09.01.001';
 
 export function Materiais() {
   const { pode } = useAutenticacao();
@@ -38,6 +44,8 @@ export function Materiais() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  /** O painel de importar planilha está aberto? */
+  const [importando, setImportando] = useState(false);
 
   const [busca, setBusca] = useState('');
   const [familiaId, setFamiliaId] = useState('');
@@ -98,16 +106,51 @@ export function Materiais() {
           }
           acoes={
             podeEditar && (
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => setAberto(true)}
-              >
-                + Novo item
-              </button>
+              <>
+                {/* IMPORTAR VEM ANTES DE CRIAR, para quem está
+                    mudando da planilha: 400 materiais a dedo são
+                    4.000 campos. O botão é secundário porque, no
+                    dia a dia, cadastrar um item é o comum. */}
+                <button
+                  type="button"
+                  className="botao botao--secundario"
+                  onClick={() => setImportando((x) => !x)}
+                  aria-expanded={importando}
+                >
+                  <Icone nome="anexo" /> Importar planilha
+                </button>
+                <button
+                  type="button"
+                  className="botao botao--principal"
+                  onClick={() => setAberto(true)}
+                >
+                  + Novo item
+                </button>
+              </>
             )
           }
         />
+
+        {importando && (
+          <PainelDeImportacao
+            titulo="Importar catálogo de planilha"
+            modelo={MODELO_MATERIAIS}
+            oQueEntra={{ um: 'material', muitos: 'materiais' }}
+            ajuda={
+              <p>
+                <strong>Família, código, descrição e unidade</strong> são obrigatórios —
+                os mesmos do formulário. A família vem pelo <strong>código</strong> dela
+                (ELE, HID), e precisa existir antes.
+              </p>
+            }
+            aoImportar={importarMateriais}
+            aoConcluir={async (mensagem) => {
+              setImportando(false);
+              setAviso(mensagem);
+              await carregar();
+            }}
+          />
+        )}
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">

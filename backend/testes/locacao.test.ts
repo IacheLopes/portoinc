@@ -334,8 +334,21 @@ describe('Devolver', () => {
       metodo: 'POST', token: comprador, corpo: {},
     });
 
-    assert.match(r.corpo.mensagem, /8 dia\(s\) de atraso/);
+    assert.match(r.corpo.mensagem, /8 dias de atraso/);
     assert.equal(r.corpo.contrato.custoDoAtraso, 520);
+  });
+
+  it('com um dia de atraso, a mensagem fala no singular', async () => {
+    // A frase dizia "1 dia(s) de atraso" até 08/10/2026. Com 8 dias
+    // qualquer uma das duas passa: é o caso de UM que mede.
+    await limparContratos();
+    const criada = await contratar({ inicio: -20, previsao: -1 });
+
+    const r = await chamar('/api/locacao/' + criada.corpo.contrato.id + '/devolver', {
+      metodo: 'POST', token: comprador, corpo: {},
+    });
+
+    assert.match(r.corpo.mensagem, /com 1 dia de atraso/);
   });
 
   it('não devolve duas vezes', async () => {

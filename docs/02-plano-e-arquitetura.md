@@ -60,6 +60,15 @@ arquivo inteiro na memória — restrição do container de 1 GB.
 
 **Por quê:** a empresa já mantém orçamento em planilha. Obrigar a redigitar tudo
 seria o jeito mais rápido de o sistema não ser adotado.
+
+> **CSV entra, CSV não sai — e não é contradição.** A regra "nada sai em CSV" (ver D5) é
+> sobre o que o sistema **entrega** para alguém ler: isso é PDF ou Word. Planilha é o
+> formato de quem está **mudando de casa**, e recusá-la na entrada seria recusar a
+> mudança.
+>
+> Em 09/10/2026 a mesma porta foi aberta para **materiais** e **fornecedores**: eram 10 e
+> 9 campos por cadastro, e uma construtora com 400 itens e 80 fornecedores digitava quase
+> 5.000 campos para sair da planilha.
 **Custo de mudar depois:** baixo.
 
 ### D5 — Contas a pagar
@@ -75,6 +84,21 @@ sem centro de custo contábil).
 multiplicaria o prazo sem que ninguém tenha pedido. A exportação resolve a ponte com
 o que o financeiro já usa.
 **Custo de mudar depois:** médio, mas é um módulo novo, não uma mudança do existente.
+
+> **Esta decisão mudou duas vezes, e nos dois casos por pedido da empresa.**
+>
+> **O formato.** "CSV/Excel" não vale mais: o dono decidiu que **nada sai em CSV**. Todo
+> arquivo que o sistema entrega é PDF ou Word, e quem baixa escolhe na hora.
+>
+> **O escopo.** "Sem fluxo de caixa" também não vale. Na reunião de 08/10/2026 o Iache
+> perguntou onde se cadastra a receita da empresa e as despesas que não vêm de compra, e
+> o Emerson resumiu: *"ele vai descontar de uma conta que não tem cadastro de dinheiro de
+> entrada"*. O Financeiro ganhou entradas e saídas avulsas, caixa, fluxo semanal e
+> categorias — e, em 09/10, o **saldo de abertura**, para a empresa que chega com dinheiro
+> no dia em que sai da planilha.
+>
+> Continua **não** sendo um ERP financeiro: sem conciliação bancária e sem centro de custo
+> contábil.
 
 ### D6 — O que é "NBR"
 
@@ -234,24 +258,53 @@ APOIO
 
 ## 4. As 12 etapas do projeto
 
+> **Este quadro ficou parado de 23/09 a 09/10/2026.** Ele foi escrito no começo, para
+> marcar o que ia ser feito, e ninguém voltou para marcar o que foi sendo entregue —
+> então quem o abrisse lia "só a fundação está pronta", com as doze etapas no ar.
+>
+> Conferido linha a linha contra o código em 09/10/2026. Duas descrições foram
+> corrigidas, porque descreviam algo diferente do que foi entregue; estão marcadas.
+
 | # | Etapa | Entrega | Situação |
 |---|---|---|---|
-| 0 | **Fundação** | Docker, 3 peças no ar, tomadas de integração, manual | ✅ Concluída |
-| 1 | **Acesso** | Login, funções múltiplas, permissões, menu do sistema | ⬜ |
-| 2 | **Cadastros** | Obras, orçamento, famílias, materiais, fornecedores, almoxarifados, alçadas | ⬜ |
-| 3 | **Solicitação** | Abertura de pedido pelo computador e pelo celular, PDF | ⬜ |
-| 4 | **Aprovação** | Fila por alçada, aprovar/reprovar/devolver, auditoria | ⬜ |
-| 5 | **Cotação (BID)** | Montagem do pacote, convite a fornecedores, portal externo | ⬜ |
-| 6 | **Equalização** | Mapa comparativo, última chamada, escolha por item, pedido + PDF | ⬜ |
-| 7 | **Recebimento** | Código de barras, conferência, entrega parcial, devolução | ⬜ |
-| 8 | **Estoque** | Entradas, saídas, saldo por obra, ponto de pedido automático | ⬜ |
-| 9 | **Fiscal e pagar** | NF vinculada ao pedido, contas a pagar, exportação | ⬜ |
-| 10 | **WhatsApp** | Tela de conexão com QR code, avisos automáticos do fluxo | ⬜ |
-| 11 | **Relatórios** | Histórico de preços, custo por obra e linha, desempenho de fornecedor | ⬜ |
-| 12 | **Locação** | Contrato de locação, controle de diárias, alerta de equipamento ocioso | ⬜ |
-> São **12 etapas além da fundação já concluída** — 13 no total.
+| 0 | **Fundação** | Docker, 3 peças no ar, tomadas de integração, manual | ✅ |
+| 1 | **Acesso** | Login, funções múltiplas, permissões, menu do sistema | ✅ |
+| 2 | **Cadastros** | Obras, orçamento, famílias, materiais, fornecedores, almoxarifados, alçadas | ✅ |
+| 3 | **Solicitação** | Abertura de pedido pelo computador e pelo celular, PDF | ✅ |
+| 4 | **Aprovação** | Fila por alçada, aprovar/reprovar/devolver, auditoria | ✅ |
+| 5 | **Cotação (BID)** | Montagem do pacote, convite a fornecedores, portal externo | ✅ |
+| 6 | **Equalização** | Mapa comparativo, última chamada, escolha por item, pedido + PDF | ✅ |
+| 7 | **Recebimento** | Código de barras, conferência, entrega parcial, devolução | ✅ |
+| 8 | **Estoque** | Entradas, saídas, saldo por obra, **reposição sugerida** no ponto de pedido | ✅ ¹ |
+| 9 | **Fiscal e pagar** | NF vinculada ao pedido, contas a pagar, **saída em PDF e Word** | ✅ ² |
+| 10 | **WhatsApp** | Tela de conexão com QR code, avisos automáticos do fluxo | ✅ ³ |
+| 11 | **Relatórios** | Histórico de preços, custo por obra e linha, desempenho de fornecedor | ✅ |
+| 12 | **Locação** | Contrato de locação, controle de diárias, alerta de equipamento ocioso | ✅ |
+
+**¹ A linha dizia "ponto de pedido automático".** O BPMN pede que o sistema *"abra
+automaticamente uma nova solicitação"* quando o saldo cai abaixo do mínimo. O que foi
+construído **sugere**: monta a lista de reposição já no formato da solicitação, com a
+quantidade calculada, e uma pessoa confirma.
+
+A escolha é deliberada — quantidade sugerida é estimativa, e uma compra nascendo sozinha
+de madrugada é uma compra que ninguém revisou —, mas nunca tinha sido escrita como
+decisão. Fica escrita agora.
+
+**² A linha dizia "exportação".** A decisão D5, acima, previa CSV/Excel para o controle do
+Andre. O dono do sistema decidiu depois que **nada sai em CSV**: todo arquivo que o
+sistema entrega é PDF ou Word, e quem baixa escolhe o formato na hora. A decisão dele
+vale; esta linha é que estava velha.
+
+**³ A tela existe e o adaptador roda em `mock`.** Ligar de verdade depende de ler o QR
+code com o telefone da empresa, e isso é tarefa do dono — não de código que falte aqui.
+
+> São **12 etapas além da fundação** — 13 no total, **todas entregues**.
 > As etapas **1 a 9** formam o sistema mínimo utilizável: já substituem as planilhas.
 > As etapas **10 a 12** agregam automação, inteligência e o controle de locação.
+>
+> **O que ainda não foi feito não é etapa:** a imagem de produção nunca foi construída, e
+> as quatro integrações continuam em `mock` por decisão da direção. Ver *Finalização*,
+> abaixo.
 
 ### Conferência contra os documentos de origem (2026-09-23)
 

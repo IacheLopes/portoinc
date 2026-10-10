@@ -7,6 +7,7 @@
 // ============================================================
 
 import { dataBr } from './data-br.js';
+import { plural } from './util.js';
 
 export interface RespostaDeFornecedor {
   bidFornecedorId: string;
@@ -259,7 +260,9 @@ export function mensagemUltimaChamada(
     .join('\n');
 
   const resto =
-    itensAtras.length > 10 ? '\n(e mais ' + (itensAtras.length - 10) + ' item(ns))' : '';
+    itensAtras.length > 10
+      ? '\n(e mais ' + plural(itensAtras.length - 10, 'item', 'itens') + ')'
+      : '';
 
   return (
     'Porto Inc. — ' + numeroBid + ' · ÚLTIMA CHAMADA\n' +
@@ -291,7 +294,8 @@ export function conferirEscolhas(
 
   if (semEscolha.length > 0) {
     problemas.push(
-      semEscolha.length + ' item(ns) ainda sem fornecedor escolhido: ' +
+      plural(semEscolha.length, 'item', 'itens') +
+      ' ainda sem fornecedor escolhido: ' +
       semEscolha.slice(0, 5).map((i) => i.descricao).join(', ') +
       (semEscolha.length > 5 ? '...' : ''),
     );
@@ -299,7 +303,11 @@ export function conferirEscolhas(
 
   if (semCotacao.length > 0) {
     problemas.push(
-      semCotacao.length + ' item(ns) não receberam nenhuma cotação. ' +
+      plural(
+        semCotacao.length,
+        'item não recebeu',
+        'itens não receberam',
+      ) + ' nenhuma cotação. ' +
       'Considere uma última chamada ou remova-os do pacote.',
     );
   }

@@ -20,6 +20,8 @@
  * devia ter voltado. `atencao` é o que vence se ninguém agir.
  * `neutro` é acompanhamento: bom saber, não pede nada.
  */
+import { plural } from './util.js';
+
 export type Tom = 'neutro' | 'atencao' | 'erro';
 
 export interface CartaoDoInicio {
@@ -58,11 +60,6 @@ export const CONTAGENS_ZERADAS: ContagensDoInicio = {
   locacoesAtrasadas: 0,
 };
 
-/** "1 nota" e "3 notas" — sem "1 nota(s)", que ninguém fala. */
-function plural(n: number, um: string, muitos: string): string {
-  return n === 1 ? '1 ' + um : n + ' ' + muitos;
-}
-
 interface Definicao {
   chave: string;
   /** Quem não tem esta permissão nem vê o cartão. */
@@ -83,7 +80,7 @@ const DEFINICOES: Definicao[] = [
     chave: 'contasVencidas',
     permissao: 'financeiro.ver',
     rotulo: 'Contas vencidas',
-    para: '/financeiro?ver=vencidas',
+    para: '/financeiro/contas?ver=vencidas',
     valor: (c) => c.contasVencidas,
     tom: (n) => (n > 0 ? 'erro' : 'neutro'),
     detalhe: (n) => (n === 0
@@ -116,7 +113,7 @@ const DEFINICOES: Definicao[] = [
     chave: 'contasVencendoEm7Dias',
     permissao: 'financeiro.ver',
     rotulo: 'Vence em 7 dias',
-    para: '/financeiro?ver=proximas',
+    para: '/financeiro/contas?ver=proximas',
     valor: (c) => c.contasVencendoEm7Dias,
     tom: (n) => (n > 0 ? 'atencao' : 'neutro'),
     detalhe: (n) => (n === 0

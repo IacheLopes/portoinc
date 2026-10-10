@@ -81,7 +81,6 @@ services:
       # estiver na lista de autorizados.
       WHATSAPP_MODO_TESTE: ${WHATSAPP_MODO_TESTE:-true}
       FISCAL_ADAPTER: ${FISCAL_ADAPTER}
-      GTIN_ADAPTER: ${GTIN_ADAPTER}
       PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}
       # Necessario no Windows para o hot-reload enxergar as alteracoes
       CHOKIDAR_USEPOLLING: "true"
@@ -89,6 +88,10 @@ services:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
       - ./backend/testes:/app/testes
+      # So leitura: o `npm` de dentro lia a versao congelada na
+      # imagem e anunciava 0.40.0 com o projeto em 0.56.0. A tela
+      # sempre mostrou a certa, que vem de `Layout.tsx`.
+      - ./backend/package.json:/app/package.json:ro
       - portoink_arquivos:/app/arquivos
       # Sessao do WhatsApp (Baileys). Volume proprio para o reinicio do
       # container NAO pedir o QR de novo. Contem credenciais: nunca vai

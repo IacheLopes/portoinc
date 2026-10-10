@@ -14,6 +14,8 @@
 //    5. O que a empresa mais compra?
 // ============================================================
 
+import { reaisBr } from './util.js';
+
 /** Divisão que não explode quando o de baixo é zero. */
 function porcentagem(parte: number, todo: number): number {
   if (todo === 0) return 0;
@@ -742,9 +744,7 @@ function lerEstoqueParado(
     return 'Nada encostado há mais de ' + dias + ' dias. O estoque está girando.';
   }
 
-  const reais = valor.toLocaleString('pt-BR', {
-    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
-  });
+  const reais = reaisBr(valor);
 
   const abertura = itens === 1
     ? 'Um material está parado'

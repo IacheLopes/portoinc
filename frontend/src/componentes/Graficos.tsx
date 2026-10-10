@@ -23,8 +23,7 @@
 import {
   useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode,
 } from 'react';
-import { dinheiro } from '../servicos/cadastros';
-import { dinheiroCurto } from '../servicos/texto';
+import { dinheiroCurto, porcento, dinheiro } from '../servicos/texto';
 import { Icone } from './Icone';
 
 const TONS = {
@@ -37,6 +36,81 @@ const TONS = {
 } as const;
 
 export type Tom = keyof typeof TONS;
+
+/**
+ * Quanto o número grande precisa encolher para caber: 0, 1 ou 2.
+ *
+ * O MESMO NÚMERO NÃO CABE EM TODA EMPRESA. "R$ 640,30" tem 9
+ * caracteres; "R$ 19.705.971,70" tem 16, e no cartão de indicador
+ * ele quebrava em duas linhas — com o sinal de menos sozinho na
+ * primeira, que é o jeito mais feio possível de mostrar um saldo
+ * negativo. Visto em 08/10/2026, depois de um lançamento de
+ * R$ 20 milhões.
+ *
+ * A conta já existia no miolo da rosca, escrita à mão lá dentro.
+ * Agora é uma só, e cada lugar traduz o degrau na unidade dele —
+ * token de tipografia no cartão, número de viewBox no SVG.
+ *
+ * OS CORTES FORAM MEDIDOS, nao chutados. Em pt-BR:
+ *
+ *     R$ 640,30             9
+ *     R$ 96.500,00         12
+ *     R$ 305.000,00        13   <- ainda cabe inteiro
+ *     R$ 1.234.567,89      15   <- um degrau
+ *     R$ 19.705.971,70     16   <- dois
+ *     -R$ 19.705.971,70    17
+ *
+ * O sinal conta, porque ocupa lugar: e exatamente o caractere que
+ * sobrava e era empurrado para a linha de cima.
+ */
+export function degrauDoNumero(texto: string): 0 | 1 | 2 {
+  if (texto.length > 15) return 2;
+  if (texto.length > 13) return 1;
+  return 0;
+}
+
+/**
+ * O degrau de uma FILEIRA de cartões, e não de um valor só.
+ *
+ * Cada cartão calculando o seu deixava "R$ 305.000,00" grande ao
+ * lado de "-R$ 19.705.971,70" pequeno, na mesma fileira. Tamanho
+ * diferente entre iguais diz "este importa mais" — e não é verdade:
+ * um só tem menos dígitos.
+ *
+ * Quem manda é o mais comprido da fileira. Todos descem com ele.
+ */
+export function degrauDaFileira(...valores: string[]): 0 | 1 | 2 {
+  return valores.reduce<0 | 1 | 2>(
+    (maior, v) => (degrauDoNumero(v) > maior ? degrauDoNumero(v) : maior),
+    0,
+  );
+}
+
+/**
+ * O percentual escrito, em português.
+ *
+ * DUAS COISAS, e as duas vieram de olhar a tela:
+ *
+ *  1. Fatia que existe nunca vira "0%". `Math.round` transforma
+ *     0,016% em 0, e uma fatia de R$ 3.240,50 marcada "0%" diz que
+ *     ela não existe — e ela existe; é só pequena ao lado de uma
+ *     gigante.
+ *
+ *  2. O separador decimal é VÍRGULA. Juntar número com texto em
+ *     JavaScript usa o ponto: a rosca de fornecedores mostrava
+ *     "37.8%" numa tela que escreve "R$ 3.000,00" três dedos ao
+ *     lado. Dois separadores na mesma linha, e o errado é o que
+ *     ninguém questiona — parece só um número.
+ */
+export function percentualEscrito(percentual: number, valor: number): string {
+  if (percentual === 0 && valor > 0) return '<1%';
+
+  // `porcento` e a casa oficial do percentual em pt-BR, desde o
+  // Design 4. Eu escrevi a conta de novo aqui e o `padrao.mjs`
+  // pegou — a mesma duplicacao que ja tinha acontecido com a funcao
+  // de dinheiro, no backend, no mesmo dia.
+  return porcento(percentual);
+}
 
 // Dinheiro vem das funções oficiais. Este arquivo tinha as suas
 // próprias, e a daqui não passava `maximumFractionDigits` — duas
@@ -249,6 +323,7 @@ export function CartaoIndicador({
   detalhe,
   explicacao,
   destaque,
+  degrau,
 }: {
   rotulo: string;
   valor: string;
@@ -256,9 +331,20 @@ export function CartaoIndicador({
   /** O que o número significa. Abre dentro do cartão, no "?". */
   explicacao: string;
   destaque?: Tom;
+  /**
+   * O degrau de encolhimento da FILEIRA inteira.
+   *
+   * Sem ele, cada cartão encolhe sozinho e a fileira fica com
+   * tamanhos diferentes — que o olho lê como hierarquia. Quem tem
+   * vizinhos passa o degrau da fileira; quem está sozinho não
+   * precisa.
+   */
+  degrau?: 0 | 1 | 2;
 }) {
   const [aberta, setAberta] = useState(false);
   const idExplicacao = useId();
+
+  const TAMANHO = ['var(--txt-2xl)', 'var(--txt-xl)', 'var(--txt-lg)'];
 
   return (
     <article
@@ -277,7 +363,12 @@ export function CartaoIndicador({
         <span aria-hidden="true">{aberta ? '×' : '?'}</span>
       </button>
 
-      <span className="indicador-grafico__valor">{valor}</span>
+      <span
+        className="indicador-grafico__valor"
+        style={{ fontSize: TAMANHO[degrau ?? degrauDoNumero(valor)] }}
+      >
+        {valor}
+      </span>
       <span className="indicador-grafico__detalhe">{detalhe}</span>
 
       {aberta && (
@@ -298,7 +389,17 @@ export interface ColunaDoFluxo {
   aVencer: number;
   vencido: number;
   pago: number;
+  /** A soma das tres acima. E a altura da barra de SAIDA. */
   total: number;
+  /**
+   * Receita que caiu no mes, e a prevista que ainda nao caiu.
+   *
+   * Opcionais porque nem todo chamador manda: so o financeiro soma
+   * os lancamentos a mao. Sem elas, o grafico desenha so a saida,
+   * como sempre desenhou.
+   */
+  entrada?: number;
+  aReceber?: number;
 }
 
 /**
@@ -324,6 +425,20 @@ export function andarMeses(referencia: string, passos: number): string {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
+/** "+" ou "−" na frente do saldo do mês. Zero não leva sinal. */
+function sinal(valor: number): string {
+  if (valor > 0) return '+';
+  if (valor < 0) return '−';
+  return '';
+}
+
+/** A cor do saldo do mês. O sinal acima já diz o mesmo sem cor. */
+function sinalDoSaldo(valor: number): string | undefined {
+  if (valor > 0) return 'fluxo__saldo fluxo__saldo--sobrou';
+  if (valor < 0) return 'fluxo__saldo fluxo__saldo--faltou';
+  return undefined;
+}
+
 export function GraficoFluxo({
   colunas,
   titulo,
@@ -336,7 +451,22 @@ export function GraficoFluxo({
   periodo?: PeriodoDoFluxo;
 }) {
   const { area, dica, ligar } = useDica();
-  const maior = Math.max(...colunas.map((c) => c.total), 1);
+
+  // A ESCALA PRECISA VER OS DOIS LADOS.
+  //
+  // Enquanto so havia saida, o maior total mandava. Com a entrada
+  // do lado, uma medicao de R$ 185.000 contra um mes de R$ 3.000 de
+  // parcela sairia pelo teto do cartao — a barra calculada em 6000%
+  // da altura.
+  const maior = Math.max(
+    ...colunas.map((c) => Math.max(c.total, (c.entrada ?? 0) + (c.aReceber ?? 0))),
+    1,
+  );
+
+  // So desenha a coluna da entrada quando ha entrada em algum mes.
+  // Numa instalacao que ainda nao lancou receita nenhuma, uma
+  // coluna vazia ao lado de cada barra seria so ruido.
+  const temEntrada = colunas.some((c) => (c.entrada ?? 0) + (c.aReceber ?? 0) > 0);
 
   return (
     <figure className="gr">
@@ -347,7 +477,32 @@ export function GraficoFluxo({
           coisas pequenas entre o título e as barras. No celular a
           fileira quebra sozinha. */}
       <div className="gr__controles">
+        {/* A legenda separa ENTRA de SAI.
+
+            QUEM CONTA A DIRECAO E A POSICAO, NAO A COR.
+
+            As tres cores deste grafico ja estao gastas com o ESTADO
+            do dinheiro que sai: pago, vencido, a vencer. Pintar a
+            entrada de verde faria o verde significar duas coisas
+            opostas no mesmo desenho — dinheiro que saiu e dinheiro
+            que entrou.
+
+            Entao a entrada fica na barra da ESQUERDA de cada par, com
+            a cor que sobrou (azul), e a legenda nomeia os dois grupos.
+            As cores da saida continuam exatamente como foram
+            aprovadas, e a rosca ao lado nao precisa mudar nada.
+
+            Cinco chaves em fila viravam uma sopa; agrupadas, a
+            primeira palavra ja diz o lado. */}
         <div className="gr__legenda">
+          {temEntrada && (
+            <>
+              <span className="gr__chave gr__chave--grupo">Entra:</span>
+              <span className="gr__chave"><i style={{ background: TONS.info }} /> Recebido</span>
+              <span className="gr__chave"><i className="gr__promessa" /> A receber</span>
+              <span className="gr__chave gr__chave--grupo">Sai:</span>
+            </>
+          )}
           <span className="gr__chave"><i style={{ background: TONS.sucesso }} /> Pago</span>
           <span className="gr__chave"><i style={{ background: TONS.erro }} /> Vencido</span>
           <span className="gr__chave"><i style={{ background: TONS.atencao }} /> A vencer</span>
@@ -432,7 +587,10 @@ export function GraficoFluxo({
 
         <ol className="fluxo__colunas">
           {colunas.map((c, i) => {
-            const vazio = c.total <= 0;
+            const entrada = c.entrada ?? 0;
+            const aReceber = c.aReceber ?? 0;
+            const entra = entrada + aReceber;
+            const vazio = c.total <= 0 && entra <= 0;
             const eHoje = c.rotulo === destacar;
 
             const conteudo: ConteudoDaDica = {
@@ -440,6 +598,12 @@ export function GraficoFluxo({
               linhas: vazio
                 ? [{ rotulo: 'Sem movimento', valor: '—' }]
                 : [
+                    ...(entrada > 0
+                      ? [{ rotulo: 'Recebido', valor: dinheiro(entrada), tom: 'info' as Tom }]
+                      : []),
+                    ...(aReceber > 0
+                      ? [{ rotulo: 'A receber', valor: dinheiro(aReceber), tom: 'info' as Tom }]
+                      : []),
                     ...(c.pago > 0
                       ? [{ rotulo: 'Pago', valor: dinheiro(c.pago), tom: 'sucesso' as Tom }]
                       : []),
@@ -449,7 +613,12 @@ export function GraficoFluxo({
                     ...(c.aVencer > 0
                       ? [{ rotulo: 'A vencer', valor: dinheiro(c.aVencer), tom: 'atencao' as Tom }]
                       : []),
-                    { rotulo: 'Total do mês', valor: dinheiro(c.total) },
+                    // "Sai no mês", e não "Total do mês": com as duas
+                    // direções na mesma dica, "total" nao diz de qual.
+                    {
+                      rotulo: temEntrada ? 'Sai no mês' : 'Total do mês',
+                      valor: dinheiro(c.total),
+                    },
                   ],
             };
 
@@ -459,43 +628,96 @@ export function GraficoFluxo({
                   type="button"
                   className="fluxo__alvo"
                   aria-label={
-                    c.rotulo + ': ' + (vazio ? 'sem movimento' : 'total ' + dinheiro(c.total))
+                    c.rotulo + ': ' +
+                    (vazio
+                      ? 'sem movimento'
+                      : temEntrada
+                        ? 'entra ' + dinheiro(entra) + ', sai ' + dinheiro(c.total)
+                        : 'total ' + dinheiro(c.total))
                   }
                   {...ligar(conteudo)}
                 >
-                  <span className="fluxo__pilha" style={{ ['--atraso' as string]: i * 45 + 'ms' }}>
-                    {c.aVencer > 0 && (
-                      <span
-                        className="fluxo__pedaco"
-                        style={{
-                          height: (c.aVencer / maior) * 100 + '%',
-                          background: TONS.atencao,
-                        }}
-                      />
+                  <span
+                    className={'fluxo__barras' + (temEntrada ? ' fluxo__barras--par' : '')}
+                    style={{ ['--atraso' as string]: i * 45 + 'ms' }}
+                  >
+                    {/* ENTRA: a barra da esquerda.
+
+                        A prevista fica em cima da recebida, listrada:
+                        promessa e dinheiro nao tem a mesma altura de
+                        certeza, e a textura diz isso sem depender da
+                        cor. */}
+                    {temEntrada && (
+                      <span className="fluxo__pilha">
+                        {aReceber > 0 && (
+                          <span
+                            className="fluxo__pedaco fluxo__pedaco--promessa"
+                            style={{ height: (aReceber / maior) * 100 + '%' }}
+                          />
+                        )}
+                        {entrada > 0 && (
+                          <span
+                            className="fluxo__pedaco"
+                            style={{
+                              height: (entrada / maior) * 100 + '%',
+                              background: TONS.info,
+                            }}
+                          />
+                        )}
+                      </span>
                     )}
-                    {c.vencido > 0 && (
-                      <span
-                        className="fluxo__pedaco"
-                        style={{
-                          height: (c.vencido / maior) * 100 + '%',
-                          background: TONS.erro,
-                        }}
-                      />
-                    )}
-                    {c.pago > 0 && (
-                      <span
-                        className="fluxo__pedaco"
-                        style={{
-                          height: (c.pago / maior) * 100 + '%',
-                          background: TONS.sucesso,
-                        }}
-                      />
-                    )}
+
+                    {/* SAI: a pilha de sempre, com as cores de sempre. */}
+                    <span className="fluxo__pilha">
+                      {c.aVencer > 0 && (
+                        <span
+                          className="fluxo__pedaco"
+                          style={{
+                            height: (c.aVencer / maior) * 100 + '%',
+                            background: TONS.atencao,
+                          }}
+                        />
+                      )}
+                      {c.vencido > 0 && (
+                        <span
+                          className="fluxo__pedaco"
+                          style={{
+                            height: (c.vencido / maior) * 100 + '%',
+                            background: TONS.erro,
+                          }}
+                        />
+                      )}
+                      {c.pago > 0 && (
+                        <span
+                          className="fluxo__pedaco"
+                          style={{
+                            height: (c.pago / maior) * 100 + '%',
+                            background: TONS.sucesso,
+                          }}
+                        />
+                      )}
+                    </span>
                   </span>
 
+                  {/* O número embaixo é o SALDO do mês, não a saída.
+
+                      Enquanto só havia saída, o total dela era o
+                      número óbvio. Com a entrada ao lado, o mesmo
+                      número passou a mentir: embaixo de uma barra azul
+                      de R$ 305 mil aparecia "R$ 9,4k", que era só o
+                      que saiu.
+
+                      As duas barras já mostram os dois lados; o
+                      número diz o resultado. */}
                   <span className="fluxo__rotulo">
                     {c.rotulo}
-                    <small>{vazio ? '—' : dinheiroCurto(c.total)}</small>
+                    <small className={temEntrada && !vazio ? sinalDoSaldo(entra - c.total) : undefined}>
+                      {vazio
+                        ? '—'
+                        : temEntrada
+                          ? sinal(entra - c.total) + dinheiroCurto(Math.abs(entra - c.total))
+                          : dinheiroCurto(c.total)}
+                    </small>
                   </span>
                 </button>
               </li>
@@ -508,12 +730,210 @@ export function GraficoFluxo({
 
       <TabelaEquivalente
         titulo={titulo}
-        colunas={['Mês', 'Pago', 'Vencido', 'A vencer']}
-        linhas={colunas.map((c) => [
-          c.rotulo,
-          dinheiro(c.pago),
-          dinheiro(c.vencido),
-          dinheiro(c.aVencer),
+        colunas={
+          temEntrada
+            ? ['Mês', 'Recebido', 'A receber', 'Pago', 'Vencido', 'A vencer']
+            : ['Mês', 'Pago', 'Vencido', 'A vencer']
+        }
+        linhas={colunas.map((c) =>
+          temEntrada
+            ? [
+                c.rotulo,
+                dinheiro(c.entrada ?? 0),
+                dinheiro(c.aReceber ?? 0),
+                dinheiro(c.pago),
+                dinheiro(c.vencido),
+                dinheiro(c.aVencer),
+              ]
+            : [c.rotulo, dinheiro(c.pago), dinheiro(c.vencido), dinheiro(c.aVencer)],
+        )}
+      />
+    </figure>
+  );
+}
+
+// ------------------------------------------------------------
+//  O que vem pela frente
+//
+//  O cartão "Se tudo acontecer" dá o total e NÃO diz quando. Com
+//  R$ 96 mil a receber e R$ 5 mil a pagar o saldo final é bom — e
+//  ainda assim pode faltar dinheiro no dia 17, se o que entra só
+//  entra no dia 26.
+//
+//  É a pergunta de caixa de verdade, e ela é sobre ORDEM.
+//
+//  COMPONENTE PRÓPRIO, E NÃO O `GraficoFluxo` COM OUTROS RÓTULOS.
+//  Aquele fala de meses e de três estados de saída (pago, vencido,
+//  a vencer); este fala de semanas e de duas direções. Forçar um a
+//  ser o outro encheria os dois de condicionais, e a primeira
+//  mudança num quebraria o outro.
+//
+//  O que os dois DIVIDEM é o CSS: as mesmas classes `.fluxo*`, as
+//  mesmas barras pareadas, a mesma dica. O desenho é o mesmo; o
+//  assunto é que não é.
+// ------------------------------------------------------------
+
+export interface SemanaDoCalendario {
+  chave: string;
+  rotulo: string;
+  entra: number;
+  sai: number;
+  saldoProjetado: number;
+}
+
+export function GraficoCalendario({
+  semanas,
+  titulo,
+  descricao,
+}: {
+  semanas: SemanaDoCalendario[];
+  titulo: string;
+  descricao?: string;
+}) {
+  const { area, dica, ligar } = useDica();
+
+  // A ESCALA É DO MOVIMENTO, NÃO DO SALDO.
+  //
+  // O saldo pode ser cem vezes maior que o que entra e sai numa
+  // semana. Medindo as barras por ele, toda semana viraria um fio
+  // rente ao chão. As barras mostram o movimento; o saldo vem
+  // escrito embaixo, que é onde ele se lê melhor de qualquer jeito.
+  const maior = Math.max(...semanas.map((s) => Math.max(s.entra, s.sai)), 1);
+
+  // JA ESTA no vermelho, ou VAI FICAR? Sao avisos diferentes.
+  //
+  // "O saldo fica negativo antes do fim do periodo" e uma previsao.
+  // Dita para quem ja esta devendo hoje, ela soa como se houvesse
+  // tempo de reagir — e nao ha: o buraco e agora.
+  const jaNegativo = semanas.length > 0 && semanas[0].saldoProjetado < 0;
+  const furou = semanas.some((s) => s.saldoProjetado < 0);
+
+  return (
+    <figure className="gr">
+      <figcaption className="gr__titulo">{titulo}</figcaption>
+
+      <div className="gr__controles">
+        <div className="gr__legenda">
+          <span className="gr__chave"><i style={{ background: TONS.info }} /> Entra</span>
+          <span className="gr__chave"><i style={{ background: TONS.atencao }} /> Sai</span>
+          {descricao && <span className="gr__chave gr__chave--nota">{descricao}</span>}
+        </div>
+      </div>
+
+      {/* O aviso vem ANTES do desenho.
+
+          Quem abre a tela e vai embora em cinco segundos precisa
+          sair sabendo disto. Esperar que a pessoa leia o número
+          vermelho embaixo da terceira barra é apostar na atenção
+          dela. */}
+      {furou && (
+        <p className="aviso aviso--atencao" role="status">
+          <Icone nome="alerta" className="aviso__icone" />
+          <span>
+            {jaNegativo ? (
+              <>
+                <strong>O caixa já está negativo.</strong> Saiu mais do que entrou, e o que
+                está previsto não cobre a diferença dentro deste período.
+              </>
+            ) : (
+              <>
+                <strong>O caixa não fecha em alguma semana.</strong> Se tudo acontecer na
+                data prevista, o saldo fica negativo antes do fim do período.
+              </>
+            )}
+          </span>
+        </p>
+      )}
+
+      <div className="fluxo" ref={area}>
+        <div className="fluxo__guias" aria-hidden="true">
+          <span /><span /><span /><span />
+        </div>
+
+        <ol className="fluxo__colunas">
+          {semanas.map((s, i) => {
+            const parado = s.entra <= 0 && s.sai <= 0;
+
+            const conteudo: ConteudoDaDica = {
+              titulo: s.rotulo,
+              linhas: [
+                ...(s.entra > 0
+                  ? [{ rotulo: 'Entra', valor: dinheiro(s.entra), tom: 'info' as Tom }]
+                  : []),
+                ...(s.sai > 0
+                  ? [{ rotulo: 'Sai', valor: dinheiro(s.sai), tom: 'atencao' as Tom }]
+                  : []),
+                ...(parado ? [{ rotulo: 'Nada previsto', valor: '—' }] : []),
+                {
+                  rotulo: 'Saldo no fim da semana',
+                  valor: dinheiro(s.saldoProjetado),
+                  tom: (s.saldoProjetado < 0 ? 'erro' : 'sucesso') as Tom,
+                },
+              ],
+            };
+
+            return (
+              <li key={s.chave} className="fluxo__mes">
+                <button
+                  type="button"
+                  className="fluxo__alvo"
+                  aria-label={
+                    s.rotulo + ': ' +
+                    (parado ? 'nada previsto' : 'entra ' + dinheiro(s.entra) + ', sai ' + dinheiro(s.sai)) +
+                    '. Saldo no fim da semana: ' + dinheiro(s.saldoProjetado)
+                  }
+                  {...ligar(conteudo)}
+                >
+                  <span
+                    className="fluxo__barras fluxo__barras--par"
+                    style={{ ['--atraso' as string]: i * 45 + 'ms' }}
+                  >
+                    <span className="fluxo__pilha">
+                      {s.entra > 0 && (
+                        <span
+                          className="fluxo__pedaco"
+                          style={{ height: (s.entra / maior) * 100 + '%', background: TONS.info }}
+                        />
+                      )}
+                    </span>
+                    <span className="fluxo__pilha">
+                      {s.sai > 0 && (
+                        <span
+                          className="fluxo__pedaco"
+                          style={{ height: (s.sai / maior) * 100 + '%', background: TONS.atencao }}
+                        />
+                      )}
+                    </span>
+                  </span>
+
+                  <span className="fluxo__rotulo">
+                    {s.rotulo}
+                    <small
+                      className={
+                        'fluxo__saldo fluxo__saldo--' +
+                        (s.saldoProjetado < 0 ? 'faltou' : 'sobrou')
+                      }
+                    >
+                      {dinheiroCurto(s.saldoProjetado)}
+                    </small>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        <CamadaDaDica dica={dica} />
+      </div>
+
+      <TabelaEquivalente
+        titulo={titulo}
+        colunas={['Semana', 'Entra', 'Sai', 'Saldo no fim']}
+        linhas={semanas.map((s) => [
+          s.rotulo,
+          dinheiro(s.entra),
+          dinheiro(s.sai),
+          dinheiro(s.saldoProjetado),
         ])}
       />
     </figure>
@@ -524,11 +944,34 @@ export function GraficoFluxo({
 //  Rosca (composição da carteira)
 // ------------------------------------------------------------
 
+/**
+ * Seis cores que NÃO significam nada.
+ *
+ * Os `TONS` significam: vermelho é problema, verde é certo. Servem
+ * para ESTADO. Numa rosca que divide o gasto por categoria —
+ * Frota, Canteiro, Taxas — não há estado nenhum: pintar "Frota"
+ * de vermelho diria que há algo errado com a frota, e não há.
+ *
+ * Estas existem só para distinguir uma fatia da outra. Ficam em
+ * `tokens.css`, com as duas versões de tema.
+ */
+export const CORES_DE_CATEGORIA = [
+  'var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)',
+  'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)',
+];
+
 export interface FatiaDoGrafico {
   rotulo: string;
   valor: number;
   percentual: number;
   tom: Tom;
+  /**
+   * Cor crua, quando a fatia não tem estado.
+   *
+   * Vence o `tom`. A composição da carteira continua usando o tom,
+   * porque ali vermelho É vencida; a rosca de categorias usa esta.
+   */
+  cor?: string;
 }
 
 export function GraficoRosca({
@@ -553,8 +996,10 @@ export function GraficoRosca({
 
   // O valor do meio encolhe quando o número é comprido. Sem isso,
   // "R$ 1.234.567,89" encosta no anel dos dois lados.
-  const tamanhoDoValor =
-    centroValor.length > 13 ? 7.5 : centroValor.length > 10 ? 9 : 11;
+  //
+  // A regra dos degraus é a MESMA do cartão de indicador; aqui ela
+  // só é traduzida para a unidade do viewBox do SVG.
+  const tamanhoDoValor = [11, 9, 7.5][degrauDoNumero(centroValor)];
 
   let percorrido = 0;
   const desenhadas = fatias.map((f) => {
@@ -569,7 +1014,7 @@ export function GraficoRosca({
       titulo: f.rotulo,
       linhas: [
         { rotulo: 'Valor', valor: dinheiro(f.valor), tom: f.tom },
-        { rotulo: 'Participação', valor: f.percentual + '%' },
+        { rotulo: 'Participação', valor: percentualEscrito(f.percentual, f.valor) },
       ],
     };
   }
@@ -589,7 +1034,7 @@ export function GraficoRosca({
               cy="60"
               r={RAIO}
               className="rosca__fatia"
-              stroke={TONS[f.tom]}
+              stroke={f.cor ?? TONS[f.tom]}
               strokeDasharray={f.pedaco + ' ' + (VOLTA - f.pedaco)}
               strokeDashoffset={-f.inicio}
               style={{ ['--atraso' as string]: i * 120 + 'ms', ['--volta' as string]: VOLTA }}
@@ -612,10 +1057,10 @@ export function GraficoRosca({
           {fatias.map((f) => (
             <li key={f.rotulo}>
               <button type="button" className="rosca__item" {...ligar(dicaDaFatia(f))}>
-                <i style={{ background: TONS[f.tom] }} aria-hidden="true" />
+                <i style={{ background: f.cor ?? TONS[f.tom] }} aria-hidden="true" />
                 <span>{f.rotulo}</span>
                 <strong>{dinheiro(f.valor)}</strong>
-                <small>{f.percentual}%</small>
+                <small>{percentualEscrito(f.percentual, f.valor)}</small>
               </button>
             </li>
           ))}
@@ -627,7 +1072,9 @@ export function GraficoRosca({
       <TabelaEquivalente
         titulo={titulo}
         colunas={[rotuloFatia, 'Valor', 'Participação']}
-        linhas={fatias.map((f) => [f.rotulo, dinheiro(f.valor), f.percentual + '%'])}
+        linhas={fatias.map((f) => [
+          f.rotulo, dinheiro(f.valor), percentualEscrito(f.percentual, f.valor),
+        ])}
       />
     </figure>
   );
@@ -682,6 +1129,7 @@ export function GraficoRanking({
   vazio,
   unico,
   rotuloValor = 'Total',
+  formatar = dinheiro,
 }: {
   linhas: LinhaDoRanking[];
   titulo: string;
@@ -692,6 +1140,15 @@ export function GraficoRanking({
    * a mostrar: duas chaves de cor para uma barra só confundem.
    */
   unico?: boolean;
+  /**
+   * Como escrever o valor. Por padrão, dinheiro.
+   *
+   * O ranking nasceu medindo reais, e por isso formatava reais à
+   * mão. Quando ele passou a medir pontualidade de fornecedor — um
+   * percentual — "R$ 94,00" era o tipo de erro que ninguém
+   * questiona, porque parece um número certo.
+   */
+  formatar?: (valor: number) => string;
   /** Como se chama o que está sendo somado. */
   rotuloValor?: string;
 }) {
@@ -733,21 +1190,21 @@ export function GraficoRanking({
                 type="button"
                 className="ranking__alvo"
                 style={{ ['--atraso' as string]: i * 70 + 'ms' }}
-                aria-label={l.nome + ': ' + rotuloValor.toLowerCase() + ' ' + dinheiro(l.total)}
+                aria-label={l.nome + ': ' + rotuloValor.toLowerCase() + ' ' + formatar(l.total)}
                 {...ligar({
                   titulo: l.nome,
                   linhas: unico
-                    ? [{ rotulo: rotuloValor, valor: dinheiro(l.total) }]
+                    ? [{ rotulo: rotuloValor, valor: formatar(l.total) }]
                     : [
-                        { rotulo: 'Em aberto', valor: dinheiro(l.aberto), tom: 'atencao' },
-                        { rotulo: 'Já pago', valor: dinheiro(l.pago), tom: 'sucesso' },
-                        { rotulo: 'Total', valor: dinheiro(l.total) },
+                        { rotulo: 'Em aberto', valor: formatar(l.aberto), tom: 'atencao' },
+                        { rotulo: 'Já pago', valor: formatar(l.pago), tom: 'sucesso' },
+                        { rotulo: 'Total', valor: formatar(l.total) },
                       ],
-                  rodape: Math.round((l.total / maior) * 100) + '% do maior da lista',
+                  rodape: porcento(Math.round((l.total / maior) * 100)) + ' do maior da lista',
                 })}
               >
                 <span className="ranking__nome">{l.nome}</span>
-                <span className="ranking__valor">{dinheiro(l.total)}</span>
+                <span className="ranking__valor">{formatar(l.total)}</span>
 
                 <span className="ranking__trilho">
                   {unico ? (
@@ -837,12 +1294,12 @@ export function Medidor({
         <button
           type="button"
           className="medidor__alvo"
-          aria-label={titulo + ': ' + percentual + '%'}
+          aria-label={titulo + ': ' + porcento(percentual)}
           {...ligar({
             titulo,
             linhas: [
-              { rotulo: 'No prazo', valor: percentual + '%', tom },
-              { rotulo: 'Em atraso', valor: 100 - percentual + '%' },
+              { rotulo: 'No prazo', valor: porcento(percentual), tom },
+              { rotulo: 'Em atraso', valor: porcento(100 - percentual) },
             ],
             rodape: explicacao,
           })}

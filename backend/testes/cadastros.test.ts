@@ -191,6 +191,48 @@ describe('Materiais', () => {
     assert.ok(r.corpo.sugestao.length > 0);
   });
 
+  it('bipar NÃO pergunta a serviço nenhum de fora', async () => {
+    // A GS1 saiu na reunião de 08/10/2026: era assinatura paga, e a
+    // Porto Inc. não vai assinar. Este teste existe para o dia em
+    // que alguém pensar em "melhorar" o cadastro trazendo de volta a
+    // descrição de uma base externa.
+    const r = await chamar('/api/materiais/gtin/7891000100103', { token: admin });
+
+    assert.equal(r.corpo.dadosSugeridos, undefined, 'voltou a consultar base externa');
+    assert.ok(
+      !/base externa|GS1/i.test(r.corpo.sugestao),
+      'a mensagem ainda fala de base externa',
+    );
+  });
+
+  it('a rota de consulta à base externa não existe mais', async () => {
+    const r = await chamar('/api/integracoes/gtin/7891000100103', { token: admin });
+
+    assert.equal(r.status, 404);
+  });
+
+  it('o código de barras CONTINUA funcionando: dígito verificador e busca', async () => {
+    // O que saiu foi o serviço pago, não o código de barras. A conta
+    // do dígito mudou de casa — de `integracoes/gtin/porta.ts` para
+    // `servicos/util.ts` — e precisa continuar de pé nos dois lados.
+    const errado = await chamar('/api/materiais', {
+      metodo: 'POST',
+      token: admin,
+      corpo: {
+        familiaId: familiaCimento,
+        codigoInterno: '00998',
+        descricao: 'Item com dígito errado depois da saída da GS1',
+        gtin: '7899888400574',
+        unidadeMedida: 'UN',
+      },
+    });
+    assert.equal(errado.status, 400, 'o dígito verificador parou de ser conferido');
+
+    const achado = await chamar('/api/materiais/gtin/7899888400575', { token: admin });
+    assert.equal(achado.status, 200);
+    assert.equal(achado.corpo.encontrado, true);
+  });
+
   it('filtra por família', async () => {
     const r = await chamar('/api/materiais?familiaId=' + familiaCimento, { token: admin });
 
@@ -233,10 +275,36 @@ describe('Fornecedores', () => {
     const r = await chamar('/api/fornecedores', {
       metodo: 'POST',
       token: admin,
-      corpo: { razaoSocial: 'Outro Nome', cnpj: '05.570.714/0001-59', familias: [] },
+      // Com família: senão a recusa viria da família faltando, e
+      // o teste passaria pelo motivo errado.
+      corpo: {
+        razaoSocial: 'Outro Nome',
+        cnpj: '05.570.714/0001-59',
+        familias: [familiaEletrica],
+      },
     });
 
     assert.equal(r.status, 409);
+  });
+
+  // ----------------------------------------------------------
+  //  A FAMÍLIA É O QUE FAZ O FORNECEDOR SER CONVIDADO
+  //
+  //  Sem nenhuma, ele fica no cadastro e nunca entra numa
+  //  cotação: o pacote de elétrica só chama quem vende elétrica.
+  //  A tela avisava disso e deixava salvar; na simulação de
+  //  09/10/2026 os dois fornecedores nasceram assim e a cotação
+  //  travou três telas adiante, sem ninguém para convidar.
+  // ----------------------------------------------------------
+  it('recusa fornecedor sem nenhuma família', async () => {
+    const r = await chamar('/api/fornecedores', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { razaoSocial: 'Sem Familia Ltda', cnpj: '19131243000197', familias: [] },
+    });
+
+    assert.equal(r.status, 400);
+    assert.ok(JSON.stringify(r.corpo).includes('família'));
   });
 
   it('filtra por família: só quem vende aquilo aparece', async () => {

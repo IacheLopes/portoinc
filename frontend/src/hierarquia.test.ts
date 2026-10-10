@@ -56,11 +56,18 @@ describe('Trocar o coringa pelo valor de verdade', () => {
 });
 
 describe('A trilha', () => {
-  it('começa no Início e termina na tela atual', () => {
+  // O DEGRAU DO ÍNDICE ENTROU EM 08/10/2026.
+  //
+  // A barra lateral deixou de listar as telas e passou a listar
+  // quatro destinos, cada um com sua tela índice. Quem chega a
+  // Cotações passa por Compras — e a migalha tem de contar o
+  // caminho que a pessoa fez, senão o botão de Voltar pula um
+  // degrau que ela acabou de subir.
+  it('começa no Início, passa pelo índice e termina na tela atual', () => {
     const trilha = trilhaDe('/cotacoes/abc-123/equalizacao');
 
     expect(trilha.map((p) => p.titulo)).toEqual([
-      'Início', 'Cotações', 'Pacote de cotação', 'Equalização',
+      'Início', 'Compras', 'Cotações', 'Pacote de cotação', 'Equalização',
     ]);
   });
 
@@ -68,7 +75,7 @@ describe('A trilha', () => {
     const trilha = trilhaDe('/cotacoes/abc-123/equalizacao');
 
     expect(trilha.map((p) => p.para)).toEqual([
-      '/', '/cotacoes', '/cotacoes/abc-123', '/cotacoes/abc-123/equalizacao',
+      '/', '/compras', '/cotacoes', '/cotacoes/abc-123', '/cotacoes/abc-123/equalizacao',
     ]);
   });
 

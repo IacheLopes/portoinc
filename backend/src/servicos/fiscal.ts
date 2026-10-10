@@ -12,6 +12,7 @@
 // ============================================================
 
 import { isoBr } from './data-br.js';
+import { reaisBr, porcentoEmFrase } from './util.js';
 
 const CENTAVO = 0.005;
 
@@ -165,17 +166,17 @@ export function conferirNotaContraPedido(
     if (diferenca > 0) {
       problemas.push(
         'A nota está ' +
-          reais(diferenca) +
+          reaisBr(diferenca) +
           ' acima do que falta no pedido ' +
           pedido.numeroFormatado +
           ' (' +
-          reais(restante) +
+          reaisBr(restante) +
           ').',
       );
     } else {
       problemas.push(
         'A nota está ' +
-          reais(-diferenca) +
+          reaisBr(-diferenca) +
           ' abaixo do pedido. É entrega parcial? Se for, está certo.',
       );
     }
@@ -275,7 +276,7 @@ export function descreverCondicao(condicao: CondicaoDePagamento): string {
   if (entrada === 0 && quantidade === 0) return 'À vista';
 
   const partes: string[] = [];
-  if (entrada > 0) partes.push(entrada + '% de entrada');
+  if (entrada > 0) partes.push(porcentoEmFrase(entrada) + ' de entrada');
   if (quantidade > 0) partes.push(quantidade + 'x a cada ' + intervalo + ' dias');
 
   return partes.join(' + ');
@@ -503,10 +504,6 @@ function somarDias(data: Date, dias: number): Date {
   const nova = new Date(data);
   nova.setDate(nova.getDate() + dias);
   return nova;
-}
-
-function reais(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 
 function formatarCnpjSimples(cnpj: string): string {

@@ -380,7 +380,12 @@ export interface MesDoFluxo {
   aVencer: number;
   vencido: number;
   pago: number;
+  /** A soma das três acima: o que SAI no mês. */
   total: number;
+  /** Receita que caiu no mês. Vem dos lançamentos à mão. */
+  entrada: number;
+  /** Receita prometida para o mês e ainda não recebida. */
+  aReceber: number;
 }
 
 export interface LinhaDoRanking {

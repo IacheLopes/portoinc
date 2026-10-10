@@ -19,7 +19,7 @@ import {
   ROTULO_NOTA, COR_NOTA, ROTULO_TIPO_ARQUIVO,
   type Nota, type PedidoParaNota, type ItemDaNota, type ArquivoDaNota,
 } from '../../servicos/fiscal';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 import { dataBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
@@ -432,7 +432,7 @@ export function NotasFiscais() {
                   />
                 </label>
 
-                <Link to="/financeiro" className="botao botao--discreto">
+                <Link to="/financeiro/contas" className="botao botao--discreto">
                   Ver contas a pagar
                 </Link>
               </>
@@ -466,7 +466,21 @@ export function NotasFiscais() {
           </p>
         )}
 
-        {erro && (
+        {/* O erro aparece UMA vez, e no lugar onde está o foco.
+
+            Com o formulário aberto, esta mensagem nascia AQUI, fora
+            do <dialog> — e um <dialog> modal desenha por cima de
+            tudo, com véu. Medido em 09/10/2026: o aviso "Escolha o
+            pedido de compra" ficava em y=374, e o modal cobria de
+            y=48 a y=852. Quem clicava em "Lançar nota" com o
+            formulário vazio via o modal continuar aberto e nada
+            mais acontecer.
+
+            Mesma solução já adotada em Receitas e despesas: fora do
+            formulário quando ele está fechado, dentro quando aberto.
+            Duas cópias com `role="alert"` ao mesmo tempo também
+            fariam o leitor de tela anunciar a mensagem duas vezes. */}
+        {erro && !aberto && (
           <p className="aviso aviso--erro" role="alert">
             <Icone nome="alerta" /> {erro}
           </p>
@@ -519,6 +533,15 @@ export function NotasFiscais() {
                   : 'Digite os dados da nota que o fornecedor entregou.'}
               </p>
             </div>
+
+            {/* A mensagem mora AQUI enquanto o formulário está
+                aberto: é onde está o foco de quem clicou. Fora
+                daqui, ela nasce atrás do véu do <dialog>. */}
+            {erro && aberto && (
+              <p className="aviso aviso--erro" role="alert">
+                <Icone nome="alerta" /> {erro}
+              </p>
+            )}
 
             <Selecao
               rotulo="Pedido de compra"

@@ -54,6 +54,8 @@ model Usuario {
 
   @@index([ativo])
   @@map("usuarios")
+  lancamentos       LancamentoFinanceiro[]
+  lancamentoEventos LancamentoEvento[]
 }
 
 /// Papel dentro do processo (Solicitante, Comprador, Almoxarife...).
@@ -160,6 +162,7 @@ model Obra {
 
   @@index([ativa])
   @@map("obras")
+  lancamentos   LancamentoFinanceiro[]
 }
 
 /// Linha do orçamento da obra. Toda compra é apontada para uma delas:
@@ -1262,4 +1265,123 @@ model Arquivo {
 
   @@index([notaFiscalId])
   @@map("arquivos")
+}
+
+// ============================================================
+//  O DINHEIRO QUE NÃO VEM DE UMA NOTA DE COMPRA
+//
+//  Até aqui o financeiro só sabia tirar: a nota fiscal do
+//  fornecedor virava parcela em `ContaPagar`, e pronto. Não havia
+//  de onde descontar — o sistema controlava a saída de um caixa
+//  que nunca recebeu nada.
+//
+//  Palavras do Emerson, na reunião de 08/10/2026: "como é que tu
+//  fez um financeiro que eu não consigo cadastrar receita e
+//  despesa? Ele vai descontar de uma conta que não tem cadastro de
+//  dinheiro de entrada". E a regra que ele deixou para a casa: todo
+//  financeiro da AV2 tem cadastro de receita e de despesa.
+//
+//  ESTA TABELA NÃO SUBSTITUI `ContaPagar`, e isso é de propósito.
+//  A compra continua nascendo da nota, com fornecedor, pedido e
+//  conferência atrás dela — repetir isso aqui criaria dois lugares
+//  para a mesma dívida, que um dia divergiriam.
+//
+//  Aqui mora o que NÃO vem de compra:
+//    · RECEITA  — medição paga pelo cliente, aporte, venda de sobra
+//    · DESPESA  — combustível, aluguel de container, diária de
+//                 máquina, taxa de alvará
+// ============================================================
+
+enum TipoLancamento {
+  RECEITA
+  DESPESA
+}
+
+enum SituacaoLancamento {
+  /// Previsto: ainda não entrou nem saiu.
+  PREVISTO
+  /// Realizado: o dinheiro andou de verdade.
+  REALIZADO
+  CANCELADO
+}
+
+model LancamentoFinanceiro {
+  id     String @id @default(uuid())
+  /// Número sequencial legível. Vira "LF-00042" na tela.
+  numero Int    @unique @default(autoincrement())
+
+  tipo      TipoLancamento
+  descricao String
+  valor     Decimal        @db.Decimal(14, 2)
+
+  /// Quando é para acontecer. Vencimento da receita, do mesmo jeito
+  /// que `ContaPagar.vencimento` é o da despesa.
+  previstoPara DateTime @map("previsto_para")
+
+  /// Quando aconteceu de verdade. Nulo = ainda não.
+  realizadoEm DateTime? @map("realizado_em")
+
+  situacao SituacaoLancamento @default(PREVISTO)
+
+  /// Este dinheiro a empresa JÁ TINHA quando entrou no sistema.
+  ///
+  /// É entrada, e por isso continua sendo RECEITA: entra no saldo,
+  /// no gráfico e no calendário como qualquer outra. O que ela NÃO
+  /// é: faturamento. A empresa não ganhou esse dinheiro aqui — ela
+  /// chegou com ele, no dia em que saiu da planilha.
+  ///
+  /// Sem esta marca, o cartão "Entrou" anunciava R$ 2 milhões de
+  /// receita que ninguém faturou, e a rosca "de onde vem o
+  /// dinheiro" marcava "Saldo inicial — 100%".
+  aberturaDeCaixa Boolean @default(false) @map("abertura_de_caixa")
+
+  /// De qual obra é este dinheiro. NULO de propósito: a construtora
+  /// tem entrada que é de uma obra (a medição que o cliente pagou) e
+  /// entrada que é da empresa (aporte do sócio). Obrigar a escolher
+  /// uma obra faria inventarem uma.
+  obraId String? @map("obra_id")
+
+  /// Em que grupo entra, para o relatório somar. Texto livre e não
+  /// uma lista fixa: ninguém sabe hoje todas as linhas de custo de
+  /// uma construtora, e lista fixa errada vira "Outros" com metade
+  /// do dinheiro dentro.
+  categoria String?
+
+  formaPagamento String? @map("forma_pagamento")
+  observacoes    String?
+
+  criadoPorId String   @map("criado_por_id")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  obra      Obra?   @relation(fields: [obraId], references: [id])
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id])
+  eventos   LancamentoEvento[]
+
+  @@index([tipo])
+  @@index([situacao])
+  @@index([previstoPara])
+  @@index([obraId])
+  @@map("lancamentos_financeiros")
+}
+
+/// Trilha de auditoria do dinheiro lançado à mão.
+///
+/// Nunca é apagada — é ela que responde "quem mexeu neste valor?".
+/// Mesma forma da trilha da solicitação (SolicitacaoEvento), de
+/// propósito: duas trilhas com desenhos diferentes seriam duas
+/// coisas para aprender e dois lugares para divergir.
+model LancamentoEvento {
+  id           String   @id @default(uuid())
+  lancamentoId String   @map("lancamento_id")
+  usuarioId    String?  @map("usuario_id")
+  tipo         String
+  descricao    String
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  lancamento LancamentoFinanceiro @relation(fields: [lancamentoId], references: [id], onDelete: Cascade)
+  usuario    Usuario?             @relation(fields: [usuarioId], references: [id])
+
+  @@index([lancamentoId])
+  @@map("lancamentos_eventos")
 }

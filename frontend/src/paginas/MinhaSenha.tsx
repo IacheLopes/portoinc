@@ -13,7 +13,18 @@ import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 import { Cartao } from '../componentes/Cartao';
 import { Icone } from '../componentes/Icone';
 
-export function MinhaSenha() {
+/**
+ * A mesma tela serve os dois momentos.
+ *
+ * `primeiroAcesso` é quando a pessoa entrou com uma senha que
+ * outra pessoa escolheu por ela: aí não há barra lateral, não há
+ * menu e nada mais abre até ela criar a dela. Ver o estado do
+ * meio em `App.tsx`.
+ *
+ * Duas telas separadas pareceriam mais simples e seriam duas
+ * redações para manter, divergindo na primeira correção.
+ */
+export function MinhaSenha({ primeiroAcesso = false }: { primeiroAcesso?: boolean }) {
   const { usuario, sair } = useAutenticacao();
 
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -69,21 +80,43 @@ export function MinhaSenha() {
   }
 
   return (
-    <section className="secao secao--estreita">
+    <section className={primeiroAcesso ? '' : 'secao secao--estreita'}>
       <CabecalhoDePagina
-          titulo="Trocar minha senha"
+          titulo={primeiroAcesso ? 'Crie a sua senha' : 'Trocar minha senha'}
           descricao={
-            <>
-              Você está conectado como <strong>{usuario?.email}</strong>.
-            </>
+            primeiroAcesso ? (
+              <>
+                Você entrou com uma senha que <strong>outra pessoa escolheu</strong>. Crie a
+                sua para começar a usar o sistema — quem criou a conta não precisa saber qual é.
+              </>
+            ) : (
+              <>
+                Você está conectado como <strong>{usuario?.email}</strong>.
+              </>
+            )
           }
         />
+
+      {primeiroAcesso && (
+        <div className="aviso" role="status">
+          <Icone nome="cadeado" className="aviso__icone" />
+          <div>
+            <strong>Nada mais abre até isto estar feito.</strong>
+            <p>É a regra de quem recebe uma conta pronta.</p>
+            <p>
+              <button type="button" className="botao botao--link" onClick={() => void sair()}>
+                Entrei aqui por engano — sair
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={enviar} noValidate>
         <Cartao className="formulario">
           <div className="campo">
             <label className="campo__rotulo" htmlFor="atual">
-              Senha atual
+              {primeiroAcesso ? 'A senha que você recebeu' : 'Senha atual'}
             </label>
             <input
               id="atual"
@@ -140,8 +173,16 @@ export function MinhaSenha() {
           <div className="aviso aviso--atencao">
             <Icone nome="alerta" className="aviso__icone" />
             <div>
-              <strong>Ao trocar a senha, você sairá do sistema.</strong>
-              <p>Será preciso entrar novamente com a senha nova.</p>
+              <strong>
+                {primeiroAcesso
+                  ? 'Depois de criar, entre de novo com ela.'
+                  : 'Ao trocar a senha, você sairá do sistema.'}
+              </strong>
+              <p>
+                {primeiroAcesso
+                  ? 'A senha que você recebeu deixa de valer na hora.'
+                  : 'Será preciso entrar novamente com a senha nova.'}
+              </p>
             </div>
           </div>
 
@@ -164,7 +205,12 @@ export function MinhaSenha() {
               className="botao botao--principal"
               disabled={enviando || !senhaAtual || !senhaNova || diferentes}
             >
-              {enviando ? 'Alterando...' : 'Alterar senha'}
+              {/* O botão diz o que vai acontecer, e na primeira vez
+                  o que acontece é CRIAR, não alterar: a senha que
+                  ela tem não é dela. */}
+              {enviando
+                ? (primeiroAcesso ? 'Criando...' : 'Alterando...')
+                : (primeiroAcesso ? 'Criar minha senha' : 'Alterar senha')}
             </button>
           </div>
         </Cartao>

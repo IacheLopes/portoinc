@@ -1,5 +1,5 @@
 // ============================================================
-//  O menu e a tela de início saem daqui
+//  O menu, as telas índice e a tela de início saem daqui
 //
 //  Esta lista decide o que cada pessoa enxerga. Errar nela não
 //  dá erro nenhum na tela: o item simplesmente aparece para quem
@@ -10,15 +10,20 @@
 import { describe, it, expect } from 'vitest';
 import {
   MODULOS,
-  GRUPOS,
+  DESTINOS,
+  INDICES,
   ETAPAS,
   ETAPAS_PRONTAS,
   ETAPAS_TOTAIS,
   MODULO_COMPLETO,
-  menuAgrupado,
+  barraLateral,
+  cartoesDoIndice,
+  indiceDe,
+  porteDaTela,
   oQueFalta,
   trilhaDe,
   voltarDe,
+  PAGINAS,
   type Modulo,
 } from './navegacao';
 
@@ -28,73 +33,197 @@ function quemTem(...permissoes: string[]) {
     m.permissoes.length === 0 || m.permissoes.some((p) => permissoes.includes(p));
 }
 
-describe('quem vê o quê no menu', () => {
-  it('o almoxarife não enxerga Aprovações', () => {
-    const menu = menuAgrupado(quemTem('estoque.ver', 'recebimento.conferir'));
-    const rotulos = menu.grupos.flatMap((g) => g.itens).map((i) => i.rotulo);
+// ------------------------------------------------------------
+//  A barra lateral não cresce
+//
+//  É o pedido da reunião de 08/10/2026: "vai tudo ficar meio que
+//  encolhido, pra parecer que é pouca coisa... fica coisa demais".
+//  O que protege isso no tempo não é a boa intenção — é este
+//  bloco de testes.
+// ------------------------------------------------------------
+describe('A barra lateral', () => {
+  it('cabe em seis linhas, mesmo para quem vê tudo', () => {
+    const linhas = barraLateral(() => true);
 
-    expect(rotulos).not.toContain('Aprovações');
-    expect(rotulos).toContain('Estoque');
+    expect(linhas).toHaveLength(6);
+    expect(linhas.map((l) => l.rotulo)).toEqual([
+      'Início',
+      'Compras',
+      'Almoxarifado',
+      'Financeiro',
+      'Relatórios',
+      'Administração',
+    ]);
   });
 
-  it('quem aprova enxerga Aprovações', () => {
-    const menu = menuAgrupado(quemTem('solicitacoes.aprovar'));
-    const rotulos = menu.grupos.flatMap((g) => g.itens).map((i) => i.rotulo);
+  it('NÃO cresce quando entra tela nova', () => {
+    // Este é o teste que faz a decisão durar. Tela nova é cartão
+    // dentro de um índice que já existe; se alguém criar um quinto
+    // destino, isto falha e a conversa acontece antes do commit,
+    // não seis meses depois com a barra em 11 linhas.
+    const antes = barraLateral(() => true).length;
 
-    expect(rotulos).toContain('Aprovações');
+    expect(DESTINOS).toHaveLength(4);
+    expect(INDICES).toHaveLength(4);
+    expect(antes).toBe(6);
   });
 
-  it('grupo que ficou sem item nenhum some junto com o rótulo', () => {
-    // Um título "Gestão" sozinho, sem nada embaixo, é pior do que
-    // não ter o título.
-    const menu = menuAgrupado(quemTem('estoque.ver'));
+  it('os Relatórios ficam logo abaixo do Financeiro', () => {
+    // Eles falam do sistema inteiro e nao cabem dentro de um destino
+    // so: o engenheiro e o gestor de obra leem relatorio e NAO abrem
+    // o financeiro. Mas o lugar deles e perto do dinheiro, e nao no
+    // alto da barra.
+    const rotulos = barraLateral(() => true).map((l) => l.rotulo);
 
-    for (const grupo of menu.grupos) {
-      expect(grupo.itens.length).toBeGreaterThan(0);
-    }
+    expect(rotulos.indexOf('Relatórios')).toBe(rotulos.indexOf('Financeiro') + 1);
   });
 
-  it('o Início fica solto no alto, fora de qualquer grupo', () => {
-    const menu = menuAgrupado(() => true);
+  it('quem não vê o Financeiro ainda vê os Relatórios no lugar deles', () => {
+    // O engenheiro tem relatorios.ver e nao tem financeiro.ver. Se os
+    // relatorios morassem dentro do Financeiro, ele os perderia; se
+    // caissem para o fim da barra, mudariam de lugar conforme a
+    // pessoa.
+    const rotulos = barraLateral(
+      quemTem('relatorios.ver', 'estoque.ver'),
+    ).map((l) => l.rotulo);
 
-    expect(menu.soltos.map((i) => i.rotulo)).toContain('Início');
-    expect(menu.grupos.flatMap((g) => g.itens).map((i) => i.rotulo)).not.toContain('Início');
+    expect(rotulos).toEqual(['Início', 'Almoxarifado', 'Relatórios']);
+  });
+
+  it('o fio nasce no PRIMEIRO destino, seja ele qual for', () => {
+    const todos = barraLateral(() => true).filter((l) => l.primeiroDestino);
+    expect(todos.map((l) => l.rotulo)).toEqual(['Compras']);
+
+    // Para o almoxarife, que nao ve Compras, o fio desce junto.
+    const doAlmoxarife = barraLateral(quemTem('estoque.ver'))
+      .filter((l) => l.primeiroDestino);
+    expect(doAlmoxarife.map((l) => l.rotulo)).toEqual(['Almoxarifado']);
+  });
+
+  it('só duas telas ficam soltas, e são sempre as mesmas', () => {
+    const soltos = MODULOS.filter((m) => !m.grupo).map((m) => m.rotulo);
+
+    expect(soltos).toEqual(['Início', 'Relatórios']);
+  });
+
+  it('destino sem nenhum cartão visível some da barra', () => {
+    // Um "Financeiro" que abre uma tela vazia é pior que não ter
+    // o Financeiro.
+    const linhas = barraLateral(quemTem('estoque.ver'));
+
+    expect(linhas.map((l) => l.rotulo)).toContain('Almoxarifado');
+    expect(linhas.map((l) => l.rotulo)).not.toContain('Financeiro');
+    expect(linhas.map((l) => l.rotulo)).not.toContain('Compras');
   });
 
   it('quem não tem permissão nenhuma ainda vê o Início', () => {
-    const menu = menuAgrupado(quemTem());
+    const linhas = barraLateral(quemTem());
 
-    expect(menu.soltos.map((i) => i.rotulo)).toEqual(['Início']);
-    expect(menu.grupos).toHaveLength(0);
+    expect(linhas.map((l) => l.rotulo)).toEqual(['Início']);
   });
 
-  it('os grupos saem na ordem do caminho do trabalho, não em ordem alfabética', () => {
-    const menu = menuAgrupado(() => true);
+  it('os destinos saem na ordem do caminho do trabalho', () => {
+    const linhas = barraLateral(() => true).filter((l) => l.ehDestino);
 
-    expect(menu.grupos.map((g) => g.nome)).toEqual([...GRUPOS]);
+    expect(linhas.map((l) => l.rotulo)).toEqual([...DESTINOS]);
+  });
+
+  it('o almoxarife não enxerga Compras pela porta do Financeiro', () => {
+    const linhas = barraLateral(quemTem('estoque.ver', 'recebimento.registrar'));
+
+    expect(linhas.map((l) => l.rotulo)).toEqual(['Início', 'Almoxarifado']);
+  });
+});
+
+// ------------------------------------------------------------
+//  As telas índice
+// ------------------------------------------------------------
+describe('Os cartões de cada índice', () => {
+  it('Compras traz as quatro telas do fluxo, na ordem', () => {
+    const cartoes = cartoesDoIndice('Compras', () => true);
+
+    expect(cartoes.map((c) => c.rotulo)).toEqual([
+      'Solicitações', 'Aprovações', 'Cotações', 'Pedidos',
+    ]);
+  });
+
+  it('a numeração só existe onde a lista é mesmo uma sequência', () => {
+    // Solicitar → aprovar → cotar → pedir é um caminho. Receber,
+    // estocar e alugar acontecem em paralelo: numerar prometeria
+    // uma ordem que não existe.
+    const compras = cartoesDoIndice('Compras', () => true);
+    const almoxarifado = cartoesDoIndice('Almoxarifado', () => true);
+
+    expect(compras.every((c) => c.ordem !== undefined)).toBe(true);
+    expect(almoxarifado.every((c) => c.ordem === undefined)).toBe(true);
+  });
+
+  it('na Administração, os cadastros são numerados e o resto não', () => {
+    const cartoes = cartoesDoIndice('Administração', () => true);
+    const numerados = cartoes.filter((c) => c.ordem !== undefined).map((c) => c.rotulo);
+    const soltos = cartoes.filter((c) => c.ordem === undefined).map((c) => c.rotulo);
+
+    expect(numerados).toEqual([
+      'Famílias', 'Materiais', 'Fornecedores', 'Obras', 'Limites de alçada',
+    ]);
+    // Funções entra depois de Usuários, e sem número: os cinco
+    // numerados são a ORDEM de alimentar o sistema — família antes
+    // de material, material antes de fornecedor. Funções não entra
+    // nessa fila; é ajuste de quem administra.
+    expect(soltos).toEqual(['Usuários', 'Funções', 'Avisos', 'Status do sistema']);
+  });
+
+  it('o índice mostra só o que a pessoa pode abrir', () => {
+    const cartoes = cartoesDoIndice('Administração', quemTem('obras.ver'));
+
+    expect(cartoes.map((c) => c.rotulo)).toEqual(['Obras']);
+  });
+
+  it('a porta fica acesa mesmo numa tela de dentro', () => {
+    // Sem isto a barra apagava enquanto a pessoa trabalhava: estando
+    // em Contas a pagar, nenhuma das seis linhas ficava marcada.
+    expect(porteDaTela('/financeiro/contas')).toBe('/financeiro');
+    expect(porteDaTela('/solicitacoes')).toBe('/compras');
+    expect(porteDaTela('/cadastros/obras/abc-123')).toBe('/administracao');
+    expect(porteDaTela('/estoque/movimentos')).toBe('/almoxarifado');
+  });
+
+  it('tela solta não acende porta nenhuma', () => {
+    expect(porteDaTela('/')).toBeNull();
+    expect(porteDaTela('/relatorios')).toBeNull();
+    expect(porteDaTela('/minha-senha')).toBeNull();
+  });
+
+  it('todo módulo com destino aponta para um índice que existe', () => {
+    for (const m of MODULOS.filter((x) => x.grupo)) {
+      expect(indiceDe(m.para), m.rotulo).not.toBeNull();
+    }
   });
 });
 
 describe('a lista de módulos', () => {
-  it('nenhum grupo passa de quatro itens', () => {
-    // Acima disso o olho precisa contar em vez de bater a vista.
-    const menu = menuAgrupado(() => true);
-
-    for (const grupo of menu.grupos) {
-      expect(grupo.itens.length).toBeLessThanOrEqual(4);
-    }
-  });
-
-  it('todo módulo tem grupo, menos o Início', () => {
-    const semGrupo = MODULOS.filter((m) => !m.grupo).map((m) => m.rotulo);
-
-    expect(semGrupo).toEqual(['Início']);
-  });
-
   it('não há dois módulos apontando para o mesmo endereço', () => {
     const enderecos = MODULOS.map((m) => m.para);
 
     expect(new Set(enderecos).size).toBe(enderecos.length);
+  });
+
+  it('toda tela do menu tem uma migalha declarada', () => {
+    // Sem a migalha, a tela abre sem trilha e o botão de Voltar
+    // some — e isso não dá erro nenhum, só uma tela sem saída.
+    const rotas = new Set(PAGINAS.map((p) => p.rota));
+
+    for (const m of MODULOS) {
+      expect(rotas.has(m.para), m.rotulo + ' (' + m.para + ')').toBe(true);
+    }
+  });
+
+  it('toda tela índice tem migalha e sai do Início', () => {
+    for (const i of INDICES) {
+      const pagina = PAGINAS.find((p) => p.rota === i.para);
+      expect(pagina, i.destino).toBeDefined();
+      expect(pagina?.mae).toBe('/');
+    }
   });
 });
 
@@ -129,6 +258,15 @@ describe('A trilha respeita o caminho que a pessoa fez', () => {
     const t = trilhaDe(ID).map((d) => d.titulo);
     expect(t).toContain('Solicitações');
     expect(t).not.toContain('Aprovações');
+  });
+
+  it('a trilha passa pelo índice, como a pessoa passou', () => {
+    // A barra não leva mais direto a Solicitações: passa-se por
+    // Compras. Se a migalha pulasse esse degrau, o botão de Voltar
+    // devolveria a pessoa a um lugar por onde ela não veio.
+    const t = trilhaDe('/solicitacoes').map((d) => d.titulo);
+
+    expect(t).toEqual(['Início', 'Compras', 'Solicitações']);
   });
 
   it('vindo de Aprovações, o degrau do meio é Aprovações', () => {

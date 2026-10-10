@@ -20,7 +20,8 @@
 
 import PDFDocument from 'pdfkit';
 import { dataBr, geradoEm } from './data-br.js';
-import { formatarCnpj } from './util.js';
+import { formatarCnpj, reaisBr, quantidadeBr } from './util.js';
+import { paraOPdf } from './pdf-texto.js';
 
 const MARINHO = '#0f2942';
 const AZUL = '#2f6fed';
@@ -57,23 +58,14 @@ export interface DadosNotaFiscal {
   }>;
 }
 
-function dinheiro(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function numeroBr(valor: number): string {
-  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
-}
-
 /** A chave tem 44 dígitos: quebrada de 4 em 4, dá para conferir com o olho. */
 function chaveLegivel(chave: string): string {
   return (chave.match(/.{1,4}/g) ?? []).join(' ');
 }
 
-export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
+export function gerarPdfNotaFiscal(entrada: DadosNotaFiscal): Promise<Buffer> {
+  const dados = paraOPdf(entrada);
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
@@ -204,9 +196,9 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
       doc.text(String(item.ordem + 1), 45, y, { width: 30 });
       doc.text(descricao, 78, y, { width: 225 });
       doc.text(item.unidade ?? '—', 306, y, { width: 28 });
-      doc.text(numeroBr(item.quantidade), 337, y, { width: 55, align: 'right' });
-      doc.text(dinheiro(item.valorUnitario), 395, y, { width: 70, align: 'right' });
-      doc.font('Helvetica-Bold').text(dinheiro(item.valorTotal), 468, y, {
+      doc.text(quantidadeBr(item.quantidade), 337, y, { width: 55, align: 'right' });
+      doc.text(reaisBr(item.valorUnitario), 395, y, { width: 70, align: 'right' });
+      doc.font('Helvetica-Bold').text(reaisBr(item.valorTotal), 468, y, {
         width: 82, align: 'right',
       });
 
@@ -219,9 +211,9 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     y += 8;
 
     const linhasTotal: Array<[string, string]> = [];
-    if (dados.valorProdutos !== null) linhasTotal.push(['Produtos', dinheiro(dados.valorProdutos)]);
+    if (dados.valorProdutos !== null) linhasTotal.push(['Produtos', reaisBr(dados.valorProdutos)]);
     if (dados.valorFrete !== null && dados.valorFrete > 0) {
-      linhasTotal.push(['Frete', dinheiro(dados.valorFrete)]);
+      linhasTotal.push(['Frete', reaisBr(dados.valorFrete)]);
     }
 
     for (const [rotulo, valor] of linhasTotal) {
@@ -234,7 +226,7 @@ export function gerarPdfNotaFiscal(dados: DadosNotaFiscal): Promise<Buffer> {
     doc.fillColor(MARINHO).font('Helvetica-Bold').fontSize(11)
       .text('Total da nota', 300, y + 2, { width: 150, align: 'right' });
     doc.fillColor(AZUL).fontSize(13)
-      .text(dinheiro(dados.valorTotal), 455, y, { width: 95, align: 'right' });
+      .text(reaisBr(dados.valorTotal), 455, y, { width: 95, align: 'right' });
 
     y += 28;
 

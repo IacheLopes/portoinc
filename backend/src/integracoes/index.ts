@@ -20,10 +20,6 @@ import type { PortaFiscal } from './fiscal/porta.js';
 import { AdaptadorFiscalMock } from './fiscal/adaptador.mock.js';
 import { AdaptadorFiscalSefaz } from './fiscal/adaptador.sefaz.js';
 
-import type { PortaGtin } from './gtin/porta.js';
-import { AdaptadorGtinMock } from './gtin/adaptador.mock.js';
-import { AdaptadorGtinGs1 } from './gtin/adaptador.gs1.js';
-
 import type { PortaPagamento } from './pagamento/porta.js';
 import { AdaptadorPagamentoMock } from './pagamento/adaptador.mock.js';
 import { AdaptadorPagamentoCnab } from './pagamento/adaptador.cnab.js';
@@ -58,13 +54,6 @@ function montarFiscal(): PortaFiscal {
   return new AdaptadorFiscalMock();
 }
 
-function montarGtin(): PortaGtin {
-  if (ambiente.GTIN_ADAPTER === 'gs1') {
-    return new AdaptadorGtinGs1(ambiente.GS1_TOKEN ?? '');
-  }
-  return new AdaptadorGtinMock();
-}
-
 function montarPagamento(): PortaPagamento {
   if (ambiente.PAGAMENTO_ADAPTER === 'cnab') {
     return new AdaptadorPagamentoCnab(ambiente.BANCO_CODIGO ?? '');
@@ -85,7 +74,6 @@ function montarEmail(): PortaEmail {
 export const integracoes = {
   whatsapp: montarWhatsApp(),
   fiscal: montarFiscal(),
-  gtin: montarGtin(),
   pagamento: montarPagamento(),
   email: montarEmail(),
 };
@@ -104,12 +92,6 @@ export function resumoIntegracoes() {
       adaptador: integracoes.fiscal.nome,
       simulado: integracoes.fiscal.nome === 'mock',
       descricao: 'Conferência da nota contra o pedido',
-    },
-    {
-      area: 'Código de barras',
-      adaptador: integracoes.gtin.nome,
-      simulado: integracoes.gtin.nome === 'mock',
-      descricao: 'Identificação do produto ao bipar',
     },
     {
       area: 'Pagamento',

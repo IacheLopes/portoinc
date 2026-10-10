@@ -243,7 +243,11 @@ function renovarSessao(): Promise<UsuarioLogado | null> {
         credentials: 'include',
       });
 
-      if (!resposta.ok) return null;
+      // 204 = não havia sessão guardada neste navegador. Não é erro:
+      // é a resposta de "nunca entrou aqui". Sem este caso, o 204
+      // caía no `catch` abaixo por falta de corpo — funcionava, mas
+      // por acidente.
+      if (resposta.status === 204 || !resposta.ok) return null;
 
       const dados = (await resposta.json()) as { token: string; usuario: UsuarioLogado };
       tokenAtual = dados.token;

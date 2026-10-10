@@ -21,15 +21,14 @@ import {
   ROTULO_TITULO, COR_TITULO,
   type PainelFinanceiro as Dados, type Titulo,
 } from '../../servicos/fiscal';
-import { dinheiro } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
-import { plural, contar, dias } from '../../servicos/texto';
+import { plural, contar, dias, dinheiro } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, Selecao } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
 import {
-  CartaoIndicador, GraficoFluxo, GraficoRosca, GraficoRanking, Medidor,
+  CartaoIndicador, GraficoFluxo, GraficoRosca, GraficoRanking, Medidor, degrauDaFileira,
 } from '../../componentes/Graficos';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { BotaoBaixar, type FormatoDeArquivo } from '../../componentes/BotaoBaixar';
@@ -225,6 +224,21 @@ export function PainelFinanceiro() {
 
   const { resumo, indicadores, fluxo, porFornecedor, porObra, carteira, notas } = dados;
 
+  // Os oito cartões da grade descem juntos, pelo mais comprido.
+  // Cada um encolhendo sozinho deixaria "R$ 0,00" grande ao lado de
+  // "R$ 1.234.567,89" pequeno, e tamanho diferente entre iguais o
+  // olho lê como importância diferente.
+  const degrauDosCartoes = degrauDaFileira(
+    dinheiro(resumo.vencidas.valor),
+    dinheiro(resumo.proximos7Dias.valor),
+    dinheiro(resumo.emAberto.valor),
+    dinheiro(resumo.pagoNoMes.valor),
+    dias(indicadores.prazoMedioPagamento),
+    dinheiro(indicadores.maiorParcelaAberta),
+    dinheiro(indicadores.ticketMedio),
+    String(notas.lancadasNoMes),
+  );
+
   const temMovimento = dados.totalDeParcelas > 0;
   const proximo = indicadores.diasParaProximoVencimento;
 
@@ -278,6 +292,7 @@ export function PainelFinanceiro() {
             ------------------------------------------------------ */}
         <div className="painel-financeiro">
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Vencidas"
             valor={dinheiro(resumo.vencidas.valor)}
             detalhe={contar(resumo.vencidas.quantidade, 'parcela em atraso', 'parcelas em atraso', 'Nada atrasado')}
@@ -286,6 +301,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Vencem em 7 dias"
             valor={dinheiro(resumo.proximos7Dias.valor)}
             detalhe={
@@ -304,6 +320,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Total em aberto"
             valor={dinheiro(resumo.emAberto.valor)}
             detalhe={plural(resumo.emAberto.quantidade, 'parcela a pagar', 'parcelas a pagar')}
@@ -312,6 +329,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Pago no mês"
             valor={dinheiro(resumo.pagoNoMes.valor)}
             detalhe={plural(resumo.pagoNoMes.quantidade, 'baixa registrada', 'baixas registradas')}
@@ -320,6 +338,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Prazo médio negociado"
             valor={dias(indicadores.prazoMedioPagamento)}
             detalhe="Da nota até o vencimento"
@@ -327,6 +346,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Maior parcela em aberto"
             valor={dinheiro(indicadores.maiorParcelaAberta)}
             detalhe="A que mais pesa no caixa"
@@ -334,6 +354,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Parcela média"
             valor={dinheiro(indicadores.ticketMedio)}
             detalhe="Média do que está em aberto"
@@ -341,6 +362,7 @@ export function PainelFinanceiro() {
           />
 
           <CartaoIndicador
+            degrau={degrauDosCartoes}
             rotulo="Notas lançadas no mês"
             valor={String(notas.lancadasNoMes)}
             detalhe={
@@ -357,7 +379,7 @@ export function PainelFinanceiro() {
               <Cartao className="col-cheia">
                 <GraficoFluxo
                   colunas={fluxoDoPeriodo ?? fluxo}
-                  titulo="Fluxo de caixa: o que já saiu e o que vem por aí"
+                  titulo="Fluxo de caixa: o que entra e o que sai, mês a mês"
                   destacar={mesDeHoje()}
                   periodo={{
                     referencia: refFluxo,
@@ -461,6 +483,10 @@ export function PainelFinanceiro() {
             Notas fiscais
           </Link>
 
+          <Link to="/financeiro/lancamentos" className="botao botao--secundario">
+            Receitas e despesas
+          </Link>
+
           <BotaoBaixar
             aoEscolher={(f) => void exportar(f)}
             ocupado={ocupado}
@@ -559,7 +585,22 @@ export function PainelFinanceiro() {
         {titulos.length === 0 ? (
           <Vazio
             titulo="Nenhuma parcela por aqui"
-            descricao="Mude o filtro ou gere as parcelas de uma nota fiscal."
+            descricao={
+              <>
+                Mude o filtro ou gere as parcelas de uma nota fiscal.
+                {/* A DÍVIDA QUE NASCEU FORA DAQUI.
+                    Quem está mudando da planilha chega devendo, e
+                    procura aqui. Não vai achar: parcela só nasce de
+                    nota fiscal, e está certo — duas portas para a
+                    mesma dívida divergem um dia, como o `caixa.ts`
+                    avisa. O que faltava era dizer onde é. */}
+                <br />
+                Dívida de antes do sistema não entra aqui — ela nasce da nota.{' '}
+                <Link to="/financeiro/lancamentos">
+                  Lance como despesa prevista em Receitas e despesas
+                </Link>.
+              </>
+            }
           />
         ) : (
           <Cartao

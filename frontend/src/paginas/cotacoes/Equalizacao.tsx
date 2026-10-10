@@ -16,10 +16,10 @@ import {
   ROTULO_SITUACAO_BID, COR_SITUACAO_BID,
   type Equalizacao as Dados,
 } from '../../servicos/cotacoes';
-
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { dataBr } from '../../servicos/solicitacoes';
-import { dias as diasBr } from '../../servicos/texto';
+import {
+  dias as diasBr, jurosAoMes, plural, palavra, porcento, dinheiro, quantidade as qtdBr,
+} from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Selecao } from '../../componentes/Campo';
@@ -35,10 +35,6 @@ function daquiADias(dias: number): string {
   const d = new Date();
   d.setDate(d.getDate() + dias);
   return d.toISOString().slice(0, 10);
-}
-
-function porcentoAoMes(t: number): string {
-  return t.toLocaleString('pt-BR', { minimumFractionDigits: 1 }) + '% ao mês';
 }
 
 export function Equalizacao() {
@@ -276,8 +272,8 @@ export function Equalizacao() {
             titulo="Escolhendo item a item"
             valor={dinheiro(c.melhorCombinacao)}
             detalhe={
-              c.fornecedoresVencedores +
-              ' fornecedor(es) · frete somado ' +
+              plural(c.fornecedoresVencedores, 'fornecedor', 'fornecedores') +
+              ' · frete somado ' +
               dinheiro(c.freteDaCombinacao)
             }
           />
@@ -305,7 +301,9 @@ export function Equalizacao() {
           <div className="aviso aviso--atencao" style={{ marginTop: 'var(--esp-4)' }}>
             <Icone nome="alerta" className="aviso__icone" />
             <div>
-              <strong>{c.itensSemCotacao} item(ns) sem nenhuma cotação.</strong>
+              <strong>
+                {plural(c.itensSemCotacao, 'item', 'itens')} sem nenhuma cotação.
+              </strong>
               <p>
                 Ninguém cotou, ou todos marcaram que não têm. Faça uma última chamada,
                 convide outros fornecedores ou tire esses itens do pacote.
@@ -334,9 +332,20 @@ export function Equalizacao() {
             >
               <Icone nome="certo" /> Aceitar todos os melhores preços
             </button>
+            {/* SECUNDÁRIO, e isso é decisão, não descuido.
+
+                A tela tinha TRÊS botões azuis — salvar, gerar pedidos
+                e reabrir — e três chamadas principais não chamam
+                nada: o olho não sabe qual é a saída.
+
+                No fluxo de compras da Porto Inc., o passo da
+                equalização termina em PEDIDO. Guardar escolhas
+                preserva o trabalho e não avança o processo; quem
+                avança é "Gerar pedidos de compra", e esse ficou com o
+                azul. */}
             <button
               type="button"
-              className="botao botao--principal"
+              className="botao botao--secundario"
               onClick={() => void salvar()}
               disabled={ocupado}
             >
@@ -433,7 +442,17 @@ export function Equalizacao() {
                               {r.ehMelhor
                                 ? 'melhor preço'
                                 : r.acimaEmPorcento !== null
-                                  ? '+' + r.acimaEmPorcento + '%'
+                                  // O NÚMERO VAI PELA `porcento`, não colado
+                                  // com `+ '%'`. Juntar número com texto em
+                                  // JavaScript usa o ponto do inglês: aqui
+                                  // saía "+7.8%" ao lado de "R$ 339,50", dois
+                                  // separadores decimais na mesma linha.
+                                  //
+                                  // É a tela que a anotação do Iache pede
+                                  // nominalmente — "mostrar onde cada
+                                  // fornecedor chegou no preço melhor" — e o
+                                  // "+7,8%" é a frase que responde isso.
+                                  ? '+' + porcento(r.acimaEmPorcento)
                                   : ''}
                               {r.prazoEntregaDias !== null && ' · ' + r.prazoEntregaDias + 'd'}
                             </small>
@@ -492,7 +511,7 @@ export function Equalizacao() {
             semMarcaOpcional
             opcoes={TAXAS_DE_CUSTO_DO_DINHEIRO.map((t) => ({
               valor: String(t),
-              rotulo: t === 0 ? 'Não considerar' : porcentoAoMes(t),
+              rotulo: t === 0 ? 'Não considerar' : jurosAoMes(t),
             }))}
           />
         </div>
@@ -554,7 +573,7 @@ export function Equalizacao() {
 
         {Number(taxa) > 0 && (
           <p className="texto-fraco">
-            O "equivale à vista" desconta {porcentoAoMes(Number(taxa))} sobre o prazo médio
+            O "equivale à vista" desconta {jurosAoMes(Number(taxa))} sobre o prazo médio
             de cada proposta. Serve para comparar: quem paga depois usa o caixa da
             construtora até lá. Só vale para quem cotou o pacote inteiro.
           </p>
@@ -574,7 +593,7 @@ export function Equalizacao() {
                   <strong>
                     {Object.keys(escolhas).length} de {c.linhas.length}
                   </strong>{' '}
-                  item(ns)
+                  {palavra(c.linhas.length, 'item', 'itens')}
                   {faltamEscolher > 0 && (
                     <>
                       {' '}
@@ -695,9 +714,11 @@ export function Equalizacao() {
                 </ul>
 
                 <div className="formulario__acoes">
+                  {/* Reabrir anda para TRÁS no fluxo: devolve a cotação
+                      aos fornecedores. Azul convidaria a clicar. */}
                   <button
                     type="button"
-                    className="botao botao--principal"
+                    className="botao botao--secundario"
                     onClick={() => void dispararUltimaChamada()}
                     disabled={ocupado || !novoPrazo}
                   >

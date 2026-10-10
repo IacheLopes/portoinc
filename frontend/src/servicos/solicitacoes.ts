@@ -90,6 +90,13 @@ export interface Solicitacao {
   itens: ItemSolicitacao[];
   totalEstimado: number;
   podeEditar: boolean;
+  /**
+   * O que ainda impede o envio, vindo pronto do servidor.
+   *
+   * Mesma conferência que o envio faz, só que entregue ANTES do
+   * clique. Vazio significa "pode enviar".
+   */
+  impedimentos: string[];
   exigeTodas: boolean;
   funcoesExigidas: string[];
   estadoAprovacao: {

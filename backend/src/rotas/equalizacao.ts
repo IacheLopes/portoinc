@@ -5,7 +5,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
-import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
+import { numero, erroDeValidacao, textoOpcional, plural } from '../servicos/util.js';
 import {
   formatarNumeroBid, podeIrPara, descreverPagamento, prazoMedioDePagamento,
   type SituacaoBid,
@@ -680,7 +680,11 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         avisos,
         mensagem:
           'Última chamada aberta (rodada ' + (bid.rodada + 1) + '). ' +
-          avisos.length + ' fornecedor(es) avisado(s), sem revelar preço de concorrente.',
+          plural(
+            avisos.length,
+            'fornecedor avisado',
+            'fornecedores avisados',
+          ) + ', sem revelar preço de concorrente.',
       };
     },
   );

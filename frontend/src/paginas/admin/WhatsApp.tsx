@@ -31,6 +31,7 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+import { palavra } from '../../servicos/texto';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
@@ -185,7 +186,12 @@ export function ConfiguracaoWhatsApp() {
                 <>
                   Os fornecedores de demonstração têm telefones fictícios. Sem esta trava, um
                   clique em enviar cairia no celular de um desconhecido. Hoje há{' '}
-                  <strong>{situacao.numerosAutorizados}</strong> número(s) liberado(s).
+                  <strong>{situacao.numerosAutorizados}</strong>{' '}
+                  {palavra(
+                    situacao.numerosAutorizados,
+                    'número liberado',
+                    'números liberados',
+                  )}.
                 </>
               ) : (
                 <>

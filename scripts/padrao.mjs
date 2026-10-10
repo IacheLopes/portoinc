@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FRONT = join(RAIZ, 'frontend', 'src');
+const BACK = join(RAIZ, 'backend', 'src');
 const DIVIDA = join(RAIZ, 'scripts', 'padrao-divida.json');
 
 // ------------------------------------------------------------
@@ -56,6 +57,25 @@ const telas = arquivos(join(FRONT, 'paginas'), (n) => n.endsWith('.tsx') && !ehT
 const componentes = arquivos(join(FRONT, 'componentes'), (n) => n.endsWith('.tsx') && !ehTeste(n));
 const fontes = arquivos(FRONT, (n) => (n.endsWith('.ts') || n.endsWith('.tsx')) && !ehTeste(n));
 const estilos = arquivos(join(FRONT, 'estilos'), (n) => n.endsWith('.css'));
+
+// ------------------------------------------------------------
+//  O BACKEND, e so para a regra de formatacao
+//
+//  Esta regua nasceu olhando so o frontend, porque as outras seis
+//  regras falam de tela: cartao, cabecalho, estado de lista, cor,
+//  espaco. Nenhuma faz sentido num arquivo de rota.
+//
+//  Formatacao faz. E em 08/10/2026 ficou claro quanto: ao consertar
+//  tres copias da funcao de dinheiro no backend, escrevi a DECIMA
+//  copia — `reaisNaTrilha`, em `rotas/lancamentos.ts` — minutos
+//  depois, no mesmo arquivo que ja importava a oficial. Duas das
+//  onze arredondavam diferente das outras, e uma delas escrevia o
+//  total no e-mail que vai para o fornecedor.
+//
+//  A regua do frontend pegou a copia que eu fiz do `porcento` no
+//  mesmo dia, em minutos. A do backend nao existia.
+// ------------------------------------------------------------
+const fontesBack = arquivos(BACK, (n) => n.endsWith('.ts') && !ehTeste(n));
 
 const curto = (c) => relative(RAIZ, c).replace(/\\/g, '/');
 
@@ -123,14 +143,20 @@ const FORMATADORES_OFICIAIS = [
   // moram aqui. Acusar a função original é o conferidor mordendo a
   // própria cauda.
   'servicos/texto.ts',
+
+  // As duas casas oficiais do backend. O caminho vai inteiro de
+  // propósito: `endsWith('servicos/relatorios.ts')` casaria o
+  // arquivo dos DOIS lados, e o frontend tem um com esse nome.
+  'backend/src/servicos/util.ts',      // reaisBr, quantidadeBr, porcentoBr
+  'backend/src/servicos/data-br.ts',   // data e hora, com o fuso dito em voz alta
 ];
 
 regra(
   'formato-na-mao',
   'Dinheiro ou data formatados fora das funções oficiais',
-  'Uma função para cada. Espalhado, um lugar mostra "1.234,5" e outro "1.234,50".',
+  'Uma função para cada, nos dois lados. Espalhado, um lugar mostra "1.234,5" e outro "1.234,50".',
   () =>
-    fontes
+    [...fontes, ...fontesBack]
       .filter((c) => !FORMATADORES_OFICIAIS.some((o) => curto(c).endsWith(o)))
       .map((c) => ({
         c,
@@ -139,6 +165,136 @@ regra(
       .filter((x) => x.n > 0)
       .map((x) => curto(x.c) + ' (' + x.n + ')'),
 );
+
+// ------------------------------------------------------------
+//  Plural remendado com "(s)"
+//
+//  A regra ja existia escrita, num comentario de
+//  `backend/src/rotas/relatorios.ts`: "o (s) e a saida preguicosa de
+//  quem nao quis contar: sobra escrito no papel que vai para a
+//  diretoria, e quando o numero e 1 esta simplesmente errado".
+//
+//  Estava escrita e valia num lugar so. O backend tinha doze frases
+//  assim, sete delas dentro de PDF.
+//
+//  O REGEX TEM DE SEPARAR `dia(s)` DE `setSituacao(s)`.
+//
+//  O segundo e chamada de funcao com um argumento chamado `s`, e
+//  existe de verdade em duas telas. O que os separa: substantivo
+//  portugues escrito numa frase e minusculo, identificador de
+//  JavaScript que recebe argumento e camelCase — e chamada termina
+//  em `;` ou `)`, enquanto palavra de frase nao.
+// ------------------------------------------------------------
+const PLURAL_REMENDADO = /(?<![A-Z])\b([a-z\u00e0-\u00ff]{2,})\((s|es|ns|\u00f5es)\)(?![;)])/;
+
+/**
+ * Comentario e nome de teste CITAM a forma errada de proposito.
+ *
+ * `rotas/relatorios.ts` explica a regra escrevendo "1 estourada(s)"
+ * como contraexemplo, e um `it('no singular nao sai "1 parcela(s)"')`
+ * nomeia o defeito que ele cobre. Acusar os dois seria acusar quem
+ * documentou a regra de nao a seguir.
+ *
+ * `{/*` entra porque em JSX o comentario comeca assim.
+ */
+function citaOErrado(linha) {
+  const nua = linha.trim();
+
+  return nua.startsWith('//') || nua.startsWith('*') || nua.startsWith('/*')
+    || nua.startsWith('{/*') || nua.startsWith('it(') || nua.startsWith('describe(');
+}
+
+// ------------------------------------------------------------
+//  Percentual colado no texto, sem passar pela funcao oficial
+//
+//  A regra acima pega formatador DUPLICADO: ela procura
+//  `toLocaleString`. O defeito deste bloco e o contrario — nao ha
+//  formatador NENHUM:
+//
+//     '+' + r.acimaEmPorcento + '%'      ->  "+7.8%"
+//
+//  Numero colado em texto no JavaScript usa o PONTO do ingles. Ao
+//  lado de "R$ 339,50", a mesma linha fica com dois separadores
+//  decimais, e o errado e o que ninguem questiona, porque parece
+//  so um numero.
+//
+//  Achado pela varredura funcional em 09/10/2026, na tela de
+//  Equalizacao — que e justamente a que a anotacao do cliente pede
+//  nominalmente ("mostrar onde cada fornecedor chegou no preco
+//  melhor"). Passou por 1.320 testes e por sete regras de padrao,
+//  porque nenhum deles olhava essa string.
+//
+//  CSS FICA DE FORA, e isto nao e excecao de conveniencia:
+//  `style={{ height: (a / b) * 100 + '%' }}` TEM de usar o ponto,
+//  senao o navegador nao entende. Sao dez casos em `Graficos.tsx`,
+//  todos corretos.
+// ------------------------------------------------------------
+const PERCENTUAL_COLADO = /\+\s*['"`]%/;
+
+/** Linha de CSS: ali o ponto decimal e obrigatorio. */
+function ehEstilo(linha) {
+  return /style\s*[=:]/.test(linha)
+    || /\b(height|width|left|top|right|bottom|margin|padding|flex|gap|size|offset)\s*:/.test(linha);
+}
+
+regra(
+  'percentual-colado',
+  'Percentual colado no texto, fora da função oficial',
+  'Numero colado em texto no JavaScript usa o ponto: sai "7.8%" ao lado de "R$ 339,50".',
+  () =>
+    [...fontes, ...fontesBack]
+      .filter((c) => !FORMATADORES_OFICIAIS.some((o) => curto(c).endsWith(o)))
+      .map((c) => ({
+        c,
+        n: readFileSync(c, 'utf8')
+          .split('\n')
+          .filter((l) => !ehEstilo(l) && !citaOErrado(l) && PERCENTUAL_COLADO.test(l))
+          .length,
+      }))
+      .filter((x) => x.n > 0)
+      .map((x) => curto(x.c) + ' (' + x.n + ')'),
+);
+
+regra(
+  'plural-remendado',
+  'Plural resolvido com "(s)"',
+  'Quando o numero e 1, "1 parcela(s)" esta errado — e e o que faz um sistema parecer inacabado.',
+  () =>
+    [...fontes, ...fontesBack]
+      .map((c) => ({
+        c,
+        n: readFileSync(c, 'utf8')
+          .split('\n')
+          .filter((l) => !citaOErrado(l) && PLURAL_REMENDADO.test(l))
+          .length,
+      }))
+      .filter((x) => x.n > 0)
+      .map((x) => curto(x.c) + ' (' + x.n + ')'),
+);
+
+// ------------------------------------------------------------
+//  Quem traz o cabecalho da tela
+//
+//  `CabecalhoDePagina` desenha o <h1>, a migalha e o Voltar. Mas
+//  ha telas que o recebem de SEGUNDA mao: `TelaIndice` monta as
+//  quatro telas indice e chama o cabecalho por dentro.
+//
+//  A regra olhava so o arquivo da tela, e em 08/10/2026 acusou
+//  `Indices.tsx` de nao ter titulo nem cabecalho — tendo os dois.
+//  A saida errada seria duplicar o cabecalho na tela para calar a
+//  regua; a certa e a regua aprender o caminho.
+//
+//  Lista curta de proposito: cada nome aqui e uma excecao, e
+//  excecao que cresce sozinha deixa de ser excecao. Componente
+//  novo so entra nesta lista depois de alguem conferir que ele
+//  realmente desenha o <h1>.
+// ------------------------------------------------------------
+const TRAZEM_O_CABECALHO = ['<CabecalhoDePagina', '<TelaIndice'];
+
+/** A tela desenha o cabecalho, direta ou indiretamente? */
+function temCabecalho(fonte) {
+  return TRAZEM_O_CABECALHO.some((marca) => fonte.includes(marca));
+}
 
 // --- Título ---
 regra(
@@ -157,7 +313,7 @@ regra(
         // ligado por aria-labelledby, e quem tem o <h1> é a tela que
         // o abre. Dois <h1> na mesma tela é pior que nenhum.
         if (s.includes('<Modal')) return false;
-        return !/<h1[\s>]/.test(s) && !s.includes('<CabecalhoDePagina');
+        return !/<h1[\s>]/.test(s) && !temCabecalho(s);
       })
       .map(curto),
 );
@@ -175,7 +331,7 @@ regra(
       // Voltar e a tela que o abre. Cobrar cabecalho de pagina dele
       // seria pedir dois titulos na mesma coisa.
       .filter((c) => !readFileSync(c, 'utf8').includes('<Modal'))
-      .filter((c) => !readFileSync(c, 'utf8').includes('<CabecalhoDePagina'))
+      .filter((c) => !temCabecalho(readFileSync(c, 'utf8')))
       .map(curto),
 );
 

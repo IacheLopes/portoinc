@@ -24,6 +24,7 @@ async function itensAprovados(materiais: Array<{ id: string; qtd: number }>) {
     token: solicitante,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       itens: materiais.map((m) => ({
         materialId: m.id,
         quantidade: m.qtd,

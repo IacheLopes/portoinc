@@ -90,6 +90,7 @@ describe('Criar solicitação', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         justificativa: 'Concretagem da laje',
         itens: [
           { materialId: cimentoId, quantidade: 120, linhaOrcamentoId: linhaId, valorEstimado: 34 },
@@ -119,6 +120,7 @@ describe('Criar solicitação', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [
           { materialId: cimentoId, quantidade: 100, valorEstimado: 34 },
           { materialId: areiaId, quantidade: 10, valorEstimado: 130 },
@@ -145,6 +147,7 @@ describe('Criar solicitação', () => {
       token: bras,
       corpo: {
         obraId: '00000000-0000-4000-8000-000000000000',
+        dataDesejada: '2026-12-31',
         itens: [{ materialId: cimentoId, quantidade: 1 }],
       },
     });
@@ -188,6 +191,7 @@ describe('Primeira compra', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [{ materialId: novo.corpo.material.id, quantidade: 20, valorEstimado: 80 }],
       },
     });
@@ -216,7 +220,11 @@ describe('Primeira compra', () => {
     const criada = await chamar('/api/solicitacoes', {
       metodo: 'POST',
       token: bras,
-      corpo: { obraId, itens: [{ materialId: novo.corpo.material.id, quantidade: 10 }] },
+      corpo: {
+        obraId,
+        dataDesejada: '2026-12-31',
+        itens: [{ materialId: novo.corpo.material.id, quantidade: 10, valorEstimado: 12 }],
+      },
     });
 
     const envio = await chamar('/api/solicitacoes/' + criada.corpo.solicitacao.id + '/enviar', {
@@ -251,6 +259,7 @@ describe('Primeira compra', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [
           {
             materialId: novo.corpo.material.id,
@@ -279,6 +288,7 @@ describe('Envio e alçada', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [{ materialId: cimentoId, quantidade: 1, valorEstimado: valorTotal }],
       },
     });
@@ -380,7 +390,11 @@ describe('Envio e alçada', () => {
     const criada = await chamar('/api/solicitacoes', {
       metodo: 'POST',
       token: bras,
-      corpo: { obraId, itens: [{ materialId: cimentoId, quantidade: 10 }] },
+      corpo: {
+        obraId,
+        dataDesejada: '2026-12-31',
+        itens: [{ materialId: cimentoId, quantidade: 10, valorEstimado: 34 }],
+      },
     });
     const id = criada.corpo.solicitacao.id;
 
@@ -392,6 +406,7 @@ describe('Envio e alçada', () => {
           {
             materialId: cimentoId,
             quantidade: 10,
+            valorEstimado: 34,
             especificacaoTecnica: 'CP-II-Z-32, saco 50kg, ABNT NBR 16697.',
           },
         ],
@@ -535,6 +550,7 @@ describe('PDF', () => {
       token: bras,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         justificativa: 'Concretagem da laje do 3º pavimento',
         itens: [
           { materialId: cimentoId, quantidade: 120, linhaOrcamentoId: linhaId, valorEstimado: 34 },
@@ -689,5 +705,136 @@ describe('Paginação da lista', () => {
       assert.equal(r.status, 200, q);
       assert.ok(r.corpo.solicitacoes.length <= 100, 'o teto por página protege a memória');
     }
+  });
+});
+
+// ============================================================
+//  O PREÇO VEM DO ORÇAMENTO, E A ALÇADA VEM DO PREÇO
+//
+//  O valor unitário era opcional. Sem ele, o total da
+//  solicitação dá R$ 0,00 — e R$ 0,00 cai na faixa MAIS BAIXA de
+//  alçada.
+//
+//  Na simulação de 09/10/2026 um pedido de 800 tubos, R$ 25.200,
+//  foi para a fila de quem assina até R$ 2.000, porque ninguém
+//  digitou o preço.
+//
+//  O conserto tem dois lados: a API completa o preço a partir da
+//  linha de orçamento da obra (que a empresa já importou de
+//  planilha), e o envio recusa o que sobrar sem preço nenhum.
+// ============================================================
+describe('O preço que decide quem assina', () => {
+  it('completa o preço a partir da linha de orçamento', async () => {
+    // O material tem `codigoLinhaPadrao: 03.01.001`, e essa linha
+    // da obra prevê R$ 34,00 por saco. Ninguém digita preço aqui.
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST',
+      token: bras,
+      corpo: {
+        obraId,
+        dataDesejada: '2026-12-31',
+        itens: [{ materialId: cimentoId, quantidade: 100 }],
+      },
+    });
+
+    assert.equal(criada.status, 201);
+
+    const item = criada.corpo.solicitacao.itens[0];
+    assert.equal(item.valorEstimado, 34, 'o preço tinha de vir do orçamento');
+    assert.equal(criada.corpo.solicitacao.totalEstimado, 3400);
+    assert.deepEqual(
+      criada.corpo.solicitacao.impedimentos, [],
+      'com preço e prazo, nada impede o envio',
+    );
+  });
+
+  it('quem digita o preço manda sobre o orçamento', async () => {
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST',
+      token: bras,
+      corpo: {
+        obraId,
+        dataDesejada: '2026-12-31',
+        itens: [{ materialId: cimentoId, quantidade: 100, valorEstimado: 41.5 }],
+      },
+    });
+
+    assert.equal(criada.corpo.solicitacao.itens[0].valorEstimado, 41.5);
+  });
+
+  it('sem preço no orçamento nem na tela, o envio é recusado', async () => {
+    // Material sem linha padrão: não há de onde tirar o preço.
+    const familia = await chamar('/api/familias', {
+      metodo: 'POST',
+      token: admin,
+      corpo: { codigo: 'SPR', nome: 'Sem preço' },
+    });
+
+    const avulso = await chamar('/api/materiais', {
+      metodo: 'POST',
+      token: admin,
+      corpo: {
+        familiaId: familia.corpo.familia.id,
+        codigoInterno: 'SP001',
+        descricao: 'Item sem linha de orçamento',
+        unidadeMedida: 'UN',
+      },
+    });
+
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST',
+      token: bras,
+      corpo: {
+        obraId,
+        dataDesejada: '2026-12-31',
+        itens: [{
+          materialId: avulso.corpo.material.id,
+          quantidade: 800,
+          especificacaoTecnica: 'Para liberar a outra trava.',
+        }],
+      },
+    });
+
+    // A solicitação NASCE: rascunho incompleto é permitido.
+    assert.equal(criada.status, 201);
+    assert.equal(criada.corpo.solicitacao.itens[0].valorEstimado, null);
+
+    // Mas ela já avisa o que falta, ANTES de qualquer clique.
+    const avisos = criada.corpo.solicitacao.impedimentos as string[];
+    assert.equal(avisos.length, 1);
+    assert.ok(avisos[0].includes('sem preço estimado'));
+
+    // E o envio recusa.
+    const envio = await chamar(
+      '/api/solicitacoes/' + criada.corpo.solicitacao.id + '/enviar',
+      { metodo: 'POST', token: bras },
+    );
+
+    assert.equal(envio.status, 400);
+    assert.ok((envio.corpo.detalhes as string[])[0].includes('sem preço estimado'));
+  });
+
+  it('sem prazo, o envio é recusado — e cobra uma vez só', async () => {
+    const criada = await chamar('/api/solicitacoes', {
+      metodo: 'POST',
+      token: bras,
+      corpo: {
+        obraId,
+        itens: [
+          { materialId: cimentoId, quantidade: 10 },
+          { materialId: cimentoId, quantidade: 20 },
+        ],
+      },
+    });
+
+    const avisos = criada.corpo.solicitacao.impedimentos as string[];
+    assert.equal(avisos.length, 1, 'prazo é da solicitação, não de cada item');
+    assert.ok(avisos[0].includes('até quando'));
+
+    const envio = await chamar(
+      '/api/solicitacoes/' + criada.corpo.solicitacao.id + '/enviar',
+      { metodo: 'POST', token: bras },
+    );
+    assert.equal(envio.status, 400);
   });
 });

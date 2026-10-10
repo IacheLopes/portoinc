@@ -111,8 +111,25 @@ export async function rotasAutenticacao(app: FastifyInstance) {
   app.post('/api/autenticacao/renovar', async (req, res) => {
     const token = req.cookies[COOKIE_RENOVACAO];
 
+    // SEM COOKIE NENHUM NÃO É FALHA: é "não há sessão para renovar".
+    //
+    // A tela chama esta rota ao abrir, para saber se dá para
+    // reaproveitar a sessão guardada. Num navegador que nunca entrou
+    // não há cookie — e responder 401 fazia o navegador escrever
+    // "Failed to load resource: 401" em vermelho no console, toda
+    // primeira visita.
+    //
+    // Medido em 09/10/2026: de 6 chamadas (navegador novo, login e
+    // cinco telas), SÓ A PRIMEIRA levava 401. Não é ruído constante,
+    // mas é ruído numa tela que alguém de fora pode estar olhando —
+    // e console que grita por rotina é console onde o erro de
+    // verdade se esconde.
+    //
+    // 204 separa as duas coisas, e a separação é útil: "nunca entrou
+    // aqui" não é o mesmo que "a chave foi recusada". A segunda
+    // continua 401, porque aí houve falha de verdade.
     if (!token) {
-      return res.status(401).send({ erro: 'Sessão não encontrada. Entre novamente.' });
+      return res.status(204).send();
     }
 
     const resultado = await renovar(token);

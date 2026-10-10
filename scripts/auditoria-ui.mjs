@@ -25,13 +25,24 @@ const LARGURA = Number(process.argv[3] ?? 1440);
 // A conta é o quarto argumento, mas só se não for uma bandeira:
 // `--sem-print` caía nessa posição e virava o e-mail do login.
 const QUARTO = process.argv[4];
-const CONTA = QUARTO && !QUARTO.startsWith('--') ? QUARTO : 'admin@portoinc.com.br';
+const CONTA = QUARTO && !QUARTO.startsWith('--') ? QUARTO : 'porto@dev.com';
 // A senha estava cravada aqui dentro. Em 27/09/2026 o dono trocou a
 // senha do admin durante a validacao e a regua parou de entrar, sem
 // dizer por que: ela so reclamava que o menu nao apareceu.
 //
 //   SENHA_AUDITORIA=... node auditoria-ui.mjs <pasta> <largura> [conta]
-const SENHA = process.env.SENHA_AUDITORIA ?? 'Porto@2026';
+//  A CONTA DEV E O PADRAO PORQUE E A QUE ENXERGA TUDO.
+//
+//  A lista de telas inclui "Status do sistema", que saiu da vista
+//  de todo mundo no commit b38e9f5 e hoje so abre para a DEV. Com
+//  o administrador no lugar dela, essa tela vinha em branco.
+//
+//  E o padrao antigo (admin@portoinc.com.br + Porto@2026) nao
+//  entrava: a conta do administrador e a UNICA cuja senha e
+//  `admin123` — as seis de papel usam Porto@2026. A regua morria
+//  com "nao apareceu .menu__lista em 40s", mensagem que manda
+//  procurar defeito na barra lateral.
+const SENHA = process.env.SENHA_AUDITORIA ?? 'admin123';
 // Medir sem fotografar: o print e a parte cara, e so serve quando
 // eu vou OLHAR o resultado.
 const SEM_PRINT = process.argv.includes('--sem-print');
@@ -49,6 +60,17 @@ const PORTA = 9340 + (LARGURA % 7) + (Date.now() % 40) * 10;
 // nao responder, seguimos com o que da: as telas de detalhe caem,
 // mas as outras 30 continuam sendo medidas.
 const API = process.env.API_AUDITORIA ?? 'http://localhost:3000';
+
+/**
+ * Onde o sistema está servindo.
+ *
+ * Em desenvolvimento é o Vite, na 5173. Mas a pilha de PRODUÇÃO
+ * sobe na 8080, servida por Nginx — e medir a tela que a empresa
+ * vai receber exige poder apontar para lá. Era endereço fixo até
+ * 10/10/2026, quando a imagem de produção foi construída pela
+ * primeira vez.
+ */
+const SITE = process.env.SITE_AUDITORIA ?? 'http://localhost:5173';
 
 async function descobrirExemplos() {
   const vazio = { OBRA: '', SOLICITACAO: '', COTACAO: '', PEDIDO: '', PEDIDO_ID: '' };
@@ -129,6 +151,12 @@ const PG = 'frontend/src/paginas/';
 // A MAO — ha um caso proprio no guia de teste manual (CT-84).
 const TELAS = [
   ['/', 'inicio', [PG + 'Inicio.tsx']],
+  // As quatro telas indice. Passaram a ser a porta de tudo em
+  // 08/10/2026, quando a barra deixou de listar telas.
+  ['/compras', 'indice-compras', [PG + 'Indices.tsx']],
+  ['/almoxarifado', 'indice-almoxarifado', [PG + 'Indices.tsx']],
+  ['/financeiro', 'indice-financeiro', [PG + 'Indices.tsx']],
+  ['/administracao', 'indice-administracao', [PG + 'Indices.tsx']],
   ['/solicitacoes', 'solicitacoes-lista', [PG + 'solicitacoes/Lista.tsx']],
   // Quarto item: o texto do botao que abre o modal. Sem ele a regua
   // media a tela de tras e dizia que estava tudo certo — e os maiores
@@ -147,15 +175,15 @@ const TELAS = [
   ['/estoque', 'estoque', [PG + 'estoque/Painel.tsx']],
   ['/estoque/movimentos', 'estoque-movimentos', [PG + 'estoque/Movimentos.tsx']],
   ['/locacao', 'locacao', [PG + 'locacao/Painel.tsx']],
-  ['/financeiro', 'financeiro', [PG + 'financeiro/Painel.tsx']],
+  ['/financeiro/contas', 'financeiro-contas', [PG + 'financeiro/Painel.tsx']],
   ['/financeiro/notas', 'financeiro-notas', [PG + 'financeiro/Notas.tsx']],
+  ['/financeiro/lancamentos', 'financeiro-lancamentos', [PG + 'financeiro/Lancamentos.tsx']],
   ['/relatorios', 'relatorios-orcamento', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=economia', 'relatorios-economia', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=fornecedores', 'relatorios-fornecedores', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=tempos', 'relatorios-tempos', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=consumo', 'relatorios-consumo', [PG + 'relatorios/Painel.tsx']],
   ['/relatorios?ver=parado', 'relatorios-estoque-parado', [PG + 'relatorios/Painel.tsx']],
-  ['/cadastros', 'cadastros-indice', [PG + 'cadastros/Indice.tsx']],
   ['/cadastros/familias', 'cadastros-familias', [PG + 'cadastros/Familias.tsx']],
   ['/cadastros/materiais', 'cadastros-materiais', [PG + 'cadastros/Materiais.tsx']],
   ['/cadastros/fornecedores', 'cadastros-fornecedores', [PG + 'cadastros/Fornecedores.tsx']],
@@ -163,6 +191,7 @@ const TELAS = [
   ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe', [PG + 'cadastros/ObraDetalhe.tsx']],
   ['/cadastros/alcadas', 'cadastros-alcadas', [PG + 'cadastros/Alcadas.tsx']],
   ['/admin/usuarios', 'admin-usuarios', [PG + 'admin/Usuarios.tsx']],
+  ['/admin/funcoes', 'admin-funcoes', [PG + 'admin/Funcoes.tsx']],
   ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp', [PG + 'admin/Avisos.tsx', PG + 'admin/WhatsApp.tsx']],
   ['/admin/avisos?ver=email', 'admin-avisos-email', [PG + 'admin/Avisos.tsx', PG + 'admin/Email.tsx']],
   ['/admin/status', 'admin-status', [PG + 'admin/StatusSistema.tsx']],
@@ -345,14 +374,66 @@ ws.onmessage = (ev) => {
   }
 };
 
+// ------------------------------------------------------------
+//  TODO COMANDO TEM PRAZO
+//
+//  Esta promessa so se resolvia pela resposta do navegador. Sem
+//  prazo, e sem ninguem olhando se o socket caiu: um comando sem
+//  resposta pendurava a regua PARA SEMPRE — processo vivo, zero de
+//  CPU, nenhum arquivo novo, nenhuma linha de erro.
+//
+//  Aconteceu em 08/10/2026, na tela 38 de 40. A causa foi minha: eu
+//  editei arquivos do backend durante a varredura, e o `tsx watch`
+//  reinicia a API a cada save. Com `awaitPromise: true`, um `fetch`
+//  da pagina para uma API que esta reiniciando e uma promessa que
+//  nunca assenta — e o `Runtime.evaluate` espera por ela, com razao.
+//
+//  A causa de fora foi minha; a de dentro e daqui. Varredura que
+//  morre tem de DIZER que morreu: quem espera 45 minutos por um
+//  resumo nao pode descobrir pelo contador de arquivos que ele nunca
+//  vem.
+//
+//  30s e folgado: os prazos longos da regua (40s para um seletor
+//  aparecer, 30s para a tela acalmar) sao lacos AQUI no node, com
+//  chamadas curtas la dentro. Comando que passa de 30s nao esta
+//  devagar, esta perdido.
+// ------------------------------------------------------------
+const LIMITE_DO_COMANDO = 30000;
+
 const cdp = (method, params = {}) => {
   proximo += 1;
   const id = proximo;
+
   return new Promise((ok, nao) => {
-    pendentes.set(id, { ok, nao });
+    const relogio = setTimeout(() => {
+      pendentes.delete(id);
+      nao(new Error(
+        'o navegador nao respondeu a ' + method + ' em '
+        + (LIMITE_DO_COMANDO / 1000) + 's',
+      ));
+    }, LIMITE_DO_COMANDO);
+
+    pendentes.set(id, {
+      ok: (v) => { clearTimeout(relogio); ok(v); },
+      nao: (e) => { clearTimeout(relogio); nao(e); },
+    });
+
     ws.send(JSON.stringify({ id, method, params }));
   });
 };
+
+// Socket caiu: o que estava pendente morre AGORA, com motivo. Sem
+// isto, Edge fechado tambem pendurava a regua — pelo mesmo caminho,
+// esperando resposta de quem ja foi embora.
+const matarPendentes = (motivo) => () => {
+  for (const [id, { nao }] of [...pendentes]) {
+    pendentes.delete(id);
+    nao(new Error(motivo));
+  }
+};
+
+ws.onclose = matarPendentes('a conexao com o navegador fechou');
+ws.onerror = matarPendentes('a conexao com o navegador deu erro');
 
 const js = async (e) => {
   const r = await cdp('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true });
@@ -554,22 +635,43 @@ await cdp('Emulation.setEmulatedMedia', {
   features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
 });
 
-await cdp('Page.navigate', { url: 'http://localhost:5173/entrar' });
-await esperarPor('input[type="password"]');
+// ------------------------------------------------------------
+//  Entrar no sistema
+//
+//  VIROU FUNCAO PORQUE A SESSAO MORRE NO MEIO DA VARREDURA.
+//
+//  O cracha de acesso dura 15 minutos (DURACAO_ACESSO, no
+//  autenticacao.ts) e a varredura das 37 telas em tres larguras
+//  leva uns 45. As ultimas telas da lista vinham em branco, e a
+//  regua anunciava "NAO CARREGOU" como se o defeito fosse delas.
+//
+//  Em 08/10/2026 isso acusou cinco telas sadias: admin-usuarios,
+//  os dois avisos, admin-status e minha-senha. Todas abrem
+//  normalmente com sessao nova — conferido uma a uma.
+//
+//  Pior que regua que nao mede e regua que mede errado e culpa o
+//  inocente: quem le o relatorio vai procurar defeito onde nao ha.
+// ------------------------------------------------------------
+async function entrarNoSistema() {
+  await cdp('Page.navigate', { url: SITE + '/entrar' });
+  await esperarPor('input[type="password"]');
 
-await js([
-  '(() => {',
-  "const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;",
-  "const campos = [...document.querySelectorAll('input')];",
-  "const email = campos.find(c => c.type === 'email') || campos[0];",
-  "const senha = campos.find(c => c.type === 'password') || campos[1];",
-  'set.call(email, ' + JSON.stringify(CONTA) + '); email.dispatchEvent(new Event("input", { bubbles: true }));',
-  'set.call(senha, ' + JSON.stringify(SENHA) + '); senha.dispatchEvent(new Event("input", { bubbles: true }));',
-  "document.querySelector('form').requestSubmit();",
-  '})()',
-].join('\n'));
+  await js([
+    '(() => {',
+    "const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;",
+    "const campos = [...document.querySelectorAll('input')];",
+    "const email = campos.find(c => c.type === 'email') || campos[0];",
+    "const senha = campos.find(c => c.type === 'password') || campos[1];",
+    'set.call(email, ' + JSON.stringify(CONTA) + '); email.dispatchEvent(new Event("input", { bubbles: true }));',
+    'set.call(senha, ' + JSON.stringify(SENHA) + '); senha.dispatchEvent(new Event("input", { bubbles: true }));',
+    "document.querySelector('form').requestSubmit();",
+    '})()',
+  ].join('\n'));
 
-await esperarPor('.menu__lista');
+  await esperarPor('.menu__lista');
+}
+
+await entrarNoSistema();
 
 // Trava: se o login nao pegou, TODAS as telas viram a pagina de
 // entrada e a auditoria devolve um 'ok' que nao vale nada.
@@ -988,6 +1090,23 @@ const MEDIR = `(() => {
     const semCabecalho = [...document.querySelectorAll('table')]
       .filter((t) => {
         if (!t.querySelector('tbody tr')) return false;
+
+        //  TABELA QUE NINGUEM VE NAO TEM CABECALHO PARA JULGAR.
+        //
+        //  A regra pergunta "o cabecalho sumiu enquanto os dados
+        //  aparecem?". Dentro de um <dialog> FECHADO nada aparece:
+        //  as linhas estao no DOM porque o React ja as desenhou, e
+        //  tudo ali tem tamanho zero — inclusive o cabeçalho.
+        //
+        //  Em 09/10/2026 isso acusou a lista de cotacoes nas duas
+        //  larguras de computador. A tabela culpada era a do modal
+        //  "Novo pacote de cotacao", com <thead> correto e visivel
+        //  quando o modal abre. So apareceu agora porque o teste de
+        //  alcada aprovou tres solicitacoes e encheu a lista: antes
+        //  o tbody estava vazio e o filtro nem chegava aqui.
+        const caixa = t.getBoundingClientRect();
+        if (caixa.height <= 2 || caixa.width <= 2) return false;
+
         const cabeca = t.querySelector('thead');
         if (!cabeca) return true;
         const r = cabeca.getBoundingClientRect();
@@ -1030,19 +1149,57 @@ const MEDIR = `(() => {
   const modalAberto = document.querySelector('dialog[open]');
   const ondeProcurar = modalAberto ?? document.querySelector('main');
 
-  const principais = ondeProcurar
-    ? [...ondeProcurar.querySelectorAll('.botao--principal')].filter((b) => {
-        const r = b.getBoundingClientRect();
-        const e = getComputedStyle(b);
-        return r.width > 0 && r.height > 0 && e.visibility !== 'hidden';
-      })
+  //  ACAO DE LINHA NAO ENTRA NA CONTA.
+  //
+  //  A regra existe para o botao da PAGINA: se dois competem pelo
+  //  proximo passo, nenhum e o proximo passo. Numa FILA, cada linha
+  //  E um proximo passo, e a pessoa escolhe qual.
+  //
+  //  A tela de Aprovacoes pinta de azul a linha que espera a
+  //  assinatura DE QUEM ESTA OLHANDO, e de cinza a que nao espera —
+  //  decisao deliberada, com o motivo escrito em Fila.tsx: "linha
+  //  que nao e sua abre para OLHAR, nao para assinar".
+  //
+  //  Com uma solicitacao na fila, a regra passava. Em 09/10/2026 a
+  //  varredura funcional criou mais duas, e a regua passou a acusar
+  //  "2 botoes principais ao mesmo tempo" — num desenho que estava
+  //  certo, e que fica MAIS errado se for consertado.
+  const seVe = (b) => {
+    const r = b.getBoundingClientRect();
+    const e = getComputedStyle(b);
+    return r.width > 0 && r.height > 0 && e.visibility !== 'hidden';
+  };
+
+  const todosOsPrincipais = ondeProcurar
+    ? [...ondeProcurar.querySelectorAll('.botao--principal')].filter(seVe)
     : [];
+
+  const daLinha = todosOsPrincipais.filter((b) => b.closest('tr, li'));
+  const principais = todosOsPrincipais.filter((b) => !b.closest('tr, li'));
 
   if (principais.length > 1) {
     achados.push({
       tipo: 'VARIOS_BOTOES_PRINCIPAIS',
       detalhe: principais.length + ' ao mesmo tempo',
       culpados: principais.map(nomear),
+    });
+  }
+
+  //  A EXCECAO DA FILA TEM CONDICAO, E A CONDICAO TAMBEM SE MEDE.
+  //
+  //  Linha de fila pode ser azul porque, sozinha, ela nao compete
+  //  com ninguem: a pessoa escolhe entre iguais. Mas se a pagina
+  //  TAMBEM tem botao principal no cabecalho, ele volta a competir
+  //  — e o olho perde o proximo passo da pagina.
+  //
+  //  Sem esta checagem, o DESIGN.md prometeria uma condicao que
+  //  regua nenhuma cobra, e bastaria alguem pendurar um "Novo" no
+  //  topo de Aprovacoes para a tela ficar errada em silencio.
+  if (daLinha.length > 0 && principais.length > 0) {
+    achados.push({
+      tipo: 'LINHA_AZUL_COM_ACAO_NO_TOPO',
+      detalhe: daLinha.length + ' linha(s) azul(is) competindo com a acao da pagina',
+      culpados: [...principais, ...daLinha].map(nomear),
     });
   }
 
@@ -1162,6 +1319,10 @@ const CONTRASTE = `(() => {
 
 const relatorio = [];
 
+// Telas cuja foto falhou. Nao e achado de desenho: e aviso de que
+// aquela tela foi MEDIDA mas nao tem retrato para eu olhar.
+const semFoto = [];
+
 /**
  * As larguras medidas nesta volta.
  *
@@ -1242,6 +1403,21 @@ for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
 
       // Caso 2: busca pendurada. Esperar nao desentope; pedir de novo,
       // sim. Vale para os dois casos, entao fica fora do if.
+      await recarregar(caminho);
+      acalmou = await esperarAcalmar(30000);
+    }
+
+    if (!acalmou) {
+      // SEGUNDA CHANCE, COM SESSAO NOVA.
+      //
+      // A causa mais comum de uma tela nao carregar no meio da
+      // varredura nao e a tela: e o cracha de 15 minutos que
+      // venceu. Entrar de novo e tentar uma vez separa o defeito
+      // de verdade do cansaco da propria regua.
+      //
+      // Uma vez so: se nao carregar com sessao nova, o problema e
+      // da tela, e insistir so faz a varredura demorar mais.
+      await entrarNoSistema();
       await recarregar(caminho);
       acalmou = await esperarAcalmar(30000);
     }
@@ -1374,13 +1550,61 @@ for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
       //
       // Ele fica AQUI DENTRO, e nao depois do laco: fora, a janela ja
       // estava na ultima largura e toda foto saia de celular.
+      //
+      // E A FOTO NAO PODE DERRUBAR A MEDICAO.
+      //
+      // Ela estava dentro do mesmo `try` do laco. Quando o
+      // `Page.captureScreenshot` nao respondia, a tela inteira virava
+      // "NAO CONSEGUI MEDIR" — e o que se perdia era a MEDICAO, que ja
+      // estava pronta trinta linhas acima, por causa do RETRATO, que e
+      // enfeite.
+      //
+      // Custou 10 telas de 40 em 09/10/2026. O print falhava em bloco,
+      // tarde na varredura, sem relacao com o tamanho da pagina:
+      // `cadastros-alcadas`, de 1000px, falhou, e `admin-usuarios`, de
+      // 1953px, passou. A causa da lentidao continua em aberto; o que
+      // nao pode continuar e ela levar junto o dado que ja existia.
+      //
+      // DUAS TENTATIVAS, porque a falha e ALEATORIA.
+      //
+      // Medido em 09/10/2026, com os navegadores orfaos ja limpos:
+      // 12 fotos de 120 falharam, espalhadas por telas diferentes e
+      // larguras diferentes (420, 1440 e 1920), sem relacao com o
+      // tamanho da pagina. Na primeira varredura do dia, sem prazo
+      // nenhum, uma dessas penduruou a regua por 12 minutos — entao
+      // isto e TRAVAMENTO, nao lentidao.
+      //
+      // Contra travamento aleatorio, esperar mais nao resolve;
+      // pedir de novo, sim. Com ~10% de falha, a segunda tentativa
+      // leva o buraco para ~1%.
+      //
+      // A causa de raiz continua em aberto. O suspeito e o
+      // `captureBeyondViewport`, que redimensiona a superficie de
+      // captura — mas suspeito nao e culpado, e nao vou escrever
+      // aqui o que nao medi.
       if (!SEM_PRINT) {
-        const { data } = await cdp('Page.captureScreenshot', {
-          format: 'png',
-          captureBeyondViewport: true,
-        });
         const sufixo = largura === LARGURAS[0] ? '' : '-' + largura;
-        writeFileSync(SAIDA + '/' + nome + sufixo + '.png', Buffer.from(data, 'base64'));
+        let guardou = false;
+
+        for (let tentativa = 1; tentativa <= 2 && !guardou; tentativa += 1) {
+          try {
+            const { data } = await cdp('Page.captureScreenshot', {
+              format: 'png',
+              captureBeyondViewport: true,
+            });
+            writeFileSync(SAIDA + '/' + nome + sufixo + '.png', Buffer.from(data, 'base64'));
+            guardou = true;
+          } catch (e) {
+            if (tentativa === 1) {
+              console.log(nome.padEnd(28), 'foto falhou em ' + largura + 'px, tentando de novo');
+              await dormir(500);
+            } else {
+              semFoto.push(nome + sufixo);
+              console.log(nome.padEnd(28), 'sem foto em ' + largura + 'px:',
+                String(e.message).slice(0, 60));
+            }
+          }
+        }
       }
     }
 
@@ -1397,6 +1621,10 @@ for (const [caminho, nome, , botaoDaTela] of ESCOLHIDAS) {
 }
 
 writeFileSync(SAIDA + '/achados.json', JSON.stringify(relatorio, null, 2));
+
+if (semFoto.length > 0) {
+  console.log('\n  SEM FOTO (medidas, mas sem retrato): ' + semFoto.join(', '));
+}
 
 console.log('\n==== RESUMO (' + ESCOLHIDAS.length + ' de ' + TELAS.length + ' telas · ' +
   LARGURAS.join('px, ') + 'px) ====');

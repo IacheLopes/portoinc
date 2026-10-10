@@ -14,6 +14,8 @@
 //  testadas sozinhas.
 // ============================================================
 
+import { reaisBr, plural } from './util.js';
+
 export type Periodo = 'DIARIA' | 'SEMANAL' | 'MENSAL';
 export type SituacaoLocacao = 'ATIVA' | 'DEVOLVIDA' | 'CANCELADA';
 
@@ -177,30 +179,30 @@ export function lerContrato(c: ContratoParaConta, hoje: Date): string {
     const atraso = diasDeAtraso(c, hoje);
     if (atraso === 0) return 'Devolvida no prazo.';
 
-    return 'Devolvida com ' + atraso + ' dia(s) de atraso, que custaram ' +
-      emReais(custoDoAtraso(c, hoje)) + '.';
+    // O verbo concorda com os dias, então ele vai junto na palavra:
+    // partir a frase aqui é como nasce "1 dias de atraso, que custou".
+    return 'Devolvida com ' + plural(
+      atraso,
+      'dia de atraso, que custou',
+      'dias de atraso, que custaram',
+    ) + ' ' + reaisBr(custoDoAtraso(c, hoje)) + '.';
   }
 
   if (alerta === 'ATRASADA') {
     const atraso = diasDeAtraso(c, hoje);
-    return 'Parada há ' + atraso + ' dia(s) além do combinado. ' +
-      'O atraso já custou ' + emReais(custoDoAtraso(c, hoje)) + '.';
+    return 'Parada há ' + plural(atraso, 'dia', 'dias') + ' além do combinado. ' +
+      'O atraso já custou ' + reaisBr(custoDoAtraso(c, hoje)) + '.';
   }
 
   if (alerta === 'VENCE_HOJE') return 'Vence hoje. Combine a retirada com o fornecedor.';
 
   if (alerta === 'PERTO') {
     const faltam = diasEntre(hoje, c.previsaoDevolucao);
-    return 'Vence em ' + faltam + ' dia(s). Se ainda precisa, renegocie antes de virar atraso.';
+    return 'Vence em ' + plural(faltam, 'dia', 'dias') +
+      '. Se ainda precisa, renegocie antes de virar atraso.';
   }
 
   return 'Em dia.';
-}
-
-function emReais(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  });
 }
 
 // ------------------------------------------------------------

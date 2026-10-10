@@ -17,7 +17,6 @@ const esquema = z.object({
   // --- Escolha dos adaptadores de integracao ---
   WHATSAPP_ADAPTER: z.enum(['mock', 'baileys', 'cloud-api']).default('mock'),
   FISCAL_ADAPTER: z.enum(['mock', 'sefaz']).default('mock'),
-  GTIN_ADAPTER: z.enum(['mock', 'gs1']).default('mock'),
   PAGAMENTO_ADAPTER: z.enum(['mock', 'cnab', 'open-finance']).default('mock'),
   EMAIL_ADAPTER: z.enum(['mock', 'resend']).default('mock'),
 
@@ -29,7 +28,6 @@ const esquema = z.object({
   WHATSAPP_CLOUD_PHONE_ID: z.string().optional(),
   SEFAZ_CERTIFICADO_CAMINHO: z.string().optional(),
   SEFAZ_CERTIFICADO_SENHA: z.string().optional(),
-  GS1_TOKEN: z.string().optional(),
   BANCO_CODIGO: z.string().optional(),
   /** Com 'true', so envia para endereco da lista de autorizados. */
   EMAIL_MODO_TESTE: z.enum(['true','false']).default('true'),

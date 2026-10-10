@@ -1,6 +1,21 @@
 // ============================================================
 //  Detalhe do pedido de compra
 //
+//  padrao-ignora: sem-estados
+//
+//  A regra cobra Carregando, Erro e Vazio de toda tela com tabela.
+//  Esta tem os dois primeiros e NÃO tem o terceiro, de propósito:
+//  a tabela daqui lista os itens do pedido, e PEDIDO SEM ITEM NÃO
+//  EXISTE.
+//
+//  Ele nasce em `rotas/equalizacao.ts`, de um Map agrupado por
+//  fornecedor vencedor: a chave do fornecedor só passa a existir
+//  quando um item é empurrado para ela. Fornecedor que não venceu
+//  nada não ganha pedido nenhum.
+//
+//  Um estado vazio aqui seria código morto para um caso impossível
+//  — e código morto ensina que a regra é burocracia.
+//
 //  Esta tela nunca existiu. Havia a lista e o PDF, e mais nada:
 //  para ver o que tinha dentro de um pedido era preciso baixar o
 //  arquivo. O dono reparou na validação de 27/09/2026 — "não
@@ -34,7 +49,7 @@ import {
 import { enviarPedidoPorWhatsApp } from '../../servicos/whatsapp';
 import { enviarPedidoPorEmail } from '../../servicos/email';
 import { dataBr, dataHoraBr } from '../../servicos/solicitacoes';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 // As mesmas máscaras dos formulários, agora só para LER: CNPJ sem
 // pontuação e telefone corrido são ilegíveis, e o pedido é o
 // documento em que esses dois números mais importam.

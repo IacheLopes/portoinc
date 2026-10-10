@@ -22,6 +22,7 @@ async function abrirEEnviar(valor: number, token = solicitante): Promise<string>
     token,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       justificativa: 'Teste de alçada',
       itens: [
         {
@@ -410,6 +411,7 @@ describe('Envio sem faixa de alçada', () => {
       token: solicitante,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [
           {
             materialId,

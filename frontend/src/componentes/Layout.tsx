@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
-import { menuAgrupado, type Modulo } from '../navegacao';
+import { barraLateral, porteDaTela, type LinhaDaBarra } from '../navegacao';
 import { BotaoTema } from './BotaoTema';
 import { Icone } from './Icone';
 import { plural } from '../servicos/texto';
@@ -27,14 +27,33 @@ export function Layout() {
   const [menuAberto, setMenuAberto] = useState(false);
   const local = useLocation();
 
-  const menu = menuAgrupado((m) => m.permissoes.length === 0 || pode(...m.permissoes));
+  const linhas = barraLateral((m) => m.permissoes.length === 0 || pode(...m.permissoes));
 
-  function linkDoMenu(item: Modulo) {
+  // Em que porta a pessoa está, mesmo estando numa tela de dentro.
+  const portaAberta = porteDaTela(local.pathname);
+
+  function linkDoMenu(item: LinhaDaBarra) {
     return (
       <NavLink
         to={item.para}
-        end={item.para === '/'}
-        className={({ isActive }) => 'menu__item' + (isActive ? ' menu__item--ativo' : '')}
+        // `end` só no Início e nos DESTINOS.
+        //
+        // Sem isso, "Compras" ficaria marcado como ativo enquanto a
+        // pessoa estivesse em /compras E em qualquer filha dele. Mas
+        // as filhas têm endereço próprio (/solicitacoes, /pedidos),
+        // então o destino só acende quando se está no índice.
+        //
+        // A exceção é o Financeiro, cujas filhas moram DENTRO dele
+        // (/financeiro/contas): sem o `end`, a barra acenderia o
+        // destino o tempo todo, e quem olha nao saberia se esta no
+        // indice ou numa tela de dentro.
+        end
+        className={({ isActive }) =>
+          'menu__item' +
+          (isActive || (item.ehDestino && item.para === portaAberta)
+            ? ' menu__item--ativo'
+            : '')
+        }
         onClick={() => setMenuAberto(false)}
       >
         <Icone nome={item.icone} className="menu__icone" />
@@ -85,29 +104,31 @@ export function Layout() {
           className={'menu' + (menuAberto ? ' menu--aberto' : '')}
           aria-label="Menu principal"
         >
-          {menu.soltos.length > 0 && (
-            <ul className="menu__lista">
-              {menu.soltos.map((item) => (
-                <li key={item.para}>{linkDoMenu(item)}</li>
-              ))}
-            </ul>
-          )}
+          {/* UMA LISTA, SEM TÍTULOS.
 
-          {/* Um bloco por grupo. Grupo sem item nenhum não chega
-              aqui: o rótulo sozinho seria pior que a lista solta. */}
-          {menu.grupos.map((grupo) => (
-            <div className="menu__grupo" key={grupo.nome}>
-              <h2 className="menu__grupo-titulo" id={'grupo-' + grupo.nome}>
-                {grupo.nome}
-              </h2>
+              Eram quatro títulos com 14 itens embaixo: 18 linhas para
+              quem administra. Agora são seis linhas — Início,
+              Relatórios e os quatro destinos — e seguem seis quando
+              o sistema crescer, porque tela nova vira cartão dentro
+              de um índice.
 
-              <ul className="menu__lista" aria-labelledby={'grupo-' + grupo.nome}>
-                {grupo.itens.map((item) => (
-                  <li key={item.para}>{linkDoMenu(item)}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
+              Os destinos levam um fio acima do primeiro, separando-os
+              das duas telas soltas. É a única divisão que sobrou, e
+              ela não precisa de palavra nenhuma.
+          */}
+          <ul className="menu__lista">
+            {linhas.map((item) => (
+              <li
+                key={item.para}
+                className={
+                  (item.ehDestino ? 'menu__destino' : '') +
+                  (item.primeiroDestino ? ' menu__destino--primeiro' : '')
+                }
+              >
+                {linkDoMenu(item)}
+              </li>
+            ))}
+          </ul>
 
           <div className="menu__rodape">
             <BotaoTema />
@@ -116,7 +137,7 @@ export function Layout() {
               <Icone nome="cadeado" className="menu__icone" />
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.45.0</p>
+            <p className="menu__versao">versão 0.58.0</p>
           </div>
         </nav>
 

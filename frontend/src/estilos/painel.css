@@ -27,6 +27,14 @@
   box-shadow: var(--sombra-2);
 }
 
+/*  A tela da primeira senha.
+ *
+ *  Mesmo pano de fundo da entrada, porque quem esta ali ainda nao
+ *  entrou de verdade. Mas aqui NAO ha moldura: quem desenha a
+ *  caixa e o `Cartao` do formulario. O cartao do login tem 400px
+ *  e tres campos mais dois avisos nao cabem. */
+.entrada__sozinha { width: 100%; max-width: 520px; }
+
 .entrada__marca {
   font-size: var(--txt-xl);
   font-weight: var(--peso-forte);
@@ -217,32 +225,40 @@
 /* ------------------------------------------------------------
    Grupos do menu
 
-   Catorze itens soltos não deixam o olho agrupar nada. Divididos
-   pelo caminho do trabalho — comprar, receber, pagar, administrar
-   —, nenhum bloco passa de quatro linhas.
+   Eram catorze itens sob quatro títulos: 18 linhas para quem
+   administra, e uma a mais a cada tela nova.
+
+   Agora são SEIS: Início, Relatórios e os quatro destinos. Os
+   títulos de grupo saíram junto — com seis linhas, rótulo para
+   organizar seria enfeite, e enfeite num menu é ruído.
+
+   Pedido da reunião de 08/10/2026: "vai tudo ficar meio que
+   encolhido, pra parecer que é pouca coisa, e ele querer colocar
+   mais... fica coisa demais".
    ------------------------------------------------------------ */
 
-.menu__grupo {
-  margin-top: var(--esp-3);
+/* O FIO ANTES DO PRIMEIRO DESTINO.
+
+   Separa as duas telas soltas — Início e Relatórios — das quatro
+   portas. É a única divisão que sobrou na barra, e ela não precisa
+   de palavra nenhuma: a linha já diz "daqui para baixo é outra
+   coisa".
+
+   QUEM LEVA O FIO É O PRIMEIRO DESTINO, e quem decide qual é ele e
+   o componente — não o CSS.
+
+   A primeira tentativa foi `li:not(.menu__destino):has(+ .menu__destino)`:
+   "o item que vem antes de um destino". Funcionou enquanto os quatro
+   destinos vinham em fila, e quebrou no dia em que os Relatórios
+   desceram para o meio deles — aí havia DOIS itens soltos seguidos
+   de destino, e a barra ganhou dois fios.
+
+   O componente sabe qual é o primeiro; o CSS não tem como saber.
+   Pedir isso ao seletor era pedir ao lugar errado. */
+.menu__lista .menu__destino--primeiro {
+  margin-top: var(--esp-2);
   padding-top: var(--esp-2);
   border-top: 1px solid var(--menu-borda);
-}
-
-/* O primeiro grupo vem logo depois do "Início": a linha ali
-   separaria o que já está separado. */
-.menu__grupo:first-of-type {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.menu__grupo-titulo {
-  margin: 0 0 var(--esp-1);
-  padding: 0 var(--esp-3);
-  font-size: 0.68rem;
-  font-weight: var(--peso-forte);
-  /* O rótulo organiza sem competir com os itens, que são o que a
-     pessoa clica: some pela COR e pelo tamanho, não por gritar. */
-  color: var(--menu-texto-secundario);
 }
 
 /* Serve para <a> e para <button>: o botão de tema é botão de

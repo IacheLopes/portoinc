@@ -1,4 +1,4 @@
-<!-- versao: 0.45.0 -->
+<!-- versao: 0.58.0 -->
 
 # 1. Como usar este guia
 
@@ -53,17 +53,20 @@ Se der, tire um print da tela.
 
 ## Contas de teste
 
-Todas usam a senha **Porto@2026**
+| Pessoa | E-mail | Senha | Funções |
+|---|---|---|---|
+| Administrador | admin@portoinc.com.br | **`admin123`** | Administrador |
+| Washington | washington@portoinc.com.br | `Porto@2026` | Fundador |
+| Andre | andre@portoinc.com.br | `Porto@2026` | Comprador |
+| Bras | bras@portoinc.com.br | `Porto@2026` | Gestor de obra + Solicitante |
+| Gilson | gilson@portoinc.com.br | `Porto@2026` | Almoxarife |
+| Neilma | neilma@portoinc.com.br | `Porto@2026` | Comprador + Solicitante |
+| Engenheiro | engenheiro@portoinc.com.br | `Porto@2026` | Engenheiro |
+| **DEV-Porto** | **porto@dev.com** | **`admin123`** | **os sete papéis** |
 
-| Pessoa | E-mail | Funções |
-|---|---|---|
-| Administrador | admin@portoinc.com.br | Administrador |
-| Washington | washington@portoinc.com.br | Fundador |
-| Andre | andre@portoinc.com.br | Comprador |
-| Bras | bras@portoinc.com.br | Gestor de obra + Solicitante |
-| Gilson | gilson@portoinc.com.br | Almoxarife |
-| Neilma | neilma@portoinc.com.br | Comprador + Solicitante |
-| Engenheiro | engenheiro@portoinc.com.br | Engenheiro |
+> **O administrador é a exceção da senha.** As seis contas de papel usam `Porto@2026`; a do
+> administrador e a DEV usam `admin123`. Escrever "todas usam Porto@2026" fez a régua de
+> telas falhar em 09/10/2026 com uma mensagem sobre a barra lateral.
 
 ## Voltando o sistema ao estado inicial
 
@@ -5002,6 +5005,1013 @@ a solicitação ou não aparece, ou aparece sem botão de decidir.
 
 ---
 
+## CT-331 · Onde se cadastra a receita da empresa
+
+Era a pergunta do Iache, e o sistema não tinha resposta.
+
+1. Entre como **Administrador** (`admin@portoinc.com.br`)
+2. Ache **Receitas e despesas** no menu, grupo **Gestão**
+
+**Esperado:** a tela abre com quatro cartões — Saldo, Entrou, Saiu e "Se tudo acontecer" —
+e a lista de lançamentos embaixo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-332 · Lançar uma entrada que já caiu
+
+1. **Lançar entrada**
+2. Descrição `Medição 5 - Porto Belo`, valor `150.000,00`, data de hoje
+3. Deixe **O dinheiro já entrou** marcado
+4. **Lançar**
+
+**Esperado:** aviso verde com o número (`LC-000NN`), a linha aparece no topo da lista com
+o valor em **verde e com sinal de mais**, selo **Recebido** — e o cartão **Entrou** sobe
+exatamente R$ 150.000,00.
+
+> O **Saldo** sobe o mesmo tanto. Se não subir, a soma não está vendo o lançamento.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-333 · Lançar uma saída avulsa
+
+1. **Lançar saída**
+2. Descrição `Combustível da frota`, valor `3.200,00`, categoria `Frota`, hoje, já saiu
+3. **Lançar**
+
+**Esperado:** o valor aparece em **vermelho e com sinal de menos**, selo **Pago**; o
+cartão **Saiu** sobe R$ 3.200,00 e o detalhe dele mostra o aumento no lado **avulsas**,
+não no lado **Compras**.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-334 · Previsto não entra no saldo
+
+1. **Lançar entrada**, valor `50.000,00`, data **daqui a 30 dias**
+2. **Desmarque** a caixa *O dinheiro já entrou*
+3. **Lançar**
+
+**Esperado:** selo **A receber**; o cartão **Entrou** **não muda**; o cartão **Se tudo
+acontecer** sobe R$ 50.000,00.
+
+> Este é o caso que separa promessa de dinheiro. Se o Saldo subir, a tela está contando
+> como recebido algo que ninguém recebeu.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-335 · Registrar que o dinheiro andou
+
+1. Na linha do CT-334, abra o menu **⋮** → **Registrar que entrou**
+
+**Esperado:** o selo vira **Recebido**, a coluna Data passa a dizer **aconteceu**, o
+**Entrou** sobe os R$ 50.000,00 e o **Se tudo acontecer** não muda (o dinheiro só mudou
+de lugar).
+
+2. Tente **Registrar que entrou** de novo na mesma linha
+
+**Esperado:** o menu não oferece mais a opção.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-336 · O valor zero é recusado
+
+1. **Lançar saída**, descrição qualquer, valor `0`
+2. **Lançar**
+
+**Esperado:** mensagem *Informe um valor maior que zero* **dentro do formulário**, e nada
+é gravado.
+
+3. Repita com uma descrição de **uma letra**
+
+**Esperado:** recusado também. `x` não diz o que foi o dinheiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-337 · Cancelar não apaga
+
+1. Menu **⋮** de um lançamento → **Cancelar lançamento**
+2. Tente confirmar **sem** escrever motivo
+3. Escreva `Lançado em duplicidade.` e confirme
+
+**Esperado:** sem motivo o botão fica desligado; depois de cancelar, a linha **continua
+na lista**, riscada e cinza, com selo **Cancelado** — e o valor sai das somas dos quatro
+cartões.
+
+4. Filtre **Situação → Canceladas**
+
+**Esperado:** ela está lá. Lançamento é dinheiro: um buraco na numeração não se explica.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-338 · O "Saiu" soma compra E despesa avulsa
+
+Anote o cartão **Saiu** e o detalhe dele. Vá em **Financeiro**, **dê baixa** numa parcela
+e volte.
+
+**Esperado:** o **Saiu** subiu o valor da baixa, e quem subiu no detalhe foi o lado
+**Compras** — nem um centavo foi para o lado **avulsas**.
+
+> Esse é o ponto do Emerson: o financeiro descontava de uma conta que não tinha entrada.
+> Agora as duas origens de saída somam no mesmo saldo, e continuam distinguíveis.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-339 · Da empresa ou da obra
+
+1. Lance uma entrada **sem obra** (deixe *Da empresa*)
+2. Filtre **Obra → OB-001**
+
+**Esperado:** o lançamento da empresa **não aparece**, e o saldo passa a ser só daquela
+obra. Na coluna Obra, os lançamentos sem obra dizem **Empresa / não é de obra**, nunca
+célula vazia.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-340 · Quem só enxerga não mexe
+
+1. Entre como **Fundador** (`washington@portoinc.com.br`) e abra **Receitas e despesas**
+2. Entre como **Almoxarife** (`gilson@portoinc.com.br`) e tente abrir
+   `/financeiro/lancamentos`
+
+**Esperado:** o fundador **vê** a lista e o saldo e **não tem** os botões *Lançar
+entrada*, *Lançar saída* nem o menu **⋮**; o almoxarife é barrado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-341 · O fluxo de caixa mostra entrada
+
+1. Menu **Financeiro** → olhe o gráfico de doze meses
+2. Compare com o mês em que você lançou a entrada do CT-332
+
+**Esperado:** o mês tem **entrada**, e não apenas as barras de saída. A despesa avulsa do
+CT-333 soma na barra **Pago** do mês, junto com as parcelas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-342 · Receitas e despesas no celular
+
+1. Abra a tela em modo celular (**Ctrl+Shift+M**)
+2. Abra o formulário de lançar
+
+**Esperado:** os quatro cartões empilham sem sobrar vazio dentro de nenhum; a tabela rola
+para o lado sem levar a página; o formulário cabe na tela e o teclado numérico abre no
+campo de valor.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-343 · O código de barras continua inteiro depois da saída da GS1
+
+A GS1 era o serviço pago que responderia "que produto é este?". **O código de barras não
+saiu com ela** — este caso existe para provar isso.
+
+1. **Cadastros → Materiais → Novo**
+2. Preencha e ponha em **Código de barras** o valor `7899888400574`
+
+**Esperado:** recusado — o dígito verificador não confere. A conta mudou de arquivo, e
+precisa continuar de pé.
+
+3. Troque para `7899888400575` e salve
+
+**Esperado:** grava normalmente.
+
+4. Cadastre outro item com o **mesmo** código
+
+**Esperado:** recusado — código de barras não se repete.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-344 · Bipar um código desconhecido não promete mais nada de fora
+
+1. Com o item do CT-343 cadastrado, bipe (ou digite) `7899888400575` no campo de busca
+   por código de barras
+2. Depois tente um código que não existe no catálogo: `7891000100103`
+
+**Esperado:** o primeiro **acha** o item. O segundo diz que o código ainda não está no
+catálogo e manda cadastrar — e **não** oferece nenhuma descrição vinda de fora.
+
+> Antes o sistema consultava a base da GS1 e sugeria, por exemplo, *"Encontramos 'Cimento
+> Portland CP-II 50kg' na base externa"*. Essa frase não existe mais. Quem cadastra digita
+> a descrição, como já fazia para todo item sem código de barras.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-345 · O diagnóstico não anuncia mais uma tomada que não existe
+
+1. Entre com a **conta DEV** (`porto@dev.com`) e abra **Status do sistema**
+
+**Esperado:** a lista de integrações mostra **quatro**: WhatsApp, Fiscal (NF-e), Pagamento
+e E-mail. **"Código de barras" não aparece mais.**
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-346 · A barra lateral cabe em seis linhas
+
+1. Entre como **Administrador** (`admin@portoinc.com.br`) — a conta que vê mais coisa
+2. Conte as linhas da barra da esquerda, sem contar o rodapé (tema e senha)
+
+**Esperado:** seis — Início, Relatórios, Compras, Almoxarifado, Financeiro e
+Administração. Um fio separa as duas primeiras das quatro portas.
+
+> Antes eram 18 linhas: quatro títulos de grupo com 14 telas embaixo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-347 · Cada porta abre uma tela com cartões, e os cartões têm número
+
+1. Clique em **Compras**
+
+**Esperado:** quatro cartões **numerados de 1 a 4** (Solicitações, Aprovações, Cotações,
+Pedidos), cada um com uma frase de número embaixo — *"3 esperando você"*, *"Nada parado
+com você"*.
+
+2. Clique em **Almoxarifado**
+
+**Esperado:** três cartões **sem número de ordem**. Receber, estocar e alugar acontecem
+em paralelo — numerar prometeria uma ordem que não existe.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-348 · O número do cartão bate com a tela
+
+1. Em **Compras**, anote o número do cartão **Aprovações**
+2. Entre nele
+
+**Esperado:** o mesmo número. Os dois vêm da mesma conta no servidor; se divergirem, há
+duas contas no sistema — que foi exatamente o defeito corrigido na etapa da tela inicial.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-349 · Porta sem nada dentro não aparece
+
+1. Entre como **Almoxarife** (`gilson@portoinc.com.br`)
+
+**Esperado:** a barra mostra **Início** e **Almoxarifado**, e mais nada. Sem Compras, sem
+Financeiro, sem Administração — uma porta que abre uma tela vazia é pior que porta
+nenhuma.
+
+2. Entre como **Fundador** (`washington@portoinc.com.br`)
+
+**Esperado:** ele vê Financeiro, e dentro dele os cartões — mas sem os botões de lançar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-350 · A migalha e o Voltar passam pela porta
+
+1. Abra **Compras** → **Cotações** → uma cotação → **Equalização**
+2. Olhe a trilha no alto
+
+**Esperado:** `Início › Compras › Cotações › Pacote de cotação › Equalização`. Cada degrau
+clica e funciona.
+
+> Se a trilha pulasse **Compras**, o botão Voltar devolveria a pessoa a um lugar por onde
+> ela não passou.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-351 · Os endereços antigos não quebraram
+
+1. Digite `/cadastros` na barra do navegador
+
+**Esperado:** cai em **Administração**.
+
+2. Digite `/financeiro`
+
+**Esperado:** cai na tela índice do Financeiro — e as contas a pagar agora moram em
+`/financeiro/contas`, que é o primeiro cartão.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-352 · O Início mostra as mesmas portas
+
+1. Abra **Início** e role até **Ir para**
+
+**Esperado:** cinco cartões (Relatórios e as quatro portas), **não** as 14 telas. Os dois
+blocos de cima — *O que precisa de você* e *Como estão as coisas* — continuam iguais, e
+os números deles levam **direto** à tela, sem passar pela porta.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-353 · O menu no celular
+
+1. Abra em modo celular (**Ctrl+Shift+M**) e abra o menu
+
+**Esperado:** as mesmas seis linhas, e os cartões do índice empilhados um por linha, sem
+rolagem lateral.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-354 · O calendário do caixa diz QUANDO
+
+1. **Financeiro → Receitas e despesas**
+2. Olhe o gráfico **O que vem pela frente**
+
+**Esperado:** seis semanas, começando na segunda desta semana. Embaixo de cada uma, o
+saldo projetado até ali. O primeiro saldo é o do cartão **Saldo** menos o que vence
+nesta semana.
+
+3. Toque numa barra
+
+**Esperado:** a dica mostra quanto entra, quanto sai e o saldo no fim daquela semana.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-355 · O gráfico avisa quando o caixa fura
+
+1. Lance uma **saída prevista** maior que o saldo atual, para daqui a uns dias
+2. Volte à tela
+
+**Esperado:** um aviso amarelo **acima** do gráfico — *"O caixa não fecha em alguma
+semana"* — e o saldo daquela semana em vermelho.
+
+> É a razão de o gráfico existir: o cartão "Se tudo acontecer" mostraria só o saldo
+> final e esconderia o furo no meio do caminho.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-356 · O que já venceu cai na primeira semana
+
+1. Em **Contas a pagar**, confira que há parcela vencida
+2. Volte a **Receitas e despesas** e olhe a primeira barra de saída
+
+**Esperado:** o valor vencido está ali. Deixar de fora faria o caixa parecer mais folgado
+do que é — a parcela atrasada continua tendo de ser paga.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-357 · As duas roscas usam a categoria
+
+1. Lance duas saídas **já pagas** com categorias diferentes — `Frota` e `Taxas`
+2. Olhe **Para onde vai o que não é compra**
+
+**Esperado:** duas fatias, com valor e percentual, somando o que está no meio da rosca.
+
+3. Lance uma saída **prevista** de valor alto, com categoria `Canteiro`
+
+**Esperado:** ela **NÃO** entra na rosca. Só o que já aconteceu conta — senão o gráfico
+diria que a empresa gasta com canteiro um dinheiro que ainda nem saiu.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-358 · Baixar respeita o filtro
+
+1. Filtre **Tipo → Só saídas**
+2. **Baixar lançamentos → PDF**
+
+**Esperado:** o arquivo traz **só as saídas**. No alto dele: quantos lançamentos, quanto
+entrou, quanto saiu, o saldo — e a nota dizendo que as compras não estão ali.
+
+3. Repita em **Word**
+
+**Esperado:** mesmo conteúdo. **Não existe opção de CSV** em lugar nenhum.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-359 · O total da página, e o que ele NÃO é
+
+1. Olhe a linha acima da tabela, à direita
+
+**Esperado:** *"Nesta página: + R$ ... − R$ ..."*, com o sinal e a cor.
+
+2. Compare com o cartão **Entrou**
+
+**Esperado:** se houver mais de uma página, os números são **diferentes**, e está certo:
+o da tabela é da página (e o rótulo diz isso), o do cartão é de tudo.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-360 · Os gráficos no tema escuro e no celular
+
+1. Troque para o **tema escuro**
+2. Depois abra em modo celular (**Ctrl+Shift+M**)
+
+**Esperado:** no escuro, as cores das fatias continuam distinguíveis e a legenda legível.
+No celular, as duas roscas **empilham** e nenhum cartão fica com vazio no alto.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-361 · O valor gigante continua numa linha só
+
+1. Lance uma saída de **R$ 20.000.000,00**, já paga
+2. Olhe os quatro cartões do alto
+
+**Esperado:** `-R$ 19.705.971,70` aparece **inteiro, numa linha só**, em letra menor. O
+sinal de menos **nunca** fica sozinho numa linha.
+
+3. Olhe o miolo da rosca **Para onde vai**
+
+**Esperado:** o valor cabe dentro do anel, sem encostar.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-362 · Fatia pequena não vira "0%"
+
+1. Com o lançamento de R$ 20 milhões acima, olhe a legenda da rosca
+
+**Esperado:** as fatias pequenas leem **`<1%`**, nunca `0%` — elas existem, só são
+pequenas ao lado de uma gigante.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-363 · O aviso do caixa diz a verdade sobre o momento
+
+1. Com o saldo **já negativo**, olhe o aviso acima do gráfico
+
+**Esperado:** *"O caixa já está negativo"*.
+
+2. Apague o lançamento gigante (cancele) e crie uma **saída prevista** maior que o saldo,
+   para daqui a duas semanas
+
+**Esperado:** o aviso muda para *"O caixa não fecha em alguma semana"*. São situações
+diferentes: numa há tempo de reagir, na outra o buraco é agora.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-364 · A tela ensina a usar a categoria
+
+1. Lance uma saída alta **sem preencher Categoria**
+
+**Esperado:** embaixo dos gráficos aparece um aviso com o valor sem categoria,
+explicando que o agrupamento sai desse campo e que dá para corrigir pelo menu da linha.
+
+2. Corrija o lançamento preenchendo a categoria
+
+**Esperado:** o aviso some e a fatia passa a ter nome.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-365 · Relatórios logo abaixo do Financeiro
+
+1. Entre como **Administrador** e conte a barra
+
+**Esperado:** Início, um fio, e então Compras, Almoxarifado, Financeiro, **Relatórios** e
+Administração. O fio aparece **uma vez só**, acima do primeiro destino.
+
+2. **Financeiro** → olhe os cartões
+
+**Esperado:** três — Contas a pagar, Notas fiscais e Lançar receita ou despesa.
+Relatórios **não** é cartão daqui.
+
+3. Entre como **Engenheiro** (`engenheiro@portoinc.com.br`) e olhe a barra
+
+**Esperado:** ele **não** vê Financeiro, **vê Relatórios**, e o fio desceu para o primeiro
+destino que ele enxerga. Se os relatórios morassem dentro do Financeiro, ele teria
+perdido o acesso.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-366 · O histórico diz quem mexeu no dinheiro
+
+1. **Financeiro → Receitas e despesas**
+2. Menu **⋮** de um lançamento → **Corrigir** → mude **só o valor** → salve
+3. Menu **⋮** → **Ver histórico**
+
+**Esperado:** uma linha com a data, o seu nome e *"Valor: R$ X → R$ Y"*. **Só o valor** —
+os campos que você não mexeu não aparecem.
+
+4. Corrija de novo mandando o **mesmo** valor
+
+**Esperado:** nenhuma linha nova. Trilha cheia de linha sem novidade é trilha que ninguém
+lê.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-367 · Agora dá para apagar um campo opcional
+
+1. Corrija um lançamento: **limpe a Categoria** e salve
+2. Reabra a correção
+
+**Esperado:** a categoria está vazia. Antes, limpar o campo não fazia nada — e sem erro
+nenhum na tela.
+
+3. Corrija de novo mudando **só o valor**
+
+**Esperado:** a forma de pagamento **continua lá**. Mandar só um campo não pode limpar o
+resto do cadastro.
+
+4. Repita em **Cadastros → Fornecedores**, apagando o nome fantasia
+
+**Esperado:** apaga. Vale para o sistema inteiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-368 · Fornecedores responde "em quem dá para confiar"
+
+1. **Relatórios → Fornecedores**
+
+**Esperado:** dois gráficos com perguntas **diferentes** — *Concentração das compras*
+(depender dele é risco?) e *Quem entrega no prazo* (ele entrega?). Antes os dois
+desenhavam o mesmo número.
+
+2. Olhe os percentuais da rosca
+
+**Esperado:** vírgula decimal — **37,8%**, nunca `37.8%`.
+
+3. Olhe as cores das fatias
+
+**Esperado:** nenhuma fatia vermelha. Nome de fornecedor não é estado; vermelho ali
+acusaria quem não fez nada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-369 · Um botão azul por tela
+
+1. Abra uma **Equalização** com itens escolhidos
+
+**Esperado:** só **"Gerar pedidos de compra"** está azul. *Salvar escolhas* e *Reabrir e
+avisar os fornecedores* ficaram com a borda, não com o preenchimento.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-370 · O rodapé do indicador no celular
+
+1. Abra **Cotações** em modo celular (**Ctrl+Shift+M**)
+
+**Esperado:** a frase embaixo de cada número fica **colada nele**, e não no fim do cartão.
+No computador ela continua no pé, alinhada com as vizinhas da fileira.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-371 · O negativo tem o sinal antes do R$
+
+1. **Financeiro → Receitas e despesas**
+2. Lance uma **saída** maior que tudo o que entrou (ex.: R$ 20.000.000,00)
+3. Olhe o cartão de saldo na tela
+4. **Baixar → PDF**, e abra o arquivo
+
+**Esperado:** nos **dois** lugares o saldo aparece como **`-R$ 19.701.951,70`**, com o
+menos **antes** do R$. Antes a tela escrevia `-R$` e o arquivo escrevia `R$ -`: a mesma
+linha, de dois jeitos.
+
+5. Baixe também em **Word**
+
+**Esperado:** igual ao PDF.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-372 · O menos das saídas não é mais uma aspa
+
+1. **Financeiro → Receitas e despesas → Baixar → PDF**
+2. Olhe a coluna **Valor** das linhas de **saída**
+
+**Esperado:** `- R$ 1.500,00`. Antes saía **`" R$ 1.500,00`** — uma aspa no lugar do
+sinal, porque a fonte do PDF não tem o menos matemático e desenhava outra letra sem
+reclamar.
+
+3. Aperte **Ctrl+F** no leitor de PDF e procure `R$ 1.500`
+
+**Esperado:** acha. Duas das funções antigas separavam o R$ com um espaço invisível
+diferente, e a busca não achava aquelas linhas.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-373 · A legenda do relatório de Fornecedores faz sentido
+
+1. **Relatórios → Fornecedores → Baixar → PDF**
+2. Leia a nota embaixo da tabela
+
+**Esperado:** *"Participação marcada com **(!)** passa de 40% das compras da empresa…"*.
+Antes saía *"marcada com **&**"*, o que não quer dizer nada.
+
+3. Compare com o **Word** do mesmo relatório
+
+**Esperado:** o Word mostra o triângulo `⚠` de verdade. É de propósito: o Word guarda
+qualquer caractere, o PDF não.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-374 · Os três formatos de número batem em toda parte
+
+1. Baixe em **PDF** qualquer relatório com dinheiro, quantidade e percentual
+   (**Relatórios → Consumo** serve)
+2. Confira cada coluna
+
+**Esperado:**
+
+| coluna | formato |
+|---|---|
+| dinheiro | `R$ 1.234,57` — sempre **duas** casas, nunca três |
+| quantidade | `1.234,5678` — até quatro casas, e `10` sem casa nenhuma |
+| percentual | `4,9%` — **uma** casa sempre, inclusive `5,0%` |
+
+3. Procure um valor com centavo quebrado (um recebimento parcial gera média ponderada)
+
+**Esperado:** `R$ 1.234,57`. Antes, no e-mail do pedido e na saída fiscal, saía
+`R$ 1.234,567`.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-375 · As frases concordam no singular
+
+Em cada passo, o número **1** é o que importa: com 3 qualquer frase passa.
+
+1. **Aprovações** com uma solicitação que vence amanhã
+
+**Esperado:** o selo diz **"Falta 1 dia"** — não "Faltam 1 dia(s)". Com dois dias,
+**"Faltam 2 dias"**.
+
+2. **Locação** com um contrato um dia atrasado
+
+**Esperado:** *"Parada há 1 dia além do combinado"*, e na devolução *"Devolvida com 1 dia
+de atraso, que custou R$ …"* — **custou**, no singular.
+
+3. **Cotações → Nova**, marque **um** item
+
+**Esperado:** *"1 selecionado"*.
+
+4. **Portal do fornecedor**, envie proposta de **um** item
+
+**Esperado:** *"para 1 item."*
+
+5. **Administração → Usuários**, uma função com **uma** permissão e **um** usuário
+
+**Esperado:** *"1 permissão · 1 usuário"*. A palavra "permissões" era fixa: dizia
+"1 permissões".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-376 · As frases do PDF também concordam
+
+1. **Relatórios → Fornecedores → Baixar → PDF**
+2. Ache um fornecedor com **1** pedido e **1** ressalva
+
+**Esperado:** *"R$ … · 1 pedido"* e *"1 ressalva, 0 devoluções"*. Antes: *"1 pedido(s)"*
+e *"1 ressalva(s), 0 devolução(ões)"*.
+
+3. **Relatórios → Onde o processo trava → Baixar → PDF**
+
+**Esperado:** o tempo médio sai com duas casas e concorda — *"4,53 dias, em 3
+concluídas"*. Com uma solicitação concluída: *"em 1 concluída"*.
+
+4. Um relatório com mais de mil de qualquer coisa
+
+**Esperado:** *"1.234 pedidos"*, com o ponto do milhar. A versão antiga concatenava o
+número cru e escrevia "1234".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-377 · A régua pega plural remendado
+
+1. No terminal: `npm run padrao` (dentro de `scripts/`)
+
+**Esperado:** oito regras, todas **ok**, e **Aprovado**.
+
+2. Escreva `' dia(s)'` em qualquer arquivo de `frontend/src` ou `backend/src` e rode de
+   novo
+
+**Esperado:** **PIOROU** na regra *Plural resolvido com "(s)"*, com o nome do arquivo.
+
+3. Apague e rode de novo
+
+**Esperado:** volta ao verde. Se não voltar, a régua está medindo outra coisa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-378 · A equalização escreve o percentual com vírgula
+
+1. **Compras → Cotações**, abra um pacote **encerrado** com duas propostas
+2. Vá para a **Equalização**
+
+**Esperado:** ao lado do preço mais caro, **`+7,8%`** — com vírgula. Antes saía `+7.8%`,
+com o ponto do inglês, três dedos ao lado de `R$ 339,50`.
+
+3. Confira também **Relatórios → Fornecedores**, na barra "Quem entrega no prazo"
+
+**Esperado:** `66,7%`, com vírgula.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-379 · Número na casa dos bilhões
+
+1. **Financeiro → Receitas e despesas → Lançar entrada**
+2. Valor: **1.234.567.890,12**
+3. Olhe os cartões, o gráfico e a tabela
+
+**Esperado:** o número aparece inteiro, sem cortar e sem empurrar a tela para o lado. No
+**eixo do gráfico** ele vira **`R$ 1,2B`** — antes saía `R$ 1000,0M`.
+
+4. Lance uma **saída** maior que tudo o que entrou
+
+**Esperado:** o eixo escreve **`-R$ 20,0M`**, com o menos **antes** do R$. Antes:
+`R$ -20,0M`.
+
+5. Repita em modo celular (**Ctrl+Shift+M**)
+
+**Esperado:** o mesmo, sem rolagem lateral.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-380 · O PDF encolhe o número em vez de quebrar
+
+1. **Relatórios → Fornecedores → Baixar → PDF**
+2. Olhe a coluna **Comprado**
+
+**Esperado:** cada valor numa linha só. Quando o número é grande, a fonte daquela célula
+fica menor — não quebra em duas linhas. A coluna tem 59,3pt, e `R$ 1.894.926,96` não cabia.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-381 · O aviso aparece dentro do formulário
+
+1. **Financeiro → Notas fiscais → Lançar nota**
+2. Clique em **"Lançar nota"** sem preencher nada
+
+**Esperado:** a mensagem *"Escolha o pedido de compra a que esta nota se refere."* aparece
+**dentro do modal**, logo abaixo da descrição. Antes ela nascia atrás do modal, onde
+ninguém via — e a tela parecia não fazer nada.
+
+3. **Almoxarifado → Estoque → Contar**, e registre sem escrever o motivo
+
+**Esperado:** a mensagem da casa, em vermelho — *"Escreva o que a contagem encontrou."* —
+e não o balãozinho cinza do navegador.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-382 · A primeira visita não deixa erro no console
+
+1. Abra o sistema num navegador **que nunca entrou** (janela anônima)
+2. Antes de digitar a senha, abra o console (**F12**)
+
+**Esperado:** nenhum erro vermelho. Antes aparecia `401 /api/autenticacao/renovar` — o
+sistema perguntando se havia sessão guardada e levando um "não" com cara de falha.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-383 · As contagens têm ponto de milhar
+
+1. Qualquer tela que conte coisas acima de mil
+
+**Esperado:** **"1.234 notas"**, e não "1234 notas".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-390 · Criar uma função nova
+
+1. **Administração → Funções → + Nova função**
+2. Código `ENCARREGADO`, nome `Encarregado de obra`
+3. Sem marcar nenhuma caixa, olhe o botão
+
+**Esperado:** **"Criar função" travado.** Função sem permissão é um nome que não abre tela
+nenhuma.
+
+4. Marque **Consultar estoque** e **Abrir solicitação de compra**, e crie
+5. Vá em **Usuários → Novo usuário**
+
+**Esperado:** "Encarregado de obra" está na lista de funções, pronta para ser dada a
+alguém.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-391 · O que não se mexe
+
+1. Em **Funções**, clique em **Ajustar** numa das oito do fluxo de compras
+
+**Esperado:** o aviso *"Esta função veio com o sistema"*, com **código e nome travados**.
+A descrição e as permissões continuam editáveis.
+
+2. Procure a permissão **"Status do sistema"** na lista de caixas
+
+**Esperado:** ela não está lá. Essa tela é só da conta DEV, e o guia promete isso.
+
+3. Tente **Apagar** uma das oito
+
+**Esperado:** recusa. Só as criadas pela empresa se apagam, e só enquanto ninguém as usa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-392 · O sistema não se tranca por fora
+
+1. Em **Funções**, **Ajustar** a função **Administrador**
+2. Desmarque **"Criar e editar usuários"** e **"Gerenciar funções e permissões"**
+3. Salve
+
+**Esperado:** recusa, dizendo que isso deixaria o sistema sem **ninguém** capaz disso.
+
+> Sem essa trava, um clique deixaria a empresa sem quem criasse conta — e a saída seria
+> mexer no banco por fora.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-385 · A senha provisória não abre o sistema
+
+1. **Administração → Usuários → Novo usuário**, crie uma conta qualquer
+2. Saia e entre com o e-mail e a senha que você digitou
+
+**Esperado:** a tela **"Crie a sua senha"**, sem barra lateral e sem menu. Digite qualquer
+endereço na barra (`/estoque`, `/financeiro/contas`): tudo cai de volta nela.
+
+3. Crie a senha e entre de novo com ela
+
+**Esperado:** o sistema abre inteiro.
+
+4. Na tela de Usuários, use **"Redefinir senha"** naquela conta
+
+**Esperado:** ela volta a ser bloqueada no próximo acesso.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-386 · O preço decide quem assina
+
+1. **Compras → Solicitações → Nova solicitação**
+2. Escolha um material que tenha linha de orçamento
+
+**Esperado:** o **valor unitário vem preenchido**, com o preço previsto no orçamento.
+
+3. Apague o valor
+
+**Esperado:** o botão **"Adicionar à lista"** trava, e a frase diz *"Falta o valor unitário
+— é ele que decide quem assina"*.
+
+4. Salve um rascunho sem prazo e abra a solicitação
+
+**Esperado:** antes de qualquer clique, a tela já diz **"Falta uma coisa para enviar"**, e
+o botão de enviar está desabilitado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-387 · O dinheiro que a empresa já tinha
+
+1. **Financeiro → Receitas e despesas → Lançar entrada**
+2. Valor **2.000.000**, descrição "Saldo inicial", e marque **"Este dinheiro a empresa já
+   tinha ao entrar no sistema"**
+
+**Esperado:** o cartão **Entrou** mostra R$ 2.000.000,00 e, embaixo, *"sendo
+R$ 2.000.000,00 de saldo inicial; faturado aqui: R$ 0,00"*. O **Saldo** também é
+R$ 2.000.000,00 — é dinheiro de verdade.
+
+3. Olhe a rosca **"De onde vem o dinheiro"**
+
+**Esperado:** o saldo inicial **não** aparece ali. A rosca responde de onde vem o que a
+empresa **ganhou**, e o centro diz "a empresa faturou".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-388 · Importar catálogo e fornecedores de planilha
+
+1. **Administração → Materiais → Importar planilha**
+2. Copie o modelo da tela, salve como CSV e mande
+
+**Esperado:** o número de materiais importados. Se alguma linha tiver família que não
+existe ou código repetido, a tela diz **qual linha** e importa o resto.
+
+3. Mande o **mesmo arquivo** de novo
+
+**Esperado:** *"já existiam e foram ignorados"*. Não duplica nada.
+
+4. Repita em **Fornecedores**, com um CNPJ inválido de propósito
+
+**Esperado:** a linha do CNPJ errado é recusada com o número dela; as outras entram.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-389 · Voltar um lançamento para previsto
+
+1. **Financeiro → Receitas e despesas**, lance uma entrada com **"O dinheiro já entrou"**
+   marcado
+2. No menu da linha, escolha **"Voltar para previsto"**
+
+**Esperado:** a situação vira **A receber**, e o histórico da linha registra a volta.
+Desfazer não apaga.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-384 · As oito contas entram com a senha da tabela
+
+1. Volte ao topo deste guia, na tabela de contas
+2. Entre com **cada uma** das oito, usando exatamente a senha escrita ali
+3. Saia e entre com a próxima
+
+**Esperado:** as oito entram. Seis usam `Porto@2026`; `admin@portoinc.com.br` e
+`porto@dev.com` usam `admin123`.
+
+> Até 09/10/2026 este guia dizia *"todas usam Porto@2026"*, e o de navegação dizia que as
+> seis contas de papel tinham sido criadas por você, com senha sorteada. As duas frases
+> eram falsas, e custaram meia hora procurando defeito na barra lateral.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 ## CT-33 · Funciona no celular
 
 1. Aperte **F12** para abrir as ferramentas do navegador
@@ -5426,8 +6436,71 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-316 | Abrir a cotação NÃO manda mensagem |  |
 | CT-317 | A confirmação mostra quem vai receber |  |
 | CT-318 | A confirmação do pedido avisa do anexo |  |
+| CT-331 | Onde se cadastra a receita da empresa |  |
+| CT-332 | Lançar uma entrada que já caiu |  |
+| CT-333 | Lançar uma saída avulsa |  |
+| CT-334 | Previsto não entra no saldo |  |
+| CT-335 | Registrar que o dinheiro andou |  |
+| CT-336 | O valor zero é recusado |  |
+| CT-337 | Cancelar não apaga |  |
+| CT-338 | O "Saiu" soma compra E despesa avulsa |  |
+| CT-339 | Da empresa ou da obra |  |
+| CT-340 | Quem só enxerga não mexe |  |
+| CT-341 | O fluxo de caixa mostra entrada |  |
+| CT-342 | Receitas e despesas no celular |  |
+| CT-343 | O código de barras continua inteiro depois da saída da GS1 |  |
+| CT-344 | Bipar desconhecido não promete mais nada de fora |  |
+| CT-345 | O diagnóstico não anuncia tomada que não existe |  |
+| CT-346 | A barra lateral cabe em seis linhas |  |
+| CT-347 | Cada porta abre uma tela com cartões numerados |  |
+| CT-348 | O número do cartão bate com a tela |  |
+| CT-349 | Porta sem nada dentro não aparece |  |
+| CT-350 | A migalha e o Voltar passam pela porta |  |
+| CT-351 | Os endereços antigos não quebraram |  |
+| CT-352 | O Início mostra as mesmas portas |  |
+| CT-353 | O menu no celular |  |
+| CT-354 | O calendário do caixa diz QUANDO |  |
+| CT-355 | O gráfico avisa quando o caixa fura |  |
+| CT-356 | O que já venceu cai na primeira semana |  |
+| CT-357 | As duas roscas usam a categoria |  |
+| CT-358 | Baixar respeita o filtro |  |
+| CT-359 | O total da página, e o que ele NÃO é |  |
+| CT-360 | Os gráficos no tema escuro e no celular |  |
+| CT-361 | O valor gigante continua numa linha só |  |
+| CT-362 | Fatia pequena não vira "0%" |  |
+| CT-363 | O aviso do caixa diz a verdade sobre o momento |  |
+| CT-364 | A tela ensina a usar a categoria |  |
+| CT-365 | Relatórios logo abaixo do Financeiro |  |
+| CT-366 | O histórico diz quem mexeu no dinheiro |  |
+| CT-367 | Agora dá para apagar um campo opcional |  |
+| CT-368 | Fornecedores responde "em quem dá para confiar" |  |
+| CT-369 | Um botão azul por tela |  |
+| CT-370 | O rodapé do indicador no celular |  |
+| CT-371 | O negativo tem o sinal antes do R$ |  |
+| CT-372 | O menos das saídas não é mais uma aspa |  |
+| CT-373 | A legenda do relatório de Fornecedores faz sentido |  |
+| CT-374 | Os três formatos de número batem em toda parte |  |
+| CT-375 | As frases concordam no singular |  |
+| CT-376 | As frases do PDF também concordam |  |
+| CT-377 | A régua pega plural remendado |  |
+| CT-378 | A equalização escreve o percentual com vírgula |  |
+| CT-379 | Número na casa dos bilhões |  |
+| CT-380 | O PDF encolhe o número em vez de quebrar |  |
+| CT-381 | O aviso aparece dentro do formulário |  |
+| CT-382 | A primeira visita não deixa erro no console |  |
+| CT-383 | As contagens têm ponto de milhar |  |
+| CT-384 | As oito contas entram com a senha da tabela |  |
+| CT-385 | A senha provisória não abre o sistema |  |
+| CT-386 | O preço decide quem assina |  |
+| CT-387 | O dinheiro que a empresa já tinha |  |
+| CT-388 | Importar catálogo e fornecedores de planilha |  |
+| CT-389 | Voltar um lançamento para previsto |  |
+| CT-390 | Criar uma função nova |  |
+| CT-391 | O que não se mexe nas funções de fábrica |  |
+| CT-392 | O sistema não se tranca por fora |  |
 
-**Total: 291 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design e responsividade
+**Total: 353 casos** · Etapas cobertas: 0 a 12, mais a Revisão de design, a responsividade
+e as receitas e despesas
 
 ---
 

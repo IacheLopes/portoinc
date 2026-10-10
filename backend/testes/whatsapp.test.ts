@@ -322,6 +322,7 @@ describe('A trava vale em TODOS os caminhos de envio', () => {
       metodo: 'POST', token: solicitante,
       corpo: {
         obraId: obra.corpo.obra.id,
+        dataDesejada: '2026-12-31',
         itens: [{
           materialId: material.corpo.material.id, quantidade: 5, valorEstimado: 10,
           especificacaoTecnica: 'Padrão.',

@@ -18,11 +18,11 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  listarObras, buscarObra, listarMateriais, dinheiro,
-  // Com nome proprio: a tela ja tem um estado chamado quantidade.
-  quantidade as formatarQuantidade,
+  listarObras, buscarObra, listarMateriais,
   type Obra, type LinhaOrcamento, type Material,
 } from '../../servicos/cadastros';
+// Com nome próprio: a tela já tem um estado chamado `quantidade`.
+import { dinheiro, quantidade as formatarQuantidade } from '../../servicos/texto';
 import {
   criarSolicitacao, editarSolicitacao, trocarItens,
   type ItemParaEnviar, type Solicitacao,
@@ -192,12 +192,33 @@ export function NovaSolicitacao({
    */
   const obraSemOrcamento = Boolean(obraId) && orcamentoLido && linhas.length === 0;
 
-  // Quando o item é escolhido, sugerimos a linha de orçamento dele.
+  // Quando o item é escolhido, sugerimos a linha de orçamento dele
+  // — e, junto com ela, o preço previsto no orçamento da obra.
+  //
+  // O PREÇO NÃO É ENFEITE: é ele que decide quem assina. Sem
+  // nenhum valor, o total da solicitação dá R$ 0,00 e a compra cai
+  // na menor faixa de alçada. Na simulação de 09/10/2026 um pedido
+  // de 800 tubos, R$ 25.200, foi para a fila de quem assina até
+  // R$ 2.000 — porque ninguém digitou o preço e o campo era
+  // opcional.
+  //
+  // A empresa já importou o orçamento de planilha; o preço previsto
+  // de cada linha está ali. Usar esse número como ponto de partida
+  // custa nada a quem pede e tira a alçada do escuro. Quem souber o
+  // preço de verdade corrige por cima.
   useEffect(() => {
     if (!materialEscolhido?.codigoLinhaPadrao) return;
 
     const sugerida = linhas.find((l) => l.codigo === materialEscolhido.codigoLinhaPadrao);
-    if (sugerida) setLinhaId(sugerida.id);
+    if (!sugerida) return;
+
+    setLinhaId(sugerida.id);
+
+    if (sugerida.valorUnitarioPrevisto > 0) {
+      setValorEstimado((atual) => (atual ? atual : dinheiroCompleto(
+        sugerida.valorUnitarioPrevisto.toFixed(2).replace('.', ','),
+      )));
+    }
   }, [materialEscolhido, linhas]);
 
   /**
@@ -212,7 +233,16 @@ export function NovaSolicitacao({
   );
 
   /** O item comecado esta completo o bastante para entrar na lista? */
-  const itemComecadoServe = Boolean(materialEscolhido && quantidade && Number(quantidade) > 0);
+  const itemComecadoServe = Boolean(
+    materialEscolhido && quantidade && Number(quantidade) > 0 && lerDinheiro(valorEstimado) !== null,
+  );
+
+  /** O que exatamente falta neste item, em uma frase. */
+  const faltaNoItem = !materialEscolhido
+    ? 'Falta escolher o item e a quantidade. Complete e adicione, ou descarte.'
+    : !quantidade || Number(quantidade) <= 0
+      ? 'Falta a quantidade. Complete e adicione, ou descarte.'
+      : 'Falta o valor unitário — é ele que decide quem assina. Complete e adicione, ou descarte.';
 
   function descartarItemComecado() {
     setMaterialId('');
@@ -392,7 +422,8 @@ export function NovaSolicitacao({
             valor={dataDesejada}
             aoMudar={setDataDesejada}
             tipo="date"
-            ajuda="Ajuda o comprador a priorizar."
+            obrigatorio
+            ajuda="É este prazo que põe a solicitação na frente da fila de quem aprova."
           />
         </div>
 
@@ -481,7 +512,10 @@ export function NovaSolicitacao({
                 <p>
                   {itemComecadoServe
                     ? 'Ele não será salvo assim. Adicione à lista ou descarte.'
-                    : 'Falta escolher o item e a quantidade. Complete e adicione, ou descarte.'}
+                    : /* A frase nomeia o que falta, em vez de listar tudo o que
+                         o item pede: quem já escolheu o material não precisa
+                         ouvir "falta escolher o item". */
+                      faltaNoItem}
                 </p>
                 <div className="formulario__acoes">
                   <button
@@ -543,7 +577,14 @@ export function NovaSolicitacao({
               modoTeclado="decimal"
               exemplo="R$ 34,00"
               desabilitado={!materialId}
-              ajuda="Serve para calcular quem precisa aprovar."
+              obrigatorio
+              ajuda={
+                <>
+                  <strong>É ele que decide quem assina.</strong> Não precisa ser exato —
+                  é estimativa, a cotação vem depois. Quando o item tem linha de orçamento,
+                  o preço previsto já vem preenchido.
+                </>
+              }
             />
           </div>
 
@@ -579,8 +620,15 @@ export function NovaSolicitacao({
               />
 
               <div className="campo">
+                {/* SEM A ETIQUETA "(opcional)".
+                    Ela contradizia a ajuda logo abaixo, que diz
+                    "obrigatória se for a primeira vez". E para uma
+                    empresa que acabou de mudar da planilha, TODO
+                    material é de primeira compra — o campo é
+                    obrigatório nos primeiros meses inteiros.
+                    Achado na simulação de entrega de 09/10/2026. */}
                 <label className="campo__rotulo" htmlFor="especificacao">
-                  Especificação técnica <span className="campo__opcional">(opcional)</span>
+                  Especificação técnica
                 </label>
                 <textarea
                   id="especificacao"

@@ -87,6 +87,58 @@ async function completarLinhas(
   return resolvido;
 }
 
+/**
+ * Completa o preço estimado a partir da linha de orçamento.
+ *
+ * Irmã de `completarLinhas`, e pelo mesmo motivo: a tela sugere, e
+ * a API tem de sugerir igual, senão os dois caminhos gravam coisas
+ * diferentes.
+ *
+ * Aqui a origem é o orçamento da obra, que a empresa já importou
+ * de planilha: se a linha "09.01.001 — instalações elétricas" tem
+ * R$ 52,90 por rolo previstos, é esse o preço de partida. Quem
+ * digitou um valor manda; esta função só preenche o que ficou em
+ * branco.
+ *
+ * Sem isto, o total da solicitação dava R$ 0,00 e a alçada caía na
+ * faixa mais baixa — um pedido de R$ 25.200 foi parar na fila de
+ * quem assina até R$ 2.000, na simulação de 09/10/2026.
+ */
+async function completarValores(
+  itens: Array<{ materialId: string; linhaOrcamentoId?: string | null; valorEstimado?: number | null }>,
+  linhaSugerida: Map<string, string | null>,
+): Promise<Map<string, number>> {
+  const resolvido = new Map<string, number>();
+
+  const faltando = itens.filter((i) => i.valorEstimado === null || i.valorEstimado === undefined);
+  if (faltando.length === 0) return resolvido;
+
+  const linhas = [
+    ...new Set(
+      faltando
+        .map((i) => i.linhaOrcamentoId ?? linhaSugerida.get(i.materialId) ?? null)
+        .filter((l): l is string => !!l),
+    ),
+  ];
+  if (linhas.length === 0) return resolvido;
+
+  const previstos = await banco.linhaOrcamento.findMany({
+    where: { id: { in: linhas } },
+    select: { id: true, valorUnitarioPrevisto: true },
+  });
+  const porLinha = new Map(previstos.map((l) => [l.id, numero(l.valorUnitarioPrevisto)]));
+
+  for (const item of faltando) {
+    const linha = item.linhaOrcamentoId ?? linhaSugerida.get(item.materialId) ?? null;
+    const previsto = linha ? porLinha.get(linha) : null;
+    if (previsto !== null && previsto !== undefined && previsto > 0) {
+      resolvido.set(item.materialId, previsto);
+    }
+  }
+
+  return resolvido;
+}
+
 const INCLUIR = {
   obra: { select: { id: true, codigo: true, nome: true, cliente: true } },
   solicitante: { select: { id: true, nome: true, email: true } },
@@ -154,6 +206,34 @@ function formatar(s: SolicitacaoCompleta) {
     itens,
     totalEstimado: calcularTotalEstimado(itens),
     podeEditar: podeEditar(s.situacao as Situacao),
+    // ----------------------------------------------------
+    //  O QUE AINDA FALTA, ANTES DO CLIQUE.
+    //
+    //  A mesma conferência que o envio faz, entregue junto com a
+    //  solicitação. Antes ela só existia DEPOIS do clique: a
+    //  pessoa escrevia tudo, clicava em "Enviar para aprovação",
+    //  e só então descobria que faltava a especificação técnica
+    //  ou o prazo.
+    //
+    //  É a regra da casa escrita no DESIGN, Parte 3.2: trava onde
+    //  a pessoa consegue ver o que falta, explica onde ela não
+    //  consegue. Aqui dá para ver — então diga antes.
+    //
+    //  Só faz sentido para rascunho e revisão: em qualquer outra
+    //  situação a solicitação não vai ser enviada mesmo.
+    // ----------------------------------------------------
+    impedimentos: podeEditar(s.situacao as Situacao)
+      ? conferirParaEnvio(
+          itens.map((i) => ({
+            quantidade: i.quantidade,
+            primeiraCompra: i.primeiraCompra,
+            especificacaoTecnica: i.especificacaoTecnica,
+            descricao: i.material.descricao,
+            valorEstimado: i.valorEstimado,
+          })),
+          { dataDesejada: s.dataDesejada },
+        )
+      : [],
     exigeTodas: s.exigeTodas,
     funcoesExigidas: s.funcoesExigidas,
     estadoAprovacao: calcularEstado(
@@ -363,6 +443,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
       });
       const conhecidos = new Set(jaPedidos.map((i) => i.materialId));
       const linhaSugerida = await completarLinhas(dados.data.obraId, dados.data.itens, porId);
+      const valorSugerido = await completarValores(dados.data.itens, linhaSugerida);
 
       const solicitacao = await banco.solicitacao.create({
         data: {
@@ -383,7 +464,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
               descricaoComplementar: item.descricaoComplementar,
               especificacaoTecnica: item.especificacaoTecnica,
               primeiraCompra: !conhecidos.has(item.materialId),
-              valorEstimado: item.valorEstimado ?? null,
+              valorEstimado: item.valorEstimado ?? valorSugerido.get(item.materialId) ?? null,
               ordem: indice + 1,
             })),
           },
@@ -487,6 +568,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
       });
       const conhecidos = new Set(jaPedidos.map((i) => i.materialId));
       const linhaSugerida = await completarLinhas(atual.obraId, dados.data.itens, porId);
+      const valorSugerido = await completarValores(dados.data.itens, linhaSugerida);
 
       await banco.$transaction([
         banco.solicitacaoItem.deleteMany({ where: { solicitacaoId: id } }),
@@ -501,7 +583,7 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
             descricaoComplementar: item.descricaoComplementar,
             especificacaoTecnica: item.especificacaoTecnica,
             primeiraCompra: !conhecidos.has(item.materialId),
-            valorEstimado: item.valorEstimado ?? null,
+            valorEstimado: item.valorEstimado ?? valorSugerido.get(item.materialId) ?? null,
             ordem: indice + 1,
           })),
         }),
@@ -545,7 +627,9 @@ export async function rotasSolicitacoes(app: FastifyInstance) {
           primeiraCompra: i.primeiraCompra,
           especificacaoTecnica: i.especificacaoTecnica,
           descricao: i.material.descricao,
+          valorEstimado: numero(i.valorEstimado),
         })),
+        { dataDesejada: atual.dataDesejada },
       );
 
       if (impedimentos.length > 0) {

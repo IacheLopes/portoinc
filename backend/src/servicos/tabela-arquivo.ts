@@ -21,10 +21,47 @@
 
 import PDFDocument from 'pdfkit';
 import { geradoEm } from './data-br.js';
+import { paraOPdf } from './pdf-texto.js';
 import {
   Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun,
   AlignmentType, BorderStyle, HeadingLevel, PageOrientation, WidthType,
 } from 'docx';
+
+/**
+ * O maior tamanho de fonte em que o texto cabe numa linha só.
+ *
+ * O CABEÇALHO JÁ FAZIA ISSO; a célula, não. E é na célula que mora
+ * o dinheiro.
+ *
+ * Medido em 09/10/2026, na coluna "Valor" do extrato de
+ * lançamentos, que tem 58,4pt úteis:
+ *
+ *    + R$ 1.500,00             50,5pt   cabia
+ *    - R$ 20.000.000,00        68,5pt   embrulhava em duas linhas
+ *    + R$ 1.234.567.890,12     81,6pt   embrulhava
+ *
+ * Ou seja: a partir de R$ 20 milhões o valor quebrava no meio, numa
+ * coluna de dinheiro, no documento que vai para a reunião. A
+ * planilha do próprio fluxo de compras já traz linhas de R$ 1,5
+ * milhão — somando uma obra ou um ano, vinte milhões é plausível.
+ *
+ * Alargar a coluna consertaria UMA tabela. Encolher a fonte
+ * conserta todas, e é o que o cabeçalho já fazia três metros acima.
+ *
+ * O piso de 5,5pt é o mesmo do cabeçalho: abaixo disso ninguém lê,
+ * e aí é melhor deixar embrulhar mesmo.
+ */
+function fonteQueCabe(doc: PDFKit.PDFDocument, texto: string, cabe: number): number {
+  let tamanho = 8;
+  doc.font('Helvetica').fontSize(tamanho);
+
+  while (tamanho > 5.5 && doc.widthOfString(texto) > cabe) {
+    tamanho -= 0.5;
+    doc.fontSize(tamanho);
+  }
+
+  return tamanho;
+}
 
 const MARINHO = '#0f2942';
 const AZUL = '#2f6fed';
@@ -297,8 +334,15 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
       bloco.linhas.forEach((linha, indice) => {
         // Mede antes de desenhar: a célula mais alta define a altura
         // da fileira, senão um texto longo escaparia da zebra.
+        // O tamanho de cada celula ANTES de medir a altura: numero
+        // comprido encolhe em vez de embrulhar, e aí a fileira nao
+        // precisa crescer.
+        const tamanhos = bloco.colunas.map((c, i) => (c.numero
+          ? fonteQueCabe(doc, texto(linha, c.campo), larguras[i] - 10)
+          : 8));
+
         const alturas = bloco.colunas.map((c, i) =>
-          doc.font('Helvetica').fontSize(8)
+          doc.font('Helvetica').fontSize(tamanhos[i])
             .heightOfString(texto(linha, c.campo), { width: larguras[i] - 10 }),
         );
         const altura = Math.max(...alturas, 12) + 10;
@@ -315,7 +359,7 @@ export function gerarPdfDaTabela(t: TabelaParaArquivo): Promise<Buffer> {
         // documento é feito para imprimir e assinar. O traço ficou, e a
         // fileira ganhou o ar que a faixa fingia dar.
         bloco.colunas.forEach((c, i) => {
-          doc.fillColor('#16202b').font('Helvetica').fontSize(8)
+          doc.fillColor('#16202b').font('Helvetica').fontSize(tamanhos[i])
             .text(texto(linha, c.campo), posicoes[i] + 5, y + 5, {
               width: larguras[i] - 10,
               align: c.numero ? 'right' : 'left',
@@ -506,9 +550,12 @@ export async function gerarArquivoDaTabela(
   t: TabelaParaArquivo,
   formato: FormatoArquivo,
 ): Promise<ArquivoPronto> {
+  // O DOCX guarda Unicode e sempre saiu certo; o PDF desenha com
+  // WinAnsi, e o que esta fora dessa tabela virava OUTRA LETRA. Por
+  // isso o saneamento e so deste lado.
   const conteudo = formato === 'docx'
     ? await gerarDocxDaTabela(t)
-    : await gerarPdfDaTabela(t);
+    : await gerarPdfDaTabela(paraOPdf(t));
 
   return { conteudo, tipo: TIPOS[formato], nome: t.arquivo + '.' + formato };
 }

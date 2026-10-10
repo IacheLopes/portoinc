@@ -1,4 +1,4 @@
-<!-- versao: 0.45.0 -->
+<!-- versao: 0.58.0 -->
 
 # 1. Antes de começar
 
@@ -124,17 +124,21 @@ O cursor já começa no campo de e-mail — você pode digitar direto, sem clica
 
 ## Contas para teste
 
-Enquanto o sistema está em desenvolvimento, existem contas prontas com os nomes das pessoas da reunião. Todas usam a mesma senha: **Porto@2026**
+Enquanto o sistema está em desenvolvimento, existem contas prontas com os nomes das pessoas da reunião. **São duas senhas, e a tabela diz qual é a de cada uma.**
 
-| Pessoa | E-mail | Função no sistema |
-|---|---|---|
-| Administrador | admin@portoinc.com.br | Administrador |
-| Washington | washington@portoinc.com.br | Fundador |
-| Andre | andre@portoinc.com.br | Comprador |
-| Bras | bras@portoinc.com.br | Gestor de obra + Solicitante |
-| Gilson | gilson@portoinc.com.br | Almoxarife |
-| Neilma | neilma@portoinc.com.br | Comprador + Solicitante |
-| Engenheiro | engenheiro@portoinc.com.br | Engenheiro |
+| Pessoa | E-mail | Senha | Função no sistema |
+|---|---|---|---|
+| **DEV-Porto** | **porto@dev.com** | **`admin123`** | **Os sete papéis de uma vez** |
+| Administrador | admin@portoinc.com.br | `admin123` | Administrador |
+| Washington | washington@portoinc.com.br | `Porto@2026` | Fundador |
+| Andre | andre@portoinc.com.br | `Porto@2026` | Comprador |
+| Bras | bras@portoinc.com.br | `Porto@2026` | Gestor de obra + Solicitante |
+| Gilson | gilson@portoinc.com.br | `Porto@2026` | Almoxarife |
+| Neilma | neilma@portoinc.com.br | `Porto@2026` | Comprador + Solicitante |
+| Engenheiro | engenheiro@portoinc.com.br | `Porto@2026` | Engenheiro |
+
+> **As duas de cima são a exceção.** Esta página dizia "todas usam a mesma senha" até
+> 09/10/2026, e era falso: a conta do administrador nunca usou `Porto@2026`.
 
 > **Experimente:** entre como **Gilson** e depois como **Administrador**. Você vai ver que o menu da esquerda muda completamente. É assim que o sistema respeita o que cada pessoa faz.
 
@@ -1135,7 +1139,7 @@ Esta é **a tela onde o dinheiro é decidido**. Todos os fornecedores aparecem l
 
 ## Como chegar
 
-Pelo menu **Cotações** → abra a cotação → botão **📊 Equalizar e escolher**.
+Menu **Compras → Cotações** → abra a cotação → botão **📊 Equalizar e escolher**.
 
 > Só aparece para quem tem a permissão de gerenciar cotações (Comprador e Administrador).
 
@@ -1347,7 +1351,7 @@ Se você dividiu a compra entre dois fornecedores, saem **dois pedidos** — cad
 
 ## A tela de Pedidos
 
-Menu **Pedidos**. Mostra número, fornecedor, cotação de origem, quantidade de itens, total, condição de pagamento e situação.
+Menu **Compras → Pedidos**. Mostra número, fornecedor, cotação de origem, quantidade de itens, total, condição de pagamento e situação.
 
 | Situação | Significa |
 |---|---|
@@ -1400,7 +1404,7 @@ O caminhão parou no portão. Esta é a tela que decide se o material entra, e �
 
 ## Como chegar
 
-Menu **Recebimento**. É a tela inicial de quem tem a função de **Almoxarife**.
+Menu **Almoxarifado → Recebimento**. É a tela inicial de quem tem a função de **Almoxarife**.
 
 ## O campo grande no topo
 
@@ -1614,7 +1618,7 @@ O recebimento diz **o que chegou**. O estoque diz **o que existe agora**.
 
 ## Como chegar
 
-Menu **Estoque**. Quem tem `estoque.ver` enxerga — almoxarife, comprador, engenheiro, gestor de obra e fundador. Só quem tem `estoque.movimentar` (almoxarife e administrador) pode dar baixa.
+Menu **Almoxarifado → Estoque**. Quem tem `estoque.ver` enxerga — almoxarife, comprador, engenheiro, gestor de obra e fundador. Só quem tem `estoque.movimentar` (almoxarife e administrador) pode dar baixa.
 
 ## Os quatro cartões
 
@@ -1731,7 +1735,7 @@ A partir daí é o caminho de sempre: enviar → aprovar → cotar → pedido �
 
 # 30. O extrato: por que o saldo está assim
 
-Menu **Estoque** → botão **Ver extrato**.
+Menu **Almoxarifado → Estoque** → botão **Ver extrato**.
 
 Cada linha é um movimento, com número próprio (**MOV-00001**, **MOV-00002**...):
 
@@ -1758,7 +1762,7 @@ O recebimento diz o que chegou. O estoque diz o que existe. A nota fiscal diz **
 
 ## Como chegar
 
-Menu **Financeiro** → botão **Notas fiscais**. Quem tem `financeiro.ver` enxerga (comprador, fundador, administrador); só quem tem `financeiro.gerenciar` lança.
+Menu **Financeiro → Notas fiscais**. Quem tem `financeiro.ver` enxerga (comprador, fundador, administrador); só quem tem `financeiro.gerenciar` lança.
 
 ## Dois caminhos, o mesmo lugar
 
@@ -1889,7 +1893,7 @@ Nota sem pedido vinculado vira **parcela única, à vista**.
 
 ## A tela
 
-Menu **Financeiro**. Ela foi montada para responder cinco perguntas, nesta ordem:
+Menu **Financeiro → Contas a pagar**. Ela foi montada para responder cinco perguntas, nesta ordem:
 
 1. Tenho problema **agora**?
 2. Tenho problema **esta semana**?
@@ -2098,7 +2102,7 @@ Esta é a única etapa em que o sistema fala com o mundo de fora. Por isso ela c
 
 ## Como chegar
 
-Menu **WhatsApp**. Só o **Administrador** entra (permissão `sistema.integracoes`).
+Menu **Administração → Avisos ao fornecedor**. Só o **Administrador** entra (permissão `sistema.integracoes`).
 
 ## O problema que a trava resolve
 
@@ -2693,20 +2697,28 @@ Busca os dados de novo sem recarregar a página. Enquanto trabalha, ele fica esc
 
 ## O que são integrações
 
-Integração é quando nosso sistema conversa com um **serviço de fora**. Serão quatro:
+Integração é quando nosso sistema conversa com um **serviço de fora**. São três:
 
-| Integração | Para que serve | Etapa |
-|---|---|---|
-| **WhatsApp** | Avisar sobre cotações, aprovações e pedidos | 10 |
-| **Fiscal (NF-e)** | Conferir a nota fiscal que o fornecedor emitiu | 13 |
-| **Código de barras** | Descobrir qual produto é, na hora de bipar | 13 |
-| **Pagamento** | Mandar a conta para o financeiro | 13 |
+| Integração | Para que serve |
+|---|---|
+| **WhatsApp** | Avisar sobre cotações, aprovações e pedidos |
+| **Fiscal (NF-e)** | Conferir a nota fiscal que o fornecedor emitiu |
+| **Pagamento** | Mandar a conta para o financeiro |
+
+> **Eram quatro.** A quarta era a **GS1**, que responderia "que produto é este?" ao bipar
+> um código de barras desconhecido. Saiu na reunião de 08/10/2026: é serviço pago por
+> assinatura, e a Porto Inc. não vai assinar.
+>
+> **O código de barras continua no sistema.** O campo, o leitor, o dígito verificador e a
+> busca no catálogo da própria empresa seguem iguais. O que se perdeu foi a sugestão
+> automática de descrição ao bipar um código que ainda não está cadastrado — nesse caso
+> quem cadastra digita a descrição, como já digitava para todo item sem código de barras.
 
 ## Por que elas começam simuladas
 
-Todas dependem de coisas que ainda não temos: contrato com a Meta, certificado digital da empresa, associação à GS1 e contrato com o banco.
+Todas dependem de coisas que ainda não temos: contrato com a Meta, certificado digital da empresa e contrato com o banco.
 
-Em vez de esperar, o sistema já foi construído com as quatro **prontas para receber a integração**.
+Em vez de esperar, o sistema já foi construído com as três **prontas para receber a integração**.
 
 > **Como entender na prática:** imagine uma tomada na parede. A tomada já está instalada. Hoje temos um aparelho de teste ligado nela. Amanhã você tira o de teste e liga o de verdade. A parede não muda.
 
@@ -3588,6 +3600,1095 @@ Quatro provas guardam isso em `testes/acesso.test.ts`.
 
 ---
 
+# 42.9. O financeiro ganhou entrada
+
+O financeiro **só sabia tirar**. Toda saída nascia da nota do fornecedor, virava parcela em
+contas a pagar, e pronto. Entrada nenhuma tinha lugar.
+
+Iache, em 08/10/2026, perguntando onde se cadastra a receita da empresa e as despesas que
+não são automatizadas. Emerson, na reunião do mesmo dia: *"como é que tu fez um
+financeiro que eu não consigo cadastrar receita e despesa? Ele vai descontar de uma conta
+que não tem cadastro de dinheiro de entrada"*.
+
+## Onde fica
+
+Menu **Financeiro → Receitas e despesas**. Também se chega por **Financeiro** →
+botão **Receitas e despesas**.
+
+## O que entra aqui, e o que não entra
+
+| Entra aqui | Continua em contas a pagar |
+|---|---|
+| Medição que o cliente pagou | Compra de material |
+| Aporte dos sócios | Qualquer coisa que veio de nota fiscal |
+| Combustível da frota | |
+| Aluguel do container, diária de máquina | |
+| Taxa de prefeitura, energia do escritório | |
+
+> **Por que a compra não se repete aqui.** Ela já nasce da nota, com fornecedor, pedido e
+> conferência atrás dela. Lançar de novo daria **dois lugares para a mesma dívida**, e um
+> dia eles divergiriam — e aí ninguém sabe qual dos dois acreditar.
+
+## Os quatro cartões
+
+| Cartão | O que responde |
+|---|---|
+| **Saldo** | Quanto a Porto Inc. tem. Entradas recebidas menos tudo que já saiu |
+| **Entrou** | As receitas que caíram. O que falta receber aparece embaixo |
+| **Saiu** | As compras pagas **mais** as despesas avulsas — separadas no detalhe |
+| **Se tudo acontecer** | O saldo de hoje, mais o a receber, menos o a pagar |
+
+O **Saldo** fica verde quando positivo e vermelho quando negativo. Os outros três existem
+para explicá-lo: quem vê um saldo e não entende de onde saiu volta a conferir no papel.
+
+> **O "Saiu" soma duas origens de propósito.** Um número único não diria se o aperto é
+> de compra ou de custo de operação — e são dois assuntos com dois donos. O detalhe do
+> cartão mostra os dois lados.
+
+## Previsto e realizado
+
+Todo lançamento nasce de um dos dois jeitos:
+
+| Situação | Entra no saldo? | Onde aparece |
+|---|---|---|
+| **Previsto** | não | no cartão "se tudo acontecer" |
+| **Realizado** | sim | no "entrou" ou no "saiu" |
+
+Ao lançar, a caixa **O dinheiro já entrou** (ou *já saiu*) vem marcada, porque registrar
+depois do fato é o caso comum. Desmarque para lançar uma previsão — a medição do mês
+que vem, por exemplo.
+
+Quando o dinheiro andar, use **Registrar que entrou** (ou *que saiu*) no menu da linha. A
+data gravada é a de hoje.
+
+## O lançamento não se apaga
+
+Cancelar pede um **motivo**, que fica escrito nas observações. O lançamento continua na
+lista, riscado e cinza.
+
+Lançamento é dinheiro: quem olhar o caixa daqui a um ano precisa ver que aquilo existiu e
+foi cancelado. Um buraco na numeração não se explica sozinho.
+
+> **Cancelado não se corrige.** Pedir correção de um lançamento cancelado devolve erro:
+> lance outro.
+
+## Da empresa ou da obra
+
+O campo **Obra** é opcional, e isso é escolha, não esquecimento. O aporte dos sócios e o
+aluguel do escritório são da **empresa**, não de uma obra. Exigir obra obrigaria a
+inventar uma — e a Porto Inc. acabaria com uma obra chamada "Geral".
+
+Filtrando por obra, o saldo passa a ser **daquela obra**: tanto os lançamentos quanto as
+parcelas de compra que chegaram até ela.
+
+## A categoria é texto livre
+
+Nenhuma lista fixa. A Porto Inc. vai descobrir as categorias dela usando o sistema —
+*Frota*, *Canteiro*, *Taxas*, *Medição de obra*. Lista fixa decidida hoje seria um palpite
+sobre o trabalho de outra pessoa.
+
+## Os três gráficos
+
+Os quatro cartões dizem **quanto**. Os gráficos dizem **quando** e **por quê**.
+
+Nenhum deles repete o painel de Contas a pagar: lá os cinco gráficos olham para a
+compra — a carteira, a pontualidade, para quem se deve, o custo por obra. O dinheiro que
+não nasce de compra era invisível até aqui.
+
+### O que vem pela frente
+
+Seis semanas, começando na segunda-feira desta semana. Barra azul é o que entra, barra
+âmbar é o que sai, e **embaixo de cada semana vem o saldo projetado** até ali — verde
+se sobra, vermelho se falta.
+
+É a pergunta que o cartão "Se tudo acontecer" não responde. Com R$ 96 mil a receber e
+R$ 5 mil a pagar, o saldo final é ótimo — e ainda assim pode faltar dinheiro no dia 17,
+se o que entra só entra no dia 26.
+
+> **Se o caixa furar em alguma semana, um aviso aparece ACIMA do desenho.** Esperar que a
+> pessoa repare no número vermelho embaixo da terceira barra é apostar na atenção dela.
+
+Duas regras que mudam o número, e por isso estão escritas:
+
+| Caso | O que o gráfico faz | Por quê |
+|---|---|---|
+| Parcela que **já venceu** | cai na **primeira** semana | ela continua tendo de ser paga; deixá-la de fora faria o caixa parecer mais folgado |
+| Algo previsto para **depois das 6 semanas** | fica **de fora** | por isso o último saldo daqui não bate com o cartão "Se tudo acontecer", que soma tudo |
+
+As **parcelas de compra entram junto** com as despesas avulsas: do ponto de vista do
+caixa, as duas são dinheiro que vai sair.
+
+### De onde vem o dinheiro · Para onde vai o que não é compra
+
+Duas roscas, lado a lado, somando **o que já aconteceu** — agrupado pela **categoria**
+que você digita ao lançar.
+
+O previsto fica de fora de propósito: um aluguel de R$ 50 mil que ainda nem foi pago
+faria a rosca dizer que a empresa gasta 90% com canteiro, gastando R$ 0 com ele.
+
+> **As cores destes dois gráficos não significam nada**, e isso é de propósito. No resto
+> do sistema vermelho é problema e verde é certo. Aqui as fatias são assuntos, não
+> estados: pintar "Frota" de vermelho diria que há algo errado com a frota, e não há —
+> ela só é a maior fatia. A família de cores é azul-para-roxo, longe do vermelho de
+> alarme e do verde de aprovado.
+
+Da sétima categoria em diante, tudo vira uma fatia **"Outras N"**: seis é quanto a rosca
+mostra antes de virar confete, e a cauda somada continua fechando o total.
+
+## Baixar a lista
+
+Botão **Baixar lançamentos**, em PDF ou Word — nunca CSV.
+
+**O arquivo respeita o filtro da tela.** Filtrou "só saídas"? O papel sai só com as
+saídas. Baixar sempre tudo faria a pessoa descobrir o engano depois de imprimir.
+
+O papel traz, no alto, quantos lançamentos, quanto entrou, quanto saiu e o saldo deles —
+e uma nota dizendo que **as compras não estão ali**, porque quem recebe o arquivo não tem
+como adivinhar isso.
+
+## Quem pode
+
+| | Ver a lista e o saldo | Lançar, corrigir, cancelar |
+|---|---|---|
+| Comprador | sim | sim |
+| Administrador | sim | sim |
+| Fundador | sim | **não** |
+| Almoxarife, engenheiro, solicitante | **não** | não |
+
+É a mesma dupla de permissões do resto do financeiro: `financeiro.ver` e
+`financeiro.gerenciar`.
+
+## O gráfico de fluxo
+
+Antes o gráfico tinha três barras — pago, vencido, a vencer — e **as três eram saída**:
+quem olhava via a construtora só gastando.
+
+Agora **cada mês é um par**: entra à esquerda, sai à direita.
+
+| Barra | O que é |
+|---|---|
+| Esquerda, azul sólido | **Recebido** no mês |
+| Esquerda, azul listrado | **A receber**: prometido e ainda não caído |
+| Direita | **Sai**, empilhado em pago, vencido e a vencer — como sempre foi |
+
+> **Quem conta a direção é a posição, não a cor.** As três cores do gráfico já
+> significam o ESTADO do dinheiro que sai. Pintar a entrada de verde faria o verde dizer
+> duas coisas opostas no mesmo desenho. Por isso a entrada tem a cor que sobrou, fica
+> sempre à esquerda, e a legenda nomeia os dois grupos.
+
+**O número embaixo do mês é o saldo**: `+ R$ 295,6k` em verde quando sobrou, `− R$ 3,0k`
+em vermelho quando faltou. As barras mostram os dois lados; o número diz o resultado.
+
+A **despesa avulsa cai nas mesmas barras da parcela**, e isso não é atalho: do ponto de
+vista do caixa, combustível pago em março e parcela paga em março são a mesma coisa —
+dinheiro que saiu em março. De onde veio o gasto é assunto da lista, não do fluxo.
+
+> **A barra de saída pode virar um fio.** Quando a medição do mês é de R$ 300 mil e as
+> parcelas somam R$ 10 mil, a barra da direita quase some — e isso é o gráfico falando a
+> verdade sobre a proporção. Para ver os números, toque na barra: a dica abre com cada
+> linha, e a tabela logo abaixo do gráfico tem tudo por escrito.
+
+---
+
+# 42.10. A GS1 saiu, o código de barras ficou
+
+A **GS1** é a entidade que mantém o cadastro mundial de códigos de barras. Assinando o
+serviço dela, o sistema poderia perguntar *"que produto é este?"* ao bipar um código que
+ainda não está no catálogo, e já sugerir a descrição.
+
+**Decisão da reunião de 08/10/2026: a Porto Inc. não vai assinar.** É mensalidade para
+uma conveniência, não para uma necessidade.
+
+## O que saiu, e só isso
+
+| | Antes | Agora |
+|---|---|---|
+| Campo **Código de barras** no material | tem | **tem** |
+| Dígito verificador conferido ao salvar | sim | **sim** |
+| Código repetido recusado | sim | **sim** |
+| Bipar e achar no catálogo da Porto Inc. | sim | **sim** |
+| Bipar desconhecido e receber descrição de fora | sim | **não** |
+| Integração listada em Status do sistema | 5 | **4** |
+
+Na prática, muda **uma frase** numa tela: ao bipar um código que não está no catálogo, o
+sistema dizia *"Encontramos 'Cimento Portland CP-II 50kg' na base externa. Deseja
+cadastrar?"*. Agora diz só para cadastrar. Quem cadastra digita a descrição — como já
+digitava para todo item que não tem código de barras, que é a maioria do catálogo de uma
+construtora.
+
+## Onde foi parar a conta do dígito verificador
+
+Ela morava junto da integração, em `integracoes/gtin/porta.ts`, e teria ido embora com a
+pasta. **Mas a conta nunca foi da GS1**: é a regra do próprio código de barras, publicada
+e fixa, e serve para pegar leitura incompleta e dedo errado.
+
+Mudou de casa para `servicos/util.ts`, ao lado das outras validações da casa — CNPJ,
+texto obrigatório, unidades. Os testes dela já moravam lá.
+
+> **Para voltar atrás um dia**, o desenho ajuda: a GS1 era um **adaptador** atrás de uma
+> porta. Religar é recriar a pasta e uma linha no `.env` — nenhuma tela precisa mudar.
+> É a mesma tomada de sempre: hoje não há nada ligada nela, e a parede está intacta.
+
+---
+
+# 42.11. O menu encolheu, e não vai crescer de novo
+
+Emerson, na reunião de 08/10/2026, logo no começo:
+
+> *"Vai tudo ficar meio que encolhido, pra parecer que é pouca coisa — e ele querer
+> colocar mais. Assim, mano, fica coisa demais. É pra dar meio que uma resumida no tanto
+> de aba que tem aí."*
+
+O pedido **não era ter menos telas**. Era o sistema PARECER enxuto, para o cliente querer
+pedir mais.
+
+## O que a medição mostrou antes de mexer
+
+Quem via "coisa demais" era **só o administrador** — que é justamente a conta da
+demonstração:
+
+| Função | Abas que via | Linhas na barra |
+|---|---|---|
+| **Administrador** | **14** | **18** |
+| Fundador | 11 | 15 |
+| Comprador | 10 | 14 |
+| Engenheiro / Gestor de obra | 7 | 11 |
+| Almoxarife | 6 | 9 |
+| **Solicitante** (quem mais usa) | **4** | 7 |
+
+O pedreiro que abre solicitação já via quatro abas.
+
+## A resposta já existia num canto do sistema
+
+O menu listava 14 telas, mas o sistema tem 24. As outras dez já estavam escondidas:
+**Cadastros** era uma linha com cinco telas atrás, **Financeiro** escondia as Notas
+fiscais, **Estoque** escondia o Extrato. Ninguém nunca reclamou disso.
+
+Então o que mudou foi aplicar o mesmo padrão ao menu inteiro.
+
+## A barra agora
+
+```
+  Início
+  ---------------
+  Compras          -> Solicitações, Aprovações, Cotações, Pedidos
+  Almoxarifado     -> Recebimento, Estoque, Locação
+  Financeiro       -> Contas a pagar, Notas fiscais, Receitas e despesas
+  Relatórios       -> tela única, com seis abas
+  Administração   -> os cinco cadastros, Usuários, Avisos
+
+**Os Relatórios ficam na barra, logo abaixo do Financeiro.** Eles não entram em destino
+nenhum, e isso é escolha:
+
+- **não cabem num só** — falam de orçamento, economia, fornecedores, tempos, consumo e
+  estoque parado; enfiar em "Financeiro" diria que o relatório de consumo é assunto de
+  dinheiro
+- **e quem os lê nem sempre abre o financeiro** — o engenheiro e o gestor de obra têm
+  permissão de relatórios e **não** têm a do financeiro. Morando dentro do Financeiro,
+  os dois perderiam os relatórios por completo.
+
+Mas o lugar deles é **perto do dinheiro**, e não no alto da barra. Então: solto, e
+ancorado logo abaixo do Financeiro. Para quem não enxerga o Financeiro, eles caem no
+mesmo lugar relativo — a ordem não muda de pessoa para pessoa.
+```
+
+**Seis linhas, para qualquer pessoa.** As quatro de baixo abrem uma tela com cartões, e
+cada cartão traz o número do que está esperando: *"Aprovações · 3 esperando você"*.
+
+> **O número é o que faz a parada valer.** Sem ele o índice seria um corredor — uma tela
+> a mais entre a pessoa e o trabalho. Com ele, a pessoa decide onde entrar antes de abrir.
+>
+> E ele não custou consulta nova: vem do mesmo `/api/inicio` que já alimentava a tela
+> inicial. **Uma conta, um lugar** — se o índice fizesse a própria, um dia diria 3 onde a
+> outra diz 4.
+
+## A tela de Início acompanhou
+
+O bloco **Ir para** passou de 14 cartões para cinco. Se não tivesse mudado, o menu
+ficaria enxuto e a primeira tela da demonstração continuaria dizendo "isto é enorme" —
+seria trocar o problema de lugar.
+
+Os dois blocos de cima — *O que precisa de você* e *Como estão as coisas* — ficaram
+iguais: são o valor da tela.
+
+## A regra que faz isso durar
+
+> **Tela nova vira cartão num índice que já existe. Índice novo é decisão do dono.**
+
+Com dez telas novas, a barra continua com seis linhas. **E isso está medido, não só
+escrito:** `navegacao.test.ts` falha se alguém criar um quinto destino, e a conversa
+acontece antes do commit em vez de seis meses depois com a barra em onze linhas.
+
+## Dois endereços mudaram
+
+| Antes | Agora |
+|---|---|
+| `/financeiro` (contas a pagar) | `/financeiro/contas` |
+| `/cadastros` (o índice) | `/administracao` |
+
+As telas filhas ficaram onde estavam: `/cadastros/materiais` continua o mesmo. E
+`/cadastros` ainda funciona — leva para o endereço novo.
+
+## O que se perdeu, dito com todas as letras
+
+Quem usa o sistema todo dia passou a dar **dois cliques onde dava um**. Para o
+solicitante, que via quatro abas e não achava nada demais, é perda pura.
+
+A troca foi essa: pior para quem já usa, melhor para quem vai ver e pedir mais. Foi o que
+a reunião pediu, e está escrito aqui para quando alguém perguntar por quê.
+
+Três coisas amortecem: os números do topo do Início continuam levando **direto** à tela;
+a migalha e o botão Voltar mostram o caminho inteiro; e Relatórios ficou solto na barra,
+a um clique.
+
+---
+
+# 42.12. O que um lançamento de R$ 20 milhões quebrou
+
+O dono lançou uma saída de **R$ 20.000.000,00** para testar, e a tela mostrou três
+defeitos de uma vez. Os três valem para o sistema inteiro, não só para esta tela.
+
+## 1. O número grande quebrava em duas linhas
+
+`-R$ 19.705.971,70` tem 17 caracteres e não cabia no cartão. O navegador quebrava
+**depois do sinal** — um traço sozinho na primeira linha e o valor na segunda. Quem bate
+o olho lê um traço.
+
+Dois consertos:
+
+- o valor **nunca quebra** (`white-space: nowrap`)
+- e **encolhe por degraus**, conforme o comprimento
+
+Os cortes foram **medidos**, não chutados:
+
+| Valor | Caracteres | O que acontece |
+|---|---|---|
+| `R$ 305.000,00` | 13 | cabe inteiro |
+| `R$ 1.234.567,89` | 15 | encolhe um degrau |
+| `-R$ 19.705.971,70` | 17 | encolhe dois |
+
+> **O sinal conta**, porque ocupa lugar — era exatamente o caractere que sobrava.
+
+A conta já existia escrita à mão dentro da rosca. Virou **uma regra só**, e cada lugar
+traduz o degrau na unidade dele.
+
+## 2. Fatia que existe dizia "0%"
+
+Com R$ 20 milhões de um lado e R$ 3.240,50 do outro, o arredondamento levava as quatro
+fatias pequenas para **0%** — afirmando que elas não existem.
+
+Agora leem **`<1%`**. Zero de verdade continua `0%`.
+
+## 3. "Lancei e não apareceu no gráfico"
+
+Apareceu: como **Sem categoria**, 100% do bolo. E foi por isso que não pareceu aparecer —
+a rosca virou um círculo de uma cor só e as outras fatias sumiram.
+
+**O gráfico estava certo e o aviso faltava.** Quando "Sem categoria" passa de 20% do
+gasto, a tela diz o valor e explica que o agrupamento sai do campo **Categoria** do
+lançamento, e que dá para corrigir pelo menu da linha.
+
+## E as explicações dos quatro cartões encolheram
+
+Com os quatro "?" abertos, a fileira ficava esfarrapada — os textos tinham 3, 4 e 5
+linhas.
+
+**Não se consertou esticando os cartões.** Isso já foi tentado em 05/10 e produziu vazio
+dentro da caixa, que é pior. Quem se igualou foi o **texto**: as quatro explicações
+viraram duas frases curtas, do mesmo tamanho. A caixa segue a regra de sempre; o que
+mudou foi a escrita.
+
+---
+
+# 42.13. As oito pendências, conferidas contra o documento de origem
+
+Havia oito perguntas em aberto. O dono mandou conferir cada uma contra o **PDF do fluxo de
+compras**, as **anotações do Iache** e a **transcrição da reunião de 08/10/2026**, em vez
+de decidir no achismo. Três se fecharam só com a leitura.
+
+## Fechadas pelo documento, sem código
+
+**Baixa em conta a pagar é da Neilma ou do Andre?** O BPMN responde: na tabela de papéis,
+*"Comprador | Monta BID, cotação, equalização, pedido, **contas a pagar** | Neilma"*. O
+Andre aparece como *"(Admin/Financeiro) — **não está no BPMN**, mas aparece na reunião"*,
+e o que ele faz hoje é controlar a planilha que este sistema veio substituir.
+
+O sistema já está assim: quem tem `financeiro.gerenciar` é o **Comprador** e o
+**Administrador**. Se o Andre precisar entrar, ele recebe uma dessas funções — é cadastro,
+não código. **Nada a fazer.**
+
+**O comprador precisa ver desempenho do fornecedor na hora de convidar?** O BPMN diz que o
+convite sai *"para fornecedores da família correspondente"*. Nem o PDF nem as anotações
+pedem nota de fornecedor nesse momento. Somado à verificação de 05/10 — que mostrou que
+nenhuma rota de cotação lê desempenho, e que na escala da empresa "últimas 10 entregas" é
+a vida inteira —, **fica fora**. Volta quando algum fornecedor passar de ~15 entregas.
+
+**Comparativo de período nos relatórios.** Não está em documento nenhum, e sem histórico
+real compara ruído com ruído. **Fica fora.**
+
+## Resolvidas com código
+
+### O relatório de Fornecedores passou a responder a própria pergunta
+
+A aba se chama **"Em quem dá para confiar?"** e tinha dois gráficos desenhando **o mesmo
+número**: a rosca repartia `valorComprado` e a barra ao lado mostrava `valorComprado`.
+Comprar muito de alguém não diz se ele entrega.
+
+O dado para responder já era calculado — `pontualidade`, do prazo prometido na cotação
+contra o dia em que o caminhão chegou. Só não estava desenhado.
+
+| Gráfico | Pergunta |
+|---|---|
+| **Concentração das compras** (rosca) | depender dele é risco? |
+| **Quem entrega no prazo** (barras) | ele entrega? |
+
+> **Só entra quem JÁ ENTREGOU.** Pontualidade de quem nunca entregou não é zero, é
+> desconhecida — e uma barra vazia ao lado do nome acusaria o inocente. Quem foi
+> convidado e nunca vendeu continua na tabela, com a leitura explicando.
+
+### Um campo opcional agora dá para apagar
+
+Preencheu errado o nome fantasia, a inscrição estadual ou a categoria de um lançamento?
+Limpar o campo e salvar **não fazia nada**, sem erro nenhum na tela.
+
+A causa: ausente, vazio e nulo viravam todos `undefined`, e `undefined` diz ao banco "não
+mexa neste campo". Agora:
+
+| O que a tela manda | O que acontece |
+|---|---|
+| campo ausente | o banco não toca |
+| campo **em branco** | **apaga** |
+| campo com texto | grava o texto |
+
+Vale para as 67 chamadas do sistema.
+
+### Quem mexeu no dinheiro fica registrado
+
+O plano de arquitetura do projeto pede auditoria de *"toda aprovação, alteração de preço e
+movimento de estoque"*. A solicitação tinha a trilha dela; o dinheiro lançado à mão, não
+— dava para trocar uma entrada de R$ 100 mil por uma saída de R$ 100 mil, mexer R$ 200
+mil no saldo, e não sobrar nem quem fez nem o que havia antes.
+
+Menu **⋮** da linha → **Ver histórico**. Cada evento traz a data, quem fez e o quê:
+
+```
+  08/10/2026   Valor: R$ 96.500,00 -> R$ 99.999,00 ·
+  Neilma       Categoria: Medicao de obra -> Medicao revisada
+```
+
+> **Só o que mudou de verdade entra.** Uma correção que trocou só o valor não anota sete
+> campos iguais: trilha cheia de linha sem novidade é trilha que ninguém lê, e trilha que
+> ninguém lê não audita nada.
+
+> **A trilha nunca derruba o trabalho.** Se o registro falhar, o lançamento já aconteceu —
+> devolver erro faria a pessoa repetir uma operação que deu certo, e duplicar dinheiro é
+> pior que perder uma linha de log.
+
+### Um botão azul por tela, na Equalização
+
+Eram três — *Salvar escolhas*, *Gerar pedidos de compra* e *Reabrir e avisar os
+fornecedores*. Três chamadas principais não chamam nada.
+
+No fluxo da Porto Inc., o passo da equalização termina em **pedido**. Guardar escolhas
+preserva o trabalho e não avança o processo; reabrir anda para **trás**. O azul ficou com
+"Gerar pedidos de compra".
+
+### O rodapé do indicador, no celular
+
+O `margin-top: auto` existe para os cartões de uma fileira terminarem na mesma linha. Com
+uma coluna só ele não alinha nada — só empurra: a frase descia até 61px abaixo do número
+que ela explica. Agora só vale acima de 640px.
+
+## E dois defeitos que apareceram no caminho
+
+**O relatório escrevia "37.8%".** Juntar número com texto em JavaScript usa o ponto. Numa
+tela que escreve "R$ 3.000,00" três dedos ao lado, dois separadores decimais conviviam —
+e o errado é o que ninguém questiona, porque parece só um número.
+
+**"Bandeirantes Elétrica" saía em vermelho** num gráfico chamado "Concentração das
+compras". Nome de fornecedor não é estado: a rosca usava as cores de significado e a
+quarta da fila era `erro`. Passou a usar a paleta sem significado.
+
+---
+
+# 42.14. Onze cópias da mesma função, e o que elas escondiam
+
+Havia **onze** funções diferentes no backend para escrever dinheiro, uma por arquivo,
+todas com o mesmo corpo copiado à mão. Mais cinco para quantidade e duas para
+percentual. Dezoito no total, para três formatos.
+
+A décima do dinheiro é a prova de que o problema não é desatenção: eu a escrevi neste
+mesmo dia, em `rotas/lancamentos.ts`, **minutos depois de juntar três outras** — e no
+arquivo que já importava a oficial, logo acima. Quando a cópia se chama `dinheiro(v)`,
+ela parece local; e o que parece local ninguém procura em outro lugar.
+
+Agora são três, todas em `servicos/util.ts`: `reaisBr`, `quantidadeBr`, `porcentoBr`.
+As 83 chamadas passaram a usar o nome oficial em vez de um apelido por arquivo, de
+propósito — procurar `reaisBr` no projeto agora acha **todo** lugar que escreve
+dinheiro.
+
+## O que as cópias escondiam
+
+**Duas arredondavam diferente das outras nove.** As de `servicos/envio-pedido.ts` e
+`servicos/fiscal.ts` pediam o mínimo de duas casas decimais e esqueciam o máximo — e o
+JavaScript, sem máximo, mostra até três. Um preço de média ponderada, que é o que sai
+de um recebimento parcial, saía assim:
+
+| | antes | agora |
+|---|---|---|
+| e-mail que vai ao fornecedor | `R$ 1.234,567` | `R$ 1.234,57` |
+| saída fiscal | `R$ 1.234,567` | `R$ 1.234,57` |
+
+**Duas separavam o R$ do número com um espaço diferente.** As que usavam
+`style: 'currency'` devolvem espaço **não separável** — outro byte, idêntico na tela.
+Quem apertasse Ctrl+F num PDF e digitasse "R$ 1.800" com espaço comum não achava
+aquelas linhas. Na tela o não separável é o certo, porque impede o "R$" de quebrar
+para longe do número; em arquivo é o errado. O backend escreve arquivo, então ficou com
+o espaço comum, e a tela continua com o outro — a diferença agora está escrita no
+código, para ninguém "consertar" um nos moldes do outro.
+
+**E o sinal do negativo estava do lado errado.** Este só apareceu porque consolidar
+obrigou a escrever o primeiro teste que a função teve em toda a vida:
+
+| | antes | agora |
+|---|---|---|
+| Saldo livre de orçamento estourado | `R$ -1.234,56` | `-R$ 1.234,56` |
+| Saldo destes lançamentos | `R$ -19.701.951,70` | `-R$ 19.701.951,70` |
+| Economia de cotação que fechou acima | `R$ -800,00` | `-R$ 800,00` |
+
+A tela sempre escreveu `-R$`, porque usa `Intl`. A mesma linha de caixa saía de um jeito
+na tabela e de outro no PDF da tabela.
+
+> **Negativo que, escrito, é zero não é negativo.** Subtrair dois valores de dois
+> decimais devolve `-4,5e-13` com frequência, e `-R$ 0,00` não quer dizer nada para quem
+> lê. A função arredonda o módulo primeiro e decide o sinal depois — o que também mantém
+> o meio centavo simétrico nos dois lados, porque `Math.round(-0.5)` no JavaScript
+> devolve `-0`.
+
+## A régua passou a olhar o backend
+
+`npm run padrao` conferia sete regras, todas no frontend. Seis falam de tela — cartão,
+cabeçalho, estado de lista, cor, espaçamento — e não fazem sentido numa rota. **A de
+formatação faz**, e foi ligada: a varredura agora inclui `backend/src`, com
+`servicos/util.ts` e `servicos/data-br.ts` como as duas casas oficiais.
+
+A régua do frontend pegou a cópia que eu fiz do `porcento` neste mesmo dia, em minutos.
+A do backend não existia — e por isso a décima cópia do dinheiro passou.
+
+> **Juntar primeiro, ligar depois.** Ligar a varredura antes de consolidar deixaria a
+> régua vermelha com 18 achados, e régua que vive vermelha é régua que todo mundo
+> aprende a ignorar.
+
+Provada nos dois sentidos: com uma cópia plantada de propósito em `rotas/estoque.ts` ela
+acusou e nomeou o arquivo; desfeita a plantação, voltou ao verde.
+
+---
+
+# 42.15. Dois caracteres que o PDF desenhava errado, em silêncio
+
+Achado baixando os arquivos para conferir o dinheiro com o olho, depois da consolidação.
+
+Os PDFs do sistema usam as fontes padrão do PDFKit (Helvetica), que não precisam de
+arquivo externo — é o que mantém o contêiner dentro de 1 GB. Essas fontes falam
+**WinAnsiEncoding**, uma tabela de 256 posições. **O que está fora dela não dá erro: dá
+outra letra.**
+
+| no código | no PDF | onde aparecia |
+|---|---|---|
+| `− R$ 1.500,00` (menos matemático) | `" R$ 1.500,00` | **toda saída** do caixa |
+| `marcada com ⚠` | `marcada com &` | legenda do relatório de Fornecedores |
+
+O PDFKit escreve o byte **alto** do código do caractere: `0x2212` vira `0x22`, que em
+WinAnsi é a aspa; `0x26A0` vira `0x26`, o "e" comercial. Sem aviso, sem registro, sem
+teste vermelho — só a frase errada no arquivo que a pessoa baixou.
+
+**O DOCX do mesmo lançamento sempre saiu certo**, porque guarda Unicode. Foi assim que
+ficou provado: o leitor de DOCX engasgou no caractere `U+2212` que o Word recebia
+intacto, enquanto o PDF trazia uma aspa.
+
+A correção mora em `servicos/pdf-texto.ts` e vale **só para o caminho do PDF**: trocar o
+menos no DOCX seria piorar o que já estava bom.
+
+| | vira |
+|---|---|
+| `−` menos matemático | `-` hífen-menos |
+| `⚠` triângulo de aviso | `(!)` |
+| `→` e `←` | `->` e `<-` |
+| qualquer outro fora da tabela | `?` |
+
+> **O `?` é feio de propósito.** Um `?` numa descrição de material faz alguém perguntar,
+> e a pergunta chega até aqui. O glifo errado — que é o que acontecia — não faz ninguém
+> perguntar nada.
+
+O saneamento acontece **uma vez, na porta** de cada gerador, e não em cada chamada de
+texto: os geradores têm dezenas delas, e a que alguém esquecesse seria exatamente a que
+ninguém olha.
+
+## O que NÃO foi mexido, e por quê
+
+O travessão (`—`), as aspas curvas e a bala (`•`) estão entre os 27 tipográficos que o
+WinAnsi tem e o latin1 não. Ao ler o PDF como latin1, eles apareciam como um vão — e eu
+quase "consertei" um caractere que o arquivo sempre desenhou certo. O leitor foi
+corrigido antes da acusação.
+
+E a célula do fornecedor marcado: a coluna *Participação* tem 29,4pt úteis, e
+`100,0% (!)` ocupa 36,9pt, então ela quebra em duas linhas. Medido, e **deixado como
+está**: `100,0% &` — o glifo quebrado de hoje — já ocupava 34,7pt, ou seja a célula já
+quebrava antes da correção. Células quebram por desenho neste gerador, e a fileira cresce
+junto. Alargar a coluna reflui as outras dez da tabela, e isso pede olho numa página
+impressa, não um palpite.
+
+---
+
+# 42.16. "1 parcela(s)" — vinte e seis frases que não concordavam
+
+A regra já estava escrita no sistema, num comentário de
+`backend/src/rotas/relatorios.ts`:
+
+> O "(s)" é a saída preguiçosa de quem não quis contar: sobra escrito no papel que vai
+> para a diretoria, e quando o número é 1 está simplesmente errado. Contar custa três
+> linhas.
+
+Estava escrita, e valia **num lugar só** — a função logo abaixo do comentário. O resto do
+sistema tinha 26 frases com `"(s)"`: doze no backend, sete delas dentro de PDF, e catorze
+na tela.
+
+## A função já existia, e eu fiz a segunda
+
+`backend/src/servicos/inicio.ts` tinha uma `plural()` escrita dentro dele, com dez
+chamadas e com o padrão de frase certo. Eu escrevi uma segunda em `servicos/util.ts` sem
+achar a primeira — exatamente como aconteceu com o dinheiro algumas horas antes, no mesmo
+dia. **Cópia com nome local parece local, e o que parece local ninguém procura em outro
+lugar.**
+
+Hoje há uma, em `servicos/util.ts`, e nenhuma outra.
+
+## A palavra leva a frase inteira
+
+Em português a concordância não para no substantivo: ela contamina o adjetivo e o verbo.
+
+| antes | agora |
+|---|---|
+| `3 item(ns) marcado(s) como disponível estão…` | `3 itens marcados como disponíveis estão…` |
+| `1 item(ns) marcado(s) como disponível estão…` | `1 item marcado como disponível está…` |
+| `1 dia(s) de atraso, que custaram R$ 65,00` | `1 dia de atraso, que custou R$ 65,00` |
+| `1 fornecedor(es) avisado(s)` | `1 fornecedor avisado` |
+| `1 item(ns) não receberam nenhuma cotação` | `1 item não recebeu nenhuma cotação` |
+
+Por isso a função recebe a **frase**, e não só o substantivo:
+
+```
+plural(n, 'dia de atraso, que custou',
+          'dias de atraso, que custaram')
+```
+
+> **Partir isso em pedaços é como nasce "1 itens marcados".** Quem conserta o substantivo
+> e esquece o verbo deixa um defeito de meio caminho, que parece conserto.
+
+## Duas funções, porque há dois formatos de frase
+
+Na tela apareceram dois casos onde escrever o número junto não serve:
+
+**O número está em outro elemento.** `<strong>{n}</strong> usuários` põe negrito só no
+número. Usar `plural` ali engrossaria a palavra também — mudaria o desenho da tela para
+consertar a gramática.
+
+**O verbo vem antes do número.** *"Falta 1 dia"* e *"Faltam 2 dias"*: o verbo concorda e
+aparece primeiro, onde `plural` não alcança.
+
+Para esses dois, `palavra(n, um, muitos)` devolve só a palavra. Fora deles, `plural`, que
+resolve com uma chamada.
+
+## O número agora sai formatado
+
+A versão do backend escreve o número com `quantidadeBr`. A antiga concatenava cru, e
+`1234 + ' pedido(s)'` dava **"1234 pedidos"**, sem o ponto do milhar, dentro de um PDF.
+E o único chamador que passa média — o tempo médio de uma solicitação — ganhou as duas
+casas que ela precisa: `4,53 dias`, e não `5 dias`.
+
+> **O singular segue o número ESCRITO, não o calculado.** Com zero casas, 1,4 sai escrito
+> "1" — e "1 dias" é exatamente o defeito que a função existe para matar.
+
+## E um plural cravado, que a régua não acha
+
+`frontend/src/paginas/admin/Usuarios.tsx` escrevia `<strong>{n}</strong> permissões`, com
+a palavra fixa: com uma permissão a tela dizia **"1 permissões"**. É o mesmo defeito sem
+o `"(s)"` para denunciá-lo — achado por estar na linha de cima de um que tinha.
+
+## A oitava regra da régua
+
+`npm run padrao` passou a conferir plural remendado, nos dois lados.
+
+O regex tem de separar `dia(s)` de `setSituacao(s)` — o segundo é chamada de função com um
+argumento chamado `s`, e existe de verdade em duas telas. O que os separa: substantivo
+português escrito numa frase é minúsculo, identificador de JavaScript que recebe argumento
+é camelCase; e chamada termina em `;` ou `)`, enquanto palavra de frase não.
+
+Comentário e nome de teste ficam de fora: eles **citam** a forma errada de propósito.
+Acusar o comentário que explica a regra seria acusar quem a documentou de não a seguir.
+
+As oito regras passaram, com dívida zero nas oito.
+
+---
+
+# 42.17. A varredura que o Emerson pediu, e o que ela achou
+
+Na reunião de 08/10 o pedido foi literal: *"pede pro Claude testar um por um e ver se está
+funcionando, o que não está funcionando você me diz, corrige, e depois me diz o que ele
+corrigiu."*
+
+Foi o que se fez. **169 verificações**, com o navegador abrindo de verdade, as sete contas
+entrando e o fluxo de compras percorrido de ponta a ponta — da solicitação ao pagamento,
+passando pelo portal do fornecedor. Sem WhatsApp e sem ninguém de fora: a tela de cotação
+tem **"Copiar link"**, que é o caminho que o comprador usa quando o WhatsApp não está no ar.
+
+## O que a varredura confirmou que funciona
+
+| | |
+|---|---|
+| Acesso | 7 contas, 21 rotas proibidas digitadas na barra de endereço — **todas barradas** |
+| Telas | 66 visitas: todas carregam, com título, sem engolir erro de servidor |
+| Formulários | 14 vazios e 4 com dado errado — **nenhum grava calado** |
+| Fluxo de compras | 13 passos, 6 papéis, **ponta a ponta** |
+| Downloads | 8 arquivos, PDF e Word, zero CSV |
+
+E três travas de segurança respondendo como devem: limite de 200 chamadas por minuto,
+**10 tentativas de login por 5 minutos** (força bruta) e **rotação da chave de renovação** —
+a chave usada é revogada, de modo que uma chave roubada denuncia o roubo na segunda vez.
+
+## O percentual que saía com ponto
+
+```
+R$ 339,50  +7.8%
+```
+
+Na **Equalização** — a tela que a anotação do Iache pede nominalmente: *"mostrar onde cada
+fornecedor chegou no preço melhor"*. O backend calcula `7.8` e a tela colava o número no
+texto, e juntar número com texto em JavaScript usa o ponto do inglês. Ao lado de
+`R$ 339,50`, dois separadores decimais na mesma linha.
+
+**E ele passou por tudo:** 1.320 testes, sete regras de padrão, e a correção do mesmo
+defeito feita no dia anterior no relatório de Fornecedores. Passou porque a régua procurava
+formatador **duplicado** (`toLocaleString` repetido), e aqui não havia formatador nenhum.
+
+A régua ganhou uma oitava regra, e ela achou mais três casos na primeira execução:
+
+| onde | saía |
+|---|---|
+| Relatórios → Fornecedores, barra de pontualidade | `66.7%` |
+| O mesmo gráfico, no `aria-label` e no balão de dica | idem |
+| Condição de pagamento, em cotação e no fiscal | `33.33% de entrada` |
+
+O último é o mais sorrateiro: o campo de entrada aceita decimal, então basta o fornecedor
+digitar `33,33` no portal.
+
+> **CSS fica de fora da regra, e não por conveniência:** `style={{ height: 50 + '%' }}`
+> *tem* de usar o ponto, senão o navegador não entende.
+
+## Número grande
+
+O dono não sabe de quanto é o faturamento da Porto Inc., e pediu folga até a casa dos
+bilhões. A planilha "Análise de aprovação" do próprio fluxo de compras já traz linhas de
+**R$ 1.894.926,96** — a escala real é o milhão.
+
+Três coisas estavam no caminho, todas na mesma função, a que escreve o eixo dos gráficos:
+
+| | antes | agora |
+|---|---|---|
+| Bilhão | `R$ 1000,0M` | `R$ 1,0B` |
+| Negativo | `R$ -20,0M` | `-R$ 20,0M` |
+| Separador | trocado à mão | localizado |
+
+E no PDF: a **célula de número agora encolhe a fonte** em vez de quebrar em duas linhas. A
+coluna mais estreita do sistema é a do relatório de Fornecedores, com 59,3pt úteis, onde
+`R$ 1.894.926,96` embrulhava. O cabeçalho já fazia isso desde sempre; a célula, onde mora o
+dinheiro, não.
+
+> **Alargar a coluna consertaria uma tabela. Encolher a fonte conserta todas.**
+
+As quatro telas de dinheiro foram medidas com um bilhão dentro, em 1920, 1440 e 420px:
+nenhuma rola para o lado, nenhum texto estoura.
+
+## O aviso que nascia atrás do modal
+
+Em **Notas fiscais**, clicar em "Lançar nota" com o formulário vazio parecia não fazer
+nada. A mensagem existia — *"Escolha o pedido de compra a que esta nota se refere."* — mas
+nascia **fora** do `<dialog>`, em `y=374`, enquanto o modal cobria de `y=48` a `y=852`.
+Ficava atrás do véu.
+
+Agora mora dentro do formulário enquanto ele está aberto, e fora quando fechado. Nunca nos
+dois lugares: duas cópias com `role="alert"` fazem o leitor de tela anunciar a mensagem
+duas vezes.
+
+## E a casa da formatação ficou uma só
+
+`dinheiro` e `quantidade` moravam em `servicos/cadastros.ts` — um **cliente de API**, com
+dois formatadores pendurados no fim. O resto sempre morou em `servicos/texto.ts`. Vinte e
+três arquivos importavam formatação do lugar errado.
+
+Hoje é uma casa só, e isso destravou um defeito antigo: `plural(1234, 'nota', 'notas')`
+escrevia **"1234 notas"**, sem o ponto do milhar. Só dava para consertar com a função de
+quantidade morando no mesmo arquivo — importar o cliente de API dentro do módulo de texto
+arrastaria código de rede para lá.
+
+---
+
+# 42.18. Os buracos das réguas, e as duas que mentiram
+
+A varredura funcional achou defeito; mas ela também mostrou **onde as réguas não enxergam**,
+e isso é mais caro, porque uma régua cega aprova o que está errado. Quatro buracos foram
+tapados, e cada conserto foi conferido **nos dois sentidos**: a régua passa no que está
+certo, e acusa quando o defeito é plantado de propósito.
+
+## O percentual que nenhuma régua procurava
+
+A régua de padrão caçava formatador **duplicado** — `toLocaleString` escrito à mão ao lado
+da função oficial. Na Equalização não havia formatador nenhum: o número ia colado no texto
+com `+`, e o JavaScript escreve `7.8`. A nona regra procura esse `+` e achou mais três
+casos na primeira execução.
+
+## O limite de 30 segundos que não existia
+
+A régua de telas travou calada por **doze minutos** na tela 38 de 40. O motivo de fora: eu
+editei código do servidor no meio da medição, o servidor reiniciou, e uma promessa nunca
+voltou. O motivo de dentro: a conversa com o navegador **não tinha prazo**. Hoje tem teto
+de 30 segundos, e o navegador fechando derruba o que estava pendurado.
+
+E a foto saiu do caminho da medida: **duas tentativas por foto**, e falhar na foto custa a
+foto, não a medição da tela. Na varredura final isso salvou doze telas.
+
+## A régua que acusou um desenho certo
+
+Em Aprovações, a régua acusou **"dois botões principais ao mesmo tempo"** nas três larguras.
+Os culpados eram dois links **"Analisar"**, um por linha da fila — e o azul ali é
+deliberado: ele diz *"esta espera a sua assinatura"* antes do clique, e a linha que não é
+sua fica branca, com o rótulo "Ver".
+
+Só apareceu agora porque a varredura **encheu a fila**: antes havia uma solicitação, passou
+a haver três.
+
+A regra da casa dizia *"ação de linha de tabela é discreta"*, e estava escrita larga demais:
+descrevia o caso comum como se fosse o único. Hoje a regra tem a exceção escrita — **numa
+fila, cada linha é um próximo passo** — e a exceção tem **condição**, que a régua também
+cobra: se a página tiver botão de criar no cabeçalho, ele volta a competir com as linhas, e
+aí a tela é acusada.
+
+## As duas que mentiram sobre a senha
+
+A régua de telas morreu com `não apareceu .menu__lista em 40s` — mensagem que manda procurar
+defeito na barra lateral. Não era a barra lateral: era a **senha de fábrica embutida na
+régua**, que não serve para a conta que ela usava.
+
+Puxando esse fio, dois documentos estavam errados:
+
+| onde | dizia | é |
+|---|---|---|
+| Guia de teste manual | "todas usam a senha `Porto@2026`" | a conta `admin@` usa **`admin123`** |
+| Guia de navegação | as seis contas de papel "foram criadas por você, só quem criou sabe a senha" | elas **nascem com a instalação**, com `Porto@2026` |
+
+A segunda é a pior: quem lesse o guia concluía que **não dava para entrar como o Andre** —
+e dava, desde sempre. As duas tabelas agora trazem conta, senha e papel, lado a lado, e a
+régua usa a conta DEV por padrão, que é a única que enxerga as 40 telas.
+
+> **A lição:** documento que descreve acesso é **testável**. Enquanto ninguém testa, ele
+> envelhece em silêncio, e quem perde tempo é quem confiou nele.
+
+---
+
+# 42.19. A mudança de casa: o que a simulação de entrega consertou
+
+Em 09/10/2026 o sistema foi **zerado e entregue a uma empresa fictícia**, que entrou por
+onde a Porto Inc. vai entrar: sete contas criadas uma a uma, duas obras, dois
+almoxarifados, duas famílias, quatro materiais, dois fornecedores, três faixas de alçada,
+orçamento por planilha, R$ 2 milhões em caixa e um ciclo completo de compra.
+
+Saíram **16 achados**. Estes são os consertos.
+
+## A senha provisória não abre mais o sistema
+
+O pior de todos, e o mais barato de corrigir. O banco marcava a conta, o servidor mandava
+a marca no login, o frontend declarava o campo no tipo — **e nenhuma tela lia**. As sete
+contas entraram direto no painel com a senha que o administrador tinha digitado.
+
+| | |
+|---|---|
+| Na tela | um terceiro estado: *sem conta* → **precisa criar senha** → *com conta* |
+| No servidor | o porteiro recusa tudo, menos saber quem é, trocar a senha e sair |
+
+A trava fica nos dois lugares porque é a regra escrita da casa: *"permissão verificada no
+servidor — nunca só escondendo botão na tela"*.
+
+E a tela fala a língua do momento: o título é **"Crie a sua senha"**, o campo é **"A senha
+que você recebeu"** (ela não tem uma senha "atual"), e o botão é **"Criar minha senha"**.
+
+## O preço, que decide quem assina
+
+Um pedido de **800 tubos — R$ 25.200** — foi para a fila de quem assina até R$ 2.000. O
+valor unitário era opcional, e sem ele o total dá R$ 0,00, que cai na menor faixa.
+
+Três camadas:
+
+1. o preço vem sozinho **da linha de orçamento** da obra, que a empresa já importou;
+2. quem digita manda sobre o orçamento;
+3. sem preço em lugar nenhum, o envio é recusado.
+
+Junto, o **prazo** virou obrigatório — está na lista de campos obrigatórios da análise do
+fluxo de compras desde o primeiro dia —, cobrado **uma vez** por solicitação, não por item.
+
+## O que falta, antes do clique
+
+A conferência de envio passou a vir **junto com a solicitação**, não só depois de uma
+tentativa recusada. A tela diz *"Faltam 2 coisas para enviar"* com a lista, e o botão
+espera. É a Parte 3.2 do DESIGN: trava onde a pessoa vê o que falta.
+
+## O Almoxarifado Central
+
+A decisão D3 diz "por obra, com um Almoxarifado Central como mais um local". A peça inteira
+existia — coluna opcional de obra, marca `central`, o recebimento já oferecendo "os desta
+obra **ou** os centrais" — e **quem criava o central era a semente**, que não roda em
+produção. A empresa recebia o sistema sem lugar para o que não é de obra nenhuma.
+
+Passou para a migração `0024`, onde nasce com a instalação. As obras seguem com os seus,
+sem mudar nada.
+
+## A instalação, três achados por um arquivo
+
+```
+antes:  migrate deploy && seed && dev
+agora:  migrate deploy && prisma generate && seed-se-vazio && dev
+```
+
+- **`prisma generate`** — o `node_modules` do contêiner é volume anônimo. Um
+  `down -v` o apaga, e ele volta **da imagem**, com o cliente gerado na última construção.
+  Na simulação isso derrubou o Financeiro inteiro com erro 500 na primeira tela que a
+  empresa abriria.
+- **`seed-se-vazio`** — a semente usa `upsert` e rodava a cada subida. Reiniciar a API
+  ressuscitava 8 contas com senha conhecida. Agora só planta em banco sem nenhum usuário.
+  *(Provado ao vivo: antes de reconstruir a imagem, a semente recriou 6 contas; depois,
+  o log diz "O banco já tem 14 usuário(s). Nada foi plantado.")*
+- **`package.json` montado** — o `npm` de dentro anunciava 0.40.0 com o projeto em 0.56.0.
+
+## Fornecedor sem família, e o "já aconteceu" sem volta
+
+Dois avisos que chegavam tarde:
+
+- o cadastro de fornecedor **avisava** que sem família ninguém é convidado a cotar, e
+  deixava salvar assim mesmo. Agora exige, na tela e no servidor.
+- lançamento nascido "já aconteceu" não voltava a ser previsão: a caixa só aparece na
+  criação. Nasceu **"Voltar para previsto"**, e a volta fica no histórico — desfazer não é
+  apagar.
+
+## O dinheiro que a empresa já tinha
+
+A empresa não começa do zero: chega com caixa. O financeiro conhecia dois tipos, e o
+único caminho era lançar o saldo como receita — o que faz o cartão anunciar **"Entrou
+R$ 2.000.000,00"** de um dinheiro que ninguém faturou, e a rosca marcar *Saldo inicial,
+100%*.
+
+> **A proposta era um terceiro tipo, e virou uma marca.** Sete lugares do caixa perguntam
+> `tipo === 'RECEITA'` para somar. Com um tipo novo, cada um esquecido faria o dinheiro
+> **desaparecer** da conta. A marca falha para o lado seguro: o saldo inicial continua
+> sendo entrada, todas as somas seguem certas, e só as leituras que falam de
+> **faturamento** passam a descontá-lo.
+
+Agora o cartão diz: *"Entrou R$ 2.000.000,00 — sendo R$ 2.000.000,00 de saldo inicial;
+faturado aqui: R$ 0,00"*.
+
+## Importar catálogo e fornecedores
+
+Até aqui, **só o orçamento tinha porta**. O formulário de material tem 10 campos e o de
+fornecedor tem 9: uma construtora com 400 materiais e 80 fornecedores digitava quase
+**5.000 campos** para sair da planilha — que é o que o sistema inteiro existe para fazer.
+
+As duas importações novas seguem a forma da de orçamento, e o painel virou **uma peça
+só** para as três: copiá-lo três vezes garantiria três redações diferentes na primeira
+correção, que é a história dos 29 cartões que deram origem ao `Cartao`.
+
+| | |
+|---|---|
+| Materiais | `familia;codigo;descricao;unidade;marca;norma;gtin;ponto_pedido;linha_orcamento` |
+| Fornecedores | `cnpj;razao_social;nome_fantasia;email;whatsapp;cidade;uf;familias` |
+
+A família vai **pelo código** (`ELE/HID`), não pelo nome: nome muda, código é o que a
+empresa já usa na planilha dela. Linha torta não derruba o arquivo — vira um problema com
+o **número da linha**, e o resto entra. Reimportar não duplica.
+
+---
+
+# 42.20. Criar funções: a metade que faltava
+
+A primeira página do fluxo de compras da Porto Inc. traz, como **regra confirmada**:
+
+> *"Um usuário pode acumular mais de uma função, **e as funções devem ser criáveis dentro
+> do sistema**."*
+
+A metade de cima existia desde a Etapa 1 — o Bras acumula Gestor de obra e Solicitante, e
+o que ele enxerga é a soma dos dois. A de baixo não: havia nove funções vindas de migração
+e nenhuma forma de criar a décima. A permissão `funcoes.gerenciar` existia no banco e só
+servia para **ler** a lista.
+
+Achado na análise de coerência de 09/10/2026, e construído em 10/10.
+
+## Onde fica
+
+**Administração → Funções**, e só quem tem `funcoes.gerenciar` enxerga — hoje, só o
+Administrador. Quem não tem nem vê o item na barra.
+
+## O que a tela faz
+
+Criar função sem escolher o que ela pode seria um nome sem conteúdo, então é tudo numa
+coisa só: o nome, o código e as caixas do que ela faz. **Pelo menos uma caixa**, senão o
+botão espera.
+
+As 27 permissões vêm repartidas em sete grupos — Almoxarifado, Cadastros, Compras,
+Financeiro, Locação, Relatórios, Sistema —, porque 27 caixas soltas numa coluna ninguém lê.
+
+| | Nome e código | Permissões | Apagar |
+|---|---|---|---|
+| **As oito do fluxo de compras** | travados | ajustáveis | não |
+| **As que a empresa criar** | ajustáveis | ajustáveis | sim, enquanto ninguém usa |
+
+O nome e o código das oito ficam porque um é citado em documento e o outro em migração.
+**A descrição não**: é frase para gente ler, e reescrevê-la com as palavras da Porto Inc.
+é justamente o que a empresa deve poder fazer.
+
+## Duas coisas fora de alcance, e por quê
+
+**A permissão "Status do sistema" não é oferecida.** Ela abre a tela de diagnóstico, e o
+guia de navegação promete que essa tela *"não aparece para mais ninguém, nem para o
+administrador"*. Numa lista de caixas, a promessa se desfaria com um clique e sem ninguém
+perceber.
+
+**A função DESENVOLVEDOR não se ajusta pela tela.** Mesmo motivo: ela existe para quem
+mantém o sistema.
+
+## E uma trava que vale ouro
+
+O administrador podia, com um clique, tirar `usuarios.gerenciar` da própria função — e a
+partir dali ninguém mais criaria conta, ninguém ajustaria função, e a saída seria mexer no
+banco por fora.
+
+O sistema recusa:
+
+> *"Tirar "Criar e editar usuários" daqui deixaria o sistema sem NINGUÉM capaz disso. Dê
+> esta permissão a outra função — e a alguém — antes."*
+
+A conta pergunta por **gente**, não por função: uma função com a permissão e sem ninguém
+dentro é uma chave trancada na gaveta.
+
+## O Fornecedor saiu
+
+Ele estava na lista de papéis do BPMN e virou função na migração 0001. Mas o fornecedor
+**não entra no sistema**: responde cotação pelo portal, por link com prazo de validade.
+A função nunca foi dada a ninguém, nunca teve permissão, e não é citada em uma linha de
+código.
+
+Com a tela nova no ar, ela passou a ocupar um cartão dizendo *"Ninguém com esta função ·
+Não faz nada"*. Saiu na migração `0026`. Cadastro que não serve para nada ensina quem usa
+a ignorar a tela.
+
+---
+
 # 43. Glossário do fluxo de compras
 
 | Termo | O que significa |
@@ -3811,9 +4912,13 @@ Fora essa, o módulo 1 está fechado e o esqueleto está pronto para receber o m
 Ligar as integrações de verdade e instalar num servidor **não é etapa**: não espera
 código que falte aqui, espera uma decisão da direção — e não há data marcada.
 
-- WhatsApp, nota fiscal, código de barras e banco ligados de verdade
+- WhatsApp, nota fiscal e banco ligados de verdade
 - Sistema instalado no servidor definitivo — é aqui que entra a decisão de **nuvem ou
   servidor na construtora**
 - Treinamento da equipe
 
-> Até lá os quatro adaptadores continuam em `mock`: **nada sai do sistema para fora**.
+> Até lá **nada sai do sistema para fora**, e vale ser exato sobre como isso é garantido:
+> nota fiscal, pagamento e e-mail estão em `mock` — nem tentam falar com fora. O WhatsApp
+> é o único ligado num adaptador real (`baileys`), e quem o segura é outra trava:
+> `WHATSAPP_MODO_TESTE=true` com a **lista de autorizados vazia**, então toda mensagem
+> para numa porta só, antes de sair.

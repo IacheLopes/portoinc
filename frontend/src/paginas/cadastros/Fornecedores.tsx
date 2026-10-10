@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
-  listarFornecedores, listarFamilias, criarFornecedor, UFS,
+  listarFornecedores, listarFamilias, importarFornecedores, criarFornecedor, UFS,
   type Fornecedor, type Familia,
 } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
@@ -17,6 +17,7 @@ import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
+import { PainelDeImportacao } from '../../componentes/PainelDeImportacao';
 import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
 import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
@@ -28,6 +29,11 @@ import { editarFornecedor } from '../../servicos/cadastros';
 import { mascaraCnpj, mascaraTelefone, telefoneParaGuardar, telefoneCompleto } from '../../servicos/mascaras';
 import { sugerirNomeFantasia } from '../../servicos/municipios';
 
+const MODELO_FORNECEDORES =
+  'cnpj;razao_social;nome_fantasia;email;whatsapp;cidade;uf;familias\n' +
+  '19.131.243/0001-97;Eletro Minas LTDA;Eletro Minas;vendas@em.com.br;(31) 98888-7777;Belo Horizonte;MG;ELE\n' +
+  '45.543.915/0001-81;Hidro Center LTDA;Hidro Center;;;Contagem;MG;HID';
+
 export function Fornecedores() {
   const { pode } = useAutenticacao();
   const podeEditar = pode('fornecedores.gerenciar');
@@ -38,6 +44,8 @@ export function Fornecedores() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
+  /** O painel de importar planilha está aberto? */
+  const [importando, setImportando] = useState(false);
   // `null` = cadastrando. Com fornecedor dentro = corrigindo aquele.
   const [editando, setEditando] = useState<Fornecedor | null>(null);
 
@@ -100,16 +108,51 @@ export function Fornecedores() {
           }
           acoes={
             podeEditar && (
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => setAberto(true)}
-              >
-                + Novo fornecedor
-              </button>
+              <>
+                {/* IMPORTAR VEM ANTES DE CRIAR, para quem está
+                    mudando da planilha: 80 fornecedores a dedo são
+                    720 campos. Secundário porque, no dia a dia,
+                    cadastrar um é o comum. */}
+                <button
+                  type="button"
+                  className="botao botao--secundario"
+                  onClick={() => setImportando((x) => !x)}
+                  aria-expanded={importando}
+                >
+                  <Icone nome="anexo" /> Importar planilha
+                </button>
+                <button
+                  type="button"
+                  className="botao botao--principal"
+                  onClick={() => setAberto(true)}
+                >
+                  + Novo fornecedor
+                </button>
+              </>
             )
           }
         />
+
+        {importando && (
+          <PainelDeImportacao
+            titulo="Importar fornecedores de planilha"
+            modelo={MODELO_FORNECEDORES}
+            oQueEntra={{ um: 'fornecedor', muitos: 'fornecedores' }}
+            ajuda={
+              <p>
+                <strong>CNPJ, razão social e as famílias</strong> são obrigatórios. As
+                famílias vão pelo código, separadas por barra — <code>ELE/HID</code>. Sem
+                família o fornecedor nunca é convidado a cotar, então a linha é recusada.
+              </p>
+            }
+            aoImportar={importarFornecedores}
+            aoConcluir={async (mensagem) => {
+              setImportando(false);
+              setAviso(mensagem);
+              await carregar();
+            }}
+          />
+        )}
 
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
@@ -382,7 +425,17 @@ function FormularioFornecedor({
             type="submit"
             form={idForm}
             className="botao botao--principal"
-            disabled={enviando || !razaoSocial || !cnpj}
+            /* A FAMÍLIA ENTRA NA CONTA DO BOTÃO.
+               O aviso embaixo da lista já dizia que sem família
+               ninguém é convidado a cotar — e o botão deixava
+               salvar assim mesmo. Na simulação de 09/10/2026 os
+               dois fornecedores nasceram sem família, e a cotação
+               só travou três telas depois, com "nenhum fornecedor
+               atende as famílias deste pacote".
+               A pessoa VÊ a lista de famílias na frente dela, e
+               pela Parte 3.2 do DESIGN é onde ela vê que se
+               trava. */
+            disabled={enviando || !razaoSocial || !cnpj || selecionadas.length === 0}
           >
             {enviando ? 'Salvando...' : corrigindo ? 'Salvar alterações' : 'Cadastrar fornecedor'}
           </button>
@@ -468,7 +521,8 @@ function FormularioFornecedor({
         <fieldset className="campo">
           <legend className="campo__rotulo">Famílias que este fornecedor atende</legend>
           <p className="campo__ajuda">
-            Sem marcar pelo menos uma, ele nunca será convidado para uma cotação.
+            <strong>Pelo menos uma.</strong> É a família que decide quem é convidado
+            para cada cotação — sem nenhuma, este fornecedor nunca aparece em uma.
           </p>
           <div className="opcoes">
             {familias.map((f) => (

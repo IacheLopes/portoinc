@@ -1,4 +1,4 @@
-<!-- versao: 0.45.0 -->
+<!-- versao: 0.58.0 -->
 
 # Guia de Navegação Simples
 
@@ -57,6 +57,14 @@ Abra **http://localhost:5173** e use uma destas contas:
 |---|---|---|
 | **`porto@dev.com`** | **`admin123`** | **Tem os sete papéis. É esta que você usa** |
 | `admin@portoinc.com.br` | `admin123` | Cuida do sistema |
+| `washington@portoinc.com.br` | `Porto@2026` | Fundador |
+| `andre@portoinc.com.br` | `Porto@2026` | Comprador |
+| `bras@portoinc.com.br` | `Porto@2026` | Gestor de obra **e** Solicitante |
+| `gilson@portoinc.com.br` | `Porto@2026` | Almoxarife |
+| `neilma@portoinc.com.br` | `Porto@2026` | Comprador **e** Solicitante |
+| `engenheiro@portoinc.com.br` | `Porto@2026` | Engenheiro |
+
+> **Repare na senha:** as seis de papel usam `Porto@2026`; as duas de cima, `admin123`.
 
 > **Use a `porto@dev.com` para tudo.** Ela enxerga o sistema inteiro, então nenhum botão
 > some da sua frente no meio de uma demonstração.
@@ -65,19 +73,85 @@ Abra **http://localhost:5173** e use uma destas contas:
 > servidor, estado do banco e quais integrações ainda são simuladas. Ela não aparece para
 > mais ninguém, nem para o administrador, e não abre nem digitando o endereço.
 
-**E as contas de cada papel?** Existem seis — comprador, gestor, engenheiro, fundador,
-almoxarife e solicitante —, mas **elas foram criadas por você**, na tela de Usuários, cada
-uma com uma senha sorteada na hora. **Só quem criou sabe a senha.**
+**Para que servem as seis de papel?** Para **provar permissão**: mostrar que o almoxarife
+realmente não consegue aprovar uma compra, que o solicitante não vê o Financeiro. Elas
+nascem com a instalação, com a senha da tabela acima.
 
-Elas servem para **provar permissão**: mostrar que o almoxarife realmente não consegue
-aprovar uma compra. Se você não tem mais as senhas, entre em **Usuários**, abra a pessoa e
-**gere uma senha nova** — o sistema mostra a senha na tela, uma vez só.
+> Esta parte do guia dizia, até 09/10/2026, que as seis **foram criadas por você** e que
+> "só quem criou sabe a senha". Era mentira: a instalação as planta com `Porto@2026`, e
+> quem lesse isso achava que não conseguia entrar como o Andre.
 
-> Cinco delas ainda estão marcadas para **trocar a senha no primeiro acesso**. Se você
-> entrar com uma e ele pedir senha nova, não está quebrado: é a regra funcionando.
+Se você trocar uma senha e esquecer, entre em **Usuários**, abra a pessoa e **gere uma
+senha nova** — o sistema mostra a senha na tela, uma vez só, para você repassar.
+
+> Há mais cinco contas antigas no banco — `almoxarife@`, `comprador@`, `gestor@`,
+> `fundador@` e `solicitante@` —, de antes de os nomes reais entrarem. Quatro delas estão
+> marcadas para **trocar a senha no primeiro acesso**. Não use nenhuma: use as de nome, da
+> tabela acima.
 
 > **O menu muda conforme quem entrou.** Se um botão não aparece, não está quebrado: é que
 > aquela pessoa não faz aquilo.
+
+## Conta nova cria a própria senha
+
+Quando o administrador cria uma conta, ele digita uma senha de entrada e passa para a
+pessoa. **Essa senha não abre o sistema.**
+
+No primeiro acesso aparece só uma tela: **"Crie a sua senha"**. Sem menu, sem barra
+lateral, e nenhum endereço escapa dela. Depois de criada, o sistema abre inteiro — e quem
+criou a conta não sabe a senha de ninguém.
+
+O mesmo vale quando o administrador usa **"Redefinir senha"** em Usuários: a pessoa volta a
+criar a dela no acesso seguinte.
+
+## Criar uma função nova
+
+As oito funções que vêm com o sistema descrevem o fluxo de compras da Porto Inc. Se a
+empresa precisar de um papel que elas não descrevem — **Encarregado**, **Engenheiro de
+segurança**, **Apontador** —, dá para criar.
+
+**Administração → Funções → + Nova função.** Só o administrador vê essa tela.
+
+Você escolhe o código, o nome e **marca o que a função pode fazer**. Pelo menos uma caixa:
+função sem permissão é um nome que não abre tela nenhuma.
+
+> **As oito de fábrica não mudam de nome nem de código** — um é citado em documento, o
+> outro na instalação. Mas você pode ajustar **o que elas podem** e reescrever a
+> descrição com as palavras da empresa.
+
+> **Apagar só vale para as que você criou**, e só enquanto ninguém está com ela. Função
+> que alguém usou um dia fica: sumir levaria junto a resposta de *"quem assinou isto?"*.
+
+> **O sistema não deixa você se trancar para fora.** Se você tentar tirar "Criar e editar
+> usuários" de todas as funções, ele recusa — senão ninguém mais criaria conta, e a saída
+> seria mexer no banco por fora.
+
+## Mudando da planilha para o sistema
+
+Três coisas entram por planilha, e as três ficam em **Administração**:
+
+| O quê | Onde | Colunas |
+|---|---|---|
+| Orçamento da obra | Obras → abre a obra → **Importar** | `codigo;descricao;unidade;quantidade;valor_unitario` |
+| Materiais | Materiais → **Importar planilha** | `familia;codigo;descricao;unidade;marca;norma;gtin;ponto_pedido;linha_orcamento` |
+| Fornecedores | Fornecedores → **Importar planilha** | `cnpj;razao_social;nome_fantasia;email;whatsapp;cidade;uf;familias` |
+
+No Excel: **Salvar como → CSV**. A primeira linha é o cabeçalho.
+
+> **Linha errada não derruba o arquivo.** O sistema importa o que está certo e diz
+> **qual linha** tem problema, para você corrigir e mandar de novo. Reimportar o mesmo
+> arquivo não duplica nada.
+
+> **A família vai pelo CÓDIGO** (ELE, HID), não pelo nome — e ela precisa existir antes.
+> No fornecedor, várias se separam por barra: `ELE/HID`.
+
+**E o dinheiro que a empresa já tem?** Em **Financeiro → Receitas e despesas → Lançar
+entrada**, marque *"Este dinheiro a empresa já tinha ao entrar no sistema"*. Ele soma no
+saldo e fica de fora do faturamento — a empresa não ganhou esse dinheiro aqui.
+
+**E as dívidas de antes?** Em Receitas e despesas também, como **saída prevista**. Contas
+a pagar só recebe parcela que nasceu de nota fiscal — é o que impede a mesma dívida
+existir em dois lugares.
 
 > **Todo botão azul de criar abre uma janela por cima da tela.** Para fechar: o **X** no
 > canto, a tecla **Esc**, um clique fora, ou **Cancelar**. Se você já tinha digitado algo,
@@ -130,6 +204,46 @@ não faz sentido continuar na 7 — ela pode nem existir nesse filtro.
 
 ---
 
+## 0. Como o menu funciona
+
+**O menu tem seis linhas, e sempre vai ter seis.**
+
+```
+  Início
+  ---------------
+  Compras
+  Almoxarifado
+  Financeiro
+  Relatórios
+  Administração
+```
+
+**Relatórios** é tela, e fica ali de propósito: perto do dinheiro, mas fora dele — ele
+fala de obra, estoque e fornecedor também, e quem o lê nem sempre abre o financeiro.
+
+As outras quatro não são telas: são **portas**. Clicando numa delas você cai numa
+tela com cartões, um para cada coisa que mora ali dentro — e cada cartão já mostra o
+número do que está esperando.
+
+| Porta | O que tem dentro |
+|---|---|
+| **Compras** | Solicitações · Aprovações · Cotações · Pedidos |
+| **Almoxarifado** | Recebimento · Estoque · Locação |
+| **Financeiro** | Contas a pagar · Notas fiscais · Receitas e despesas |
+| **Administração** | Famílias · Materiais · Fornecedores · Obras · Alçadas · Usuários · Avisos |
+
+> **Por que mudou.** O menu listava as 14 telas, e para quem administra isso eram 18
+> linhas. O sistema vai crescer, e cada tela nova era mais uma linha. Agora tela nova
+> vira cartão dentro de uma porta que já existe, e o menu **não cresce**.
+
+> **Você vê só o que pode abrir.** O almoxarife não enxerga a porta do Financeiro. Se
+> uma porta não tem nada que você possa ver, ela nem aparece.
+
+**Atalho:** a tela de **Início** também leva às quatro portas, no bloco **Ir para** lá
+embaixo. E os números do topo do Início levam direto à tela, sem passar pela porta.
+
+---
+
 ## 1. Início
 
 **Essa tela serve para** você saber o que precisa fazer agora.
@@ -155,7 +269,7 @@ até ele.
 - Fazer um pedido novo
 - Filtrar só o que interessa
 
-**Passo:** Clique em **Solicitações** → **+ Nova solicitação** (azul, no canto direito, ao
+**Passo:** **Compras** → **Solicitações** → **+ Nova solicitação** (azul, no canto direito, ao
 lado do título) → escolha a obra → adicione os materiais → **Salvar como rascunho** →
 abra o pedido → **Enviar para aprovação**.
 
@@ -191,7 +305,7 @@ abra o pedido → **Enviar para aprovação**.
 - Ver o que está esperando a sua assinatura
 - Aprovar, devolver para arrumar, ou recusar de vez
 
-**Passo:** Clique em **Aprovações** → **Analisar** → escolha **Aprovar**, **Devolver** ou
+**Passo:** **Compras** → **Aprovações** → **Analisar** → escolha **Aprovar**, **Devolver** ou
 **Reprovar** → confirme.
 
 > **Quem aprova depende do valor:**
@@ -366,7 +480,7 @@ ensinaria o mercado a se alinhar, e a Porto Inc. acabaria pagando mais caro.
 - Baixar o pedido em PDF
 - Mandar de novo por WhatsApp ou e-mail
 
-**Passo:** Clique em **Pedidos** → **Abrir**, na linha do pedido.
+**Passo:** **Compras** → **Pedidos** → **Abrir**, na linha do pedido.
 
 Lá dentro você vê os itens com preço fechado, para quem vai, e o caminho que a compra
 percorreu — a solicitação que pediu e a cotação que escolheu o fornecedor, com os
@@ -387,7 +501,7 @@ números clicáveis. Os botões de enviar e de baixar o PDF ficam no topo.
 - Marcar o que chegou, item por item
 - Dizer se veio certo, com defeito, ou se foi devolvido
 
-**Passo:** Clique em **Recebimento** → **Conferir** → marque as quantidades → preencha a
+**Passo:** **Almoxarifado** → **Recebimento** → **Conferir** → marque as quantidades → preencha a
 nota fiscal → **Registrar recebimento**.
 
 > **Dá para receber só uma parte.** Se chegou metade, marque a metade. O pedido continua
@@ -419,7 +533,7 @@ nota fiscal → **Registrar recebimento**.
 - Tirar material para uma obra
 - Ver o que está acabando
 
-**Passo:** Clique em **Estoque** → ache o material → **Retirar** → diga quanto e para quem.
+**Passo:** **Almoxarifado** → **Estoque** → ache o material → **Retirar** → diga quanto e para quem.
 
 **Outros botões:**
 - **Contar** — você conta o que existe de verdade e o sistema ajusta
@@ -437,7 +551,7 @@ nota fiscal → **Registrar recebimento**.
 - Ver quanto já custou
 - Ver o que passou do prazo de devolução
 
-**Passo:** Clique em **Locação** → **Devolver** quando o equipamento voltar.
+**Passo:** **Almoxarifado** → **Locação** → **Devolver** quando o equipamento voltar.
 
 > **Equipamento parado continua contando diária.** Por isso esta tela mostra o custo do
 > atraso em vermelho: é dinheiro saindo à toa.
@@ -455,7 +569,7 @@ nota fiscal → **Registrar recebimento**.
 - Lançar a nota fiscal do fornecedor
 - Marcar uma conta como paga
 
-**Passo:** Clique em **Financeiro** → role até **Parcelas** → **Dar baixa** na conta que
+**Passo:** **Financeiro** → **Contas a pagar** → role até **Parcelas** → **Dar baixa** na conta que
 foi paga → informe a data e a forma.
 
 **Para lançar uma nota:** **Financeiro** → **Notas fiscais** → **Lançar nota** (ou
@@ -468,11 +582,87 @@ foi paga → informe a data e a forma.
 > **O PDF da nota é um ESPELHO.** Ele não é a nota fiscal, não substitui o DANFE e não
 > tem valor fiscal. O próprio papel avisa isso, em vermelho, logo abaixo do total.
 
-**O gráfico de fluxo de caixa** mostra quanto sai por mês.
+**O gráfico de fluxo de caixa** mostra, mês a mês, quanto **sai** e quanto **entra** — a entrada vem das receitas lançadas em **Receitas e despesas**.
 - As setas **‹** e **›** andam um mês
 - O campo do meio abre um calendário e pula para qualquer mês
 - **Hoje** volta para o mês atual
 - Não dá para ir para o futuro: o mês que vem ainda não aconteceu
+
+---
+
+## 9.1. Receitas e despesas
+
+**Essa tela serve para** cadastrar o dinheiro que entra e o gasto que **não vem de
+compra**.
+
+**Aqui você consegue:**
+- Ver quanto a empresa tem: o **saldo**
+- Lançar uma entrada (medição paga, aporte dos sócios)
+- Lançar uma saída avulsa (combustível, aluguel, taxa, diária de máquina)
+- Marcar que o dinheiro andou
+- Cancelar um lançamento, com motivo
+
+**Passo:** **Financeiro** → **Receitas e despesas** → **Lançar entrada** (ou **Lançar saída**)
+→ preencha descrição, valor e data → **Lançar**.
+
+> **O campo Obra pode ficar vazio.** O aporte dos sócios e o aluguel do escritório são da
+> **empresa**, não de uma obra. Deixe em "Da empresa".
+
+**Os quatro cartões de cima:**
+
+| Cartão | Em uma linha |
+|---|---|
+| **Saldo** | o que a empresa tem agora |
+| **Entrou** | o que já caiu |
+| **Saiu** | compras pagas + despesas avulsas |
+| **Se tudo acontecer** | como termina se cada previsão virar realidade |
+
+**Lançar algo que ainda vai acontecer:** desmarque **O dinheiro já entrou**. Ele fica
+como *A receber* (ou *A pagar*) e **não entra no saldo** — aparece só no cartão "se tudo
+acontecer". Quando o dinheiro andar, abra o menu **⋮** da linha e clique em **Registrar
+que entrou**.
+
+> **Compra de material NÃO se lança aqui.** Ela nasce da nota fiscal, em **Financeiro**.
+> Lançar nos dois lugares daria duas dívidas para a mesma compra.
+
+> **Cancelar não apaga.** O lançamento fica na lista, riscado, com o motivo escrito. É de
+> propósito: quem olhar o caixa no ano que vem precisa ver que aquilo existiu.
+
+**Para ver quem mexeu:** menu **⋮** da linha → **Ver histórico**. Mostra cada correção com
+a data, quem fez e o que mudou — *"Valor: R$ 96.500,00 → R$ 99.999,00"*.
+
+> **Gastou mais do que entrou?** O saldo aparece com o menos na frente do R$ —
+> *"-R$ 19.701.951,70"* —, na tela e no arquivo baixado. Antes o arquivo escrevia
+> *"R$ -19.701.951,70"*, com o sinal no meio.
+
+> **As frases falam certo quando é um só.** "Falta 1 dia", "1 pedido", "1 permissão" —
+> e não "1 dia(s)". Eram 26 frases com esse remendo, doze delas dentro de PDF.
+
+> **Errou e quer apagar um campo?** Limpe o campo e salve. Antes isso não fazia nada;
+> agora apaga de verdade.
+
+**Os três gráficos:**
+
+| Gráfico | Responde |
+|---|---|
+| **O que vem pela frente** | tenho dinheiro no dia 20? — seis semanas, com o saldo caminhando embaixo de cada uma |
+| **De onde vem o dinheiro** | que parte entrou de medição, que parte de aporte |
+| **Para onde vai o que não é compra** | quanto do gasto é frota, quanto é canteiro |
+
+> **Se o caixa furar em alguma semana, um aviso amarelo aparece em cima do gráfico.** Não
+> precisa caçar número vermelho.
+
+As duas roscas usam a **categoria** que você digita ao lançar. Se deixar em branco, cai em
+"Sem categoria" — não some, mas também não ensina nada.
+
+> **Se muito gasto ficar sem categoria, a tela avisa** embaixo dos gráficos, com o valor.
+> Dá para arrumar depois: menu **⋮** da linha → **Corrigir** → preencha a Categoria.
+
+**Para baixar:** botão **Baixar lançamentos**, PDF ou Word. Ele leva **só o que o filtro
+está mostrando**.
+
+**Quem só enxerga não mexe.** O fundador vê a lista, o saldo e os gráficos, e não tem os
+botões de lançar. Quem não é do financeiro nem abre a tela.
 
 ---
 
@@ -485,7 +675,7 @@ foi paga → informe a data e a forma.
 - Filtrar por obra e por período
 - Baixar em **PDF ou Word**
 
-**Passo:** Clique em **Relatórios** → escolha a aba → filtre → **Baixar**.
+**Passo:** Clique em **Relatórios**, na barra → escolha a aba → filtre → **Baixar**.
 
 | Aba | Pergunta que ela responde |
 |---|---|
@@ -515,13 +705,17 @@ foi paga → informe a data e a forma.
 
 **— Parte 4: configurar —**
 
-## 11. Cadastros
+## 11. Administração
 
-**Essa tela serve para** cadastrar as coisas que o resto do sistema usa.
+**Essa tela serve para** cadastrar as coisas que o resto do sistema usa, e dizer quem
+tem acesso a elas.
 
-**Aqui você consegue:** entrar em cinco cadastros.
+**Aqui você consegue:** entrar nos cinco cadastros, nos usuários e nos avisos.
 
-**Passo:** Clique em **Cadastros** → escolha um dos cinco.
+> **Chamava-se Cadastros.** Virou Administração quando Usuários e Avisos passaram a
+> morar junto — eles não são cadastro, e o nome tinha de caber nos três.
+
+**Passo:** **Administração** → escolha um dos cinco cadastros, na ordem dos números.
 
 | Cadastro | Para que serve |
 |---|---|
@@ -544,7 +738,7 @@ foi paga → informe a data e a forma.
 - Marcar o que ela faz
 - Desativar quem saiu da empresa
 
-**Passo:** Clique em **Usuários** → **+ Novo usuário** → preencha → marque as funções.
+**Passo:** **Administração** → **Usuários** → **+ Novo usuário** → preencha → marque as funções.
 
 > Uma pessoa pode fazer **mais de uma coisa**. A Neilma compra e paga.
 
@@ -558,7 +752,7 @@ foi paga → informe a data e a forma.
 - Ver se o WhatsApp e o e-mail estão ligados
 - Ver tudo que já foi enviado
 
-**Passo:** Clique em **Avisos** → escolha **WhatsApp** ou **E-mail** → veja o histórico.
+**Passo:** **Administração** → **Avisos ao fornecedor** → escolha **WhatsApp** ou **E-mail** → veja o histórico.
 
 > ⚠️ **Está tudo em modo de teste.** Nenhuma mensagem sai para fornecedor de verdade.
 
@@ -570,7 +764,7 @@ foi paga → informe a data e a forma.
 
 **Aqui você consegue:** ver se o sistema está no ar.
 
-**Passo:** Clique em **Status do sistema** → se estiver tudo verde, está tudo certo.
+**Passo:** **Administração** → **Status do sistema** → se estiver tudo verde, está tudo certo.
 
 ---
 
@@ -581,7 +775,7 @@ foi paga → informe a data e a forma.
 Ela **não fica no menu**, porque não é para quem trabalha na Porto Inc. O fornecedor
 recebe um link e abre sem senha.
 
-**Passo para mostrar:** **Cotações** → abra uma → **Copiar link** → cole numa aba anônima.
+**Passo para mostrar:** **Compras** → **Cotações** → abra uma → **Copiar link** → cole numa aba anônima.
 
 ---
 
@@ -629,7 +823,7 @@ Se o tempo for curto, são estes:
 | A tela não abre | Veja **Status do sistema** |
 | Não achei um botão | Aquela conta não faz aquilo. Entre com `porto@dev.com` |
 | Apareceu "Muitas requisições" | Espere 1 minuto e tente de novo |
-| A senha não entra | Só `porto@dev.com` e `admin@portoinc.com.br` têm senha conhecida (`admin123`). As outras seis foram criadas por você — gere uma senha nova em **Usuários** |
+| A senha não entra | São **duas senhas**: `admin123` para `porto@dev.com` e `admin@portoinc.com.br`, e `Porto@2026` para as seis de nome. Trocou e esqueceu? Gere uma nova em **Usuários** |
 | Ele pediu para trocar a senha | É a regra funcionando: conta criada por outra pessoa troca a senha no primeiro acesso |
 | Uma tela está vazia | Leia o que ela diz. Tela vazia sempre explica **por que** está vazia e o que fazer |
 | A lista não mostra tudo | Ela mostra 20 por vez. A frase em cima diz o total, e os botões embaixo levam às outras páginas |

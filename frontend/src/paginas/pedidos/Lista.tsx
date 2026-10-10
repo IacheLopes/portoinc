@@ -13,7 +13,7 @@ import {
   type SituacaoPedido,
 } from '../../servicos/recebimentos';
 import { dataBr } from '../../servicos/solicitacoes';
-import { dinheiro } from '../../servicos/cadastros';
+import { dinheiro } from '../../servicos/texto';
 import { enviarPedidoPorWhatsApp } from '../../servicos/whatsapp';
 import { enviarPedidoPorEmail } from '../../servicos/email';
 import { ErroApi } from '../../servicos/api';

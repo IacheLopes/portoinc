@@ -13,6 +13,8 @@ import { banco } from '../plugins/banco.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 import { numero, erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroPedido } from '../servicos/equalizacao.js';
+import { acrescentarLancamentosAoFluxo } from '../servicos/caixa.js';
+import type { LancamentoParaCaixa } from '../servicos/caixa.js';
 import {
   chaveValida, limparChave, formatarChave, conferirNotaContraPedido,
   gerarParcelas, descreverCondicao, situacaoVencimento, descreverVencimento,
@@ -25,7 +27,7 @@ import {
 import { gerarArquivoDaTabela, formatoValido } from '../servicos/tabela-arquivo.js';
 import { gerarPdfNotaFiscal } from '../servicos/pdf-nota-fiscal.js';
 import { dataBr } from '../servicos/data-br.js';
-import { formatarCnpj } from '../servicos/util.js';
+import { formatarCnpj, reaisBr as reais } from '../servicos/util.js';
 import {
   guardarArquivo, lerArquivo, apagarArquivo, tipoAceito, tamanhoLegivel,
   ErroDeArquivo, TAMANHO_MAXIMO,
@@ -85,6 +87,39 @@ function totalDoPedido(pedido: {
   );
 
   return itens + (numero(pedido.valorFrete) ?? 0) + (numero(pedido.outrosCustos) ?? 0);
+}
+
+/**
+ * Os lancamentos a mao, do tamanho que o fluxo precisa.
+ *
+ * Fica aqui, e nao dentro de cada rota, porque as DUAS que montam
+ * o fluxo — o painel e a do periodo — precisam da mesma coisa, e
+ * duas copias divergiriam no dia em que o campo mudasse.
+ *
+ * Carrega todos: o fluxo olha doze meses, e filtrar por data no
+ * banco exigiria repetir aqui a janela que `montarFluxo` calcula.
+ * Sao poucas linhas — a construtora lanca receita e despesa avulsa
+ * na casa de dezenas por mes, nao de milhares.
+ */
+async function lancamentosDoFluxo(): Promise<LancamentoParaCaixa[]> {
+  const linhas = await banco.lancamentoFinanceiro.findMany({
+    where: { situacao: { not: 'CANCELADO' } },
+    select: {
+      tipo: true,
+      valor: true,
+      previstoPara: true,
+      realizadoEm: true,
+      situacao: true,
+    },
+  });
+
+  return linhas.map((l) => ({
+    tipo: l.tipo,
+    valor: numero(l.valor) ?? 0,
+    previstoPara: l.previstoPara,
+    realizadoEm: l.realizadoEm,
+    situacao: l.situacao,
+  }));
 }
 
 export async function rotasFiscal(app: FastifyInstance) {
@@ -837,7 +872,7 @@ export async function rotasFiscal(app: FastifyInstance) {
         };
       });
 
-      const [notasComPendencia, notasSemParcelas, notasNoMes] = await Promise.all([
+      const [notasComPendencia, notasSemParcelas, notasNoMes, lancamentos] = await Promise.all([
         banco.notaFiscal.count({ where: { situacao: 'COM_DIVERGENCIA' } }),
         banco.notaFiscal.count({
           where: { situacao: { not: 'CANCELADA' }, titulos: { none: {} } },
@@ -848,12 +883,16 @@ export async function rotasFiscal(app: FastifyInstance) {
             criadoEm: { gte: new Date(hoje.getFullYear(), hoje.getMonth(), 1) },
           },
         }),
+        lancamentosDoFluxo(),
       ]);
 
       return {
         resumo: resumirCarteira(parcelas, hoje),
         indicadores: calcularIndicadores(parcelas, hoje),
-        fluxo: montarFluxo(parcelas, hoje),
+        // O fluxo mostrava tres barras, e as tres eram saida: quem
+        // olhava via a construtora so gastando. Agora a entrada vem
+        // junto, das receitas lancadas a mao.
+        fluxo: acrescentarLancamentosAoFluxo(montarFluxo(parcelas, hoje), lancamentos, hoje),
         porFornecedor: ranquearPor(parcelas, 'fornecedor'),
         porObra: ranquearPor(parcelas, 'obra'),
         carteira: fatiarCarteira(parcelas, hoje),
@@ -907,15 +946,18 @@ export async function rotasFiscal(app: FastifyInstance) {
         }
       }
 
-      const titulos = await banco.contaPagar.findMany({
-        select: {
-          valor: true,
-          vencimento: true,
-          situacao: true,
-          pagoEm: true,
-          valorPago: true,
-        },
-      });
+      const [titulos, lancamentos] = await Promise.all([
+        banco.contaPagar.findMany({
+          select: {
+            valor: true,
+            vencimento: true,
+            situacao: true,
+            pagoEm: true,
+            valorPago: true,
+          },
+        }),
+        lancamentosDoFluxo(),
+      ]);
 
       const parcelas = titulos.map((t) => ({
         valor: numero(t.valor) ?? 0,
@@ -926,7 +968,11 @@ export async function rotasFiscal(app: FastifyInstance) {
       }));
 
       return {
-        fluxo: montarFluxo(parcelas, hoje, 5, 6, alvo),
+        fluxo: acrescentarLancamentosAoFluxo(
+          montarFluxo(parcelas, hoje, 5, 6, alvo),
+          lancamentos,
+          hoje,
+        ),
         referencia:
           alvo.getFullYear() + '-' + String(alvo.getMonth() + 1).padStart(2, '0'),
       };
@@ -1396,6 +1442,7 @@ const SITUACAO_DA_CONTA: Record<string, string> = {
   CANCELADA: 'Cancelada',
 };
 
-function reais(valor: number): string {
-  return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}
+// A conta de dinheiro em texto mora em `servicos/util.ts`, e esta
+// copia local ficou para tras. Ela tinha um defeito que a oficial
+// nao tem: sem `maximumFractionDigits`, uma soma com sobra de ponto
+// flutuante sairia impressa como "R$ 1.234,567".

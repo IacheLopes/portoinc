@@ -15,11 +15,11 @@ import {
   abrirPortal, responderPortal,
   type CotacaoDoPortal, type ItemDoPortal,
 } from '../servicos/cotacoes';
-import { dinheiro, quantidade as qtdBr } from '../servicos/cadastros';
 import { dataBr } from '../servicos/solicitacoes';
 import { Carregando } from '../componentes/Estado';
 import { Selo } from '../componentes/Selo';
 import { Icone } from '../componentes/Icone';
+import { plural, dinheiro, quantidade as qtdBr } from '../servicos/texto';
 import {
   mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
 } from '../servicos/mascaras';
@@ -192,7 +192,7 @@ export function Portal() {
             <h1>Cotação enviada!</h1>
             <p>
               Recebemos sua proposta de <strong>{dinheiro(enviado.total)}</strong> para{' '}
-              {enviado.itens} item(ns).
+              {plural(enviado.itens, 'item', 'itens')}.
             </p>
             <p className="portal__nota">
               O comprador da Porto Inc. vai analisar e entrar em contato. Você pode

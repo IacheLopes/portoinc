@@ -9,11 +9,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
+import { lerCsvMateriais } from '../servicos/importacao-cadastros.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
-import { integracoes } from '../integracoes/index.js';
-import { gtinValido } from '../integracoes/gtin/porta.js';
 import {
-  numero, erroDeValidacao, textoObrigatorio, textoOpcional, UNIDADES,
+  numero, erroDeValidacao, textoObrigatorio, textoOpcional, UNIDADES, gtinValido,
 } from '../servicos/util.js';
 
 const esquemaFamilia = z.object({
@@ -161,6 +160,93 @@ export async function rotasCatalogo(app: FastifyInstance) {
     };
   });
 
+  // --------------------------------------------------------
+  //  Importar catálogo de planilha (CSV)
+  //
+  //  Mesma forma da importação de orçamento: lê linha a linha
+  //  (o container tem 1 GB), ignora o que já existe e devolve o
+  //  problema COM O NÚMERO DA LINHA.
+  //
+  //  Até 09/10/2026 só o orçamento tinha porta. O formulário de
+  //  material tem 10 campos: um catálogo de 400 itens custava
+  //  4.000 campos digitados à mão para a empresa sair da
+  //  planilha — que é o que o sistema inteiro existe para fazer.
+  // --------------------------------------------------------
+  app.post(
+    '/api/materiais/importar',
+    { preHandler: app.exigirPermissao('materiais.gerenciar') },
+    async (req, res) => {
+      const corpo = z.object({ csv: z.string().min(1).max(2_000_000) }).safeParse(req.body);
+      if (!corpo.success) return res.status(400).send(erroDeValidacao(corpo.error));
+
+      const { linhas: lidas, problemas } = lerCsvMateriais(corpo.data.csv);
+
+      if (lidas.length === 0) {
+        return res.status(400).send({
+          erro: 'Nenhuma linha válida encontrada no arquivo.',
+          detalhes: problemas.slice(0, 10),
+        });
+      }
+
+      // A FAMÍLIA VEM PELO CÓDIGO, e família que não existe é
+      // problema da linha, não do arquivo: as outras entram.
+      const familias = await banco.familiaMaterial.findMany({
+        select: { id: true, codigo: true },
+      });
+      const porCodigo = new Map(familias.map((f) => [f.codigo.toUpperCase(), f.id]));
+
+      const aGravar: Array<{
+        familiaId: string; codigoInterno: string; descricao: string;
+        unidadeMedida: string; marca: string | null; normaTecnica: string | null;
+        gtin: string | null; pontoPedido: number | null; codigoLinhaPadrao: string | null;
+      }> = [];
+
+      for (const m of lidas) {
+        const familiaId = porCodigo.get(m.familiaCodigo);
+        if (!familiaId) {
+          problemas.push(
+            'Material ' + m.codigoInterno + ': a família "' + m.familiaCodigo +
+            '" não existe. Cadastre-a antes, em Administração > Famílias.',
+          );
+          continue;
+        }
+
+        aGravar.push({
+          familiaId,
+          codigoInterno: m.codigoInterno.toUpperCase(),
+          descricao: m.descricao,
+          unidadeMedida: m.unidadeMedida,
+          marca: m.marca,
+          normaTecnica: m.normaTecnica,
+          gtin: m.gtin,
+          pontoPedido: m.pontoPedido,
+          codigoLinhaPadrao: m.codigoLinhaPadrao,
+        });
+      }
+
+      if (aGravar.length === 0) {
+        return res.status(400).send({
+          erro: 'Nenhuma linha pôde ser importada.',
+          detalhes: problemas.slice(0, 10),
+        });
+      }
+
+      // skipDuplicates: reimportar a mesma planilha não duplica
+      // nada, igual à importação de orçamento.
+      const resultado = await banco.material.createMany({
+        data: aGravar,
+        skipDuplicates: true,
+      });
+
+      return {
+        importados: resultado.count,
+        ignorados: aGravar.length - resultado.count,
+        problemas: problemas.slice(0, 20),
+        totalDeProblemas: problemas.length,
+      };
+    },
+  );
+
   app.post('/api/materiais', { preHandler: app.exigirPermissao('materiais.gerenciar') }, async (req, res) => {
     const dados = esquemaMaterial.safeParse(req.body);
     if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
@@ -220,10 +306,21 @@ export async function rotasCatalogo(app: FastifyInstance) {
   // --------------------------------------------------------
   //  Bipar: procura pelo código de barras
   //
-  //  Primeiro no nosso catálogo. Se não achar, pergunta à
-  //  integração de GTIN e devolve a sugestão para o usuário
-  //  decidir se cadastra — o pedido da reunião de "perguntar
-  //  se quer agrupar o item a uma família após bipar".
+  //  No catálogo da Porto Inc., e só nele.
+  //
+  //  ANTES HAVIA UMA SEGUNDA PERGUNTA, À BASE DA GS1: não achando
+  //  aqui, o sistema consultava o serviço pago e oferecia a
+  //  descrição de lá como sugestão de cadastro. A GS1 saiu na
+  //  reunião de 08/10/2026 — a Porto Inc. não vai assinar.
+  //
+  //  O QUE SE PERDEU É POUCO, e vale dizer qual: a tela deixou de
+  //  sugerir "Cimento Portland CP-II 50kg" ao bipar um código
+  //  desconhecido. Quem cadastra digita a descrição, como já
+  //  digitava para tudo que não tem código de barras.
+  //
+  //  O que FICA: bipar, achar no catálogo próprio, e o pedido da
+  //  reunião antiga de "perguntar se quer agrupar o item a uma
+  //  família após bipar".
   // --------------------------------------------------------
   app.get('/api/materiais/gtin/:gtin', { preHandler: app.exigirPermissao('materiais.ver') }, async (req, res) => {
     const { gtin } = req.params as { gtin: string };
@@ -245,15 +342,10 @@ export async function rotasCatalogo(app: FastifyInstance) {
       return { encontrado: true, material: formatarMaterial(material) };
     }
 
-    const externo = await integracoes.gtin.consultar(limpo);
-
     return res.status(404).send({
       encontrado: false,
       erro: 'Este código de barras ainda não está no catálogo da Porto Inc.',
-      sugestao: externo
-        ? 'Encontramos "' + externo.descricao + '" na base externa. Deseja cadastrar e vincular a uma família?'
-        : 'Cadastre o item e vincule-o a uma família.',
-      dadosSugeridos: externo,
+      sugestao: 'Cadastre o item e vincule-o a uma família.',
     });
   });
 }

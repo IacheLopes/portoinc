@@ -146,6 +146,31 @@ export function importarOrcamento(obraId: string, csv: string) {
   }>('/api/obras/' + obraId + '/linhas/importar', { metodo: 'POST', corpo: { csv } });
 }
 
+/**
+ * Importar catálogo de planilha.
+ *
+ * Mesma forma da importação de orçamento, e de propósito: quem
+ * entendeu uma entendeu as três.
+ */
+export function importarMateriais(csv: string) {
+  return chamar<{
+    importados: number;
+    ignorados: number;
+    problemas: string[];
+    totalDeProblemas: number;
+  }>('/api/materiais/importar', { metodo: 'POST', corpo: { csv } });
+}
+
+/** Importar fornecedores de planilha. */
+export function importarFornecedores(csv: string) {
+  return chamar<{
+    importados: number;
+    ignorados: number;
+    problemas: string[];
+    totalDeProblemas: number;
+  }>('/api/fornecedores/importar', { metodo: 'POST', corpo: { csv } });
+}
+
 // ------------------------------------------------------------
 //  Famílias
 // ------------------------------------------------------------
@@ -262,31 +287,6 @@ export function editarAlcada(id: string, dados: Record<string, unknown>) {
 
 export function criarAlcada(dados: Record<string, unknown>) {
   return chamar<{ regra: RegraAlcada }>('/api/alcadas', { metodo: 'POST', corpo: dados });
-}
-
-// ------------------------------------------------------------
-//  Formatação
-// ------------------------------------------------------------
-export function dinheiro(valor: number): string {
-  return valor.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 2,
-  });
-}
-
-/**
- * Quantidade com separador de milhar.
- *
- * As casas são um argumento porque as duas precisões são legítimas
- * e diferentes: no estoque uma quantidade pode ter 4 casas (0,0025
- * de um insumo), num relatório de consumo 4 casas viram ruído.
- *
- * Elas eram duas funções com o mesmo nome em arquivos diferentes —
- * e é assim que um lugar mostra "1.234,5" e outro "1.234,50".
- */
-export function quantidade(valor: number, casas = 4): string {
-  return valor.toLocaleString('pt-BR', { maximumFractionDigits: casas });
 }
 
 export const ROTULO_SITUACAO: Record<SituacaoObra, string> = {

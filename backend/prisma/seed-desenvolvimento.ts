@@ -72,8 +72,10 @@ const PESSOAS: Array<{
   //      e as faixas citam Gestor de obra, Engenheiro e Fundador.
   //
   //  Por isso o administrador via a fila de Aprovações vazia: ele
-  //  tem a tela, mas não é signatário de nada. Com as sete, o DEV
-  //  vê a fila cheia — que é o ponto de uma conta de diagnóstico.
+  //  tem a tela, mas não é signatário de nada. Com as sete de
+  //  papel, o DEV vê a fila cheia — que é o ponto de uma conta de
+  //  diagnóstico. Mais a de DESENVOLVEDOR, que abre "Status do
+  //  sistema": são oito.
   //
   //  NÃO vai para produção: este arquivo inteiro se recusa a rodar
   //  quando NODE_ENV é 'production' (ver `principal()`).
@@ -83,6 +85,16 @@ const PESSOAS: Array<{
     email: 'porto@dev.com',
     senha: 'admin123',
     funcoes: [
+      // DESENVOLVEDOR É O QUE ABRE "STATUS DO SISTEMA".
+      //
+      // Ele estava faltando, e o guia de navegação prometia o
+      // contrário: "uma tela só existe nela". Numa instalação
+      // nova a conta DEV abria a tela de acesso negado — e a tela
+      // de Usuários recusa atribuir este papel de propósito, o
+      // que deixava o sistema sem ninguém capaz de abri-la.
+      //
+      // Achado na simulação de entrega de 09/10/2026.
+      'DESENVOLVEDOR',
       'ADMINISTRADOR',
       'FUNDADOR',
       'GESTOR_OBRA',

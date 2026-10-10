@@ -54,6 +54,7 @@ async function pedidoPronto(quantidade = 40, preco = 25) {
     metodo: 'POST', token: solicitante,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       itens: [
         { materialId: materialA, quantidade, valorEstimado: preco, especificacaoTecnica: 'Padrão.' },
       ],

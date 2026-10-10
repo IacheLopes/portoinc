@@ -81,6 +81,7 @@ async function comprar(r: Roteiro = {}) {
     metodo: 'POST', token: solicitante,
     corpo: {
       obraId: obra,
+      dataDesejada: '2026-12-31',
       itens: [
         {
           materialId: materialA, quantidade, valorEstimado: estimado,
@@ -829,6 +830,7 @@ describe('Comprometido no orçamento', () => {
       metodo: 'POST', token: solicitante,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         itens: [{
           materialId: materialA, quantidade: 10, valorEstimado: 50,
           especificacaoTecnica: 'Padrão.',

@@ -75,6 +75,29 @@
   --erro-texto:    #b32d1f;
   --info-texto:    #1b4fc0;
 
+  /* ---------- Cores SEM significado, para categorias ----------
+
+     As cores de cima SIGNIFICAM: vermelho e problema, verde e
+     certo. Elas servem para estado, nao para assunto.
+
+     A rosca de "para onde vai o dinheiro" divide o gasto por
+     categoria — Frota, Canteiro, Taxas. Pintar "Frota" de vermelho
+     diria que ha algo errado com a frota, e nao ha: ela so e a
+     maior fatia.
+
+     Entao estas seis existem para DISTINGUIR, e nada mais. A
+     familia e azul-para-roxo de proposito: longe do vermelho de
+     alarme e do verde de aprovado.
+
+     Seis porque e quanto a rosca mostra antes de virar confete; a
+     setima fatia e sempre a cauda somada em "Outras". */
+  --cat-1: #2d5bd7;
+  --cat-2: #0e8a8a;
+  --cat-3: #7a4fd0;
+  --cat-4: #b8651b;
+  --cat-5: #1f7a4d;
+  --cat-6: #a04b86;
+
   /* ---------- Papeis (trocam no modo escuro) ---------- */
   --fundo:            var(--neutro-50);
   --fundo-elevado:    var(--neutro-0);
@@ -227,6 +250,14 @@
   --atencao-texto: #e8a83a;
   --erro-texto:    #f28b82;
   --info-texto:    #7aa7f7;
+
+  /* As mesmas seis, claras o bastante para o fundo escuro. */
+  --cat-1: #7aa7f7;
+  --cat-2: #4fc7c7;
+  --cat-3: #b394f0;
+  --cat-4: #e8a259;
+  --cat-5: #5cd48b;
+  --cat-6: #e093c8;
 
   --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.4);
   --sombra-2: 0 4px 12px rgba(0, 0, 0, 0.5);

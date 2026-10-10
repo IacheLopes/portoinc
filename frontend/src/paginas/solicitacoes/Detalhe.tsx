@@ -20,7 +20,7 @@ import {
   ROTULO_DECISAO,
   type Solicitacao, type SituacaoSolicitacao, type Decisao, type ResumoDaAlcada,
 } from '../../servicos/solicitacoes';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
+import { dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Indicador } from '../../componentes/Indicador';
@@ -205,6 +205,28 @@ export function DetalheSolicitacao() {
           </div>
         )}
 
+        {/* O QUE FALTA, ANTES DO CLIQUE.
+            Até 09/10/2026 esta lista só aparecia depois de uma
+            tentativa de envio recusada: a pessoa escrevia tudo,
+            clicava e só então descobria o que faltava. */}
+        {dados.podeEditar && dados.impedimentos.length > 0 && !erro && (
+          <div className="aviso aviso--atencao" role="status">
+            <Icone nome="alerta" className="aviso__icone" />
+            <div>
+              <strong>
+                {dados.impedimentos.length === 1
+                  ? 'Falta uma coisa para enviar:'
+                  : 'Faltam ' + dados.impedimentos.length + ' coisas para enviar:'}
+              </strong>
+              <ul className="campo__erro-lista">
+                {dados.impedimentos.map((i) => (
+                  <li key={i}>{i}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         <div className="grade">
           <Indicador
             titulo="Total estimado"
@@ -237,7 +259,11 @@ export function DetalheSolicitacao() {
               type="button"
               className="botao botao--principal"
               onClick={() => void enviar()}
-              disabled={ocupado}
+              /* O botão espera o que falta. A lista do que falta
+                 está logo acima, então a pessoa vê o motivo —
+                 botão morto sem explicação seria pior que o
+                 clique recusado que havia antes. */
+              disabled={ocupado || dados.impedimentos.length > 0}
             >
               {ocupado ? 'Enviando...' : 'Enviar para aprovação'}
             </button>

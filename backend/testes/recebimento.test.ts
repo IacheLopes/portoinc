@@ -36,6 +36,7 @@ async function pedidoPronto(quantidades: { a: number; b: number } = { a: 10, b: 
     token: solicitante,
     corpo: {
       obraId,
+      dataDesejada: '2026-12-31',
       itens: [
         { materialId: materiais[0], quantidade: quantidades.a, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },
         { materialId: materiais[1], quantidade: quantidades.b, valorEstimado: 10, especificacaoTecnica: 'Padrão.' },

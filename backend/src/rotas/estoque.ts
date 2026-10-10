@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
-import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
+import { numero, erroDeValidacao, textoOpcional, quantidadeBr } from '../servicos/util.js';
 import {
   formatarNumeroMovimento, conferirMovimento, precisaComprar,
   quantidadeSugerida, explicarAlerta, valorDoEstoque,
@@ -448,8 +448,8 @@ function descrever(
   unidade: string,
   saldo: number,
 ): string {
-  const qtd = Math.abs(quantidade).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
-  const novo = saldo.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+  const qtd = quantidadeBr(Math.abs(quantidade));
+  const novo = quantidadeBr(saldo);
 
   if (tipo === 'SAIDA') return 'Saíram ' + qtd + ' ' + unidade + '. Saldo agora: ' + novo + '.';
   if (tipo === 'ENTRADA') return 'Entraram ' + qtd + ' ' + unidade + '. Saldo agora: ' + novo + '.';

@@ -15,7 +15,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
-import { numero, erroDeValidacao, textoOpcional } from '../servicos/util.js';
+import { numero, erroDeValidacao, textoOpcional, plural } from '../servicos/util.js';
 import {
   conferirLink, calcularTotais, formatarNumeroBid, descreverPagamento,
   MENSAGEM_RECUSA, STATUS_RECUSA,
@@ -214,7 +214,11 @@ export async function rotasPortal(app: FastifyInstance) {
       return res.status(400).send({
         erro: 'Informe o preço dos itens disponíveis.',
         detalhes: [
-          semPreco.length + ' item(ns) marcado(s) como disponível estão sem valor unitário. ' +
+          plural(
+            semPreco.length,
+            'item marcado como disponível está',
+            'itens marcados como disponíveis estão',
+          ) + ' sem valor unitário. ' +
           'Se você não trabalha com o item, marque "Não tenho este item".',
         ],
       });

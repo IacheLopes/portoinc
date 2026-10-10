@@ -22,7 +22,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
-import { MODULOS, MODULO_COMPLETO, ETAPAS_PRONTAS, ETAPAS_TOTAIS } from '../navegacao';
+import { barraLateral, MODULO_COMPLETO, ETAPAS_PRONTAS, ETAPAS_TOTAIS } from '../navegacao';
 import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 import { Indicador } from '../componentes/Indicador';
 import { Carregando, Erro } from '../componentes/Estado';
@@ -37,6 +37,23 @@ function saudacao(): string {
   return 'Boa noite';
 }
 
+/**
+ * A linha sob o nome de cada destino.
+ *
+ * Mora aqui, e não no `navegacao.ts`, porque é texto de VENDA da
+ * tela inicial — diz o que a pessoa vai achar lá dentro. A
+ * descrição do `navegacao.ts` é o subtítulo da própria tela índice,
+ * e as duas fazem trabalhos diferentes.
+ */
+const DESCRICAO_DO_DESTINO: Record<string, string> = {
+  '/': 'A tela inicial',
+  '/relatorios': 'Orçamento, economia, fornecedores, tempos e consumo',
+  '/compras': 'Solicitar, aprovar, cotar e emitir o pedido',
+  '/almoxarifado': 'Receber a entrega, controlar o estoque e as locações',
+  '/financeiro': 'Contas a pagar, notas fiscais e o caixa da empresa',
+  '/administracao': 'Catálogo, obras, alçadas, pessoas e avisos',
+};
+
 export function Inicio() {
   const { usuario, pode } = useAutenticacao();
 
@@ -46,8 +63,18 @@ export function Inicio() {
 
   const primeiroNome = usuario?.nome.split(' ')[0] ?? '';
 
-  const meus = MODULOS.filter(
-    (m) => m.noInicio !== false && m.permissoes.length > 0 && pode(...m.permissoes),
+  // OS MESMOS QUATRO DESTINOS DA BARRA, e não as 14 telas.
+  //
+  // Enquanto a barra listava tudo, listar tudo aqui também era
+  // coerente. Com a barra em seis linhas, 14 cartões aqui seriam
+  // trocar o problema de lugar: a primeira tela que alguém vê numa
+  // demonstração continuaria dizendo "isto é enorme".
+  //
+  // Lendo da MESMA função que monta a barra, as duas não têm como
+  // divergir — foi exatamente assim que a tela inicial passou meses
+  // anunciando módulos que já existiam.
+  const meus = barraLateral(
+    (m) => m.permissoes.length > 0 && pode(...m.permissoes),
   );
 
   async function carregar() {
@@ -207,12 +234,12 @@ export function Inicio() {
         </div>
 
         <div className="grade">
-          {meus.map((modulo) => (
-            <Link key={modulo.para} to={modulo.para} className="atalho">
-              <Icone nome={modulo.icone} className="atalho__icone" />
+          {meus.map((destino) => (
+            <Link key={destino.para} to={destino.para} className="atalho">
+              <Icone nome={destino.icone} className="atalho__icone" />
               <span className="atalho__texto">
-                <strong>{modulo.titulo}</strong>
-                <small>{modulo.descricao}</small>
+                <strong>{destino.rotulo}</strong>
+                <small>{DESCRICAO_DO_DESTINO[destino.para] ?? ''}</small>
               </span>
             </Link>
           ))}

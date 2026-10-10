@@ -11,7 +11,7 @@ import {
   ROTULO_MOVIMENTO, COR_MOVIMENTO,
   type Movimento, type AlmoxarifadoResumo,
 } from '../../servicos/estoque';
-import { quantidade as qtdBr, dinheiro } from '../../servicos/cadastros';
+import { quantidade as qtdBr, dinheiro } from '../../servicos/texto';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Selecao } from '../../componentes/Campo';

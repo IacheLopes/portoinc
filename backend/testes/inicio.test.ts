@@ -29,6 +29,7 @@ import assert from 'node:assert/strict';
 
 import { limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar } from './ajuda.js';
 import { banco } from '../src/plugins/banco.js';
+import { inicioDoDiaBrMais } from '../src/servicos/fiscal.js';
 import { precisaComprar } from '../src/servicos/estoque.js';
 
 let admin = '';
@@ -278,7 +279,13 @@ describe('Contas a pagar: a fronteira da data é a do Brasil', () => {
       const f = await chamar('/api/fornecedores', {
         metodo: 'POST',
         token: admin,
-        corpo: { cnpj: '05570714000159', razaoSocial: 'Fornecedor da tela inicial LTDA' },
+        // Com familia: sem nenhuma o cadastro recusa, porque
+        // fornecedor sem familia nunca e convidado a cotar.
+        corpo: {
+          cnpj: '05570714000159',
+          razaoSocial: 'Fornecedor da tela inicial LTDA',
+          familias: [familiaId],
+        },
       });
       assert.equal(f.status, 201, 'nao criou o fornecedor: ' + f.corpo?.erro);
       fornecedorId = f.corpo.fornecedor.id;
@@ -295,11 +302,26 @@ describe('Contas a pagar: a fronteira da data é a do Brasil', () => {
       notaId = nota.id;
     }
 
-    // Meio-dia UTC: longe das duas bordas do dia, para o teste medir
-    // a regra e não o fuso de quem roda.
-    const quando = new Date();
+    // O DIA BRASILEIRO, E NÃO O DO RELÓGIO DO CONTÊINER.
+    //
+    // Isto aqui dizia "meio-dia UTC: longe das duas bordas do dia,
+    // para o teste medir a regra e não o fuso de quem roda" — e
+    // contava os dias a partir de `new Date()`, que no contêiner
+    // responde em UTC.
+    //
+    // Depois das 21h de São Paulo o dia UTC já virou. Aí `parcela(0)`
+    // caía AMANHÃ no Brasil, `parcela(-1)` caía hoje, e o teste
+    // enxergava uma vencida onde esperava duas.
+    //
+    // Ou seja: O TESTE DA REGRA DE FUSO FALHAVA POR FUSO, toda noite
+    // entre 21h e meia-noite. Achado em 08/10/2026, às 21h11.
+    //
+    // A âncora passou a ser a mesma que o código de produção usa:
+    // `inicioDoDiaBrMais`, que devolve a meia-noite do dia
+    // brasileiro. O meio-dia continua ali para ficar longe das duas
+    // bordas.
+    const quando = inicioDoDiaBrMais(dias);
     quando.setUTCHours(12, 0, 0, 0);
-    quando.setUTCDate(quando.getUTCDate() + dias);
 
     quantas += 1;
 
@@ -371,6 +393,7 @@ describe('Aprovações esperando a minha assinatura', () => {
       token: gestor,
       corpo: {
         obraId,
+        dataDesejada: '2026-12-31',
         justificativa: 'Solicitacao do proprio gestor',
         itens: [{ materialId: material, quantidade: 1, valorEstimado: 500 }],
       },

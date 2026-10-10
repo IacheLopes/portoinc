@@ -1,4 +1,4 @@
-<!-- versao: 0.45.0 -->
+<!-- versao: 0.58.0 -->
 
 # Como encher o sistema
 
@@ -28,11 +28,11 @@ escolher. **Não está quebrado: é que ainda não existe material.**
 
 | | Onde | Quantos |
 |---|---|---|
-| 1º | Cadastros → **Famílias** | 1 basta |
-| 2º | Cadastros → **Materiais e serviços** | 2 ou 3 |
-| 3º | Cadastros → **Fornecedores** | **2, no mínimo** |
-| 4º | Cadastros → **Obras** | 1 basta |
-| 5º | Cadastros → **Limites de alçada** | 1 faixa |
+| 1º | Administração → **Famílias** | 1 basta |
+| 2º | Administração → **Materiais e serviços** | 2 ou 3 |
+| 3º | Administração → **Fornecedores** | **2, no mínimo** |
+| 4º | Administração → **Obras** | 1 basta |
+| 5º | Administração → **Limites de alçada** | 1 faixa |
 | 6º | A obra → **Orçamento** | **antes da 1ª compra** |
 
 Depois disso o sistema está pronto para uma compra de verdade.
@@ -48,7 +48,7 @@ Depois disso o sistema está pronto para uma compra de verdade.
 
 **Para que serve:** separar o material por tipo. É a gaveta onde o material mora.
 
-**Caminho:** Cadastros → Famílias → **+ Nova família**
+**Caminho:** Administração → Famílias → **+ Nova família**
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
@@ -65,7 +65,7 @@ Depois disso o sistema está pronto para uma compra de verdade.
 
 **Para que serve:** a lista de tudo que dá para pedir. Sem isto, não há o que solicitar.
 
-**Caminho:** Cadastros → Materiais e serviços → **+ Novo item**
+**Caminho:** Administração → Materiais e serviços → **+ Novo item**
 
 > **O botão diz "item", não "material".** É de propósito: a mesma tela cadastra material e
 > serviço, e o campo **Tipo** é que separa os dois.
@@ -104,7 +104,7 @@ Depois disso o sistema está pronto para uma compra de verdade.
 
 **Para que serve:** quem vende. A cotação convida estes nomes.
 
-**Caminho:** Cadastros → Fornecedores → **+ Novo fornecedor**
+**Caminho:** Administração → Fornecedores → **+ Novo fornecedor**
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
@@ -132,7 +132,7 @@ Depois disso o sistema está pronto para uma compra de verdade.
 
 **Para que serve:** onde o material vai ser usado. Toda compra pertence a uma obra.
 
-**Caminho:** Cadastros → Obras → **+ Nova obra**
+**Caminho:** Administração → Obras → **+ Nova obra**
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
@@ -157,7 +157,7 @@ Depois disso o sistema está pronto para uma compra de verdade.
 **Para que serve:** dizer **quem assina** cada compra, conforme o valor. Sem faixa
 nenhuma, a solicitação é criada mas **ninguém consegue aprovar**.
 
-**Caminho:** Cadastros → Limites de alçada → **+ Nova faixa**
+**Caminho:** Administração → Limites de alçada → **+ Nova faixa**
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
@@ -183,7 +183,7 @@ nenhuma, a solicitação é criada mas **ninguém consegue aprovar**.
 **Para que serve:** dizer quanto a obra tinha previsto gastar em cada coisa. É o que
 alimenta o relatório **Orçado × realizado**.
 
-**Caminho:** Cadastros → Obras → clique na obra → aba **Orçamento**
+**Caminho:** Administração → Obras → clique na obra → aba **Orçamento**
 
 | Campo | Exemplo |
 |---|---|
@@ -244,7 +244,7 @@ solicitação aprovada → pacote de cotação → fornecedores respondem → eq
 ## "Ninguém aparece para assinar"
 
 Falta faixa de alçada, ou a faixa que existe não cobre aquele valor. Vá em
-**Cadastros → Limites de alçada** e use o simulador com o valor da compra.
+**Administração → Limites de alçada** e use o simulador com o valor da compra.
 
 ## "O CNPJ é recusado"
 

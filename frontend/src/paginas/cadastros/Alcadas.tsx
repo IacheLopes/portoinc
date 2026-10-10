@@ -12,9 +12,9 @@
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import {
-  listarAlcadas, criarAlcada, editarAlcada, simularAlcada, dinheiro,
-  type RegraAlcada,
+  listarAlcadas, criarAlcada, editarAlcada, simularAlcada, type RegraAlcada,
 } from '../../servicos/cadastros';
+import { dinheiro } from '../../servicos/texto';
 import { listarFuncoes, ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';

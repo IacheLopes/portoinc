@@ -17,7 +17,9 @@
 
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { banco } from '../plugins/banco.js';
-import { numero } from '../servicos/util.js';
+import {
+  numero, reaisBr, porcentoBr, quantidadeBr, plural,
+} from '../servicos/util.js';
 import { dataBr, isoBr } from '../servicos/data-br.js';
 import {
   diasEntre,
@@ -112,31 +114,12 @@ function ultima(datas: Array<Date | null | undefined>): Date | null {
 //  tem quem formate depois, então "1800" tem de sair daqui já
 //  como "R$ 1.800,00" — senão o PDF entrega um número seco que
 //  ninguém sabe se é real, quantidade ou porcentagem.
+//
+//  COMO formatar não é assunto daqui: `reaisBr`, `porcentoBr` e
+//  `quantidadeBr` moram em `servicos/util.ts`. Havia uma cópia de
+//  cada uma escrita aqui, e a cópia do dinheiro em outros dez
+//  arquivos — uma delas arredondando diferente das outras.
 // ------------------------------------------------------------
-
-function dinheiro(v: number): string {
-  return 'R$ ' + v.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  });
-}
-
-/**
- * Uma casa decimal SEMPRE, inclusive quando é zero.
- *
- * Sem `minimumFractionDigits` a mesma coluna saía "5%", "5,2%",
- * "4,9%": a vírgula de cada linha num lugar diferente, e o olho
- * perdendo a referência ao descer a coluna.
- */
-function pct(v: number): string {
-  return v.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }) + '%';
-}
-
-function qtd(v: number): string {
-  return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
 
 function dia(v: Date | string | null): string {
   if (!v) return '—';
@@ -192,9 +175,7 @@ const SITUACAO_EM_TEXTO: Record<string, string> = {
 function alerta(estouradas: number, emAtencao: number): string {
   const partes: string[] = [];
 
-  if (estouradas > 0) {
-    partes.push(estouradas + (estouradas === 1 ? ' estourada' : ' estouradas'));
-  }
+  if (estouradas > 0) partes.push(plural(estouradas, 'estourada', 'estouradas'));
   if (emAtencao > 0) partes.push(emAtencao + ' em atenção');
 
   return partes.length === 0 ? 'Nenhuma' : partes.join(' e ');
@@ -372,13 +353,13 @@ export async function rotasRelatorios(app: FastifyInstance) {
         subtitulo: 'Quanto de cada linha do orçamento já foi comprado',
         resumo: [
           { rotulo: 'Obra', valor: (obra?.codigo ?? '—') + ' · ' + (obra?.nome ?? '') },
-          { rotulo: 'Previsto', valor: dinheiro(resumo.previsto) },
-          { rotulo: 'Já comprado', valor: dinheiro(resumo.realizado) },
+          { rotulo: 'Previsto', valor: reaisBr(resumo.previsto) },
+          { rotulo: 'Já comprado', valor: reaisBr(resumo.realizado) },
           // Entre o gasto e o saldo, de propósito: é o número que
           // explica por que o saldo é menor do que parece.
-          { rotulo: 'Comprometido', valor: dinheiro(resumo.comprometido) },
-          { rotulo: 'Saldo livre', valor: dinheiro(resumo.saldo) },
-          { rotulo: 'Consumido', valor: pct(resumo.consumido) },
+          { rotulo: 'Comprometido', valor: reaisBr(resumo.comprometido) },
+          { rotulo: 'Saldo livre', valor: reaisBr(resumo.saldo) },
+          { rotulo: 'Consumido', valor: porcentoBr(resumo.consumido) },
           {
             rotulo: 'Linhas em alerta',
             valor: alerta(resumo.linhasEstouradas, resumo.linhasEmAtencao),
@@ -399,25 +380,25 @@ export async function rotasRelatorios(app: FastifyInstance) {
             codigo: l.codigo,
             descricao: l.descricao,
             unidade: l.unidade,
-            previsto: dinheiro(l.previsto),
-            realizado: dinheiro(l.realizado),
-            saldo: dinheiro(l.saldo),
-            consumido: pct(l.consumido),
+            previsto: reaisBr(l.previsto),
+            realizado: reaisBr(l.realizado),
+            saldo: reaisBr(l.saldo),
+            consumido: porcentoBr(l.consumido),
             situacao: SITUACAO_EM_TEXTO[l.situacao],
           })),
         }],
         nota: [
           semApontamento > 0
-            ? 'A linha "(sem linha)" reúne ' + dinheiro(semApontamento) +
+            ? 'A linha "(sem linha)" reúne ' + reaisBr(semApontamento) +
               ' comprados para a obra sem apontamento em linha do orçamento.'
             : null,
           freteEOutros > 0
-            ? 'A linha "(frete)" reúne ' + dinheiro(freteEOutros) +
+            ? 'A linha "(frete)" reúne ' + reaisBr(freteEOutros) +
               ' de frete e outros custos dos pedidos. Ele não pertence a nenhuma ' +
               'linha do orçamento, mas saiu do caixa da obra.'
             : null,
           comprometido > 0
-            ? 'O "comprometido" são ' + dinheiro(comprometido) +
+            ? 'O "comprometido" são ' + reaisBr(comprometido) +
               ' em solicitações já aprovadas que ainda não viraram pedido. ' +
               'O dinheiro não saiu, mas já tem dono — por isso o saldo livre ' +
               'desconta os dois.'
@@ -543,14 +524,14 @@ export async function rotasRelatorios(app: FastifyInstance) {
         resumo: [
           { rotulo: 'Período', valor: periodo(deTexto, ateTexto) },
           { rotulo: 'Cotações encerradas', valor: String(resumo.cotacoes) },
-          { rotulo: 'Estimado', valor: dinheiro(resumo.estimado) },
-          { rotulo: 'Fechado', valor: dinheiro(resumo.fechado) },
+          { rotulo: 'Estimado', valor: reaisBr(resumo.estimado) },
+          { rotulo: 'Fechado', valor: reaisBr(resumo.fechado) },
           {
             rotulo: 'Economia',
-            valor: dinheiro(resumo.economia) + ' (' + pct(resumo.economiaPercentual) + ')',
+            valor: reaisBr(resumo.economia) + ' (' + porcentoBr(resumo.economiaPercentual) + ')',
           },
-          { rotulo: 'Ganho na disputa', valor: dinheiro(resumo.ganhoNaDisputa) },
-          { rotulo: 'Taxa média de resposta', valor: pct(resumo.taxaMediaDeResposta) },
+          { rotulo: 'Ganho na disputa', valor: reaisBr(resumo.ganhoNaDisputa) },
+          { rotulo: 'Taxa média de resposta', valor: porcentoBr(resumo.taxaMediaDeResposta) },
         ],
         tabelas: [{
           colunas: [
@@ -568,11 +549,11 @@ export async function rotasRelatorios(app: FastifyInstance) {
             titulo: c.titulo,
             encerrada: dia(c.encerradaEm),
             respostas: c.fornecedoresResponderam + ' de ' + c.fornecedoresConvidados +
-              ' (' + pct(c.taxaDeResposta) + ')',
-            estimado: dinheiro(c.estimado),
-            fechado: dinheiro(c.fechado),
-            economia: dinheiro(c.economia) + ' (' + pct(c.economiaPercentual) + ')',
-            ganho: dinheiro(c.ganhoNaDisputa),
+              ' (' + porcentoBr(c.taxaDeResposta) + ')',
+            estimado: reaisBr(c.estimado),
+            fechado: reaisBr(c.fechado),
+            economia: reaisBr(c.economia) + ' (' + porcentoBr(c.economiaPercentual) + ')',
+            ganho: reaisBr(c.ganhoNaDisputa),
           })),
         }],
         nota: 'Economia compara com o valor ESTIMADO pelo solicitante. ' +
@@ -765,7 +746,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
         subtitulo: 'Resposta, prazo e qualidade de quem a empresa compra',
         resumo: [
           { rotulo: 'Fornecedores com histórico', valor: String(desempenho.length) },
-          { rotulo: 'Total comprado', valor: dinheiro(total) },
+          { rotulo: 'Total comprado', valor: reaisBr(total) },
           // Sem isto o PDF era lido em reunião sem ninguém saber de
           // que época ele falava.
           { rotulo: 'Entregas de', valor: periodoDaHistoria ?? 'nenhuma registrada' },
@@ -788,22 +769,26 @@ export async function rotasRelatorios(app: FastifyInstance) {
           ],
           linhas: desempenho.map((f) => ({
             nome: f.nome,
-            comprado: dinheiro(f.valorComprado) + ' · ' + f.pedidos + ' pedido(s)',
+            comprado: reaisBr(f.valorComprado) + ' · ' +
+              plural(f.pedidos, 'pedido', 'pedidos'),
             // A marca de atenção vai no TEXTO, e não só numa cor:
             // este relatório é lido impresso, em reunião.
             participacao:
               f.valorComprado > 0
-                ? pct(f.participacao) + (f.concentracao === 'ATENCAO' ? ' ⚠' : '')
+                ? porcentoBr(f.participacao) + (f.concentracao === 'ATENCAO' ? ' ⚠' : '')
                 : '—',
-            respostas: f.respostas + ' de ' + f.convites + ' (' + pct(f.taxaDeResposta) + ')',
+            respostas: f.respostas + ' de ' + f.convites + ' (' + porcentoBr(f.taxaDeResposta) + ')',
             entregas: String(f.entregas),
             ultima: f.ultimaEntrega ? dataBr(f.ultimaEntrega) : '—',
             pontualidade: f.entregas === 0
               ? '—'
-              : pct(f.pontualidade) + ' (' + f.noPrazo + ' de ' + f.entregas + ')',
-            atraso: f.atrasoMedio > 0 ? f.atrasoMedio + ' dia(s)' : '—',
-            qualidade: f.entregas === 0 ? '—' : pct(f.qualidade),
-            problemas: f.ressalvas + ' ressalva(s), ' + f.devolucoes + ' devolução(ões)',
+              : porcentoBr(f.pontualidade) + ' (' + f.noPrazo + ' de ' + f.entregas + ')',
+            atraso: f.atrasoMedio > 0
+              ? plural(f.atrasoMedio, 'dia', 'dias')
+              : '—',
+            qualidade: f.entregas === 0 ? '—' : porcentoBr(f.qualidade),
+            problemas: plural(f.ressalvas, 'ressalva', 'ressalvas') + ', ' +
+              plural(f.devolucoes, 'devolução', 'devoluções'),
             leitura: f.leitura,
           })),
         }],
@@ -912,7 +897,9 @@ export async function rotasRelatorios(app: FastifyInstance) {
             rotulo: 'Do pedido à entrega',
             valor: total.amostra === 0
               ? 'sem solicitação concluída'
-              : qtd(total.dias) + ' dia(s), em ' + total.amostra + ' concluída(s)',
+              // Duas casas: é média, não contagem.
+              : plural(total.dias, 'dia', 'dias', 2) + ', em ' +
+                plural(total.amostra, 'concluída', 'concluídas'),
           },
           { rotulo: 'Etapa mais demorada', valor: total.maisDemorada ?? 'nenhuma' },
         ],
@@ -926,7 +913,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
           linhas: etapas.map((e) => ({
             etapa: e.etapa + (e.etapa === total.maisDemorada ? '  (gargalo)' : ''),
             descricao: e.descricao,
-            dias: e.amostra === 0 ? 'sem dados' : qtd(e.dias),
+            dias: e.amostra === 0 ? 'sem dados' : quantidadeBr(e.dias, 2),
             amostra: String(e.amostra),
           })),
         }],
@@ -1003,7 +990,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
           // família, e frete não tem família. Chamar de total
           // faria o número brigar com o do orçado × realizado, que
           // conta o desembolso inteiro.
-          { rotulo: 'Total em materiais', valor: dinheiro(total) },
+          { rotulo: 'Total em materiais', valor: reaisBr(total) },
           { rotulo: 'Itens de pedido', valor: String(itens.length) },
         ],
         tabelas: [
@@ -1018,8 +1005,8 @@ export async function rotasRelatorios(app: FastifyInstance) {
             linhas: familias.map((f) => ({
               nome: f.nome,
               itens: String(f.itens),
-              valor: dinheiro(f.valor),
-              participacao: pct(f.participacao),
+              valor: reaisBr(f.valor),
+              participacao: porcentoBr(f.participacao),
             })),
           },
           {
@@ -1037,10 +1024,10 @@ export async function rotasRelatorios(app: FastifyInstance) {
               codigo: m.codigo,
               descricao: m.descricao,
               familia: m.familia,
-              quantidade: qtd(m.quantidade) + ' ' + m.unidadeMedida,
-              precoMedio: dinheiro(m.precoMedio),
-              valor: dinheiro(m.valor),
-              participacao: pct(m.participacao),
+              quantidade: quantidadeBr(m.quantidade, 2) + ' ' + m.unidadeMedida,
+              precoMedio: reaisBr(m.precoMedio),
+              valor: reaisBr(m.valor),
+              participacao: porcentoBr(m.participacao),
             })),
           },
         ],
@@ -1171,7 +1158,7 @@ export async function rotasRelatorios(app: FastifyInstance) {
         subtitulo: 'Dinheiro já pago que está encostado no almoxarifado',
         resumo: [
           { rotulo: 'Parado há mais de', valor: dias + ' dias' },
-          { rotulo: 'Dinheiro encostado', valor: dinheiro(resumo.valorParado) },
+          { rotulo: 'Dinheiro encostado', valor: reaisBr(resumo.valorParado) },
           { rotulo: 'Materiais', valor: String(resumo.itens) },
           { rotulo: 'Nunca saíram', valor: String(resumo.nuncaSairam) },
         ],
@@ -1191,12 +1178,12 @@ export async function rotasRelatorios(app: FastifyInstance) {
               codigo: l.codigo,
               descricao: l.descricao,
               almoxarifado: l.almoxarifado,
-              saldo: qtd(l.quantidade) + ' ' + l.unidadeMedida,
-              custoMedio: l.custoMedio === null ? '—' : dinheiro(l.custoMedio),
+              saldo: quantidadeBr(l.quantidade, 2) + ' ' + l.unidadeMedida,
+              custoMedio: l.custoMedio === null ? '—' : reaisBr(l.custoMedio),
               // No papel não há selo: a palavra é que avisa.
               parado: l.diasParado + ' dias' +
                 (l.motivo === 'NUNCA_SAIU' ? ' · nunca saiu' : ''),
-              valor: dinheiro(l.valorParado),
+              valor: reaisBr(l.valorParado),
             })),
           },
         ],

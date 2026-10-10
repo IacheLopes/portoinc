@@ -12,7 +12,6 @@ import {
   listarItensDisponiveis, criarCotacao, type ItemDisponivel,
 } from '../../servicos/cotacoes';
 import { dataBr } from '../../servicos/solicitacoes';
-import { dinheiro, quantidade as qtdBr } from '../../servicos/cadastros';
 import { ErroApi } from '../../servicos/api';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Selo } from '../../componentes/Selo';
@@ -21,6 +20,7 @@ import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
+import { palavra, dinheiro, quantidade as qtdBr } from '../../servicos/texto';
 
 /** Daqui a N dias, no formato que o campo de data aceita. */
 function daquiADias(dias: number): string {
@@ -337,7 +337,8 @@ export function NovaCotacao({
             <div>
               <dt>Itens</dt>
               <dd>
-                <strong>{escolhidos.length}</strong> selecionado(s)
+                <strong>{escolhidos.length}</strong>{' '}
+                {palavra(escolhidos.length, 'selecionado', 'selecionados')}
               </dd>
             </div>
             <div>

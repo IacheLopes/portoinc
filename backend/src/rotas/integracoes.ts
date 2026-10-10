@@ -75,23 +75,4 @@ export async function rotasIntegracoes(app: FastifyInstance) {
       return { historico: adaptador.listarHistorico() };
     },
   );
-
-  // Consulta um código de barras.
-  app.get(
-    '/api/integracoes/gtin/:codigo',
-    { preHandler: app.exigirPermissao('materiais.ver') },
-    async (requisicao, resposta) => {
-      const { codigo } = requisicao.params as { codigo: string };
-      const produto = await integracoes.gtin.consultar(codigo);
-
-      if (!produto) {
-        return resposta.status(404).send({
-          erro: 'Código de barras não encontrado ou inválido.',
-          sugestao: 'Cadastre o produto e vincule-o a uma família.',
-        });
-      }
-
-      return produto;
-    },
-  );
 }

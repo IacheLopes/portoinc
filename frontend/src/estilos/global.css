@@ -355,10 +355,24 @@ a:hover { text-decoration-thickness: 2px; }
    O `--esp-2` vira mínimo: o `auto` só empurra quando há espaço
    sobrando, e sem ele o rodapé grudaria no número. */
 .indicador__rodape {
-  margin-top: auto;
   padding-top: var(--esp-2);
   font-size: var(--txt-sm);
   color: var(--texto-secundario);
+}
+
+/* NO CELULAR NÃO HÁ FILEIRA, ENTÃO NÃO HÁ PÉ PARA ALINHAR.
+
+   O `auto` existe para os cartões de uma fileira terminarem na
+   mesma linha. Com uma coluna só, ele deixa de alinhar coisa
+   nenhuma e passa só a empurrar: o rodapé descia até 61px abaixo
+   do número que explica, e quem lê no celular via a frase solta,
+   longe do valor a que ela se refere. Sete casos — Cotações,
+   Famílias, Fornecedores e Cadastros.
+
+   Medido em 05/10/2026. O corte é 641px porque é onde a grade
+   deixa de ser uma coluna — o mesmo das outras regras de celular. */
+@media (min-width: 641px) {
+  .indicador__rodape { margin-top: auto; }
 }
 
 /* ------------------------------------------------------------

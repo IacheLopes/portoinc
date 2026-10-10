@@ -27,8 +27,32 @@ RUN npm install
 RUN npx prisma generate
 COPY . .
 EXPOSE 3000
-# Aplica as migracoes e sobe a API observando alteracoes no codigo
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && npm run dev"]
+# ------------------------------------------------------------
+#  A SUBIDA, EM QUATRO PASSOS — E OS DOIS DO MEIO SAO NOVOS
+#
+#  1. migrate deploy  -> o BANCO fica em dia
+#  2. prisma generate -> o CLIENTE fica em dia
+#  3. seed-se-vazio   -> planta so em banco novo
+#  4. dev             -> sobe a API
+#
+#  O passo 2 nasceu em 09/10/2026. O `node_modules` deste
+#  container e volume anonimo: um `docker compose down -v` apaga
+#  ele, e na subida seguinte ele volta DA IMAGEM — com o cliente
+#  Prisma gerado na ultima construcao. Se migracoes entraram
+#  depois disso, o cliente nao conhece as tabelas novas.
+#
+#  Na simulacao de entrega isso derrubou o Financeiro inteiro com
+#  erro 500 (`Cannot read properties of undefined (reading
+#  'findMany')`) — e o 500 aparecia na primeira tela que a
+#  empresa abriria. O banco estava certo; o cliente e que estava
+#  velho, porque so o passo 1 existia.
+#
+#  O passo 3 trocou `npm run seed` por `seed-se-vazio`: a semente
+#  usa `upsert`, entao REINICIAR a API ressuscitava 8 contas com
+#  senha conhecida e 20 materiais que a empresa nao cadastrou.
+#  Agora ela so planta quando nao ha nenhum usuario.
+# ------------------------------------------------------------
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm run seed-se-vazio && npm run dev"]
 
 # ---------- CONSTRUCAO PARA PRODUCAO ----------
 FROM base AS builder
