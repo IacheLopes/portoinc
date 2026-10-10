@@ -63,6 +63,17 @@ const DOCUMENTOS = {
       'Para saber o que cada tela faz, veja o <strong>Guia de Navegação</strong>.',
   },
 
+  sefaz: {
+    entrada: join(RAIZ, 'docs', 'sefaz', 'LEVANTAMENTO-SEFAZ.md'),
+    saida: join(RAIZ, 'docs', 'sefaz', 'Levantamento-SEFAZ-PortoInc.pdf'),
+    compacto: true,
+    titulo: 'O que falta para ligar o SEFAZ',
+    subtitulo: 'Porto Inc. — o que a empresa precisa providenciar, decidir e pagar',
+    aviso:
+      'Documento para a <strong>direção da Porto Inc.</strong> Os passos 1 a 3 da seção 7 ' +
+      'não dependem da AV2 Tech — são o que está travando a integração.',
+  },
+
   'guia-testes': {
     entrada: join(RAIZ, 'docs', 'testes', 'GUIA-TESTE-MANUAL.md'),
     saida: join(RAIZ, 'docs', 'testes', 'Guia-Teste-Manual-PortoInc.pdf'),
