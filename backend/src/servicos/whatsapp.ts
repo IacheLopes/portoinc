@@ -174,20 +174,41 @@ export function textoConviteCotacao(dados: {
   prazo: Date;
   link: string;
   quantidadeItens: number;
+  /** Para quem está indo. Sem isto a mensagem abre sem saudação. */
+  fornecedor?: string;
 }): string {
   const prazo = dataBr(dados.prazo);
+  const itens = dados.quantidadeItens + (dados.quantidadeItens === 1 ? ' item' : ' itens');
 
+  //  A SAUDAÇÃO ABRE A MENSAGEM, e ela faltava.
+  //
+  //  Quem recebe é um vendedor que não conhece o sistema e vê um
+  //  número desconhecido no visor. Abrir com "Porto Inc. — Pedido
+  //  de cotação BID-00005" é abrir com um código.
+  const abertura = dados.fornecedor ? 'Olá, ' + dados.fornecedor + '!' : 'Olá!';
+
+  //  O LINK FICA, MESMO COM O CARTÃO BONITO EM CIMA.
+  //
+  //  O cartão não aparece para todo mundo: quem desligou prévia
+  //  de link nas configurações, quem está em economia de dados ou
+  //  numa versão antiga recebe a mensagem sem ele. Sem o link no
+  //  texto, essa pessoa fica sem forma nenhuma de responder — e
+  //  nenhum dos dois lados descobre por quê, porque do nosso lado
+  //  consta "enviada".
+  //
+  //  Por isso ele é a saída de emergência, não o protagonista: a
+  //  frase manda tocar no cartão, e o endereço vem depois, sozinho
+  //  na última linha.
   return [
-    'Porto Inc. — Pedido de cotação ' + dados.numeroBid,
+    abertura,
     '',
+    'A Porto Inc. está pedindo cotação de ' + itens + '.',
     dados.titulo,
-    dados.quantidadeItens +
-      (dados.quantidadeItens === 1 ? ' item para cotar.' : ' itens para cotar.'),
     '',
-    'Responda pelo link abaixo até ' + prazo + ':',
+    'Toque no cartão acima para ver os itens e enviar seu preço.',
+    'Prazo para responder: ' + prazo + '.',
+    '',
     dados.link,
-    '',
-    'Não precisa de cadastro nem de senha.',
   ].join('\n');
 }
 

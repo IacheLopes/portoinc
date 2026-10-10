@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { ConfiguracaoEmail } from './Email';
 import {
   buscarSituacaoEmail, listarEmailsAutorizados, listarHistoricoDeEmail, enviarEmailDeTeste,
-  buscarConfiguracaoDeEmail, ligarEmail,
+  buscarConfiguracaoDeEmail,
   type SituacaoEmail, type EmailAutorizado, type EmailDoHistorico,
   type ConfiguracaoDeEmail,
 } from '../../servicos/email';

@@ -643,7 +643,7 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         const texto =
           mensagemUltimaChamada(formatarNumeroBid(bid.numero), itensAtras, prazo) +
           (dados.data.observacao ? '\n' + dados.data.observacao : '') +
-          '\nLink: ' + base + '/portal/' + convite.token;
+          '\nLink: ' + base + '/p/' + convite.token;
 
         if (!convite.fornecedor.whatsapp) {
           avisos.push({

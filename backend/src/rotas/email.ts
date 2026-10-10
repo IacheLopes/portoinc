@@ -320,7 +320,7 @@ export async function rotasEmail(app: FastifyInstance) {
             numeroBid: formatarNumeroBid(bid.numero),
             titulo: bid.titulo,
             prazo: bid.prazoResposta,
-            link: base + '/portal/' + convite.token,
+            link: base + '/p/' + convite.token,
             quantidadeItens: bid.itens.length,
             fornecedor: nome,
           }),

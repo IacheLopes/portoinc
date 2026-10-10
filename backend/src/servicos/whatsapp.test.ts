@@ -65,27 +65,51 @@ describe('Texto do convite de cotação', () => {
     numeroBid: 'BID-00002',
     titulo: 'Material elétrico — 2º pavimento',
     prazo: new Date('2026-10-15T23:59:59'),
-    link: 'http://localhost:5173/portal/abc123',
+    link: 'http://localhost:5173/p/abc123',
     quantidadeItens: 3,
   };
 
-  it('traz número, prazo e link', () => {
+  it('traz o prazo e o link', () => {
     const texto = textoConviteCotacao(dados);
 
-    assert.match(texto, /BID-00002/);
     assert.match(texto, /15\/10\/2026/);
-    assert.match(texto, /portal\/abc123/);
-    assert.match(texto, /3 itens para cotar/);
+    assert.match(texto, /p\/abc123/);
+    assert.match(texto, /3 itens/);
   });
 
-  it('diz que não precisa de cadastro', () => {
-    assert.match(textoConviteCotacao(dados), /Não precisa de cadastro/);
+  it('ABRE COM SAUDAÇÃO, e pelo nome de quem recebe', () => {
+    //  Faltava. Quem recebe é um vendedor que não conhece o
+    //  sistema e vê um número desconhecido no visor; abrir com
+    //  "Pedido de cotação BID-00002" é abrir com um código.
+    const texto = textoConviteCotacao({ ...dados, fornecedor: 'Eletro Minas' });
+
+    assert.ok(texto.startsWith('Olá, Eletro Minas!'), texto.slice(0, 40));
+  });
+
+  it('sem o nome do fornecedor, ainda cumprimenta', () => {
+    assert.ok(textoConviteCotacao(dados).startsWith('Olá!'));
+  });
+
+  it('O LINK FICA NO TEXTO, mesmo havendo cartão', () => {
+    //  O cartão de prévia não aparece para todo mundo: quem
+    //  desligou prévia de link, quem está em economia de dados ou
+    //  numa versão antiga recebe a mensagem sem ele. Sem o link no
+    //  texto, essa pessoa fica sem forma nenhuma de responder — e
+    //  nenhum dos dois lados descobre, porque do nosso lado consta
+    //  "enviada".
+    //
+    //  Se um dia alguém quiser a mensagem "mais limpa", é este
+    //  teste que explica o preço.
+    const texto = textoConviteCotacao(dados);
+
+    assert.match(texto, /http/, 'o link não pode sair do texto');
+    assert.match(texto, /cartão acima/, 'e o texto aponta para o cartão');
   });
 
   it('concorda no singular', () => {
     const texto = textoConviteCotacao({ ...dados, quantidadeItens: 1 });
 
-    assert.match(texto, /1 item para cotar/);
+    assert.match(texto, /de 1 item\./);
     assert.doesNotMatch(texto, /1 itens/);
   });
 

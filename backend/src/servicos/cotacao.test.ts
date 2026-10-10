@@ -58,8 +58,21 @@ describe('Chave do link público', () => {
   it('é longa o bastante para não ser adivinhada', () => {
     const token = gerarToken();
 
-    // 32 bytes em base64url dão 43 caracteres.
-    assert.ok(token.length >= 43, 'token curto demais: ' + token.length);
+    //  ERAM 43 CARACTERES, E VIRARAM 12, em 10/10/2026.
+    //
+    //  O link viaja pelo WhatsApp, e 43 caracteres só de chave
+    //  faziam uma parede de letras embaixo de uma mensagem curta.
+    //  O dono reclamou olhando a conversa no celular.
+    //
+    //  9 bytes = 72 bits. Adivinhar exige acertar entre 4,7
+    //  sextilhões, e a rota do portal aceita 30 tentativas por 5
+    //  minutos — o que torna a busca por tentativa impossível em
+    //  qualquer prazo humano.
+    //
+    //  O piso fica em 12 e não em 43: encolher mais exigiria
+    //  refazer esta conta.
+    assert.ok(token.length >= 12, 'token curto demais: ' + token.length);
+    assert.ok(token.length <= 16, 'token longo demais para caber no WhatsApp');
   });
 
   it('não repete', () => {

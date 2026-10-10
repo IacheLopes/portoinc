@@ -347,7 +347,11 @@ describe('Abrir o pacote', () => {
     assert.equal(r.status, 200);
     assert.equal(r.corpo.cotacao.situacao, 'ABERTO');
     assert.equal(r.corpo.cotacao.convidados.length, 1);
-    assert.ok(r.corpo.cotacao.convidados[0].token.length >= 43);
+    //  12 caracteres desde 10/10/2026 — eram 43. O link viaja
+    //  pelo WhatsApp e a chave longa fazia uma parede de letras
+    //  embaixo da mensagem. A conta de segurança está em
+    //  `servicos/cotacao.ts`.
+    assert.ok(r.corpo.cotacao.convidados[0].token.length >= 12);
   });
 
   it('marca a solicitação de origem como Em cotação', async () => {

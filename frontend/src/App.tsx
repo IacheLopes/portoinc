@@ -96,6 +96,14 @@ function Rotas() {
         {/* O portal do fornecedor é público: quem tem o link entra
             sem login. Precisa vir antes do desvio para /entrar. */}
         <Route path="/portal/:token" element={<Portal />} />
+        {/* O MESMO PORTAL, NUM ENDERECO CURTO.
+            O link viaja pelo WhatsApp e cada caractere pesa: com
+            `/portal/` e 43 de chave, ele virava uma parede de
+            letras embaixo de uma mensagem curta.
+            A rota longa FICA — os convites ja enviados apontam
+            para ela, e link de fornecedor nao pode morrer porque
+            a gente achou o endereco feio. */}
+        <Route path="/p/:token" element={<Portal />} />
         {/* O convite de senha, pelo mesmo motivo: quem chega aqui
             ainda não tem senha para entrar. */}
         <Route path="/senha/:token" element={<CriarSenha />} />
@@ -128,6 +136,14 @@ function Rotas() {
     return (
       <Routes>
         <Route path="/portal/:token" element={<Portal />} />
+        {/* O MESMO PORTAL, NUM ENDERECO CURTO.
+            O link viaja pelo WhatsApp e cada caractere pesa: com
+            `/portal/` e 43 de chave, ele virava uma parede de
+            letras embaixo de uma mensagem curta.
+            A rota longa FICA — os convites ja enviados apontam
+            para ela, e link de fornecedor nao pode morrer porque
+            a gente achou o endereco feio. */}
+        <Route path="/p/:token" element={<Portal />} />
         <Route path="/senha/:token" element={<CriarSenha />} />
         <Route
           path="*"
@@ -155,6 +171,14 @@ function Rotas() {
       {/* Também acessível para quem está logado: o comprador pode
           querer conferir como o fornecedor está vendo o pedido. */}
       <Route path="/portal/:token" element={<Portal />} />
+        {/* O MESMO PORTAL, NUM ENDERECO CURTO.
+            O link viaja pelo WhatsApp e cada caractere pesa: com
+            `/portal/` e 43 de chave, ele virava uma parede de
+            letras embaixo de uma mensagem curta.
+            A rota longa FICA — os convites ja enviados apontam
+            para ela, e link de fornecedor nao pode morrer porque
+            a gente achou o endereco feio. */}
+        <Route path="/p/:token" element={<Portal />} />
       <Route path="/senha/:token" element={<CriarSenha />} />
       <Route path="/entrar" element={<Navigate to="/" replace />} />
 

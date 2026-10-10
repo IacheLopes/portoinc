@@ -53,11 +53,27 @@ export function formatarNumeroBid(numero: number): string {
 /**
  * Gera a chave do link público.
  *
- * 32 bytes aleatórios = 256 bits. Adivinhar por tentativa é
- * inviável, o que permite que o fornecedor entre sem senha.
+ * ESTA CHAVE É A SENHA DAQUELA COTAÇÃO: quem a tem responde em
+ * nome do fornecedor. Por isso ela é sorteada, e não derivada de
+ * nada que alguém possa descobrir.
+ *
+ * ERAM 32 BYTES, E VIRARAM 9, em 10/10/2026.
+ *
+ * O link viaja pelo WhatsApp, e com 32 bytes ele tinha 43
+ * caracteres só de chave — uma parede de letras embaixo de uma
+ * mensagem curta. O dono reclamou olhando a conversa no celular,
+ * e tinha razão: endereço assim assusta quem recebe.
+ *
+ * 9 bytes = 72 bits = 12 caracteres. Para adivinhar um token
+ * seria preciso acertar entre 4,7 sextilhões — e a rota do
+ * portal aceita 30 tentativas por 5 minutos, o que torna a
+ * busca por força bruta impossível em qualquer prazo humano.
+ *
+ * Os tokens antigos continuam valendo: estão guardados, e nada
+ * aqui os invalida.
  */
 export function gerarToken(): string {
-  return randomBytes(32).toString('base64url');
+  return randomBytes(9).toString('base64url');
 }
 
 export interface ConferenciaAbertura {
