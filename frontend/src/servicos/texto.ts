@@ -195,3 +195,32 @@ export function dinheiroCurto(valor: number): string {
   // separador certo quando o eixo chega a "R$ 999".
   return sinal + 'R$ ' + absoluto.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 }
+
+/**
+ * Quanto tempo faz, em português de gente.
+ *
+ * Nasceu para o diário da conexão do WhatsApp: "conectado às
+ * 12:27" responde QUANDO, e quem olha a tela quer saber HÁ QUANTO
+ * TEMPO. As duas coisas aparecem juntas, porque uma sem a outra
+ * sempre deixa a pessoa fazendo conta de cabeça.
+ *
+ * Para de crescer em dias: diário de conexão que diz "há 3 meses"
+ * está, na prática, dizendo "nunca".
+ */
+export function faz(quando: string | Date | null | undefined): string {
+  if (!quando) return '—';
+
+  const segundos = Math.floor((Date.now() - new Date(quando).getTime()) / 1000);
+
+  if (segundos < 0) return 'agora';
+  if (segundos < 60) return 'há segundos';
+
+  const minutos = Math.floor(segundos / 60);
+  if (minutos < 60) return 'há ' + minutos + ' ' + palavra(minutos, 'minuto', 'minutos');
+
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return 'há ' + horas + ' ' + palavra(horas, 'hora', 'horas');
+
+  const dias = Math.floor(horas / 24);
+  return 'há ' + dias + ' ' + palavra(dias, 'dia', 'dias');
+}

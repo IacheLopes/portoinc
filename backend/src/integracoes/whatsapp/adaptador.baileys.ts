@@ -135,7 +135,26 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
   private numero: string | null = null;
   private reconexao: NodeJS.Timeout | null = null;
 
-  constructor(private readonly pastaSessao: string) {}
+  /**
+   * Avisado a cada mudanca de estado, se alguem quiser ouvir.
+   *
+   * O ADAPTADOR NAO CONHECE O BANCO, E ISSO E DE PROPOSITO. Ele
+   * e uma tomada: sabe falar com o WhatsApp e mais nada. Quem
+   * quiser guardar a historia liga este aviso no quadro de
+   * tomadas (`integracoes/index.ts`), que e o unico lugar do
+   * sistema que conhece os dois lados.
+   *
+   * O aviso e disparado SEM espera (`void`): gravar o diario nao
+   * pode atrasar nem derrubar a conexao.
+   */
+  constructor(
+    private readonly pastaSessao: string,
+    private readonly aoMudarEstado?: (
+      estado: EstadoConexao,
+      detalhe: string | null,
+      numeroMascarado: string | null,
+    ) => void,
+  ) {}
 
   // --------------------------------------------------------
   //  Estado
@@ -173,6 +192,18 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
     this.conexao = estado;
     this.desde = new Date();
     this.detalhe = detalhe ?? null;
+
+    //  O diario nunca pode atrapalhar a conexao: se quem ouve
+    //  explodir, a culpa nao e do WhatsApp.
+    try {
+      this.aoMudarEstado?.(
+        estado,
+        this.detalhe ?? EXPLICACAO[estado],
+        this.numero ? mascarar(this.numero) : null,
+      );
+    } catch {
+      // Observacao que derruba o observado e pior que nenhuma.
+    }
   }
 
   // --------------------------------------------------------

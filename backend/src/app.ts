@@ -28,6 +28,8 @@ import { rotasAprovacoes } from './rotas/aprovacoes.js';
 import { rotasCotacoes } from './rotas/cotacoes.js';
 import { rotasPortal } from './rotas/portal.js';
 import { rotasConvite } from './rotas/convite.js';
+import { conferirPartida } from './servicos/diario-whatsapp.js';
+import { integracoes } from './integracoes/index.js';
 import { rotasEqualizacao } from './rotas/equalizacao.js';
 import { rotasRecebimentos } from './rotas/recebimentos.js';
 import { rotasEstoque } from './rotas/estoque.js';
@@ -193,6 +195,18 @@ export async function criarApp(): Promise<FastifyInstance> {
       erro: status >= 500 ? 'Erro interno do servidor' : erro.message,
     });
   });
+
+  //  O DIÁRIO DO WHATSAPP OLHA PARA TRÁS NA PARTIDA.
+  //
+  //  Quando a API é reiniciada, a conexão do WhatsApp cai sem que
+  //  ninguém consiga anotar — o processo morre antes. Aqui o
+  //  sistema confere se a última linha do diário ficou dizendo
+  //  "no ar" e, se ficou, registra o que de fato houve.
+  //
+  //  Não espera: partida de API não atrasa por causa de diário.
+  if (!ehTeste) {
+    void conferirPartida(integracoes.whatsapp.situacao().estado);
+  }
 
   return app;
 }

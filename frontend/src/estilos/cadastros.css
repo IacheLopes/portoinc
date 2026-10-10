@@ -2055,3 +2055,48 @@ input[type='file'].campo__entrada {
   font-size: var(--txt-sm);
   overflow-wrap: anywhere;
 }
+
+/* ------------------------------------------------------------
+   O diário da conexão do WhatsApp
+
+   Uma lista de definição, não uma tabela: são cinco perguntas
+   fixas com uma resposta cada, e tabela de duas colunas com
+   cabeçalho inventado ("Campo | Valor") é pior de ler e pior de
+   ouvir num leitor de tela.
+
+   `auto-fit` faz a quebra sozinha: três colunas no monitor, uma
+   no celular, sem consulta de largura.
+   ------------------------------------------------------------ */
+
+.diario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--esp-5);
+  margin: 0;
+}
+
+.diario__item dt {
+  margin-bottom: var(--esp-1);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+.diario__item dd {
+  margin: 0;
+  color: var(--texto);
+  font-size: var(--txt-lg);
+  font-weight: var(--peso-forte);
+}
+
+/* A nota explica o número de cima; ela não pode competir com ele. */
+.diario__nota {
+  display: block;
+  margin-top: var(--esp-1);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+  font-weight: 400;
+}
+
+.diario__titulo {
+  margin: var(--esp-6) 0 var(--esp-3);
+}

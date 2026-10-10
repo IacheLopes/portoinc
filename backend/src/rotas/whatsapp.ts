@@ -8,6 +8,7 @@ import { banco } from '../plugins/banco.js';
 import { integracoes } from '../integracoes/index.js';
 import { erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
+import { resumirConexao, listarEventos } from '../servicos/diario-whatsapp.js';
 import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
 import {
   enviarPeloWhatsApp, modoTeste, mascarar, normalizarTelefone,
@@ -35,15 +36,45 @@ export async function rotasWhatsApp(app: FastifyInstance) {
     // `sistema.integracoes`.
     { preHandler: app.exigirPermissao('sistema.integracoes', 'cotacoes.gerenciar', 'pedidos.gerenciar') },
     async () => {
-      const autorizados = await banco.numeroAutorizado.count();
+      const situacao = integracoes.whatsapp.situacao();
+
+      const [autorizados, conexao] = await Promise.all([
+        banco.numeroAutorizado.count(),
+        resumirConexao(situacao.estado),
+      ]);
 
       return {
         adaptador: integracoes.whatsapp.nome,
         simulado: integracoes.whatsapp.nome === 'mock',
         modoTeste: modoTeste(),
         numerosAutorizados: autorizados,
-        ...integracoes.whatsapp.situacao(),
+        ...situacao,
+        //  O DIÁRIO.
+        //
+        //  `desde` sempre existiu e responde "há quanto tempo o
+        //  adaptador está NESTE estado" — o que, numa reconexão,
+        //  é o tempo da última tentativa, não o da conexão. Estes
+        //  campos respondem as perguntas de quem administra: a que
+        //  horas subiu, a que horas caiu, e quantas vezes caiu.
+        conexao,
       };
+    },
+  );
+
+  // --------------------------------------------------------
+  //  O histórico da conexão
+  //
+  //  Separado da situação de propósito: a tela de cima recarrega
+  //  sozinha a cada poucos segundos enquanto o QR está na tela, e
+  //  não faz sentido trazer vinte linhas de histórico junto.
+  // --------------------------------------------------------
+  app.get(
+    '/api/whatsapp/eventos',
+    { preHandler: app.exigirPermissao('sistema.integracoes') },
+    async (req) => {
+      const { quantos } = req.query as { quantos?: string };
+      const eventos = await listarEventos(Number(quantos) || 20);
+      return { eventos };
     },
   );
 

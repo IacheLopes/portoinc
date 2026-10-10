@@ -53,6 +53,25 @@ export const COR_MENSAGEM: Record<SituacaoMensagem, 'info' | 'sucesso' | 'atenca
   BLOQUEADA: 'atencao',
 };
 
+/** O que o diario da conexao responde. */
+export interface ResumoDaConexao {
+  /** Quando a conexao ATUAL comecou. Nulo se nao esta no ar. */
+  noArDesde: string | null;
+  /** Quando esteve no ar pela ultima vez, mesmo que ja tenha saido. */
+  ultimaVezNoAr: string | null;
+  ultimaQueda: { quando: string; detalhe: string | null } | null;
+  ultimoFim: { quando: string; detalhe: string | null } | null;
+  quedasEm24h: number;
+}
+
+export interface EventoDaConexao {
+  id: string;
+  estado: EstadoConexao;
+  detalhe: string | null;
+  numeroMascarado: string | null;
+  quando: string;
+}
+
 export interface SituacaoWhatsApp {
   adaptador: string;
   simulado: boolean;
@@ -61,8 +80,16 @@ export interface SituacaoWhatsApp {
   estado: EstadoConexao;
   numero: string | null;
   temQr: boolean;
+  /**
+   * Ha quanto tempo o adaptador esta NESTE estado.
+   *
+   * Nao e a hora da conexao: numa reconexao e a hora da ultima
+   * tentativa. Para a pergunta "a que horas subiu?", use
+   * `conexao.noArDesde`.
+   */
   desde: string | null;
   detalhe: string | null;
+  conexao: ResumoDaConexao;
 }
 
 export interface NumeroAutorizado {
@@ -92,6 +119,13 @@ export interface MensagemDoHistorico {
 
 export function buscarSituacao() {
   return chamar<SituacaoWhatsApp>('/api/whatsapp/situacao');
+}
+
+/** O diario da conexao: as ultimas mudancas de estado. */
+export function listarEventosDaConexao(quantos = 20) {
+  return chamar<{ eventos: EventoDaConexao[] }>(
+    '/api/whatsapp/eventos?quantos=' + quantos,
+  );
 }
 
 export function conectar() {

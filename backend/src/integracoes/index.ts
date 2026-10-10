@@ -10,6 +10,7 @@
 // ============================================================
 
 import { ambiente } from '../config/ambiente.js';
+import { anotarEstado } from '../servicos/diario-whatsapp.js';
 
 import type { PortaWhatsApp } from './whatsapp/porta.js';
 import { AdaptadorWhatsAppMock } from './whatsapp/adaptador.mock.js';
@@ -31,8 +32,15 @@ import { AdaptadorEmailResend } from './email/adaptador.resend.js';
 function montarWhatsApp(): PortaWhatsApp {
   switch (ambiente.WHATSAPP_ADAPTER) {
     case 'baileys':
+      //  O segundo argumento e o DIARIO: o adaptador avisa cada
+      //  mudanca de estado, e aqui — o unico lugar que conhece os
+      //  dois lados — isso vira linha no banco. Ver
+      //  `servicos/diario-whatsapp.ts`.
       return new AdaptadorWhatsAppBaileys(
         process.env.WHATSAPP_SESSAO_DIR ?? "/app/sessao-whatsapp",
+        (estado, detalhe, numero) => {
+          void anotarEstado(estado, detalhe, numero);
+        },
       );
     case 'cloud-api':
       return new AdaptadorWhatsAppCloudApi(

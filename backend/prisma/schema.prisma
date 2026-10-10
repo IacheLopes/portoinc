@@ -162,6 +162,27 @@ model ConviteDeSenha {
   @@map("convites_de_senha")
 }
 
+/// Cada mudança de estado da conexão do WhatsApp.
+///
+/// O adaptador sempre soube em que estado estava; o que faltava
+/// era lembrar por onde passou. Sem isto, "a que horas caiu?"
+/// não tinha resposta — e a resposta some justamente quando a API
+/// reinicia, que é quando ela mais serve.
+model EventoWhatsApp {
+  id      String @id @default(uuid())
+  /// Um dos nove estados do adaptador, como texto.
+  estado  String
+  detalhe String?
+  /// Sempre mascarado: `5583••••••48`.
+  numeroMascarado String? @map("numero_mascarado")
+
+  quando DateTime @default(now())
+
+  @@index([quando(sort: Desc)])
+  @@index([estado, quando(sort: Desc)])
+  @@map("eventos_whatsapp")
+}
+
 // ============================================================
 //  CADASTROS
 // ============================================================

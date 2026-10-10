@@ -20,7 +20,9 @@ import {
   buscarSituacao, conectar, desconectar, listarAutorizados, autorizarNumero,
   removerAutorizado, enviarTeste, listarHistorico, buscarQr,
   ROTULO_ESTADO, COR_ESTADO, ROTULO_MENSAGEM, COR_MENSAGEM,
+  listarEventosDaConexao,
   type SituacaoWhatsApp, type NumeroAutorizado, type MensagemDoHistorico,
+  type EventoDaConexao,
 } from '../../servicos/whatsapp';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
@@ -31,13 +33,14 @@ import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
-import { palavra } from '../../servicos/texto';
+import { palavra, faz } from '../../servicos/texto';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
 
 export function ConfiguracaoWhatsApp() {
   const [situacao, setSituacao] = useState<SituacaoWhatsApp | null>(null);
+  const [eventos, setEventos] = useState<EventoDaConexao[]>([]);
   const [autorizados, setAutorizados] = useState<NumeroAutorizado[]>([]);
   const [historico, setHistorico] = useState<MensagemDoHistorico[]>([]);
   const [qr, setQr] = useState<string | null>(null);
@@ -60,15 +63,17 @@ export function ConfiguracaoWhatsApp() {
 
   const carregar = useCallback(async () => {
     try {
-      const [s, a, h] = await Promise.all([
+      const [s, a, h, d] = await Promise.all([
         buscarSituacao(),
         listarAutorizados(),
         listarHistorico(),
+        listarEventosDaConexao(),
       ]);
 
       setSituacao(s);
       setAutorizados(a.autorizados);
       setHistorico(h.mensagens);
+      setEventos(d.eventos);
 
       if (s.temQr) {
         const novo = await buscarQr();
@@ -204,10 +209,18 @@ export function ConfiguracaoWhatsApp() {
         </div>
 
         <div className="grade">
+          {/* "Conectado" responde O QUE. Quem administra pergunta
+              DESDE QUANDO — e a resposta estava no sistema, perdida
+              a cada reinicio da API. Agora ela mora no diário. */}
           <Indicador
             titulo="Situação"
-            valor={ROTULO_ESTADO[situacao.estado]}
-            detalhe={situacao.numero ?? 'Nenhum número conectado'}
+            valor={conectado ? 'No ar' : ROTULO_ESTADO[situacao.estado]}
+            detalhe={
+              conectado && situacao.conexao.noArDesde
+                ? 'Desde ' + dataHoraBr(situacao.conexao.noArDesde)
+                  + ' · ' + faz(situacao.conexao.noArDesde)
+                : (situacao.numero ?? 'Nenhum número conectado')
+            }
           />
           {/* O QUE ACONTECE SE EU CLICAR EM ENVIAR AGORA?
               É esta a pergunta, e ela tem DUAS condições: o canal
@@ -283,6 +296,172 @@ export function ConfiguracaoWhatsApp() {
             Atualizar
           </button>
         </div>
+      </section>
+
+      {/* ----------------------------------------------------
+          O DIÁRIO DA CONEXÃO
+
+          Pedido dele em 10/10/2026, olhando a tela conectada:
+          "hora que foi conectado, hora que foi desconectado,
+          status online/offline, se caiu".
+
+          O adaptador sempre soube disso no instante em que
+          acontecia — e esquecia no instante seguinte, porque
+          `desde` era sobrescrito a cada mudança e nada sobrevivia
+          a um reinício da API.
+
+          As três linhas de cima respondem as perguntas dele de
+          uma vez; a lista embaixo é para quando a resposta curta
+          não basta ("caiu de novo às 3 da manhã?").
+          ---------------------------------------------------- */}
+      <section className="secao">
+        <div className="secao__cabecalho">
+          <h2>A conexão ao longo do tempo</h2>
+          <p className="secao__descricao">
+            Quando subiu, quando caiu e o que aconteceu no meio. Fica guardado mesmo que o
+            sistema reinicie.
+          </p>
+        </div>
+
+        <Cartao>
+          <dl className="diario">
+            <div className="diario__item">
+              <dt>Agora</dt>
+              <dd>
+                <Selo tipo={conectado ? 'sucesso' : 'atencao'}>
+                  {conectado ? 'No ar' : 'Fora do ar'}
+                </Selo>
+                <span className="diario__nota">
+                  {conectado
+                    ? 'Recebendo e enviando pelo ' + (situacao.numero ?? 'número conectado')
+                    : situacao.detalhe}
+                </span>
+              </dd>
+            </div>
+
+            <div className="diario__item">
+              <dt>Entrou no ar</dt>
+              <dd>
+                {situacao.conexao.noArDesde ? (
+                  <>
+                    {dataHoraBr(situacao.conexao.noArDesde)}
+                    <span className="diario__nota">{faz(situacao.conexao.noArDesde)}</span>
+                  </>
+                ) : situacao.conexao.ultimaVezNoAr ? (
+                  <>
+                    {/* Fora do ar: a pergunta vira "quando foi a
+                        última vez que esteve", que é outra coisa. */}
+                    <span className="texto-fraco">Não está no ar</span>
+                    <span className="diario__nota">
+                      A última vez foi {dataHoraBr(situacao.conexao.ultimaVezNoAr)},{' '}
+                      {faz(situacao.conexao.ultimaVezNoAr)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="texto-fraco">Nunca esteve no ar</span>
+                )}
+              </dd>
+            </div>
+
+            <div className="diario__item">
+              <dt>Última queda</dt>
+              <dd>
+                {situacao.conexao.ultimaQueda ? (
+                  <>
+                    {dataHoraBr(situacao.conexao.ultimaQueda.quando)}
+                    <span className="diario__nota">
+                      {faz(situacao.conexao.ultimaQueda.quando)}
+                      {situacao.conexao.ultimaQueda.detalhe
+                        ? ' · ' + situacao.conexao.ultimaQueda.detalhe
+                        : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span className="texto-fraco">Nunca caiu</span>
+                )}
+              </dd>
+            </div>
+
+            {/* "DESLIGADA POR ALGUÉM" ERA MENTIRA METADE DAS VEZES.
+                O mesmo estado `desconectado` cobre três coisas: o
+                clique em Desconectar, a sessão encerrada no celular
+                e o sistema reiniciando. O rótulo dizia que alguém
+                desligou mesmo quando ninguém encostou. Agora o
+                rótulo é neutro e quem explica é o motivo, que já
+                vinha pronto e eu não estava mostrando. */}
+            <div className="diario__item">
+              <dt>Última parada</dt>
+              <dd>
+                {situacao.conexao.ultimoFim ? (
+                  <>
+                    {dataHoraBr(situacao.conexao.ultimoFim.quando)}
+                    <span className="diario__nota">
+                      {faz(situacao.conexao.ultimoFim.quando)}
+                      {situacao.conexao.ultimoFim.detalhe
+                        ? ' · ' + situacao.conexao.ultimoFim.detalhe
+                        : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span className="texto-fraco">Nunca parou</span>
+                )}
+              </dd>
+            </div>
+
+            <div className="diario__item">
+              <dt>Quedas em 24 horas</dt>
+              <dd>
+                {/* ZERO TAMBÉM É RESPOSTA, e é a boa. Esconder o
+                    número quando não há queda obrigaria a pessoa a
+                    concluir pelo silêncio. */}
+                <strong>{situacao.conexao.quedasEm24h}</strong>
+                <span className="diario__nota">
+                  {situacao.conexao.quedasEm24h === 0
+                    ? 'A conexão não caiu sozinha no último dia'
+                    : 'Queda demais costuma ser sinal de internet instável no servidor'}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </Cartao>
+
+        <h3 className="diario__titulo">O que aconteceu</h3>
+
+        {eventos.length === 0 ? (
+          <Vazio
+            titulo="Nada registrado ainda"
+            descricao="Cada vez que a conexão subir, cair ou for desligada, aparece uma linha aqui."
+          />
+        ) : (
+          <TabelaArea>
+            <table className="tabela">
+              <caption className="apenas-leitor-tela">Mudanças da conexão do WhatsApp</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Quando</th>
+                  <th scope="col">O que houve</th>
+                  <th scope="col">Detalhe</th>
+                  <th scope="col">Número</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventos.map((e) => (
+                  <tr key={e.id}>
+                    <td data-rotulo="Quando">
+                      {dataHoraBr(e.quando)}
+                      <span className="diario__nota">{faz(e.quando)}</span>
+                    </td>
+                    <td data-rotulo="O que houve">
+                      <Selo tipo={COR_ESTADO[e.estado]}>{ROTULO_ESTADO[e.estado]}</Selo>
+                    </td>
+                    <td data-rotulo="Detalhe">{e.detalhe ?? '—'}</td>
+                    <td data-rotulo="Número">{e.numeroMascarado ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabelaArea>
+        )}
       </section>
 
       {mostrandoQr && (

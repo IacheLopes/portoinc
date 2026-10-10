@@ -6,7 +6,7 @@
 // ============================================================
 
 import { describe, it, expect } from 'vitest';
-import { plural, contar, porcento, jurosAoMes, palavra, dinheiroCurto } from './texto';
+import { plural, contar, porcento, jurosAoMes, palavra, dinheiroCurto, faz } from './texto';
 
 describe('plural', () => {
   it('no singular não sai "(s)"', () => {
@@ -134,5 +134,51 @@ describe('dinheiroCurto', () => {
     // A casa dos bilhões é o teto acertado. Um trilhão lê-se como
     // mil bilhões, com o ponto de milhar no lugar.
     expect(dinheiroCurto(1000000000000)).toBe('R$ 1.000,0B');
+  });
+});
+
+// ------------------------------------------------------------
+//  "Há quanto tempo", em português de gente
+//
+//  Nasceu para o diário da conexão do WhatsApp. "Conectado às
+//  12:27" responde QUANDO; quem olha a tela quer saber HÁ QUANTO
+//  TEMPO, e sem isso fica fazendo conta de cabeça.
+// ------------------------------------------------------------
+describe('faz', () => {
+  /** Um instante a N segundos atrás. */
+  function atras(segundos: number): Date {
+    return new Date(Date.now() - segundos * 1000);
+  }
+
+  it('sem data, não inventa', () => {
+    expect(faz(null)).toBe('—');
+    expect(faz(undefined)).toBe('—');
+  });
+
+  it('abaixo de um minuto não conta segundo', () => {
+    // "há 7 segundos" é precisão que ninguém pediu e que fica
+    // velha enquanto a pessoa lê.
+    expect(faz(atras(5))).toBe('há segundos');
+    expect(faz(atras(59))).toBe('há segundos');
+  });
+
+  it('minutos, horas e dias, com o plural certo', () => {
+    expect(faz(atras(60))).toBe('há 1 minuto');
+    expect(faz(atras(60 * 2))).toBe('há 2 minutos');
+    expect(faz(atras(60 * 60))).toBe('há 1 hora');
+    expect(faz(atras(60 * 60 * 5))).toBe('há 5 horas');
+    expect(faz(atras(60 * 60 * 24))).toBe('há 1 dia');
+    expect(faz(atras(60 * 60 * 24 * 3))).toBe('há 3 dias');
+  });
+
+  it('data no futuro vira "agora", e não "há -2 minutos"', () => {
+    // O relógio do servidor e o do navegador não batem no
+    // milissegundo. Sem esta guarda, um evento recém-gravado
+    // aparece com tempo negativo.
+    expect(faz(new Date(Date.now() + 5000))).toBe('agora');
+  });
+
+  it('aceita texto ISO, que é como o servidor manda', () => {
+    expect(faz(atras(120).toISOString())).toBe('há 2 minutos');
   });
 });
