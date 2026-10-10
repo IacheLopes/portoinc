@@ -18,14 +18,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   buscarSituacaoEmail, listarEmailsAutorizados, autorizarEmail, removerEmailAutorizado,
-  enviarEmailDeTeste, listarHistoricoDeEmail,
-  type SituacaoEmail, type EmailAutorizado, type EmailDoHistorico,
+  enviarEmailDeTeste,
+  type SituacaoEmail, type EmailAutorizado,
 } from '../../servicos/email';
-import { ROTULO_MENSAGEM, COR_MENSAGEM } from '../../servicos/whatsapp';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo } from '../../componentes/Campo';
-import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
@@ -34,7 +32,6 @@ import { Icone } from '../../componentes/Icone';
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
   const [autorizados, setAutorizados] = useState<EmailAutorizado[]>([]);
-  const [historico, setHistorico] = useState<EmailDoHistorico[]>([]);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -54,14 +51,9 @@ export function ConfiguracaoEmail() {
     setCarregando(true);
     setErro(null);
     try {
-      const [s, a, h] = await Promise.all([
-        buscarSituacaoEmail(),
-        listarEmailsAutorizados(),
-        listarHistoricoDeEmail(),
-      ]);
+      const [s, a] = await Promise.all([buscarSituacaoEmail(), listarEmailsAutorizados()]);
       setSituacao(s);
       setAutorizados(a.autorizados);
-      setHistorico(h.historico);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar a tela de e-mail.');
     } finally {
@@ -117,50 +109,115 @@ export function ConfiguracaoEmail() {
     );
   }
 
+  //  PRONTO QUER DIZER QUE O E-MAIL CHEGA.
+  //
+  //  `pronto` sozinho so diz "tem remetente configurado" — e com
+  //  o adaptador simulado isso e verdade e nada sai. As duas
+  //  condicoes juntas sao a unica leitura honesta.
+  const podeEnviar = Boolean(situacao?.pronto && !situacao.simulado);
+
   if (carregando) return <Carregando mensagem="Carregando a configuração de e-mail..." />;
   if (erro && !situacao) return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
 
   return (
     <>
-      {/* ---------- A trava, antes de tudo ---------- */}
+      {/* ----------------------------------------------------
+          O ESTADO DO CANAL, NA MESMA FORMA DO WHATSAPP
+
+          As duas abas fazem o mesmo trabalho e passaram meses com
+          desenhos diferentes: uma liderava com o estado em corpo
+          grande, a outra com uma caixa de aviso. Quem administra
+          troca de aba e tem de reaprender onde olhar.
+
+          A regra e a mesma dos dois lados: UMA tipografia grande,
+          e ela responde "da para mandar e-mail agora?". O que
+          falta para dar, quando nao da, vem logo abaixo — porque
+          "nao esta pronto" sem dizer o que falta e so frustracao.
+          ---------------------------------------------------- */}
       <section className="secao">
-        <div
-          className={'aviso ' + (situacao?.simulado ? 'aviso--info' : 'aviso--atencao')}
-          role="status"
-        >
-          <span className="aviso__icone" aria-hidden="true">
-            <Icone nome={situacao?.simulado ? 'cadeado' : 'alerta'} />
-          </span>
-          <div>
-            <strong>
-              {situacao?.simulado
-                ? 'Nenhum e-mail sai do sistema ainda.'
-                : 'Ligado no provedor: o e-mail SAI.'}
-            </strong>
-            <p>{situacao?.detalhe}</p>
-            {situacao?.modoTeste && (
-              <p>
-                O envio está <strong>restrito</strong>: só os endereços da lista abaixo
-                recebem alguma coisa. Qualquer outro é barrado antes de sair, e a
-                tentativa fica registrada.
+        <Cartao className={'conexao' + (podeEnviar ? ' conexao--no-ar' : '')}>
+          <div className="conexao__topo">
+            <div>
+              <p className="conexao__estado">
+                {podeEnviar ? 'Pronto' : 'Não sai ainda'}
               </p>
-            )}
-          </div>
-        </div>
+              <p className="conexao__numero">
+                {podeEnviar
+                  ? 'Sai de ' + (situacao?.remetente ?? 'remetente configurado')
+                  : 'Os e-mails ficam registrados, sem chegar a ninguém'}
+              </p>
+            </div>
 
-        {aviso && (
-          <div className="aviso aviso--sucesso" role="status">
-            <Icone nome="certo" className="aviso__icone" />
-            <div>{aviso}</div>
+            <div className="conexao__acoes">
+              <button
+                type="button"
+                className="botao botao--discreto"
+                onClick={() => void carregar()}
+                disabled={ocupado}
+              >
+                Atualizar
+              </button>
+            </div>
           </div>
-        )}
 
-        {erro && situacao && (
-          <div className="aviso aviso--erro" role="alert">
-            <Icone nome="alerta" className="aviso__icone" />
-            <div>{erro}</div>
-          </div>
-        )}
+          {/* O QUE FALTA, EM VEZ DE SO "NAO ESTA PRONTO".
+              O adaptador de verdade ja esta escrito e funciona —
+              diferente do SEFAZ, aqui nao falta codigo. Falta a
+              empresa ter dominio e conta no provedor. Dizer isso
+              na tela poupa a pergunta "e agora?". */}
+          {!podeEnviar && (
+            <div className="conexao__tempos">
+              <div>
+                <dt>1. Domínio da empresa</dt>
+                <dd>
+                  Um endereço como <code>compras@portoinc.com.br</code>
+                  <span className="conexao__motivo">
+                    Não dá para mandar de Gmail: o fornecedor recebe como suspeito
+                  </span>
+                </dd>
+              </div>
+
+              <div>
+                <dt>2. Conta no provedor</dt>
+                <dd>
+                  Uma chave de envio
+                  <span className="conexao__motivo">
+                    Entra no sistema como <code>EMAIL_API_TOKEN</code>
+                  </span>
+                </dd>
+              </div>
+
+              <div>
+                <dt>3. Dois registros no DNS</dt>
+                <dd>
+                  SPF e DKIM
+                  <span className="conexao__motivo">
+                    Sem eles o e-mail sai e cai no spam — pior do que não enviar
+                  </span>
+                </dd>
+              </div>
+            </div>
+          )}
+
+          {situacao?.modoTeste && podeEnviar && (
+            <p className="conexao__explicacao">
+              Envio restrito: só os endereços da lista abaixo recebem. Qualquer outro é
+              barrado antes de sair.
+            </p>
+          )}
+
+          {aviso && (
+            <p className="aviso aviso--sucesso" role="status">
+              <Icone nome="certo" /> {aviso}
+            </p>
+          )}
+
+          {erro && situacao && (
+            <p className="aviso aviso--erro" role="alert">
+              <Icone nome="alerta" /> {erro}
+            </p>
+          )}
+        </Cartao>
       </section>
 
       {/* ---------- Lista de autorizados ---------- */}
@@ -299,67 +356,17 @@ export function ConfiguracaoEmail() {
         </Cartao>
       </section>
 
-      {/* ---------- Histórico ---------- */}
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>O que o sistema tentou enviar</h2>
-          <p className="secao__descricao">
-            Inclui o que foi barrado pela lista. Tentativa bloqueada também fica registrada.
-          </p>
-        </div>
+      {/* ---------- O histórico mudou de casa ----------
 
-        {historico.length === 0 ? (
-          <Vazio
-            titulo="Nada enviado ainda"
-            descricao="Assim que o sistema mandar o primeiro e-mail, ele aparece aqui."
-          />
-        ) : (
-          <Cartao semEspaco>
-            <TabelaArea>
-              <table className="tabela">
-                <caption className="apenas-leitor-tela">
-                  Histórico de e-mails enviados e bloqueados
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Quando</th>
-                    <th scope="col">Para</th>
-                    <th scope="col">Assunto</th>
-                    <th scope="col">De onde</th>
-                    <th scope="col">Situação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.map((m) => (
-                    <tr key={m.id}>
-                      <th scope="row" className="celula-texto">
-                        {dataHoraBr(m.criadoEm)}
-                        {m.enviadoPor && <small className="linha-extra">por {m.enviadoPor}</small>}
-                      </th>
-                      <td className="celula-texto">
-                        <span className="mono">{m.emailMascarado}</span>
-                        {m.destino && <small className="linha-extra">{m.destino}</small>}
-                      </td>
-                      <td className="celula-texto">
-                        {m.assunto}
-                        {m.temAnexo && <small className="linha-extra">com anexo</small>}
-                      </td>
-                      <td className="celula-texto">
-                        {m.contexto ?? '—'}
-                        {m.referencia && <small className="linha-extra">{m.referencia}</small>}
-                      </td>
-                      <td>
-                        <Selo tipo={COR_MENSAGEM[m.situacao]}>{ROTULO_MENSAGEM[m.situacao]}</Selo>
-                        {m.erro && <small className="linha-extra">{m.erro}</small>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TabelaArea>
-          </Cartao>
-        )}
-      </section>
+          Ele mostrava "O que o sistema tentou enviar", só do
+          e-mail. Agora mora na aba "Mensagens enviadas", junto
+          com o do WhatsApp: os dois canais levam o MESMO convite
+          e o MESMO pedido, e quem pergunta "o BID-00005 saiu?"
+          não quer perguntar duas vezes.
+
+          Lá a lista tem filtro de período, de canal, de resultado
+          e paginação — que é o que uma prova de envio precisa ter.
+          ---------------------------------------------------- */}
     </>
   );
 }

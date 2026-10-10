@@ -75,15 +75,30 @@ beforeEach(() => {
   vi.mocked(enviarEmailDeTeste).mockReset();
 });
 
-describe('O aviso do topo', () => {
+describe('O cartão de estado', () => {
+  //  Era um aviso em caixa; virou cartão, com a mesma forma da
+  //  aba do WhatsApp. As duas fazem o mesmo trabalho e passaram
+  //  meses com desenhos diferentes.
+
   it('diz com todas as letras que nada sai para fora', async () => {
     montar();
 
-    //  "Modo simulado" era palavra de quem constrói. A frase diz a
-    //  mesma verdade na língua de quem administra.
+    expect(await screen.findByText('Não sai ainda')).toBeInTheDocument();
     expect(
-      await screen.findByText(/Nenhum e-mail sai do sistema ainda/),
+      screen.getByText(/ficam registrados, sem chegar a ninguém/),
     ).toBeInTheDocument();
+  });
+
+  it('e diz O QUE FALTA, não só que falta', async () => {
+    //  "Não está pronto" sem dizer o que fazer é só frustração.
+    //  O adaptador de verdade já existe e funciona: o que falta é
+    //  a empresa ter domínio, conta no provedor e DNS.
+    montar();
+
+    expect(await screen.findByText(/Domínio da empresa/)).toBeInTheDocument();
+    expect(screen.getByText(/Conta no provedor/)).toBeInTheDocument();
+    expect(screen.getByText(/SPF e DKIM/)).toBeInTheDocument();
+    expect(screen.getByText(/cai no spam/)).toBeInTheDocument();
   });
 
   it('quando o provedor está ligado, o aviso MUDA de tom', async () => {
@@ -98,14 +113,24 @@ describe('O aviso do topo', () => {
 
     montar();
 
-    expect(await screen.findByText(/o e-mail SAI/)).toBeInTheDocument();
-    expect(screen.queryByText(/não sai do sistema ainda/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Pronto')).toBeInTheDocument();
+    expect(screen.getByText(/Sai de/)).toBeInTheDocument();
+    expect(screen.queryByText('Não sai ainda')).not.toBeInTheDocument();
+
+    //  E some a lista do que falta: nao falta mais nada.
+    expect(screen.queryByText(/SPF e DKIM/)).not.toBeInTheDocument();
   });
 
-  it('explica a lista de autorizados enquanto o modo de teste está ligado', async () => {
+  it('a lista de autorizados se explica na própria seção', async () => {
+    //  A frase sobre a restrição saiu do cartão de estado: com o
+    //  adaptador simulado NADA sai, e falar de restrição ali
+    //  sugere que a restrição é o que está segurando — quando o
+    //  que segura é não haver provedor nenhum.
     montar();
 
-    expect(await screen.findByText(/só os endereços da lista/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/só estes endereços recebem e-mail/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -134,13 +159,13 @@ describe('O envio de teste', () => {
   });
 });
 
-describe('O histórico', () => {
-  it('mostra a tentativa BLOQUEADA, não só o que foi enviado', async () => {
-    // Bloqueio que não aparece em lugar nenhum é bloqueio que
-    // ninguém descobre que aconteceu.
-    montar();
-
-    expect(await screen.findByText('Bloqueada')).toBeInTheDocument();
-    expect(screen.getByText(/fora da lista de autorizados/)).toBeInTheDocument();
-  });
-});
+//  O HISTÓRICO MUDOU DE CASA, E O TESTE FOI JUNTO.
+//
+//  Ele vivia aqui, mostrando só o e-mail. Desde 10/10/2026 mora
+//  na aba "Mensagens enviadas", junto com o do WhatsApp — os dois
+//  canais levam o MESMO convite, e quem pergunta "o BID-00005
+//  saiu?" não quer perguntar duas vezes.
+//
+//  A garantia que este teste dava — "bloqueio que não aparece em
+//  lugar nenhum é bloqueio que ninguém descobre" — continua
+//  coberta, em `HistoricoComunicacao.test.tsx`.
