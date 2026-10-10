@@ -23,7 +23,14 @@ export default defineConfig({
     //
     //  Quando a Porto Inc. tiver dominio proprio, ele entra aqui
     //  e o nip.io sai.
-    allowedHosts: ['.nip.io', '.sslip.io', 'localhost'],
+    //  `.trycloudflare.com` entra para o TESTE do link: um tunel
+    //  da um endereco publico de verdade, com HTTPS, e e a unica
+    //  forma de a miniatura do WhatsApp funcionar antes de a
+    //  empresa ter dominio — quem monta a miniatura e o servidor
+    //  do WhatsApp, e ele precisa ALCANCAR a pagina.
+    //
+    //  Sai junto com o tunel quando o teste acabar.
+    allowedHosts: ['.nip.io', '.sslip.io', '.trycloudflare.com', 'localhost'],
     watch: {
       // No Windows com Docker o aviso de arquivo alterado nao chega
       // sozinho: precisamos verificar de tempos em tempos.

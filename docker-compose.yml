@@ -131,6 +131,13 @@ services:
       - api
     environment:
       CHOKIDAR_USEPOLLING: "true"
+      # O ENDERECO PUBLICO ENTRA NA PAGINA, nao so nos links.
+      #
+      # A miniatura que o WhatsApp mostra vem das marcas `og:` do
+      # HTML, e `og:image` precisa de endereco ABSOLUTO — o
+      # rastreador le a pagina de fora, sem saber de onde ela veio.
+      # O Vite troca `%VITE_URL_PUBLICA%` por este valor.
+      VITE_URL_PUBLICA: ${URL_PUBLICA:-http://localhost:5173}
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html
