@@ -11,7 +11,12 @@
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: var(--esp-4);
+  /* O cartao de entrada nao pode encostar no entalhe nem na
+     barrinha de baixo: aqui nao ha barra de cima para proteger. */
+  padding-top: max(var(--esp-4), var(--seguro-topo));
+  padding-right: max(var(--esp-4), var(--seguro-dir));
+  padding-bottom: max(var(--esp-4), var(--seguro-baixo));
+  padding-left: max(var(--esp-4), var(--seguro-esq));
   background:
     radial-gradient(circle at 20% 20%, rgba(47, 111, 237, 0.14), transparent 55%),
     var(--fundo);
@@ -85,8 +90,15 @@
   display: flex;
   align-items: center;
   gap: var(--esp-3);
-  height: var(--altura-cabecalho);
-  padding: 0 var(--esp-4);
+  /* A barra cresce para caber o entalhe e PINTA ele: o fundo cobre
+     o padding, entao a franja fica da cor da barra em vez de uma
+     faixa clara em cima dela. Fora do iPhone, `--seguro-topo` e
+     0px e a altura nao muda. */
+  height: var(--cabecalho-com-entalhe);
+  padding-top: var(--seguro-topo);
+  padding-right: max(var(--esp-4), var(--seguro-dir));
+  padding-bottom: 0;
+  padding-left: max(var(--esp-4), var(--seguro-esq));
   /* A moldura de navegação — esta barra e o menu lateral — usa os
      mesmos tokens e troca junto com o tema. */
   background: var(--menu-fundo);
@@ -205,8 +217,8 @@
 
      Ele cola logo abaixo da barra de cima, que também é fixa. */
   position: sticky;
-  top: var(--altura-cabecalho);
-  height: calc(100dvh - var(--altura-cabecalho));
+  top: var(--cabecalho-com-entalhe);
+  height: calc(100dvh - var(--cabecalho-com-entalhe));
   /* Se um dia o menu crescer mais que a tela, ele rola sozinho —
      sem arrastar a página junto. */
   overflow-y: auto;
@@ -333,7 +345,10 @@
 .painel__conteudo {
   flex: 1;
   min-width: 0;
-  padding: var(--esp-6) var(--esp-5) var(--esp-7);
+  padding-top: var(--esp-6);
+  padding-right: max(var(--esp-5), var(--seguro-dir));
+  padding-bottom: calc(var(--esp-7) + var(--seguro-baixo));
+  padding-left: max(var(--esp-5), var(--seguro-esq));
 }
 
 .secao--estreita { max-width: 560px; }
@@ -631,9 +646,13 @@ a.atalho:hover {
 
   .menu {
     position: fixed;
-    top: var(--altura-cabecalho);
+    top: var(--cabecalho-com-entalhe);
     left: 0;
     bottom: 0;
+    /* Deitado, o entalhe fica na esquerda e comeria os icones.
+       Em pe, a barrinha de baixo cobriria o ultimo item. */
+    padding-left: max(var(--esp-3), var(--seguro-esq));
+    padding-bottom: max(var(--esp-2), var(--seguro-baixo));
     z-index: 25;
     width: 250px;
     transform: translateX(-100%);
@@ -652,12 +671,17 @@ a.atalho:hover {
   .menu__fundo {
     display: block;
     position: fixed;
-    inset: var(--altura-cabecalho) 0 0 0;
+    inset: var(--cabecalho-com-entalhe) 0 0 0;
     z-index: 20;
     background: rgba(10, 28, 46, 0.5);
   }
 
-  .painel__conteudo { padding: var(--esp-5) var(--esp-4) var(--esp-6); }
+  .painel__conteudo {
+    padding-top: var(--esp-5);
+    padding-right: max(var(--esp-4), var(--seguro-dir));
+    padding-bottom: calc(var(--esp-6) + var(--seguro-baixo));
+    padding-left: max(var(--esp-4), var(--seguro-esq));
+  }
 }
 
 /* Link dentro de um aviso.
@@ -1000,29 +1024,3 @@ a.atalho:hover {
   color: inherit;
 }
 
-/* ------------------------------------------------------------
-   A senha provisória, para copiar
-
-   Ela precisa ser LIDA com segurança — vai ser ditada ao telefone ou
-   conferida contra o que a pessoa digitou. Fonte de largura fixa,
-   corpo maior que o normal e bastante espaço entre os caracteres.
-   ------------------------------------------------------------ */
-.senha-sorteada {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  padding: var(--esp-3);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  background: var(--fundo-recuado);
-}
-
-.senha-sorteada code {
-  font-family: var(--fonte-mono);
-  font-size: var(--txt-lg);
-  letter-spacing: 0.12em;
-  color: var(--texto);
-  /* Quebra se precisar: melhor duas linhas que sair da caixa. */
-  word-break: break-all;
-}

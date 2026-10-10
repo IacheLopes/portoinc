@@ -87,7 +87,7 @@ describe('A trava da lista de autorizados', () => {
 
     assert.equal(r.status, 200);
     assert.equal(r.corpo.sucesso, true);
-    assert.match(r.corpo.mensagem, /não saiu para fora/);
+    assert.match(r.corpo.mensagem, /ainda não sai do sistema/);
   });
 
   it('BLOQUEIA de novo depois de tirar da lista', async () => {

@@ -100,7 +100,7 @@ export async function rotasEmail(app: FastifyInstance) {
       modoTeste: modoTeste(),
       detalhe:
         integracoes.email.nome === 'mock'
-          ? 'Modo simulado: nada sai para fora. Os e-mails ficam registrados aqui.'
+          ? 'Todos ficam registrados aqui, com o resultado de cada tentativa.'
           : integracoes.email.pronto()
             ? 'Ligado no provedor de verdade.'
             : 'Adaptador escolhido, mas faltam as credenciais no arquivo .env.',

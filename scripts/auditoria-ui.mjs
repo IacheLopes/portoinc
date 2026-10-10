@@ -149,6 +149,12 @@ const PG = 'frontend/src/paginas/';
 //
 // Ate a regua saber montar uma cotacao de mentira, o portal se mede
 // A MAO — ha um caso proprio no guia de teste manual (CT-84).
+//
+// `/senha/:token` — o convite de senha, nascido em 10/10/2026, tem o
+// MESMO problema e metade da solucao. O estado de RECUSA ("este link
+// nao existe") nao depende de token nenhum e entra na lista abaixo.
+// O FORMULARIO depende de um convite vivo, e por isso se mede a mao,
+// como o portal.
 const TELAS = [
   ['/', 'inicio', [PG + 'Inicio.tsx']],
   // As quatro telas indice. Passaram a ser a porta de tudo em
@@ -191,11 +197,17 @@ const TELAS = [
   ['/cadastros/obras/' + OBRA, 'cadastros-obra-detalhe', [PG + 'cadastros/ObraDetalhe.tsx']],
   ['/cadastros/alcadas', 'cadastros-alcadas', [PG + 'cadastros/Alcadas.tsx']],
   ['/admin/usuarios', 'admin-usuarios', [PG + 'admin/Usuarios.tsx']],
-  ['/admin/funcoes', 'admin-funcoes', [PG + 'admin/Funcoes.tsx']],
+  //  "Funcoes" deixou de ser tela propria em 10/10/2026: virou a
+  //  segunda aba de Usuarios. O endereco antigo /admin/funcoes
+  //  redireciona para ca, e a regua mede a aba, nao o desvio.
+  ['/admin/usuarios?ver=funcoes', 'admin-funcoes', [PG + 'admin/Funcoes.tsx']],
   ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp', [PG + 'admin/Avisos.tsx', PG + 'admin/WhatsApp.tsx']],
   ['/admin/avisos?ver=email', 'admin-avisos-email', [PG + 'admin/Avisos.tsx', PG + 'admin/Email.tsx']],
   ['/admin/status', 'admin-status', [PG + 'admin/StatusSistema.tsx']],
   ['/minha-senha', 'minha-senha', [PG + 'MinhaSenha.tsx']],
+  //  O convite de senha quando o link nao serve. E a tela que quem
+  //  recebeu um link velho vai ver, e ela nao pede token valido.
+  ['/senha/link-que-nao-existe', 'senha-link-recusado', [PG + 'CriarSenha.tsx']],
 ];
 
 // ------------------------------------------------------------

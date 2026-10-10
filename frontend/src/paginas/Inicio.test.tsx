@@ -131,16 +131,26 @@ describe('o que pede ação', () => {
 });
 
 describe('o aviso de andamento do projeto', () => {
-  it('fica no fim, e não no lugar mais valioso da tela', async () => {
+  //  ELE SAIU DA TELA EM 10/10/2026.
+  //
+  //  O aviso dizia "Módulo 1 completo — 12 etapas entregues. As
+  //  integrações externas rodam em modo de teste". Falava do
+  //  PROJETO, não do trabalho de quem abriu a tela, e o dono pediu
+  //  para tirar: "o sistema ainda não foi lançado, então tudo aqui
+  //  ainda é testável mesmo não tendo o nome teste".
+  //
+  //  O teste vira o contrário: a tela não pode voltar a falar da
+  //  obra dela para quem veio trabalhar.
+  it('não fala do andamento do projeto para quem abriu a tela', async () => {
     buscar.mockResolvedValue(resumo({ urgentes: [cartao()] }));
 
     montar();
 
-    const urgente = await screen.findByText('3 parcelas passaram do vencimento');
-    const nota = screen.getByText(/modo de teste/i);
+    await screen.findByText('3 parcelas passaram do vencimento');
 
-    // compareDocumentPosition: 4 = o segundo vem DEPOIS do primeiro.
-    expect(urgente.compareDocumentPosition(nota) & 4).toBeTruthy();
+    expect(screen.queryByText(/modo de teste/i)).toBeNull();
+    expect(screen.queryByText(/etapas entregues/i)).toBeNull();
+    expect(screen.queryByText(/sistema em constru/i)).toBeNull();
   });
 });
 

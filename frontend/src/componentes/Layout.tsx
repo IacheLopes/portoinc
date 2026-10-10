@@ -137,7 +137,7 @@ export function Layout() {
               <Icone nome="cadeado" className="menu__icone" />
               Trocar minha senha
             </NavLink>
-            <p className="menu__versao">versão 0.58.0</p>
+            <p className="menu__versao">versão 0.59.0</p>
           </div>
         </nav>
 

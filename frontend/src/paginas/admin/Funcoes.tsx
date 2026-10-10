@@ -13,6 +13,13 @@
 //
 //  Criar função sem escolher o que ela pode seria um nome sem
 //  conteúdo. Por isso a tela é uma coisa só: o nome e as caixas.
+//
+//  DESDE 10/10/2026 ISTO NÃO É UMA TELA, É UMA ABA.
+//
+//  Virou a segunda aba de "Usuários e funções". O cabeçalho e o
+//  botão azul são do pai — ver o porquê em `Usuarios.tsx`. O
+//  endereço antigo, `/admin/funcoes`, continua respondendo e
+//  leva para cá.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -23,7 +30,6 @@ import {
 import { ErroApi } from '../../servicos/api';
 import { useAutenticacao } from '../../contexto/Autenticacao';
 import { Carregando, Erro } from '../../componentes/Estado';
-import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Cartao } from '../../componentes/Cartao';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { Modal } from '../../componentes/Modal';
@@ -31,7 +37,7 @@ import { Selo } from '../../componentes/Selo';
 import { Icone } from '../../componentes/Icone';
 import { plural } from '../../servicos/texto';
 
-export function Funcoes() {
+export function PainelDeFuncoes({ pedidoDeNovo }: { pedidoDeNovo: number }) {
   const { pode } = useAutenticacao();
   const podeGerenciar = pode('funcoes.gerenciar');
 
@@ -43,6 +49,14 @@ export function Funcoes() {
   const [editando, setEditando] = useState<Funcao | null>(null);
   const [apagando, setApagando] = useState<Funcao | null>(null);
   const [ocupado, setOcupado] = useState(false);
+
+  //  O pedido de "nova função" desce do cabeçalho, que é do pai.
+  useEffect(() => {
+    if (pedidoDeNovo > 0) {
+      setEditando(null);
+      setAberto(true);
+    }
+  }, [pedidoDeNovo]);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -85,27 +99,6 @@ export function Funcoes() {
   return (
     <>
       <section className="secao">
-        <CabecalhoDePagina
-          titulo="Funções e permissões"
-          descricao={
-            <>
-              A função diz <strong>o que a pessoa faz</strong> no sistema. Uma pessoa pode
-              ter mais de uma, e o que ela enxerga é a soma delas.
-            </>
-          }
-          acoes={
-            podeGerenciar && (
-              <button
-                type="button"
-                className="botao botao--principal"
-                onClick={() => { setEditando(null); setAberto(true); }}
-              >
-                + Nova função
-              </button>
-            )
-          }
-        />
-
         {aviso && (
           <p className="aviso aviso--sucesso" role="status">
             <Icone nome="certo" /> {aviso}

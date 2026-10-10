@@ -162,7 +162,7 @@ export async function enviarPorEmail(pedido: PedidoDeEmail): Promise<RespostaDeE
       sucesso: false,
       bloqueado: true,
       mensagem:
-        'O modo de teste está ligado e ' + mascararEmail(endereco) +
+        'O envio está restrito e ' + mascararEmail(endereco) +
         ' não está na lista de autorizados. Nada foi enviado.',
       registroId: registro.id,
     };
@@ -189,7 +189,7 @@ export async function enviarPorEmail(pedido: PedidoDeEmail): Promise<RespostaDeE
     bloqueado: false,
     mensagem: resultado.sucesso
       ? adaptador.nome === 'mock'
-        ? 'Modo simulado: o e-mail foi registrado, mas não saiu para fora.'
+        ? 'O e-mail foi registrado, mas ainda não sai do sistema.'
         : 'E-mail enviado para ' + mascararEmail(endereco) + '.'
       : resultado.erro ?? 'Não foi possível enviar.',
     idMensagem: resultado.idMensagem,

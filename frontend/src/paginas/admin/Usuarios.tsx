@@ -1,12 +1,27 @@
 // ============================================================
-//  Administração de usuários
+//  Usuários e funções
 //
 //  Mostra quem tem acesso, com quais funções, e permite
 //  cadastrar gente nova. É aqui que se cumpre o pedido da
 //  reunião: "cada usuário pode ter mais de uma função".
+//
+//  AS DUAS ABAS, E POR QUE ELAS SE JUNTARAM
+//
+//  "Funções e permissões" tinha bloco próprio no menu até
+//  10/10/2026. Eram duas telas para uma pergunta só — quem pode
+//  o quê — e quem cadastrava alguém tinha de sair daqui para ver
+//  o que a função dele libera. Pior: esta tela já listava as
+//  funções embaixo, sem deixar mexer. Duas respostas para a
+//  mesma coisa, e a de baixo era a pior.
+//
+//  O botão azul fica no cabeçalho padrão, não dentro da aba: é
+//  dele que a régua mede o alinhamento entre telas. Por isso o
+//  pedido de "novo" desce do pai para a aba, em vez de cada aba
+//  ter o seu botão em altura própria.
 // ============================================================
 
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   listarUsuarios,
   listarFuncoes,
@@ -15,11 +30,12 @@ import {
   redefinirSenhaDe,
   ErroApi,
   type UsuarioAdmin,
+  type Convite,
 } from '../../servicos/api';
 import { Selo } from '../../componentes/Selo';
 import { Campo, ErroFormulario } from '../../componentes/Campo';
 import { AvisoDeCriacao } from '../../componentes/AvisoDeCriacao';
-import { senhaSorteada } from '../../servicos/senhaSorteada';
+import { LinkDeSenha } from '../../componentes/LinkDeSenha';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { dataHoraBr } from '../../servicos/solicitacoes';
@@ -29,7 +45,8 @@ import { Icone } from '../../componentes/Icone';
 import { Modal } from '../../componentes/Modal';
 import { useEsperarDigitar } from '../../ganchos/esperarDigitar';
 import { mascaraTelefone, telefoneParaGuardar } from '../../servicos/mascaras';
-import { palavra } from '../../servicos/texto';
+import { useAutenticacao } from '../../contexto/Autenticacao';
+import { PainelDeFuncoes } from './Funcoes';
 
 interface FuncaoItem {
   id: string;
@@ -46,15 +63,98 @@ function formatarData(iso: string | null): string {
 }
 
 export function Usuarios() {
+  const [parametros, setParametros] = useSearchParams();
+  const { pode } = useAutenticacao();
+  const podeFuncoes = pode('funcoes.gerenciar');
+
+  //  Quem não administra funções não vê a aba — e nem chega nela
+  //  pelo endereço.
+  const pedida = parametros.get('ver');
+  const aba: Aba = pedida === 'funcoes' && podeFuncoes ? 'funcoes' : 'pessoas';
+
+  //  O pedido de "novo" é um contador, não um booleano: clicar duas
+  //  vezes seguidas precisa abrir duas vezes, e um booleano já em
+  //  `true` não avisaria a segunda.
+  const [pedidoDeNovo, setPedidoDeNovo] = useState(0);
+
+  return (
+    <>
+      <section className="secao">
+        <CabecalhoDePagina
+          titulo="Usuários e funções"
+          descricao={
+            <>
+              Quem entra no sistema, e o que cada função libera. As permissões somam:
+              quem é Comprador <em>e</em> Solicitante tem o que as duas liberam.
+            </>
+          }
+          acoes={
+            <button
+              type="button"
+              className="botao botao--principal"
+              onClick={() => setPedidoDeNovo((n) => n + 1)}
+            >
+              {aba === 'pessoas' ? '+ Novo usuário' : '+ Nova função'}
+            </button>
+          }
+        />
+
+        {podeFuncoes && (
+          <div className="abas" role="tablist" aria-label="Usuários e funções">
+            {ABAS.map((a) => (
+              <button
+                key={a.chave}
+                type="button"
+                role="tab"
+                id={'aba-' + a.chave}
+                aria-selected={a.chave === aba}
+                aria-controls={'painel-' + a.chave}
+                className={'aba' + (a.chave === aba ? ' aba--ativa' : '')}
+                onClick={() => setParametros(a.chave === 'pessoas' ? {} : { ver: a.chave })}
+              >
+                {a.rotulo}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div role="tabpanel" id={'painel-' + aba} aria-labelledby={'aba-' + aba}>
+        {aba === 'pessoas' ? (
+          <PainelDePessoas pedidoDeNovo={pedidoDeNovo} />
+        ) : (
+          <PainelDeFuncoes pedidoDeNovo={pedidoDeNovo} />
+        )}
+      </div>
+    </>
+  );
+}
+
+const ABAS = [
+  { chave: 'pessoas', rotulo: 'Pessoas' },
+  { chave: 'funcoes', rotulo: 'Funções' },
+] as const;
+
+type Aba = (typeof ABAS)[number]['chave'];
+
+function PainelDePessoas({ pedidoDeNovo }: { pedidoDeNovo: number }) {
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [funcoes, setFuncoes] = useState<FuncaoItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState('');
   const [formAberto, setFormAberto] = useState(false);
+
+  //  O botão azul mora no cabeçalho, que é do pai. O contador sobe
+  //  de zero a cada clique; o zero inicial não abre nada.
+  useEffect(() => {
+    if (pedidoDeNovo > 0) setFormAberto(true);
+  }, [pedidoDeNovo]);
   /** De quem estamos redefinindo a senha. `null` = de ninguém. */
   const [redefinindo, setRedefinindo] = useState<UsuarioAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  /** O link de senha recém-gerado, e para quem ele é. */
+  const [convite, setConvite] = useState<(Convite & { chamada: string }) | null>(null);
 
   const carregar = useCallback(async (termo = '') => {
     setCarregando(true);
@@ -105,25 +205,6 @@ export function Usuarios() {
   return (
     <>
       <section className="secao">
-        <CabecalhoDePagina
-          titulo="Usuários"
-          descricao={
-            <>
-              Cada pessoa pode acumular várias funções. As permissões somam: quem é
-            Comprador <em>e</em> Solicitante tem o que as duas funções liberam.
-            </>
-          }
-          acoes={
-            <button
-              type="button"
-              className="botao botao--principal"
-              onClick={() => setFormAberto(true)}
-            >
-              + Novo usuário
-            </button>
-          }
-        />
-
         <div className="barra-acoes">
           <Campo
             rotulo="Buscar"
@@ -142,18 +223,28 @@ export function Usuarios() {
           </p>
         )}
 
-                <FormularioUsuario
+        {/* O LINK APARECE UMA VEZ SÓ.
+            O token não fica guardado em lugar nenhum — o banco tem
+            só o resumo dele. Recarregar a tela não traz de volta, e
+            é por isso que ele fica aqui em cima, grande, em vez de
+            numa notificação que some sozinha. */}
+        {convite && (
+          <LinkDeSenha
+            token={convite.token}
+            expiraEm={convite.expiraEm}
+            chamada={convite.chamada}
+          />
+        )}
+
+        <FormularioUsuario
           key={String(formAberto)}
           aberto={formAberto}
           aoFechar={() => setFormAberto(false)}
           funcoes={funcoes}
-          aoSalvar={async () => {
+          aoSalvar={async (nome, novo) => {
             setFormAberto(false);
-            // A mensagem dizia "Ele criará a própria senha no primeiro
-            // acesso" — e o formulário pede uma senha PROVISÓRIA, que
-            // alguém tem de entregar à pessoa. Quem acreditasse na
-            // frase não passaria a senha, e a pessoa não entraria.
-            setAviso('Usuário cadastrado. Passe a senha provisória para ele — o sistema vai exigir que ele troque no primeiro acesso.');
+            setAviso(null);
+            setConvite({ ...novo, chamada: 'Conta criada. Passe este link para ' + nome + '.' });
             await carregar(busca);
           }}
         />
@@ -162,9 +253,13 @@ export function Usuarios() {
           key={redefinindo?.id ?? 'nenhum'}
           usuario={redefinindo}
           aoFechar={() => setRedefinindo(null)}
-          aoTrocar={(nome) => {
+          aoTrocar={(nome, novo) => {
             setRedefinindo(null);
-            setAviso('Senha de ' + nome + ' redefinida. Ela vale até ele entrar e criar a dele.');
+            setAviso(null);
+            setConvite({
+              ...novo,
+              chamada: 'A senha antiga de ' + nome + ' não vale mais. Passe este link para ele.',
+            });
           }}
         />
       </section>
@@ -241,28 +336,6 @@ export function Usuarios() {
         )}
       </section>
 
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>Funções e o que cada uma libera</h2>
-          <p className="secao__descricao">
-            As 8 funções vieram do fluxo enviado pela Porto Inc.
-          </p>
-        </div>
-
-        <div className="grade">
-          {funcoes.map((f) => (
-            <Cartao key={f.id} titulo={f.nome}>
-              <p className="funcao__descricao">{f.descricao}</p>
-              <p className="linha-de-resumo">
-                <strong>{f.permissoes.length}</strong>{' '}
-                {palavra(f.permissoes.length, 'permissão', 'permissões')} ·{' '}
-                <strong>{f.usuarios}</strong>{' '}
-                {palavra(f.usuarios, 'usuário', 'usuários')}
-              </p>
-            </Cartao>
-          ))}
-        </div>
-      </section>
     </>
   );
 }
@@ -279,13 +352,12 @@ function FormularioUsuario({
   aberto: boolean;
   aoFechar: () => void;
   funcoes: FuncaoItem[];
-  aoSalvar: () => Promise<void>;
+  aoSalvar: (nome: string, convite: Convite) => Promise<void>;
 }) {
   const idForm = useId();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [senha, setSenha] = useState('');
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [detalhes, setDetalhes] = useState<string[]>([]);
@@ -304,14 +376,13 @@ function FormularioUsuario({
     setEnviando(true);
 
     try {
-      await criarUsuario({
+      const r = await criarUsuario({
         nome,
         email,
         telefone: telefoneParaGuardar(telefone) || undefined,
-        senha,
         funcoes: selecionadas,
       });
-      await aoSalvar();
+      await aoSalvar(r.usuario.nome, r.convite);
     } catch (e) {
       if (e instanceof ErroApi) {
         setErro(e.message);
@@ -334,7 +405,7 @@ function FormularioUsuario({
       aoFechar={aoFechar}
       titulo="Novo usuário"
       descricao="As funções decidem o que a pessoa enxerga e o que ela pode fazer."
-      temAlteracao={Boolean(nome || email || telefone || senha || selecionadas.length > 0)}
+      temAlteracao={Boolean(nome || email || telefone || selecionadas.length > 0)}
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -404,23 +475,6 @@ function FormularioUsuario({
             </p>
           </div>
 
-          <div className="campo">
-            <label className="campo__rotulo" htmlFor="nova-senha">
-              Senha provisória
-            </label>
-            <input
-              id="nova-senha"
-              type="text"
-              className="campo__entrada"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              autoComplete="new-password"
-              required
-            />
-            <p className="campo__ajuda">
-              Mínimo 8 caracteres, com letra e número. A pessoa troca no primeiro acesso.
-            </p>
-          </div>
         </div>
 
         <fieldset className="campo">
@@ -463,13 +517,16 @@ function FormularioUsuario({
 //  Pedido do dono em 27/09/2026: quando alguém esquece a senha, o
 //  administrador precisa conseguir devolver o acesso.
 //
-//  A ideia final dele é um LINK de uso único, para a pessoa definir
-//  a própria senha sem ninguém ver. Isso fica para quando o sistema
-//  tiver domínio: hoje ele mora em `localhost` e num IP de rede que
-//  muda quando o roteador reinicia, e um link desses não abriria no
-//  celular de ninguém.
+//  ATÉ 10/10/2026 ISTO SORTEAVA UMA SENHA. Hoje gera um LINK.
 //
-//  Enquanto isso, senha sorteada. Funciona em qualquer endereço.
+//  A senha sorteada funcionava, e tinha um defeito que nenhum
+//  sorteio conserta: durante o trajeto até a pessoa, DUAS pessoas
+//  sabiam a senha de uma conta — e a primeira não era a dona.
+//
+//  O link não espera domínio: ele nasce da origem da própria
+//  janela, então vale em `localhost` hoje e no endereço da empresa
+//  amanhã, sem configurar nada. É o mesmo desenho do portal do
+//  fornecedor, que roda assim desde a Etapa 5.
 // ------------------------------------------------------------
 function ModalRedefinirSenha({
   usuario,
@@ -479,12 +536,8 @@ function ModalRedefinirSenha({
   /** Preenchido = modal aberto para essa pessoa. */
   usuario: UsuarioAdmin | null;
   aoFechar: () => void;
-  aoTrocar: (nome: string) => void;
+  aoTrocar: (nome: string, convite: Convite) => void;
 }) {
-  // Sorteada uma vez, ao abrir. Sortear a cada desenho da tela faria
-  // a senha mudar embaixo de quem já a copiou.
-  const [senha] = useState(senhaSorteada);
-  const [copiada, setCopiada] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -495,23 +548,11 @@ function ModalRedefinirSenha({
     setEnviando(true);
 
     try {
-      await redefinirSenhaDe(usuario.id, senha);
-      aoTrocar(usuario.nome);
+      const r = await redefinirSenhaDe(usuario.id);
+      aoTrocar(usuario.nome, r.convite);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível redefinir.');
       setEnviando(false);
-    }
-  }
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(senha);
-      setCopiada(true);
-    } catch {
-      // Sem permissão de área de transferência — o navegador nega em
-      // página servida por HTTP. A senha está à vista de qualquer
-      // jeito; dá para selecionar e copiar na mão.
-      setErro('Não deu para copiar sozinho. Selecione a senha e copie.');
     }
   }
 
@@ -520,7 +561,7 @@ function ModalRedefinirSenha({
       aberto={usuario !== null}
       aoFechar={aoFechar}
       titulo={'Redefinir a senha de ' + (usuario?.nome ?? '')}
-      descricao="Uma senha nova é sorteada agora. Ela só vale até a pessoa entrar e criar a dela."
+      descricao="A senha atual deixa de valer e a pessoa cria uma nova pelo link."
       acoes={
         <>
           <button type="button" className="botao botao--discreto" onClick={aoFechar}>
@@ -532,30 +573,21 @@ function ModalRedefinirSenha({
             onClick={() => void confirmar()}
             disabled={enviando}
           >
-            {enviando ? 'Redefinindo...' : 'Redefinir agora'}
+            {enviando ? 'Gerando o link...' : 'Gerar o link'}
           </button>
         </>
       }
     >
       <AvisoDeCriacao titulo="Isto não tem volta.">
-        Ao confirmar, <strong>a senha antiga para de funcionar na hora</strong> e a pessoa é
-        desconectada de onde estiver. Copie a senha abaixo <strong>antes</strong> de
-        confirmar — ela não aparece de novo.
+        Ao confirmar, <strong>a senha atual para de funcionar na hora</strong> e a pessoa é
+        desconectada de onde estiver. Só volta a entrar depois de criar a nova pelo link.
       </AvisoDeCriacao>
 
-      <div className="campo">
-        <span className="campo__rotulo">Senha provisória</span>
-        <div className="senha-sorteada">
-          <code>{senha}</code>
-          <button type="button" className="botao botao--secundario" onClick={() => void copiar()}>
-            {copiada ? 'Copiada' : 'Copiar'}
-          </button>
-        </div>
-        <p className="campo__ajuda">
-          Mande para <strong>{usuario?.email}</strong> por WhatsApp ou pessoalmente. No
-          primeiro acesso o sistema obriga a trocar.
-        </p>
-      </div>
+      <p>
+        O link aparece aqui atrás assim que você confirmar. Mande para{' '}
+        <strong>{usuario?.email}</strong> por WhatsApp ou pessoalmente — e repare que você
+        não vai saber a senha que ele escolher.
+      </p>
 
       {erro && <ErroFormulario mensagem={erro} />}
     </Modal>

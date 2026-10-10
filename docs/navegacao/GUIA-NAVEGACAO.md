@@ -1,4 +1,4 @@
-<!-- versao: 0.58.0 -->
+<!-- versao: 0.59.0 -->
 
 # Guia de Navegação Simples
 
@@ -110,7 +110,7 @@ As oito funções que vêm com o sistema descrevem o fluxo de compras da Porto I
 empresa precisar de um papel que elas não descrevem — **Encarregado**, **Engenheiro de
 segurança**, **Apontador** —, dá para criar.
 
-**Administração → Funções → + Nova função.** Só o administrador vê essa tela.
+**Administração → Usuários → aba Funções → + Nova função.** Só o administrador vê essa aba.
 
 Você escolhe o código, o nome e **marca o que a função pode fazer**. Pelo menos uma caixa:
 função sem permissão é um nome que não abre tela nenhuma.
@@ -744,7 +744,7 @@ tem acesso a elas.
 
 ---
 
-## 13. Avisos ao fornecedor
+## 13. Comunicação
 
 **Essa tela serve para** ver as mensagens que o sistema mandou.
 
@@ -752,7 +752,7 @@ tem acesso a elas.
 - Ver se o WhatsApp e o e-mail estão ligados
 - Ver tudo que já foi enviado
 
-**Passo:** **Administração** → **Avisos ao fornecedor** → escolha **WhatsApp** ou **E-mail** → veja o histórico.
+**Passo:** **Administração** → **Comunicação** → escolha **WhatsApp** ou **E-mail** → veja o histórico.
 
 > ⚠️ **Está tudo em modo de teste.** Nenhuma mensagem sai para fornecedor de verdade.
 
@@ -838,7 +838,7 @@ Vale saber antes que alguém pergunte na reunião:
 
 | Não faz | Por quê |
 |---|---|
-| Mandar WhatsApp ou e-mail de verdade | Está tudo em **modo de teste**, de propósito. Ligar é uma decisão sua |
+| Mandar WhatsApp ou e-mail de verdade | O **envio está restrito**, de propósito. Ligar é uma decisão sua |
 | Emitir nota fiscal | Ele **recebe** a nota do fornecedor. Quem emite é quem vende |
 | Consultar a SEFAZ | O XML é lido do arquivo. A consulta ao governo é uma integração à parte |
 | Pagar sozinho no banco | Ele controla a conta a pagar. O pagamento é feito no banco, e depois marcado aqui |

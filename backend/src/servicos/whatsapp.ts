@@ -94,7 +94,7 @@ export async function enviarPeloWhatsApp(pedido: PedidoDeEnvio): Promise<Respost
       pedido,
       situacao: 'BLOQUEADA',
       adaptador: adaptador.nome,
-      erro: 'Número fora da lista de autorizados (modo de teste ligado).',
+      erro: 'Número fora da lista de autorizados (envio restrito).',
     });
 
     return {
@@ -103,7 +103,7 @@ export async function enviarPeloWhatsApp(pedido: PedidoDeEnvio): Promise<Respost
       mensagem:
         'O número ' +
         mascarar(digitos) +
-        ' não está na lista de autorizados. Enquanto o modo de teste estiver ligado, ' +
+        ' não está na lista de autorizados. Enquanto o envio estiver restrito, ' +
         'o sistema só envia para os números que você liberar.',
       registroId: registro,
     };

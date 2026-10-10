@@ -299,7 +299,15 @@ describe('Administração de usuários', () => {
     assert.equal(r.status, 409);
   });
 
-  it('recusa senha fraca', async () => {
+  it('ignora senha mandada na criação, porque ela não existe mais ali', async () => {
+    //  A ROTA DE CRIAR NÃO RECEBE SENHA DESDE 10/10/2026.
+    //
+    //  Quem cria a conta não escolhe a senha de ninguém: a resposta
+    //  traz um LINK e a pessoa cria a dela. Uma senha mandada aqui
+    //  é campo a mais, e o servidor a descarta — ela não vira a
+    //  senha de ninguém.
+    //
+    //  A recusa de senha fraca continua existindo, no convite.
     const token = await entrarComo('admin@teste.com.br');
     const funcoes = await chamar('/api/funcoes', { token });
 
@@ -314,7 +322,17 @@ describe('Administração de usuários', () => {
       },
     });
 
-    assert.equal(r.status, 400);
+    assert.equal(r.status, 201);
+    assert.ok(r.corpo.convite?.token, 'a criação tem de devolver o link');
+
+    //  E a senha que veio junto não abre a conta.
+    const app = await pegarApp();
+    const tentativa = await app.inject({
+      method: 'POST',
+      url: '/api/autenticacao/entrar',
+      payload: { email: 'fraca@teste.com.br', senha: '12345678' },
+    });
+    assert.equal(tentativa.statusCode, 401, 'a senha mandada na criação não pode valer');
   });
 
   it('exige pelo menos uma função', async () => {
@@ -423,8 +441,22 @@ describe('Renovar a sessão', () => {
 //
 //  Estes testes existem para que isso não volte em silêncio.
 // ============================================================
-describe('Senha provisória', () => {
-  it('a conta criada pelo administrador nasce obrigada a trocar', async () => {
+describe('O link que cria a senha', () => {
+  //  ATE 10/10/2026 ISTO SE CHAMAVA "senha provisoria".
+  //
+  //  O administrador digitava uma senha, repassava, e a pessoa era
+  //  obrigada a trocar. Funcionava — e durante o trajeto DUAS
+  //  pessoas sabiam a senha de uma conta.
+  //
+  //  Hoje o sistema sorteia um link de uso unico. Estes testes
+  //  cobrem o que ele tem de garantir: que a conta nasce sem senha
+  //  utilizavel, que o link cria a senha, que ele morre depois de
+  //  usado, e que redefinir derruba quem estava dentro.
+
+  /** Guarda o que um passo deixa para o proximo. */
+  const feito: { id?: string; token?: string } = {};
+
+  it('a conta nasce SEM senha que alguem conheca', async () => {
     const token = await entrarComo('admin@teste.com.br');
 
     const r = await chamar('/api/usuarios', {
@@ -433,7 +465,6 @@ describe('Senha provisória', () => {
       corpo: {
         nome: 'Recém-chegada',
         email: 'recem@teste.com.br',
-        senha: 'Provisoria@1',
         funcoes: (await chamar('/api/funcoes', { token })).corpo.funcoes
           .filter((f: { codigo: string }) => f.codigo === 'SOLICITANTE')
           .map((f: { id: string }) => f.id),
@@ -441,14 +472,139 @@ describe('Senha provisória', () => {
     });
 
     assert.equal(r.status, 201);
-    assert.equal(
-      r.corpo.usuario.precisaTrocarSenha, true,
-      'conta criada por outra pessoa tem de nascer marcada',
-    );
+    assert.ok(r.corpo.convite?.token, 'a criação tem de devolver o link');
+    assert.ok(r.corpo.convite?.expiraEm, 'o link tem de dizer até quando vale');
+
+    feito.id = r.corpo.usuario.id;
+    feito.token = r.corpo.convite.token;
   });
 
+  it('o convite diz de quem e, sem contar nada da empresa', async () => {
+    const r = await chamar('/api/convite/' + feito.token);
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.email, 'recem@teste.com.br');
+    assert.ok(r.corpo.nome, 'a pessoa precisa reconhecer que o link é dela');
+
+    //  Nem função, nem permissão, nem id: quem tem o link ainda não
+    //  é ninguém dentro do sistema.
+    assert.deepEqual(Object.keys(r.corpo).sort(), ['email', 'nome']);
+  });
+
+  it('recusa senha fraca — a trava mudou de porta, nao sumiu', async () => {
+    const r = await chamar('/api/convite/' + feito.token, {
+      metodo: 'POST',
+      corpo: { senha: '12345678' },
+    });
+
+    assert.equal(r.status, 400);
+    assert.match(String(r.corpo.erro), /fraca/i);
+  });
+
+  it('criou a senha, e o sistema inteiro abre', async () => {
+    const r = await chamar('/api/convite/' + feito.token, {
+      metodo: 'POST',
+      corpo: { senha: 'MinhaPropria@9' },
+    });
+    assert.equal(r.status, 200);
+
+    const dela = await entrarComo('recem@teste.com.br', 'MinhaPropria@9');
+    const obras = await chamar('/api/obras', { token: dela });
+    assert.equal(obras.status, 200, 'depois de criar a senha, o sistema tem de abrir');
+  });
+
+  it('o link morre depois de usado', async () => {
+    const r = await chamar('/api/convite/' + feito.token, {
+      metodo: 'POST',
+      corpo: { senha: 'OutraQualquer@7' },
+    });
+
+    assert.equal(r.status, 410);
+    assert.equal(r.corpo.motivo, 'usado');
+
+    //  E a senha criada no passo anterior continua valendo: o link
+    //  gasto não pode ter trocado nada.
+    const dela = await entrarComo('recem@teste.com.br', 'MinhaPropria@9');
+    assert.ok(dela, 'a senha que ela criou tem de continuar valendo');
+  });
+
+  it('token inventado nao abre nada', async () => {
+    const r = await chamar('/api/convite/nao-existe-este-token');
+
+    assert.equal(r.status, 410);
+    assert.equal(r.corpo.motivo, 'inexistente');
+  });
+
+  it('redefinir pelo administrador derruba a senha e devolve outro link', async () => {
+    const dela = await entrarComo('recem@teste.com.br', 'MinhaPropria@9');
+    const admin = await entrarComo('admin@teste.com.br');
+
+    const r = await chamar('/api/usuarios/' + feito.id + '/senha', {
+      metodo: 'POST',
+      token: admin,
+    });
+    assert.equal(r.status, 200);
+    assert.ok(r.corpo.convite?.token, 'redefinir tem de devolver um link novo');
+
+    //  QUEM ESTAVA DENTRO SAI NA HORA — POR DUAS PORTAS.
+    //
+    //  `encerrarTodasSessoes` mata as sessões, então o crachá não
+    //  renova mais. O crachá curto que ela já tinha na mão continua
+    //  sendo lido até vencer, e aí quem barra é a marca de primeiro
+    //  acesso, com 403. Os dois caminhos fecham o sistema; o teste
+    //  aceita qualquer um dos dois e recusa o 200.
+    const depois = await chamar('/api/obras', { token: dela });
+    assert.ok(
+      depois.status === 401 || depois.status === 403,
+      'quem estava logado tem de cair — veio ' + depois.status,
+    );
+
+    //  E a senha antiga não entra mais.
+    const app = await pegarApp();
+    const tentativa = await app.inject({
+      method: 'POST',
+      url: '/api/autenticacao/entrar',
+      payload: { email: 'recem@teste.com.br', senha: 'MinhaPropria@9' },
+    });
+    assert.equal(tentativa.statusCode, 401, 'a senha antiga não pode continuar valendo');
+
+    //  Pelo link novo ela escolhe outra, e volta a entrar.
+    const nova = await chamar('/api/convite/' + r.corpo.convite.token, {
+      metodo: 'POST',
+      corpo: { senha: 'DepoisDoReset@3' },
+    });
+    assert.equal(nova.status, 200);
+
+    const voltou = await entrarComo('recem@teste.com.br', 'DepoisDoReset@3');
+    const obras = await chamar('/api/obras', { token: voltou });
+    assert.equal(obras.status, 200);
+  });
+});
+
+// ------------------------------------------------------------
+//  A trava do primeiro acesso
+//
+//  Ela continua de pé, e continua valendo: protege QUALQUER conta
+//  marcada com `precisaTrocarSenha` cuja senha outra pessoa
+//  conheça — uma importação, um seed de instalação, uma conta
+//  criada antes de 10/10/2026.
+//
+//  O caminho normal hoje é o link, e por ele a marca nunca chega a
+//  ser usada: a conta nasce sem senha que alguém saiba. Por isso o
+//  teste MONTA a situação direto no banco, em vez de esperar que a
+//  rota de criar a produza.
+// ------------------------------------------------------------
+describe('A trava do primeiro acesso', () => {
+  const EMAIL = 'herdada@teste.com.br';
+
   it('com a marca ligada, o servidor recusa o resto do sistema', async () => {
-    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+    await criarUsuarioTeste(EMAIL, ['SOLICITANTE']);
+    await banco.usuario.update({
+      where: { email: EMAIL },
+      data: { precisaTrocarSenha: true },
+    });
+
+    const token = await entrarComo(EMAIL);
 
     for (const rota of ['/api/obras', '/api/solicitacoes', '/api/fornecedores']) {
       const r = await chamar(rota, { token });
@@ -458,48 +614,27 @@ describe('Senha provisória', () => {
   });
 
   it('mas deixa passar o que ela precisa para sair desse estado', async () => {
-    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+    const token = await entrarComo(EMAIL);
 
     const eu = await chamar('/api/autenticacao/eu', { token });
-    assert.equal(eu.status, 200, 'ela precisa saber quem e');
+    assert.equal(eu.status, 200, 'ela precisa saber quem é');
     assert.equal(eu.corpo.usuario.precisaTrocarSenha, true);
   });
 
-  it('criou a senha dela, e o sistema inteiro abre', async () => {
-    const token = await entrarComo('recem@teste.com.br', 'Provisoria@1');
+  it('trocou a senha, e o sistema inteiro abre', async () => {
+    const token = await entrarComo(EMAIL);
 
     const troca = await chamar('/api/autenticacao/senha', {
       metodo: 'POST',
       token,
-      corpo: { senhaAtual: 'Provisoria@1', senhaNova: 'MinhaPropria@9' },
+      corpo: { senhaAtual: SENHA_TESTE, senhaNova: 'MinhaPropria@9' },
     });
     assert.equal(troca.status, 200);
 
-    // Trocar derruba as sessoes: o cracha de antes nao vale mais.
-    const novo = await entrarComo('recem@teste.com.br', 'MinhaPropria@9');
-
+    //  Trocar derruba as sessões: o crachá de antes não vale mais.
+    const novo = await entrarComo(EMAIL, 'MinhaPropria@9');
     const r = await chamar('/api/obras', { token: novo });
     assert.equal(r.status, 200, 'depois de criar a senha, o sistema tem de abrir');
-  });
-
-  it('redefinir pelo administrador religa a marca', async () => {
-    const admin = await entrarComo('admin@teste.com.br');
-
-    const lista = await chamar('/api/usuarios', { token: admin });
-    const alvo = (lista.corpo.usuarios as Array<{ id: string; email: string }>)
-      .find((u) => u.email === 'recem@teste.com.br');
-    assert.ok(alvo, 'nao achei a conta na lista');
-
-    const r = await chamar('/api/usuarios/' + alvo.id + '/senha', {
-      metodo: 'POST',
-      token: admin,
-      corpo: { senha: 'OutraVez@2' },
-    });
-    assert.equal(r.status, 200);
-
-    const dela = await entrarComo('recem@teste.com.br', 'OutraVez@2');
-    const fechado = await chamar('/api/obras', { token: dela });
-    assert.equal(fechado.status, 403, 'senha redefinida fecha o sistema de novo');
   });
 });
 

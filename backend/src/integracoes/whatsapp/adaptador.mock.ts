@@ -47,8 +47,8 @@ export class AdaptadorWhatsAppMock implements PortaWhatsApp {
       desde: this.desde,
       detalhe:
         this.conexao === 'conectado'
-          ? 'Modo simulado: nada sai para fora. As mensagens ficam registradas aqui.'
-          : 'Modo simulado, desligado.',
+          ? 'Nenhuma mensagem sai do sistema ainda. Todas ficam registradas aqui.'
+          : 'Envio desligado.',
     };
   }
 

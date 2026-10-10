@@ -88,7 +88,7 @@ export async function rotasWhatsApp(app: FastifyInstance) {
           ...integracoes.whatsapp.situacao(),
           mensagem:
             integracoes.whatsapp.nome === 'mock'
-              ? 'Modo simulado ligado. Nada sai para fora.'
+              ? 'Nenhuma mensagem sai do sistema ainda.'
               : 'Conexão iniciada. O QR Code aparece em alguns segundos.',
         };
       } catch (erro) {

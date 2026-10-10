@@ -1938,7 +1938,7 @@ input[type='file'].campo__entrada {
 
    O token é o mesmo da altura da barra; se ela mudar, isto
    acompanha. */
-.secao-com-ancora { scroll-margin-top: calc(var(--altura-cabecalho) + var(--esp-3)); }
+.secao-com-ancora { scroll-margin-top: calc(var(--cabecalho-com-entalhe) + var(--esp-3)); }
 
 .conta-da-pagina {
   margin: 0 0 var(--esp-3);
@@ -2032,4 +2032,26 @@ input[type='file'].campo__entrada {
 .paginacao__vao {
   padding: 0 var(--esp-1);
   color: var(--texto-secundario);
+}
+
+/* ------------------------------------------------------------
+   O endereço do link de senha
+
+   Ele é longo e não tem espaço nenhum: sem `overflow-wrap` estoura
+   a caixa do aviso no celular. Quebrar no meio de um token é feio
+   e está certo — o que não pode é sumir da tela.
+   ------------------------------------------------------------ */
+
+.link-de-senha__endereco {
+  margin: var(--esp-3) 0;
+}
+
+.link-de-senha__endereco code {
+  display: block;
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--fundo-suave);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+  font-size: var(--txt-sm);
+  overflow-wrap: anywhere;
 }

@@ -12,15 +12,10 @@ import {
   MODULOS,
   DESTINOS,
   INDICES,
-  ETAPAS,
-  ETAPAS_PRONTAS,
-  ETAPAS_TOTAIS,
-  MODULO_COMPLETO,
   barraLateral,
   cartoesDoIndice,
   indiceDe,
   porteDaTela,
-  oQueFalta,
   trilhaDe,
   voltarDe,
   PAGINAS,
@@ -166,11 +161,13 @@ describe('Os cartões de cada índice', () => {
     expect(numerados).toEqual([
       'Famílias', 'Materiais', 'Fornecedores', 'Obras', 'Limites de alçada',
     ]);
-    // Funções entra depois de Usuários, e sem número: os cinco
-    // numerados são a ORDEM de alimentar o sistema — família antes
-    // de material, material antes de fornecedor. Funções não entra
-    // nessa fila; é ajuste de quem administra.
-    expect(soltos).toEqual(['Usuários', 'Funções', 'Avisos', 'Status do sistema']);
+    // Os cinco numerados são a ORDEM de alimentar o sistema —
+    // família antes de material, material antes de fornecedor. O
+    // resto é ajuste de quem administra e não entra nessa fila.
+    //
+    // "Funções" saiu da lista em 10/10/2026: virou a segunda aba de
+    // Usuários, porque eram duas telas para uma pergunta só.
+    expect(soltos).toEqual(['Usuários', 'Comunicação', 'Status do sistema']);
   });
 
   it('o índice mostra só o que a pessoa pode abrir', () => {
@@ -224,22 +221,6 @@ describe('a lista de módulos', () => {
       expect(pagina, i.destino).toBeDefined();
       expect(pagina?.mae).toBe('/');
     }
-  });
-});
-
-describe('o aviso de andamento', () => {
-  it('não anuncia falta quando tudo está pronto', () => {
-    expect(ETAPAS_PRONTAS).toBe(ETAPAS_TOTAIS);
-    expect(MODULO_COMPLETO).toBe(true);
-    expect(oQueFalta()).toBe('Nada mais falta para o módulo 1.');
-  });
-
-  it('as etapas são numeradas em sequência, sem buraco', () => {
-    // A etapa 13 foi retirada quando deixou de ser etapa. Se alguém
-    // tirar outra pelo meio, a numeração denuncia.
-    expect(ETAPAS.map((e) => e.numero)).toEqual(
-      Array.from({ length: ETAPAS.length }, (_, i) => i + 1),
-    );
   });
 });
 

@@ -1,4 +1,4 @@
-<!-- versao: 0.58.0 -->
+<!-- versao: 0.59.0 -->
 
 # 1. Antes de começar
 
@@ -250,7 +250,7 @@ Os cartões são exatamente os mesmos itens do menu da esquerda — só que com 
 
 > Os dois saem da **mesma lista** dentro do sistema. Isso não é detalhe técnico à toa: antes eram listas separadas, e a tela de Início continuou anunciando que faltavam os relatórios depois que eles já estavam prontos.
 
-No alto fica o aviso de andamento — hoje **"Módulo 1 completo — 12 etapas entregues"** — com o que já existe e o lembrete de que as integrações ainda rodam em modo de teste. Essa frase se monta sozinha: quando uma etapa nova entrar na lista, o texto volta a contar "x de y" sem ninguém reescrever nada.
+A tela inicial fala do **seu trabalho de hoje**, e só disso. Ela já teve, no rodapé, um aviso sobre as etapas do projeto e sobre as integrações estarem em modo de teste — foi retirado em 10/10/2026. Aquilo era assunto de quem constrói o sistema, não de quem abre a tela para trabalhar.
 
 ---
 
@@ -277,11 +277,29 @@ Uma lista de todas as pessoas com acesso, contendo:
 1. Clique em **+ Novo usuário**
 2. Preencha nome e e-mail
 3. O telefone é opcional — será usado para os avisos por WhatsApp na Etapa 10
-4. Defina uma **senha provisória** (mínimo 8 caracteres, com letra e número)
-5. Marque **uma ou mais funções**
-6. Clique em **Cadastrar usuário**
+4. Marque **uma ou mais funções**
+5. Clique em **Cadastrar usuário**
 
-A pessoa será obrigada a criar a própria senha no primeiro acesso. Assim a senha provisória, que você digitou e possivelmente mandou por mensagem, deixa de valer.
+**Você não escolhe a senha de ninguém.** Ao salvar, aparece um **link** no alto da
+tela. Copie e mande para a pessoa como preferir — WhatsApp, e-mail, pessoalmente. Ela
+abre o link e escolhe a senha dela.
+
+| | |
+|---|---|
+| **Quem sabe a senha** | Só a própria pessoa. Nem você |
+| **Quanto tempo o link vale** | 7 dias |
+| **Quantas vezes abre** | Uma. Depois de usado, morre |
+| **Perdeu o link?** | Clique em **Redefinir senha** na linha dela e gere outro |
+
+> ⚠️ **O link aparece uma vez só.** Ele não fica guardado em lugar nenhum — o sistema
+> guarda apenas um resumo dele, que não dá para desfazer. Se você recarregar a tela
+> antes de copiar, gere outro em **Redefinir senha**.
+
+### Por que mudou
+
+Até 10/10/2026 você digitava uma senha provisória e mandava para a pessoa. Funcionava, e
+tinha um problema que nenhuma senha boa resolve: **durante o caminho, duas pessoas sabiam
+a senha de uma conta** — e a primeira não era a dona. Com o link, isso acaba.
 
 ## Como as funções somam
 
@@ -992,7 +1010,7 @@ O convite da BID-00003 sai agora para quem está na lista.
 Constrular              +55 (48) 9000-0004
 Marquilip               +55 (48) 9000-0001
 
-⚠ Modo de teste ligado. Só recebe quem estiver na
+⚠ Envio restrito. Só recebe quem estiver na
   lista de números liberados, em Avisos.
 
               Cancelar    💬 Enviar 2 convites
@@ -1004,7 +1022,7 @@ O que ela faz é mostrar **o que dá para conferir**:
 
 - **quem vai receber**, com o contato de cada um — porque o erro real não é o clique acidental, é o fornecedor errado na lista
 - **quem não tem contato cadastrado**, que aparece como *"sem WhatsApp cadastrado"* e não recebe
-- **o aviso do modo de teste antes**, e não depois. Sem ele, você só descobre que foi bloqueado quando a mensagem não chegou em ninguém
+- **o aviso do envio restrito antes**, e não depois. Sem ele, você só descobre que foi bloqueado quando a mensagem não chegou em ninguém
 
 O botão diz o que faz — *Enviar 2 convites*, com o número — e o texto continua o mesmo do começo ao fim: você clica em **Convidar**, confirma **Enviar convite**, e recebe **"2 de 2 convites enviados"**.
 
@@ -2102,7 +2120,7 @@ Esta é a única etapa em que o sistema fala com o mundo de fora. Por isso ela c
 
 ## Como chegar
 
-Menu **Administração → Avisos ao fornecedor**. Só o **Administrador** entra (permissão `sistema.integracoes`).
+Menu **Administração → Comunicação**. Só o **Administrador** entra (permissão `sistema.integracoes`).
 
 ## O problema que a trava resolve
 
@@ -4521,6 +4539,12 @@ servidor — nunca só escondendo botão na tela"*.
 E a tela fala a língua do momento: o título é **"Crie a sua senha"**, o campo é **"A senha
 que você recebeu"** (ela não tem uma senha "atual"), e o botão é **"Criar minha senha"**.
 
+> **No dia seguinte isto mudou de lugar, e continua valendo.** Em 10/10/2026 a senha
+> provisória foi aposentada: cadastrar alguém passou a gerar um **link**, e por ele
+> ninguém recebe senha de outra pessoa. A trava descrita aqui **não virou código morto** —
+> ela é o caminho do **primeiro administrador**, criado pela linha de comando com senha
+> sorteada, que não tem a quem pedir um link. Ver *Cadastrar uma pessoa nova*.
+
 ## O preço, que decide quem assina
 
 Um pedido de **800 tubos — R$ 25.200** — foi para a fila de quem assina até R$ 2.000. O
@@ -4631,7 +4655,7 @@ Achado na análise de coerência de 09/10/2026, e construído em 10/10.
 
 ## Onde fica
 
-**Administração → Funções**, e só quem tem `funcoes.gerenciar` enxerga — hoje, só o
+**Administração → Usuários**, na aba **Funções** — e só quem tem `funcoes.gerenciar` enxerga a aba. Hoje, só o
 Administrador. Quem não tem nem vê o item na barra.
 
 ## O que a tela faz

@@ -33,6 +33,7 @@ model Usuario {
   /// Um usuário pode ter VÁRIAS funções (pedido da reunião).
   funcoes UsuarioFuncao[]
   sessoes Sessao[]
+  convitesDeSenha ConviteDeSenha[]
 
   solicitacoes      Solicitacao[]
   solicitacoesValidadas Solicitacao[]   @relation("SolicitacaoValidada")
@@ -127,6 +128,38 @@ model Sessao {
   @@index([usuarioId])
   @@index([expiraEm])
   @@map("sessoes")
+}
+
+/// Convite para a pessoa CRIAR a própria senha.
+///
+/// Substitui a senha provisória que o administrador digitava e
+/// tinha de repassar: com o convite, ninguém além da pessoa chega
+/// a saber a senha dela. O administrador copia o link e manda pelo
+/// canal que quiser.
+///
+/// Guardamos o RESUMO do token, nunca ele: quem roubar o banco
+/// leva hashes, não links que funcionam. A mesma regra da Sessao.
+model ConviteDeSenha {
+  id        String @id @default(uuid())
+  usuarioId String @map("usuario_id")
+
+  /// SHA-256 do token que viaja no link.
+  tokenHash String @unique @map("token_hash")
+
+  expiraEm DateTime  @map("expira_em")
+  /// Preenchido no instante em que a senha é criada. É o que torna
+  /// o link de USO ÚNICO.
+  usadoEm  DateTime? @map("usado_em")
+
+  criadoEm   DateTime @default(now()) @map("criado_em")
+  /// Quem gerou o convite. Nulo quando o próprio sistema gerou.
+  criadoPor  String?  @map("criado_por")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEm])
+  @@map("convites_de_senha")
 }
 
 // ============================================================

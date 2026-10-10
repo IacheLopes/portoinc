@@ -329,28 +329,47 @@ export function listarFuncoes() {
   }>('/api/funcoes');
 }
 
+/** O link de uso unico que a pessoa usa para criar a senha dela. */
+export interface Convite {
+  token: string;
+  expiraEm: string;
+}
+
+/**
+ * Cria a conta. NAO recebe senha.
+ *
+ * Quem cria a conta nao escolhe a senha de ninguem: a resposta traz
+ * um convite, o administrador copia o link e manda, e a pessoa cria
+ * a dela. Ate isso acontecer, ninguem no mundo sabe uma senha que
+ * abra essa conta.
+ */
 export function criarUsuario(dados: {
   nome: string;
   email: string;
   telefone?: string;
-  senha: string;
   funcoes: string[];
 }) {
-  return chamar<{ usuario: UsuarioAdmin }>('/api/usuarios', { metodo: 'POST', corpo: dados });
+  return chamar<{ usuario: UsuarioAdmin; convite: Convite }>('/api/usuarios', {
+    metodo: 'POST',
+    corpo: dados,
+  });
 }
 
 /**
- * Redefine a senha de outra pessoa.
+ * Invalida a senha de outra pessoa e devolve um link novo.
  *
  * O servidor derruba TODAS as sessoes dela junto — quem estivesse
  * logado com a conta cai na hora. E o certo: se a senha esta sendo
  * redefinida, e porque alguem perdeu o controle dela.
+ *
+ * Nao existe mais "digitar a senha nova de alguem": quem esqueceu a
+ * senha quer escolher uma que lembre, nao receber outra de presente.
  */
-export function redefinirSenhaDe(id: string, senha: string) {
-  return chamar<{ ok: boolean; mensagem: string }>('/api/usuarios/' + id + '/senha', {
-    metodo: 'POST',
-    corpo: { senha },
-  });
+export function redefinirSenhaDe(id: string) {
+  return chamar<{ ok: boolean; mensagem: string; convite: Convite }>(
+    '/api/usuarios/' + id + '/senha',
+    { metodo: 'POST' },
+  );
 }
 
 export function editarUsuario(

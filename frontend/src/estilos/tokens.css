@@ -203,6 +203,16 @@
   --largura-maxima: 1180px;
   --altura-cabecalho: 64px;
 
+  /* AS BORDAS QUE O APARELHO COME.
+     No iPhone com entalhe: a franja em cima, a barrinha embaixo e,
+     deitado, as duas laterais. Em tudo o mais `env()` devolve 0px,
+     entao estes tokens somam nada e nenhuma outra tela muda. */
+  --seguro-topo: env(safe-area-inset-top, 0px);
+  --seguro-baixo: env(safe-area-inset-bottom, 0px);
+  --seguro-esq: env(safe-area-inset-left, 0px);
+  --seguro-dir: env(safe-area-inset-right, 0px);
+  --cabecalho-com-entalhe: calc(var(--altura-cabecalho) + var(--seguro-topo));
+
   --transicao: 160ms ease;
 }
 

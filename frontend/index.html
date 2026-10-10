@@ -10,7 +10,14 @@
              Nao entra `maximum-scale` nem `user-scalable=no`: quem precisa
              aumentar para ler TEM de conseguir. Bloquear isso e das piores
              faltas de acessibilidade que uma tela pode ter. -->
-        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+        <!-- `viewport-fit=cover` manda a pagina ocupar a tela inteira do iPhone,
+         inclusive atras do entalhe e da barrinha de baixo. Sem ele sobram duas
+         faixas brancas; com ele, a pagina precisa se defender sozinha — e e o
+         que `env(safe-area-inset-*)` faz em painel.css. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover"
+    />
     <meta name="description" content="Sistema de compras e almoxarifado da Porto Inc." />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

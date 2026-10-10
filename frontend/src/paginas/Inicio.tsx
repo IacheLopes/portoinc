@@ -22,7 +22,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAutenticacao } from '../contexto/Autenticacao';
-import { barraLateral, MODULO_COMPLETO, ETAPAS_PRONTAS, ETAPAS_TOTAIS } from '../navegacao';
+import { barraLateral } from '../navegacao';
 import { CabecalhoDePagina } from '../componentes/CabecalhoDePagina';
 import { Indicador } from '../componentes/Indicador';
 import { Carregando, Erro } from '../componentes/Estado';
@@ -51,7 +51,7 @@ const DESCRICAO_DO_DESTINO: Record<string, string> = {
   '/compras': 'Solicitar, aprovar, cotar e emitir o pedido',
   '/almoxarifado': 'Receber a entrega, controlar o estoque e as locações',
   '/financeiro': 'Contas a pagar, notas fiscais e o caixa da empresa',
-  '/administracao': 'Catálogo, obras, alçadas, pessoas e avisos',
+  '/administracao': 'Catálogo, obras, alçadas, pessoas e comunicação',
 };
 
 export function Inicio() {
@@ -244,21 +244,6 @@ export function Inicio() {
             </Link>
           ))}
         </div>
-      </section>
-
-      {/* ----------------------------------------------------
-          O aviso de andamento, no fim e em voz baixa.
-          Ele fala do PROJETO, não do trabalho de quem abriu a
-          tela — e ocupava o lugar mais valioso da página.
-          ---------------------------------------------------- */}
-      <section className="secao">
-        <p className="nota-do-rodape">
-          {MODULO_COMPLETO
-            ? 'Módulo 1 completo — ' + ETAPAS_TOTAIS + ' etapas entregues.'
-            : 'Sistema em construção — ' + ETAPAS_PRONTAS + ' de ' + ETAPAS_TOTAIS + ' etapas.'}
-          {' '}As integrações externas rodam em <strong>modo de teste</strong>: nada sai do
-          sistema para fora. Detalhes em <Link to="/admin/status">Status do sistema</Link>.
-        </p>
       </section>
     </>
   );

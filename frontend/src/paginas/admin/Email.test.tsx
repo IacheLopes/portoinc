@@ -79,8 +79,10 @@ describe('O aviso do topo', () => {
   it('diz com todas as letras que nada sai para fora', async () => {
     montar();
 
+    //  "Modo simulado" era palavra de quem constrói. A frase diz a
+    //  mesma verdade na língua de quem administra.
     expect(
-      await screen.findByText(/Modo simulado: nenhum e-mail sai para fora/),
+      await screen.findByText(/Nenhum e-mail sai do sistema ainda/),
     ).toBeInTheDocument();
   });
 
@@ -97,7 +99,7 @@ describe('O aviso do topo', () => {
     montar();
 
     expect(await screen.findByText(/o e-mail SAI/)).toBeInTheDocument();
-    expect(screen.queryByText(/nenhum e-mail sai para fora/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/não sai do sistema ainda/)).not.toBeInTheDocument();
   });
 
   it('explica a lista de autorizados enquanto o modo de teste está ligado', async () => {

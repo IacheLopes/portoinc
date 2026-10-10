@@ -318,25 +318,16 @@ export const MODULOS: Modulo[] = [
   {
     rotulo: 'Usuários',
     grupo: 'Administração',
-    titulo: 'Usuários',
-    descricao: 'Cadastrar pessoas e definir funções',
+    titulo: 'Usuários e funções',
+    descricao: 'Cadastrar pessoas, criar funções e escolher o que cada uma libera',
     para: '/admin/usuarios',
     icone: 'pessoas',
     permissoes: ['usuarios.ver'],
   },
   {
-    rotulo: 'Funções',
+    rotulo: 'Comunicação',
     grupo: 'Administração',
-    titulo: 'Funções e permissões',
-    descricao: 'Criar funções e escolher o que cada uma faz',
-    icone: 'engrenagem',
-    para: '/admin/funcoes',
-    permissoes: ['funcoes.gerenciar'],
-  },
-  {
-    rotulo: 'Avisos',
-    grupo: 'Administração',
-    titulo: 'Avisos ao fornecedor',
+    titulo: 'Comunicação',
     descricao: 'WhatsApp e e-mail: conectar e ver o que saiu',
     para: '/admin/avisos',
     icone: 'conversa',
@@ -353,73 +344,6 @@ export const MODULOS: Modulo[] = [
     noInicio: false,
   },
 ];
-
-// ------------------------------------------------------------
-//  As etapas do projeto
-//
-//  O aviso da tela de início se monta a partir desta lista. Não
-//  há texto escrito à mão dizendo "faltam os relatórios": marcar
-//  a etapa como pronta já corrige a frase.
-// ------------------------------------------------------------
-
-export interface Etapa {
-  numero: number;
-  nome: string;
-  pronta: boolean;
-}
-
-export const ETAPAS: Etapa[] = [
-  { numero: 1, nome: 'Acesso ao sistema', pronta: true },
-  { numero: 2, nome: 'Cadastros', pronta: true },
-  { numero: 3, nome: 'Solicitação de compra', pronta: true },
-  { numero: 4, nome: 'Aprovação', pronta: true },
-  { numero: 5, nome: 'Cotação', pronta: true },
-  { numero: 6, nome: 'Equalização e pedido', pronta: true },
-  { numero: 7, nome: 'Recebimento', pronta: true },
-  { numero: 8, nome: 'Estoque', pronta: true },
-  { numero: 9, nome: 'Fiscal e contas a pagar', pronta: true },
-  { numero: 10, nome: 'WhatsApp', pronta: true },
-  { numero: 11, nome: 'Relatórios', pronta: true },
-  { numero: 12, nome: 'Locação de equipamentos', pronta: true },
-];
-
-export const ETAPAS_PRONTAS = ETAPAS.filter((e) => e.pronta).length;
-export const ETAPAS_TOTAIS = ETAPAS.length;
-export const MODULO_COMPLETO = ETAPAS_PRONTAS === ETAPAS_TOTAIS;
-
-/**
- * A finalização NÃO é uma etapa, de propósito.
- *
- * Ligar as integrações de verdade e instalar num servidor não espera
- * código que falte aqui: espera uma decisão da direção, e não há data.
- * Enquanto isso contou como "etapa 13 de 13", esta tela anunciava um
- * cronograma que não existe — e quem lia entendia que havia atraso.
- */
-export const FINALIZACAO = {
-  resumo:
-    'Ligar as integrações de verdade e instalar no servidor definitivo é a ' +
-    'finalização, e acontece quando a direção decidir. Não há data marcada.',
-  itens: [
-    'WhatsApp, nota fiscal, código de barras e banco ligados de verdade',
-    'Sistema instalado no servidor definitivo',
-    'Treinamento da equipe',
-  ],
-};
-
-/**
- * O que ainda falta, em português.
- *
- * Usa dois-pontos de propósito: "falta a entrega" e "faltam os
- * relatórios" mudam artigo, gênero e número, e montar isso à mão
- * dá frase errada na primeira etapa nova que entrar na lista.
- */
-export function oQueFalta(): string {
-  const faltando = ETAPAS.filter((e) => !e.pronta).map((e) => e.nome.toLowerCase());
-
-  if (faltando.length === 0) return 'Nada mais falta para o módulo 1.';
-
-  return 'Ainda falta: ' + faltando.join(', ') + '.';
-}
 
 /** Uma linha da barra lateral: ou uma tela solta, ou um destino. */
 export interface LinhaDaBarra {
@@ -487,7 +411,7 @@ export function barraLateral(podeVer: (m: Modulo) => boolean): LinhaDaBarra[] {
  *
  * Quem tem `ordem` vem primeiro, em sequência; o resto vem depois,
  * na ordem em que foi declarado. É o caso da Administração: os
- * cinco cadastros têm ordem entre si, e Usuários, Avisos e Status
+ * cinco cadastros têm ordem entre si, e Usuários, Comunicação e Status
  * não entram nessa conta.
  */
 export function cartoesDoIndice(
@@ -609,10 +533,9 @@ export const PAGINAS: Pagina[] = [
   { rota: '/cadastros/obras', titulo: 'Obras', mae: '/administracao' },
   { rota: '/cadastros/obras/:id', titulo: 'Obra', mae: '/cadastros/obras' },
   { rota: '/cadastros/alcadas', titulo: 'Limites de alçada', mae: '/administracao' },
-  { rota: '/admin/usuarios', titulo: 'Usuários', mae: '/administracao' },
-  { rota: '/admin/funcoes', titulo: 'Funções e permissões', mae: '/administracao' },
-  { rota: '/admin/avisos', titulo: 'Avisos ao fornecedor', mae: '/administracao' },
-  { rota: '/admin/whatsapp', titulo: 'Avisos ao fornecedor', mae: '/administracao' },
+  { rota: '/admin/usuarios', titulo: 'Usuários e funções', mae: '/administracao' },
+  { rota: '/admin/avisos', titulo: 'Comunicação', mae: '/administracao' },
+  { rota: '/admin/whatsapp', titulo: 'Comunicação', mae: '/administracao' },
   { rota: '/admin/status', titulo: 'Status do sistema', mae: '/administracao' },
 ];
 

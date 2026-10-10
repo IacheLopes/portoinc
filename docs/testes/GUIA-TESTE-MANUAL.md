@@ -1,4 +1,4 @@
-<!-- versao: 0.58.0 -->
+<!-- versao: 0.59.0 -->
 
 # 1. Como usar este guia
 
@@ -2504,7 +2504,7 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 
 1. Menu **WhatsApp**
 
-**Esperado:** o primeiro bloco da tela é o aviso amarelo — *"Modo de teste ligado: só sai mensagem para número autorizado"* — **acima** dos botões de conectar.
+**Esperado:** o primeiro bloco da tela é o aviso amarelo — *"Envio restrito: só os números desta lista recebem mensagem"* — **acima** dos botões de conectar.
 
 > A ordem é proposital: entender a trava vem antes de poder usar o botão.
 
@@ -3351,7 +3351,7 @@ Estes valem para **todas** as telas. Faça uma vez por etapa.
 
 **Esperado:** os cartões são **exatamente** os mesmos itens do menu, sem faltar nem sobrar (o item "Início" não vira cartão). O Gilson vê menos cartões que o administrador, e nenhum deles é de Relatórios.
 
-O aviso do topo diz **"Módulo 1 completo — 12 etapas entregues"**, cita relatórios e locação entre o que já existe, e avisa que as integrações rodam em modo de teste.
+A tela inicial fala só do trabalho de hoje. O aviso sobre as etapas do projeto e sobre o modo de teste **foi retirado em 10/10/2026**: ele falava da obra do sistema, não do trabalho de quem abre a tela.
 
 > Os dois saem da mesma lista dentro do sistema. Se algum dia um módulo aparecer no menu e não na tela de Início, é defeito.
 
@@ -3889,7 +3889,7 @@ vencida, o cartão dela tem **faixa vermelha na lateral esquerda** e o número e
 
 4. Volte ao início e olhe o fim da página
 
-**Esperado:** o aviso sobre etapas e **modo de teste** está lá embaixo, em letra menor — não no topo.
+**Esperado:** **não existe** aviso nenhum sobre etapas do projeto ou modo de teste. A tela termina nos atalhos.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -5851,7 +5851,7 @@ sistema perguntando se havia sessão guardada e levando um "não" com cara de fa
 
 ## CT-390 · Criar uma função nova
 
-1. **Administração → Funções → + Nova função**
+1. **Administração → Usuários → aba Funções → + Nova função**
 2. Código `ENCARREGADO`, nome `Encarregado de obra`
 3. Sem marcar nenhuma caixa, olhe o botão
 
@@ -5902,21 +5902,89 @@ A descrição e as permissões continuam editáveis.
 
 ---
 
-## CT-385 · A senha provisória não abre o sistema
+## CT-385 · Quem cadastra não fica sabendo a senha
 
 1. **Administração → Usuários → Novo usuário**, crie uma conta qualquer
-2. Saia e entre com o e-mail e a senha que você digitou
 
-**Esperado:** a tela **"Crie a sua senha"**, sem barra lateral e sem menu. Digite qualquer
-endereço na barra (`/estoque`, `/financeiro/contas`): tudo cai de volta nela.
+**Esperado:** o formulário **não pede senha nenhuma**. Ao salvar, aparece um bloco verde
+no alto da tela com um **link** (`.../senha/...`), a data até quando ele vale e o botão
+**Copiar link**.
 
-3. Crie a senha e entre de novo com ela
+2. Procure, em qualquer lugar da tela, uma senha para essa pessoa
+
+**Esperado:** não existe. Nem no bloco, nem na linha dela na tabela.
+
+3. Copie o link, **saia do sistema** e abra o link numa aba anônima
+
+**Esperado:** a tela **"Crie a sua senha"**, com o nome e o e-mail da pessoa, sem barra
+lateral e sem menu.
+
+4. Escolha uma senha, repita e confirme
+5. Entre no sistema com o e-mail dela e essa senha
 
 **Esperado:** o sistema abre inteiro.
 
-4. Na tela de Usuários, use **"Redefinir senha"** naquela conta
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
-**Esperado:** ela volta a ser bloqueada no próximo acesso.
+---
+
+## CT-385a · O link só funciona uma vez
+
+1. Com a senha já criada no CT-385, **abra o mesmo link de novo**
+
+**Esperado:** *"Este link já foi usado. Se a senha é sua, entre normalmente; se não
+lembra dela, peça um link novo ao administrador."*
+
+2. Invente um endereço: `/senha/qualquer-coisa`
+
+**Esperado:** *"Este link não existe. Confira se ele veio inteiro, sem cortar no fim."*
+
+3. Pegue o link bom do CT-385 e **apague os últimos caracteres** antes de abrir
+
+**Esperado:** a mesma frase do passo 2 — e é por isso que ela fala em "cortar no fim":
+link quebrado ao copiar é o erro mais comum.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-385b · Redefinir derruba quem estava dentro
+
+1. Entre com a conta criada no CT-385 e **deixe a aba aberta**
+2. Em outra janela, como Administrador: **Usuários → Redefinir senha** naquela conta
+3. Confirme em **Gerar o link**
+
+**Esperado:** aparece um link novo, e a mensagem diz que a senha antiga não vale mais.
+
+4. Volte à aba da pessoa e clique em qualquer tela
+
+**Esperado:** ela não trabalha mais — o sistema a barra.
+
+5. Tente entrar com a senha antiga
+
+**Esperado:** não entra.
+
+6. Abra o link novo, escolha outra senha e entre
+
+**Esperado:** o sistema abre inteiro.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-385c · O link no celular
+
+Este caso existe porque o endereço do link é **longo e sem espaços**, e texto assim
+estoura a caixa em tela estreita.
+
+1. Abra um link de senha num celular, ou estreite a janela até 420px
+
+**Esperado:** o endereço quebra em várias linhas dentro da moldura cinza. A página **não
+desliza para os lados**.
+
+2. Num iPhone com entalhe, confira o alto e o pé da tela
+
+**Esperado:** nada do conteúdo fica escondido atrás do entalhe nem da barrinha de baixo.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -6490,7 +6558,10 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-382 | A primeira visita não deixa erro no console |  |
 | CT-383 | As contagens têm ponto de milhar |  |
 | CT-384 | As oito contas entram com a senha da tabela |  |
-| CT-385 | A senha provisória não abre o sistema |  |
+| CT-385 | Quem cadastra não fica sabendo a senha |  |
+| CT-385a | O link só funciona uma vez |  |
+| CT-385b | Redefinir derruba quem estava dentro |  |
+| CT-385c | O link no celular |  |
 | CT-386 | O preço decide quem assina |  |
 | CT-387 | O dinheiro que a empresa já tinha |  |
 | CT-388 | Importar catálogo e fornecedores de planilha |  |

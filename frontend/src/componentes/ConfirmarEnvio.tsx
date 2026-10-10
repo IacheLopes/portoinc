@@ -27,7 +27,7 @@ export interface DestinoDoEnvio {
   /**
    * Telefone ou e-mail, POR INTEIRO.
    *
-   * O sistema mascara número na tela de Avisos e no histórico —
+   * O sistema mascara número na tela de Comunicação e no histórico —
    * lá são listas de telefone de gente, vistas de passagem. Aqui
    * é o contrário: a pessoa está CONFERINDO o destinatário, e a
    * tabela de fornecedores atrás deste modal já mostra o número
@@ -135,10 +135,10 @@ export function ConfirmarEnvio({
         <div className="aviso aviso--atencao">
           <Icone nome="alerta" className="aviso__icone" />
           <div>
-            <strong>Modo de teste ligado.</strong>
+            <strong>Envio restrito.</strong>
             <p>
               Só recebe quem estiver na lista de números liberados, em
-              Avisos. Quem não estiver aparece como bloqueado no histórico.
+              Comunicação. Quem não estiver aparece como bloqueado no histórico.
             </p>
           </div>
         </div>

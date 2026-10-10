@@ -27,6 +27,7 @@ import { rotasSolicitacoes } from './rotas/solicitacoes.js';
 import { rotasAprovacoes } from './rotas/aprovacoes.js';
 import { rotasCotacoes } from './rotas/cotacoes.js';
 import { rotasPortal } from './rotas/portal.js';
+import { rotasConvite } from './rotas/convite.js';
 import { rotasEqualizacao } from './rotas/equalizacao.js';
 import { rotasRecebimentos } from './rotas/recebimentos.js';
 import { rotasEstoque } from './rotas/estoque.js';
@@ -157,6 +158,7 @@ export async function criarApp(): Promise<FastifyInstance> {
   await app.register(rotasInicio);
   await app.register(rotasAutenticacao);
   await app.register(rotasUsuarios);
+  await app.register(rotasConvite);
   await app.register(rotasObras);
   await app.register(rotasCatalogo);
   await app.register(rotasFornecedores);

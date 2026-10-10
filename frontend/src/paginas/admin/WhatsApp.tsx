@@ -178,8 +178,8 @@ export function ConfiguracaoWhatsApp() {
           <div>
             <strong>
               {situacao.modoTeste
-                ? 'Modo de teste ligado: só sai mensagem para número autorizado.'
-                : 'Modo de teste DESLIGADO: o sistema envia para qualquer número.'}
+                ? 'Envio restrito: só os números desta lista recebem mensagem.'
+                : 'Envio liberado: o sistema manda para qualquer número de fornecedor.'}
             </strong>
             <p>
               {situacao.modoTeste ? (
@@ -195,8 +195,8 @@ export function ConfiguracaoWhatsApp() {
                 </>
               ) : (
                 <>
-                  A trava foi desligada no arquivo <code>.env</code>. Todo envio vai para o
-                  número real do fornecedor.
+                  A restrição está desligada. Todo envio vai para o número real do
+                  fornecedor, sem conferência.
                 </>
               )}
             </p>
@@ -209,10 +209,22 @@ export function ConfiguracaoWhatsApp() {
             valor={ROTULO_ESTADO[situacao.estado]}
             detalhe={situacao.numero ?? 'Nenhum número conectado'}
           />
+          {/* O QUE ACONTECE SE EU CLICAR EM ENVIAR AGORA?
+              É esta a pergunta, e ela tem DUAS condições: o canal
+              precisa estar conectado E precisa ser o adaptador de
+              verdade. A primeira versão deste cartão olhava só o
+              adaptador e dizia "Sai de verdade" com o WhatsApp
+              desligado — mentira para o lado perigoso. */}
           <Indicador
-            titulo="Adaptador"
-            valor={situacao.simulado ? 'Simulado' : situacao.adaptador}
-            detalhe={situacao.simulado ? 'Nada sai para fora' : 'Envio real'}
+            titulo="Envio"
+            valor={!conectado ? 'Não sai' : situacao.simulado ? 'Não sai do sistema' : 'Sai de verdade'}
+            detalhe={
+              !conectado
+                ? 'Conecte um número primeiro'
+                : situacao.simulado
+                  ? 'As mensagens ficam registradas aqui'
+                  : 'Chega no aparelho do fornecedor'
+            }
           />
           <Indicador
             titulo="Autorizados"
@@ -303,7 +315,7 @@ export function ConfiguracaoWhatsApp() {
         <div className="secao__cabecalho">
           <h2>Números autorizados</h2>
           <p className="secao__descricao">
-            Enquanto o modo de teste estiver ligado, só estes números recebem mensagem.
+            Enquanto o envio estiver restrito, só estes números recebem mensagem.
           </p>
         </div>
 

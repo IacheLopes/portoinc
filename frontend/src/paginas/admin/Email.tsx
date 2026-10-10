@@ -129,19 +129,19 @@ export function ConfiguracaoEmail() {
           role="status"
         >
           <span className="aviso__icone" aria-hidden="true">
-            <Icone nome={situacao?.simulado ? 'teste' : 'alerta'} />
+            <Icone nome={situacao?.simulado ? 'cadeado' : 'alerta'} />
           </span>
           <div>
             <strong>
               {situacao?.simulado
-                ? 'Modo simulado: nenhum e-mail sai para fora.'
-                : 'Ligado no provedor de verdade: o e-mail SAI.'}
+                ? 'Nenhum e-mail sai do sistema ainda.'
+                : 'Ligado no provedor: o e-mail SAI.'}
             </strong>
             <p>{situacao?.detalhe}</p>
             {situacao?.modoTeste && (
               <p>
-                O modo de teste está <strong>ligado</strong>: só os endereços da lista
-                abaixo recebem alguma coisa. Qualquer outro é barrado antes de sair, e a
+                O envio está <strong>restrito</strong>: só os endereços da lista abaixo
+                recebem alguma coisa. Qualquer outro é barrado antes de sair, e a
                 tentativa fica registrada.
               </p>
             )}
@@ -168,7 +168,7 @@ export function ConfiguracaoEmail() {
         <div className="secao__cabecalho">
           <h2>Endereços autorizados</h2>
           <p className="secao__descricao">
-            Enquanto o modo de teste estiver ligado, só estes endereços recebem e-mail.
+            Enquanto o envio estiver restrito, só estes endereços recebem e-mail.
           </p>
         </div>
 

@@ -13,7 +13,6 @@ import { Entrar } from './paginas/Entrar';
 import { Inicio } from './paginas/Inicio';
 import { MinhaSenha } from './paginas/MinhaSenha';
 import { Usuarios } from './paginas/admin/Usuarios';
-import { Funcoes } from './paginas/admin/Funcoes';
 import { StatusSistema } from './paginas/admin/StatusSistema';
 import { Avisos } from './paginas/admin/Avisos';
 import { Familias } from './paginas/cadastros/Familias';
@@ -43,6 +42,7 @@ import {
   IndiceCompras, IndiceAlmoxarifado, IndiceFinanceiro, IndiceAdministracao,
 } from './paginas/Indices';
 import { Portal } from './paginas/Portal';
+import { CriarSenha } from './paginas/CriarSenha';
 import { Icone } from './componentes/Icone';
 
 /** Bloqueia a tela para quem não tem a permissão necessária. */
@@ -96,6 +96,9 @@ function Rotas() {
         {/* O portal do fornecedor é público: quem tem o link entra
             sem login. Precisa vir antes do desvio para /entrar. */}
         <Route path="/portal/:token" element={<Portal />} />
+        {/* O convite de senha, pelo mesmo motivo: quem chega aqui
+            ainda não tem senha para entrar. */}
+        <Route path="/senha/:token" element={<CriarSenha />} />
         <Route path="/entrar" element={<Entrar />} />
         <Route path="*" element={<Navigate to="/entrar" replace />} />
       </Routes>
@@ -125,6 +128,7 @@ function Rotas() {
     return (
       <Routes>
         <Route path="/portal/:token" element={<Portal />} />
+        <Route path="/senha/:token" element={<CriarSenha />} />
         <Route
           path="*"
           element={
@@ -151,6 +155,7 @@ function Rotas() {
       {/* Também acessível para quem está logado: o comprador pode
           querer conferir como o fornecedor está vendo o pedido. */}
       <Route path="/portal/:token" element={<Portal />} />
+      <Route path="/senha/:token" element={<CriarSenha />} />
       <Route path="/entrar" element={<Navigate to="/" replace />} />
 
       <Route element={<Layout />}>
@@ -435,13 +440,13 @@ function Rotas() {
           }
         />
 
+        {/* O endereço antigo das funções, de quando elas tinham tela
+            própria. Continua respondendo: link salvo, favorito e
+            histórico do navegador não podem morrer numa arrumação
+            de menu. */}
         <Route
           path="admin/funcoes"
-          element={
-            <Protegida permissoes={['funcoes.gerenciar']}>
-              <Funcoes />
-            </Protegida>
-          }
+          element={<Navigate to="/admin/usuarios?ver=funcoes" replace />}
         />
 
         <Route

@@ -8,7 +8,9 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
-import { gerarHash, validarForcaSenha } from '../servicos/senha.js';
+import { randomBytes } from 'node:crypto';
+import { gerarHash } from '../servicos/senha.js';
+import { gerarConvite } from '../servicos/convite-de-senha.js';
 import { encerrarTodasSessoes } from '../servicos/autenticacao.js';
 import { plural, textoOpcional } from '../servicos/util.js';
 
@@ -196,11 +198,16 @@ function formatarFuncao(f: {
   };
 }
 
+//  NÃO PEDE SENHA, DE PROPÓSITO.
+//
+//  Quem cria a conta não escolhe a senha de ninguém: o sistema
+//  devolve um LINK de uso único e a pessoa cria a dela. Enquanto o
+//  administrador digitava uma provisória, duas pessoas sabiam a
+//  senha de uma conta — e a primeira não era a dona.
 const esquemaNovoUsuario = z.object({
   nome: z.string().min(3, 'O nome precisa ter pelo menos 3 caracteres.'),
   email: z.string().email('Informe um e-mail válido.'),
   telefone: z.string().max(20).optional(),
-  senha: z.string().min(8, 'A senha precisa ter pelo menos 8 caracteres.'),
   funcoes: z.array(z.string().uuid()).min(1, 'Selecione pelo menos uma função.'),
 });
 
@@ -277,11 +284,6 @@ export async function rotasUsuarios(app: FastifyInstance) {
       const dados = esquemaNovoUsuario.safeParse(req.body);
       if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
 
-      const problemas = validarForcaSenha(dados.data.senha);
-      if (problemas.length > 0) {
-        return res.status(400).send({ erro: 'Senha fraca', detalhes: problemas });
-      }
-
       const email = dados.data.email.toLowerCase().trim();
 
       if (await banco.usuario.findUnique({ where: { email } })) {
@@ -296,16 +298,21 @@ export async function rotasUsuarios(app: FastifyInstance) {
           nome: dados.data.nome.trim(),
           email,
           telefone: dados.data.telefone,
-          senhaHash: await gerarHash(dados.data.senha),
-          // A pessoa cria a própria senha no primeiro acesso.
+          //  Um hash de 48 bytes sorteados: ninguém, nem quem criou
+          //  a conta, conhece uma senha que bata com ele. A conta
+          //  nasce sem dono até o convite ser usado.
+          senhaHash: await gerarHash(randomBytes(48).toString('base64url')),
           precisaTrocarSenha: true,
           funcoes: { create: dados.data.funcoes.map((funcaoId) => ({ funcaoId })) },
         },
         select: SELECAO,
       });
 
+      const convite = await gerarConvite(usuario.id, req.usuario?.id ?? null);
+
       return res.status(201).send({
         usuario: { ...usuario, funcoes: usuario.funcoes.map((f) => f.funcao) },
+        convite: { token: convite.token, expiraEm: convite.expiraEm },
       });
     },
   );
@@ -368,31 +375,33 @@ export async function rotasUsuarios(app: FastifyInstance) {
     { preHandler: app.exigirPermissao('usuarios.gerenciar') },
     async (req, res) => {
       const { id } = req.params as { id: string };
-      const corpo = z.object({ senha: z.string().min(8) }).safeParse(req.body);
-      if (!corpo.success) return res.status(400).send(erroDeValidacao(corpo.error));
 
-      const problemas = validarForcaSenha(corpo.data.senha);
-      if (problemas.length > 0) {
-        return res.status(400).send({ erro: 'Senha fraca', detalhes: problemas });
-      }
+      const alvo = await banco.usuario.findUnique({ where: { id } });
+      if (!alvo) return res.status(404).send({ erro: 'Usuário não encontrado.' });
 
-      if (!(await banco.usuario.findUnique({ where: { id } }))) {
-        return res.status(404).send({ erro: 'Usuário não encontrado.' });
-      }
-
+      //  Esta rota não recebe mais senha nenhuma. Ela SORTEIA um
+      //  hash que ninguém conhece, derruba as sessões abertas e
+      //  devolve um link para a pessoa criar a dela.
+      //
+      //  Quem esqueceu a senha não quer receber outra de presente:
+      //  quer poder escolher uma que lembre.
       await banco.usuario.update({
         where: { id },
         data: {
-          senhaHash: await gerarHash(corpo.data.senha),
+          senhaHash: await gerarHash(randomBytes(48).toString('base64url')),
           precisaTrocarSenha: true,
         },
       });
 
       await encerrarTodasSessoes(id);
 
+      const convite = await gerarConvite(id, req.usuario?.id ?? null);
+
       return {
         ok: true,
-        mensagem: 'Senha redefinida. A pessoa deverá criar uma nova no próximo acesso.',
+        convite: { token: convite.token, expiraEm: convite.expiraEm },
+        mensagem:
+          'A senha antiga deixou de valer. Mande o link para ' + alvo.nome + ' criar a dele.',
       };
     },
   );
