@@ -6,6 +6,24 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    //  QUEM PODE CHAMAR ESTA TELA PELO NOME.
+    //
+    //  O Vite recusa, com 403, requisicao cujo Host ele nao
+    //  reconhece — protecao contra "DNS rebinding", em que um
+    //  site de fora faz o navegador de alguem falar com um
+    //  servidor da rede interna. A protecao esta certa.
+    //
+    //  `.nip.io` entra porque o link do convite de cotacao viaja
+    //  pelo WhatsApp, e o WhatsApp NAO transforma endereco de IP
+    //  em link clicavel: ele pinta so o "192.168.1.109" e deixa
+    //  o caminho como texto. Com um NOME, a linha inteira vira
+    //  link. O nip.io resolve `192-168-1-109.nip.io` para o
+    //  proprio 192.168.1.109 — ou seja, continua sendo a rede
+    //  local, nada e exposto para fora.
+    //
+    //  Quando a Porto Inc. tiver dominio proprio, ele entra aqui
+    //  e o nip.io sai.
+    allowedHosts: ['.nip.io', '.sslip.io', 'localhost'],
     watch: {
       // No Windows com Docker o aviso de arquivo alterado nao chega
       // sozinho: precisamos verificar de tempos em tempos.

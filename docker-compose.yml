@@ -136,6 +136,11 @@ services:
       - ./frontend/index.html:/app/index.html
       # O ajuste dos testes de tela tambem vale sem reconstruir a imagem.
       - ./frontend/vitest.config.ts:/app/vitest.config.ts
+      # E o do SERVIDOR tambem. Faltava: em 10/10/2026 mudei o
+      # `allowedHosts` para o link do convite abrir pelo nome, e
+      # passei um tempo achando que a mudanca nao fazia efeito —
+      # o container seguia com a configuracao que veio na imagem.
+      - ./frontend/vite.config.ts:/app/vite.config.ts
       - ./frontend/public:/app/public
       - /app/node_modules
     ports:
