@@ -34,6 +34,8 @@
     "docx": "^9.7.1",
     "fastify": "^5.2.0",
     "fastify-plugin": "^5.0.1",
+    "jimp": "^1.6.0",
+    "link-preview-js": "^3.0.5",
     "pdfkit": "^0.16.0",
     "qrcode": "^1.5.4",
     "zod": "^3.24.1"
@@ -46,5 +48,6 @@
     "prisma": "^6.2.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
-  }
+  },
+  "_porque_link_preview_e_jimp": "O WhatsApp monta a previa do link NO APARELHO DE QUEM ENVIA, enquanto a pessoa digita. Quem digita aqui e a biblioteca, e ela so monta se estes dois existirem: link-preview-js busca a pagina e le as marcas og:, e o jimp comprime a imagem na miniatura. Sem eles o convite de cotacao chega como link cru, que para um fornecedor parece golpe. jimp e nao sharp: JavaScript puro, sem binario nativo, sem risco no build de producao."
 }
