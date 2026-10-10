@@ -171,7 +171,18 @@ export async function conferirPartida(estadoAtual: string): Promise<void> {
   }
 }
 
-/** As últimas mudanças, da mais nova para a mais velha. */
+/**
+ * As últimas mudanças, da mais nova para a mais velha.
+ *
+ * NÃO TEM ROTA, DE PROPÓSITO. A tela mostrava esta lista até
+ * 10/10/2026, e o dono mandou tirar: "não precisa de um histórico
+ * de conexão". O que ficou na tela é o RESUMO — conectou às, está
+ * no ar há, última parada —, e é ele que a tabela sustenta.
+ *
+ * A função continua aqui porque é por ela que os testes conferem
+ * o que foi gravado. Se um dia voltar a fazer falta na tela, é
+ * uma rota de quatro linhas.
+ */
 export function listarEventos(quantos = 20): Promise<EventoDaConexao[]> {
   return banco.eventoWhatsApp.findMany({
     orderBy: { quando: 'desc' },

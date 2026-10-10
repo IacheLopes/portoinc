@@ -19,15 +19,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buscarSituacao, conectar, desconectar, listarAutorizados, autorizarNumero,
   removerAutorizado, enviarTeste, listarHistorico, buscarQr,
-  ROTULO_ESTADO, COR_ESTADO, ROTULO_MENSAGEM, COR_MENSAGEM,
-  listarEventosDaConexao,
+  ROTULO_ESTADO, ROTULO_MENSAGEM, COR_MENSAGEM,
   type SituacaoWhatsApp, type NumeroAutorizado, type MensagemDoHistorico,
-  type EventoDaConexao,
 } from '../../servicos/whatsapp';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo } from '../../componentes/Campo';
-import { Indicador } from '../../componentes/Indicador';
 import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
@@ -40,7 +37,6 @@ const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'aute
 
 export function ConfiguracaoWhatsApp() {
   const [situacao, setSituacao] = useState<SituacaoWhatsApp | null>(null);
-  const [eventos, setEventos] = useState<EventoDaConexao[]>([]);
   const [autorizados, setAutorizados] = useState<NumeroAutorizado[]>([]);
   const [historico, setHistorico] = useState<MensagemDoHistorico[]>([]);
   const [qr, setQr] = useState<string | null>(null);
@@ -63,17 +59,15 @@ export function ConfiguracaoWhatsApp() {
 
   const carregar = useCallback(async () => {
     try {
-      const [s, a, h, d] = await Promise.all([
+      const [s, a, h] = await Promise.all([
         buscarSituacao(),
         listarAutorizados(),
         listarHistorico(),
-        listarEventosDaConexao(),
       ]);
 
       setSituacao(s);
       setAutorizados(a.autorizados);
       setHistorico(h.mensagens);
-      setEventos(d.eventos);
 
       if (s.temQr) {
         const novo = await buscarQr();
@@ -186,282 +180,154 @@ export function ConfiguracaoWhatsApp() {
                 ? 'Envio restrito: só os números desta lista recebem mensagem.'
                 : 'Envio liberado: o sistema manda para qualquer número de fornecedor.'}
             </strong>
+            {/* UMA LINHA, NAO TRES.
+                A explicacao longa — "os fornecedores de
+                demonstracao tem telefones ficticios, sem esta
+                trava um clique cairia no celular de um
+                desconhecido" — se le uma vez na vida e depois
+                vira parede. O que muda a cada visita e o NUMERO. */}
             <p>
               {situacao.modoTeste ? (
                 <>
-                  Os fornecedores de demonstração têm telefones fictícios. Sem esta trava, um
-                  clique em enviar cairia no celular de um desconhecido. Hoje há{' '}
                   <strong>{situacao.numerosAutorizados}</strong>{' '}
                   {palavra(
                     situacao.numerosAutorizados,
                     'número liberado',
                     'números liberados',
-                  )}.
+                  )}. Qualquer outro é barrado antes de sair.
                 </>
               ) : (
-                <>
-                  A restrição está desligada. Todo envio vai para o número real do
-                  fornecedor, sem conferência.
-                </>
+                <>Todo envio vai para o número real do fornecedor, sem conferência.</>
               )}
             </p>
           </div>
         </div>
 
-        <div className="grade">
-          {/* "Conectado" responde O QUE. Quem administra pergunta
-              DESDE QUANDO — e a resposta estava no sistema, perdida
-              a cada reinicio da API. Agora ela mora no diário. */}
-          <Indicador
-            titulo="Situação"
-            valor={conectado ? 'No ar' : ROTULO_ESTADO[situacao.estado]}
-            detalhe={
-              conectado && situacao.conexao.noArDesde
-                ? 'Desde ' + dataHoraBr(situacao.conexao.noArDesde)
-                  + ' · ' + faz(situacao.conexao.noArDesde)
-                : (situacao.numero ?? 'Nenhum número conectado')
-            }
-          />
-          {/* O QUE ACONTECE SE EU CLICAR EM ENVIAR AGORA?
-              É esta a pergunta, e ela tem DUAS condições: o canal
-              precisa estar conectado E precisa ser o adaptador de
-              verdade. A primeira versão deste cartão olhava só o
-              adaptador e dizia "Sai de verdade" com o WhatsApp
-              desligado — mentira para o lado perigoso. */}
-          <Indicador
-            titulo="Envio"
-            valor={!conectado ? 'Não sai' : situacao.simulado ? 'Não sai do sistema' : 'Sai de verdade'}
-            detalhe={
-              !conectado
-                ? 'Conecte um número primeiro'
-                : situacao.simulado
-                  ? 'As mensagens ficam registradas aqui'
-                  : 'Chega no aparelho do fornecedor'
-            }
-          />
-          <Indicador
-            titulo="Autorizados"
-            valor={String(situacao.numerosAutorizados)}
-            detalhe="Podem receber mensagem"
-          />
-          <Indicador
-            titulo="Mensagens"
-            valor={String(historico.length)}
-            detalhe="No histórico"
-          />
-        </div>
+        {/* ----------------------------------------------------
+            O ESTADO DA CONEXAO, EM UM LUGAR SO
 
-        <p className="rodape-info">
-          <Selo tipo={COR_ESTADO[situacao.estado]}>{ROTULO_ESTADO[situacao.estado]}</Selo>{' '}
-          {situacao.detalhe}
-        </p>
+            Antes de 10/10/2026 esta tela respondia "esta no ar?"
+            QUATRO vezes: o cartao do topo, um indicador
+            "Situacao", a linha do selo e o item "Agora" do
+            diario. Mais "0 autorizados" dito tres vezes, em
+            registros visuais diferentes.
 
-        {aviso && (
-          <p className="aviso aviso--sucesso" role="status">
-            <Icone nome="certo" /> {aviso}
-          </p>
-        )}
+            O problema nunca foi a quantidade de conteudo: era a
+            mesma informacao repetida ate perder o peso. Quando
+            tudo tem o mesmo tamanho, nada lidera e o olho nao
+            sabe onde pousar.
 
-        {erro && (
-          <p className="aviso aviso--erro" role="alert">
-            <Icone nome="alerta" /> {erro}
-          </p>
-        )}
+            Agora: UMA tipografia grande na tela inteira, e ela e
+            a resposta. Os tres fatos de tempo sao uma tira fina
+            embaixo — detalhe DO estado, nao irmaos dele. Por isso
+            nao viraram cartoes com numero grande, que e o padrao
+            de painel que estava aqui e que o dono recusou.
+            ---------------------------------------------------- */}
+        <Cartao className={'conexao' + (conectado ? ' conexao--no-ar' : '')}>
+          <div className="conexao__topo">
+            <div>
+              <p className="conexao__estado">
+                {conectado ? 'No ar' : ROTULO_ESTADO[situacao.estado]}
+              </p>
+              <p className="conexao__numero">
+                {situacao.numero ?? 'Nenhum número conectado'}
+              </p>
+            </div>
 
-        <div className="formulario__acoes">
-          <button
-            type="button"
-            className="botao botao--principal"
-            onClick={() => void executar(conectar)}
-            disabled={ocupado || conectado}
-          >
-            {conectado ? 'Conectado' : 'Conectar'}
-          </button>
+            <div className="conexao__acoes">
+              {conectado ? (
+                <button
+                  type="button"
+                  className="botao botao--perigo"
+                  onClick={() => void executar(desconectar)}
+                  disabled={ocupado}
+                >
+                  Desconectar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="botao botao--principal"
+                  onClick={() => void executar(conectar)}
+                  disabled={ocupado}
+                >
+                  Conectar
+                </button>
+              )}
 
-          <button
-            type="button"
-            className="botao botao--perigo"
-            onClick={() => void executar(desconectar)}
-            disabled={ocupado || situacao.estado === 'desconectado'}
-          >
-            Desconectar
-          </button>
+              <button
+                type="button"
+                className="botao botao--discreto"
+                onClick={() => void carregar()}
+                disabled={ocupado}
+              >
+                Atualizar
+              </button>
+            </div>
+          </div>
 
-          <button
-            type="button"
-            className="botao botao--discreto"
-            onClick={() => void carregar()}
-            disabled={ocupado}
-          >
-            Atualizar
-          </button>
-        </div>
-      </section>
+          {/* A frase do adaptador so aparece quando ela acrescenta
+              alguma coisa. Com "No ar" em corpo 32, ler
+              "Conectado." embaixo e ruido. */}
+          {!conectado && situacao.detalhe && (
+            <p className="conexao__explicacao">{situacao.detalhe}</p>
+          )}
 
-      {/* ----------------------------------------------------
-          O DIÁRIO DA CONEXÃO
+          {/* A RESPOSTA DO CLIQUE MORA JUNTO DO BOTAO.
+              Enxugar nao e tirar o retorno: sem isto, conectar e
+              desconectar passavam a ser silenciosos. */}
+          {aviso && (
+            <p className="aviso aviso--sucesso" role="status">
+              <Icone nome="certo" /> {aviso}
+            </p>
+          )}
 
-          Pedido dele em 10/10/2026, olhando a tela conectada:
-          "hora que foi conectado, hora que foi desconectado,
-          status online/offline, se caiu".
+          {erro && (
+            <p className="aviso aviso--erro" role="alert">
+              <Icone nome="alerta" /> {erro}
+            </p>
+          )}
 
-          O adaptador sempre soube disso no instante em que
-          acontecia — e esquecia no instante seguinte, porque
-          `desde` era sobrescrito a cada mudança e nada sobrevivia
-          a um reinício da API.
-
-          As três linhas de cima respondem as perguntas dele de
-          uma vez; a lista embaixo é para quando a resposta curta
-          não basta ("caiu de novo às 3 da manhã?").
-          ---------------------------------------------------- */}
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>A conexão ao longo do tempo</h2>
-          <p className="secao__descricao">
-            Quando subiu, quando caiu e o que aconteceu no meio. Fica guardado mesmo que o
-            sistema reinicie.
-          </p>
-        </div>
-
-        <Cartao>
-          <dl className="diario">
-            <div className="diario__item">
-              <dt>Agora</dt>
+          <dl className="conexao__tempos">
+            <div>
+              <dt>Conectou</dt>
               <dd>
-                <Selo tipo={conectado ? 'sucesso' : 'atencao'}>
-                  {conectado ? 'No ar' : 'Fora do ar'}
-                </Selo>
-                <span className="diario__nota">
-                  {conectado
-                    ? 'Recebendo e enviando pelo ' + (situacao.numero ?? 'número conectado')
-                    : situacao.detalhe}
-                </span>
+                {situacao.conexao.noArDesde
+                  ? dataHoraBr(situacao.conexao.noArDesde)
+                  : situacao.conexao.ultimaVezNoAr
+                    ? dataHoraBr(situacao.conexao.ultimaVezNoAr)
+                    : 'Nunca'}
               </dd>
             </div>
 
-            <div className="diario__item">
-              <dt>Entrou no ar</dt>
+            <div>
+              <dt>{conectado ? 'Está no ar há' : 'Fora do ar desde'}</dt>
               <dd>
-                {situacao.conexao.noArDesde ? (
-                  <>
-                    {dataHoraBr(situacao.conexao.noArDesde)}
-                    <span className="diario__nota">{faz(situacao.conexao.noArDesde)}</span>
-                  </>
-                ) : situacao.conexao.ultimaVezNoAr ? (
-                  <>
-                    {/* Fora do ar: a pergunta vira "quando foi a
-                        última vez que esteve", que é outra coisa. */}
-                    <span className="texto-fraco">Não está no ar</span>
-                    <span className="diario__nota">
-                      A última vez foi {dataHoraBr(situacao.conexao.ultimaVezNoAr)},{' '}
-                      {faz(situacao.conexao.ultimaVezNoAr)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="texto-fraco">Nunca esteve no ar</span>
-                )}
+                {conectado
+                  ? faz(situacao.conexao.noArDesde).replace(/^há /, '')
+                  : faz(situacao.conexao.ultimoFim?.quando ?? null).replace(/^há /, '')}
               </dd>
             </div>
 
-            <div className="diario__item">
-              <dt>Última queda</dt>
-              <dd>
-                {situacao.conexao.ultimaQueda ? (
-                  <>
-                    {dataHoraBr(situacao.conexao.ultimaQueda.quando)}
-                    <span className="diario__nota">
-                      {faz(situacao.conexao.ultimaQueda.quando)}
-                      {situacao.conexao.ultimaQueda.detalhe
-                        ? ' · ' + situacao.conexao.ultimaQueda.detalhe
-                        : ''}
-                    </span>
-                  </>
-                ) : (
-                  <span className="texto-fraco">Nunca caiu</span>
-                )}
-              </dd>
-            </div>
-
-            {/* "DESLIGADA POR ALGUÉM" ERA MENTIRA METADE DAS VEZES.
-                O mesmo estado `desconectado` cobre três coisas: o
-                clique em Desconectar, a sessão encerrada no celular
-                e o sistema reiniciando. O rótulo dizia que alguém
-                desligou mesmo quando ninguém encostou. Agora o
-                rótulo é neutro e quem explica é o motivo, que já
-                vinha pronto e eu não estava mostrando. */}
-            <div className="diario__item">
+            <div>
               <dt>Última parada</dt>
               <dd>
-                {situacao.conexao.ultimoFim ? (
+                {situacao.conexao.ultimoFim || situacao.conexao.ultimaQueda ? (
                   <>
-                    {dataHoraBr(situacao.conexao.ultimoFim.quando)}
-                    <span className="diario__nota">
-                      {faz(situacao.conexao.ultimoFim.quando)}
-                      {situacao.conexao.ultimoFim.detalhe
-                        ? ' · ' + situacao.conexao.ultimoFim.detalhe
-                        : ''}
+                    {dataHoraBr(
+                      (situacao.conexao.ultimaQueda ?? situacao.conexao.ultimoFim)!.quando,
+                    )}
+                    <span className="conexao__motivo">
+                      {situacao.conexao.ultimaQueda ? 'caiu sozinha' : 'reinício do sistema'}
                     </span>
                   </>
                 ) : (
-                  <span className="texto-fraco">Nunca parou</span>
+                  'Nunca parou'
                 )}
-              </dd>
-            </div>
-
-            <div className="diario__item">
-              <dt>Quedas em 24 horas</dt>
-              <dd>
-                {/* ZERO TAMBÉM É RESPOSTA, e é a boa. Esconder o
-                    número quando não há queda obrigaria a pessoa a
-                    concluir pelo silêncio. */}
-                <strong>{situacao.conexao.quedasEm24h}</strong>
-                <span className="diario__nota">
-                  {situacao.conexao.quedasEm24h === 0
-                    ? 'A conexão não caiu sozinha no último dia'
-                    : 'Queda demais costuma ser sinal de internet instável no servidor'}
-                </span>
               </dd>
             </div>
           </dl>
         </Cartao>
-
-        <h3 className="diario__titulo">O que aconteceu</h3>
-
-        {eventos.length === 0 ? (
-          <Vazio
-            titulo="Nada registrado ainda"
-            descricao="Cada vez que a conexão subir, cair ou for desligada, aparece uma linha aqui."
-          />
-        ) : (
-          <TabelaArea>
-            <table className="tabela">
-              <caption className="apenas-leitor-tela">Mudanças da conexão do WhatsApp</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Quando</th>
-                  <th scope="col">O que houve</th>
-                  <th scope="col">Detalhe</th>
-                  <th scope="col">Número</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventos.map((e) => (
-                  <tr key={e.id}>
-                    <td data-rotulo="Quando">
-                      {dataHoraBr(e.quando)}
-                      <span className="diario__nota">{faz(e.quando)}</span>
-                    </td>
-                    <td data-rotulo="O que houve">
-                      <Selo tipo={COR_ESTADO[e.estado]}>{ROTULO_ESTADO[e.estado]}</Selo>
-                    </td>
-                    <td data-rotulo="Detalhe">{e.detalhe ?? '—'}</td>
-                    <td data-rotulo="Número">{e.numeroMascarado ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TabelaArea>
-        )}
       </section>
 
       {mostrandoQr && (

@@ -134,11 +134,6 @@ export function Avisos() {
     void conferir();
   }, [conferir]);
 
-  const CANAIS = [
-    { chave: 'whatsapp' as const, rotulo: 'WhatsApp', leitura: lerWhatsApp(whatsapp) },
-    { chave: 'email' as const, rotulo: 'E-mail', leitura: lerEmail(email) },
-  ];
-
   return (
     <>
       <section className="secao">
@@ -149,33 +144,35 @@ export function Avisos() {
           }
         />
 
-        <ul className="canais">
-          {CANAIS.map((c) => (
-            <li key={c.chave} className="canais__item">
-              <div className="canais__topo">
-                <strong className="canais__nome">{c.rotulo}</strong>
-                <Selo tipo={c.leitura.tipo}>{c.leitura.texto}</Selo>
-              </div>
-              {c.leitura.detalhe && <p className="canais__detalhe">{c.leitura.detalhe}</p>}
-            </li>
-          ))}
-        </ul>
+        {/* O ESTADO MORA NA ABA, NÃO NUM CARTÃO ACIMA DELA.
+            Até 10/10/2026 havia dois cartões de resumo aqui em
+            cima. Eles nasceram quando cada aba abria sem dizer se
+            o canal estava de pé — e ficaram sendo eco no dia em
+            que a aba passou a liderar com o estado em corpo
+            grande. O mesmo fato, duas vezes, a 300px de distância.
 
+            O selo na aba guarda o que os cartões traziam de útil:
+            dá para ver os DOIS canais sem clicar em nenhum. */}
         <div className="abas" role="tablist" aria-label="Canais de envio">
-          {ABAS.map((a) => (
-            <button
-              key={a.chave}
-              type="button"
-              role="tab"
-              id={'aba-' + a.chave}
-              aria-selected={a.chave === aba}
-              aria-controls={'painel-' + a.chave}
-              className={'aba' + (a.chave === aba ? ' aba--ativa' : '')}
-              onClick={() => setParametros({ ver: a.chave })}
-            >
-              {a.rotulo}
-            </button>
-          ))}
+          {ABAS.map((a) => {
+            const leitura = a.chave === 'whatsapp' ? lerWhatsApp(whatsapp) : lerEmail(email);
+
+            return (
+              <button
+                key={a.chave}
+                type="button"
+                role="tab"
+                id={'aba-' + a.chave}
+                aria-selected={a.chave === aba}
+                aria-controls={'painel-' + a.chave}
+                className={'aba aba--com-selo' + (a.chave === aba ? ' aba--ativa' : '')}
+                onClick={() => setParametros({ ver: a.chave })}
+              >
+                {a.rotulo}
+                <Selo tipo={leitura.tipo}>{leitura.texto}</Selo>
+              </button>
+            );
+          })}
         </div>
 
         <div

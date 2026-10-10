@@ -346,47 +346,20 @@ th.celula-texto > .celula-extra {
 }
 
 /* ------------------------------------------------------------
-   Os canais de comunicação, em resumo
+   O selo dentro da aba
 
-   Dois cartões rasos antes das abas, respondendo de uma vez a
-   pergunta que traz a pessoa até aqui: o convite sai ou não sai?
-   Antes era preciso abrir uma aba para saber de cada canal.
+   Os dois canais precisam ser lidos sem clicar em nenhum. Antes
+   isso eram dois cartões acima das abas; viraram eco no dia em
+   que cada aba passou a liderar com o estado em corpo grande.
 
-   `auto-fit` em vez de duas colunas fixas: no celular eles
-   empilham sozinhos, sem consulta de largura.
+   O selo é a mesma informação ocupando uma linha em vez de um
+   bloco — e ele fica DENTRO do alvo de clique, então quem toca
+   na aba não erra o selo.
    ------------------------------------------------------------ */
 
-.canais {
-  list-style: none;
-  margin: 0 0 var(--esp-5);
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--esp-3);
-}
-
-.canais__item {
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  padding: var(--esp-4);
-  background: var(--fundo-elevado);
-}
-
-.canais__topo {
-  display: flex;
-  flex-wrap: wrap;
+.aba--com-selo {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--esp-2);
 }
 
-.canais__nome {
-  font-size: var(--txt-md);
-  color: var(--texto);
-}
-
-.canais__detalhe {
-  margin: var(--esp-2) 0 0;
-  color: var(--texto-secundario);
-  font-size: var(--txt-sm);
-}

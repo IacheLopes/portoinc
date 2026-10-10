@@ -2057,46 +2057,86 @@ input[type='file'].campo__entrada {
 }
 
 /* ------------------------------------------------------------
-   O diário da conexão do WhatsApp
+   O estado da conexão do WhatsApp
 
-   Uma lista de definição, não uma tabela: são cinco perguntas
-   fixas com uma resposta cada, e tabela de duas colunas com
-   cabeçalho inventado ("Campo | Valor") é pior de ler e pior de
-   ouvir num leitor de tela.
+   UM cartão no lugar de quatro indicadores, uma linha de selo e
+   um bloco de histórico. A tela respondia "está no ar?" quatro
+   vezes, em quatro registros visuais, e quando tudo tem o mesmo
+   peso nada lidera.
 
-   `auto-fit` faz a quebra sozinha: três colunas no monitor, uma
-   no celular, sem consulta de largura.
+   A regra deste bloco: existe UMA tipografia grande, e ela é a
+   resposta. Os tempos embaixo são detalhe DELA — por isso ficam
+   em corpo pequeno, atrás de uma régua, e não viram cartões com
+   número grande (que é o padrão de painel que estava aqui e foi
+   recusado).
    ------------------------------------------------------------ */
 
-.diario {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--esp-5);
-  margin: 0;
+.conexao__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
 }
 
-.diario__item dt {
+.conexao__estado {
+  margin: 0;
+  font-size: var(--txt-2xl);
+  font-weight: var(--peso-forte);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+/* No ar, o estado ganha a cor — e só ele. */
+.conexao--no-ar .conexao__estado { color: var(--sucesso-texto); }
+
+.conexao__numero {
+  margin: var(--esp-1) 0 0;
+  color: var(--texto-secundario);
+  font-size: var(--txt-md);
+}
+
+.conexao__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.conexao__explicacao {
+  margin: var(--esp-3) 0 0;
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+/* A régua separa a resposta dos detalhes dela. É a única
+   divisória do bloco, e por isso ela significa alguma coisa. */
+.conexao__tempos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--esp-4);
+  margin: var(--esp-5) 0 0;
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+}
+
+.conexao__tempos dt {
   margin-bottom: var(--esp-1);
   color: var(--texto-secundario);
   font-size: var(--txt-sm);
 }
 
-.diario__item dd {
+.conexao__tempos dd {
   margin: 0;
   color: var(--texto);
-  font-size: var(--txt-lg);
+  font-size: var(--txt-md);
   font-weight: var(--peso-forte);
 }
 
-/* A nota explica o número de cima; ela não pode competir com ele. */
-.diario__nota {
+.conexao__motivo {
   display: block;
   margin-top: var(--esp-1);
   color: var(--texto-secundario);
   font-size: var(--txt-sm);
   font-weight: 400;
-}
-
-.diario__titulo {
-  margin: var(--esp-6) 0 var(--esp-3);
 }

@@ -64,14 +64,6 @@ export interface ResumoDaConexao {
   quedasEm24h: number;
 }
 
-export interface EventoDaConexao {
-  id: string;
-  estado: EstadoConexao;
-  detalhe: string | null;
-  numeroMascarado: string | null;
-  quando: string;
-}
-
 export interface SituacaoWhatsApp {
   adaptador: string;
   simulado: boolean;
@@ -121,12 +113,6 @@ export function buscarSituacao() {
   return chamar<SituacaoWhatsApp>('/api/whatsapp/situacao');
 }
 
-/** O diario da conexao: as ultimas mudancas de estado. */
-export function listarEventosDaConexao(quantos = 20) {
-  return chamar<{ eventos: EventoDaConexao[] }>(
-    '/api/whatsapp/eventos?quantos=' + quantos,
-  );
-}
 
 export function conectar() {
   return chamar<SituacaoWhatsApp & { ok: boolean; mensagem: string }>('/api/whatsapp/conectar', {

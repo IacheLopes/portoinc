@@ -8,7 +8,7 @@ import { banco } from '../plugins/banco.js';
 import { integracoes } from '../integracoes/index.js';
 import { erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
-import { resumirConexao, listarEventos } from '../servicos/diario-whatsapp.js';
+import { resumirConexao } from '../servicos/diario-whatsapp.js';
 import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
 import {
   enviarPeloWhatsApp, modoTeste, mascarar, normalizarTelefone,
@@ -61,22 +61,6 @@ export async function rotasWhatsApp(app: FastifyInstance) {
     },
   );
 
-  // --------------------------------------------------------
-  //  O histórico da conexão
-  //
-  //  Separado da situação de propósito: a tela de cima recarrega
-  //  sozinha a cada poucos segundos enquanto o QR está na tela, e
-  //  não faz sentido trazer vinte linhas de histórico junto.
-  // --------------------------------------------------------
-  app.get(
-    '/api/whatsapp/eventos',
-    { preHandler: app.exigirPermissao('sistema.integracoes') },
-    async (req) => {
-      const { quantos } = req.query as { quantos?: string };
-      const eventos = await listarEventos(Number(quantos) || 20);
-      return { eventos };
-    },
-  );
 
   // --------------------------------------------------------
   //  O QR Code, como imagem
