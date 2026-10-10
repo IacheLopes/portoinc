@@ -18,19 +18,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buscarSituacao, conectar, desconectar, listarAutorizados, autorizarNumero,
-  removerAutorizado, enviarTeste, listarHistorico, buscarQr,
-  ROTULO_ESTADO, ROTULO_MENSAGEM, COR_MENSAGEM,
-  type SituacaoWhatsApp, type NumeroAutorizado, type MensagemDoHistorico,
+  removerAutorizado, enviarTeste, buscarQr,
+  ROTULO_ESTADO,
+  type SituacaoWhatsApp, type NumeroAutorizado,
 } from '../../servicos/whatsapp';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo } from '../../componentes/Campo';
-import { Selo } from '../../componentes/Selo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
-import { palavra, faz } from '../../servicos/texto';
+import { faz } from '../../servicos/texto';
 
 /** Enquanto o QR está na tela, vale reconferir de perto. */
 const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'autenticando', 'reconectando'];
@@ -38,12 +37,21 @@ const ESTADOS_QUE_MUDAM = ['iniciando', 'qr_pronto', 'aguardando_leitura', 'aute
 export function ConfiguracaoWhatsApp() {
   const [situacao, setSituacao] = useState<SituacaoWhatsApp | null>(null);
   const [autorizados, setAutorizados] = useState<NumeroAutorizado[]>([]);
-  const [historico, setHistorico] = useState<MensagemDoHistorico[]>([]);
   const [qr, setQr] = useState<string | null>(null);
 
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
+  //  CADA BLOCO TEM O SEU PRÓPRIO RETORNO.
+  //
+  //  Eram um par só, compartilhado: conectar, desconectar e o
+  //  envio de teste escreviam todos no mesmo lugar. Como o aviso
+  //  é desenhado no cartão de conexão, lá em cima, quem clicava
+  //  em "Enviar teste" via a confirmação a meia tela de distância
+  //  do botão — e às vezes nem via, porque o bloco de teste fica
+  //  no fim da página.
+  const [erroConexao, setErroConexao] = useState<string | null>(null);
+  const [avisoConexao, setAvisoConexao] = useState<string | null>(null);
+  const [erroTeste, setErroTeste] = useState<string | null>(null);
+  const [avisoTeste, setAvisoTeste] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
   // Cadastro de número autorizado.
@@ -59,15 +67,10 @@ export function ConfiguracaoWhatsApp() {
 
   const carregar = useCallback(async () => {
     try {
-      const [s, a, h] = await Promise.all([
-        buscarSituacao(),
-        listarAutorizados(),
-        listarHistorico(),
-      ]);
+      const [s, a] = await Promise.all([buscarSituacao(), listarAutorizados()]);
 
       setSituacao(s);
       setAutorizados(a.autorizados);
-      setHistorico(h.mensagens);
 
       if (s.temQr) {
         const novo = await buscarQr();
@@ -80,7 +83,7 @@ export function ConfiguracaoWhatsApp() {
         setQr(null);
       }
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
+      setErroConexao(e instanceof ErroApi ? e.message : 'Falha ao carregar.');
     } finally {
       setCarregando(false);
     }
@@ -107,15 +110,15 @@ export function ConfiguracaoWhatsApp() {
 
   async function executar(acao: () => Promise<{ mensagem: string }>) {
     setOcupado(true);
-    setErro(null);
-    setAviso(null);
+    setErroConexao(null);
+    setAvisoConexao(null);
 
     try {
       const r = await acao();
-      setAviso(r.mensagem);
+      setAvisoConexao(r.mensagem);
       await carregar();
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : 'A ação não foi concluída.');
+      setErroConexao(e instanceof ErroApi ? e.message : 'A ação não foi concluída.');
     } finally {
       setOcupado(false);
     }
@@ -123,7 +126,7 @@ export function ConfiguracaoWhatsApp() {
 
   async function adicionarNumero() {
     if (numero.trim() === '' || nome.trim() === '') {
-      setErro('Informe o número e o nome de quem vai receber.');
+      setErroConexao('Informe o número e o nome de quem vai receber.');
       return;
     }
 
@@ -143,16 +146,16 @@ export function ConfiguracaoWhatsApp() {
 
   async function testar() {
     setOcupado(true);
-    setErro(null);
-    setAviso(null);
+    setErroTeste(null);
+    setAvisoTeste(null);
 
     try {
       const r = await enviarTeste({ para: paraTeste.trim(), texto: textoTeste.trim() });
-      setAviso(r.mensagem);
+      setAvisoTeste(r.mensagem);
       await carregar();
     } catch (e) {
       // O bloqueio pela lista chega como erro: é informação, não falha.
-      setErro(e instanceof ErroApi ? e.message : 'Não foi possível enviar.');
+      setErroTeste(e instanceof ErroApi ? e.message : 'Não foi possível enviar.');
       await carregar();
     } finally {
       setOcupado(false);
@@ -160,7 +163,9 @@ export function ConfiguracaoWhatsApp() {
   }
 
   if (carregando && !situacao) return <Carregando mensagem="Conferindo o WhatsApp..." />;
-  if (erro && !situacao) return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
+  if (erroConexao && !situacao) {
+    return <Erro mensagem={erroConexao} aoTentarNovamente={() => void carregar()} />;
+  }
   if (!situacao) return null;
 
   const conectado = situacao.estado === 'conectado';
@@ -169,43 +174,6 @@ export function ConfiguracaoWhatsApp() {
   return (
     <>
       <section className="secao">
-        {/* ---------- A trava, antes de tudo ---------- */}
-        <div className={'aviso ' + (situacao.modoTeste ? 'aviso--atencao' : 'aviso--erro')}>
-          <span className="aviso__icone" aria-hidden="true">
-            <Icone nome={situacao.modoTeste ? 'cadeado' : 'alerta'} />
-          </span>
-          <div>
-            <strong>
-              {situacao.modoTeste
-                ? 'Envio restrito: só os números desta lista recebem mensagem.'
-                : 'Envio online: a mensagem vai mesmo, para o celular de quem estiver no cadastro.'}
-            </strong>
-            {/* UMA LINHA, NAO TRES.
-                A explicacao longa — "os fornecedores de
-                demonstracao tem telefones ficticios, sem esta
-                trava um clique cairia no celular de um
-                desconhecido" — se le uma vez na vida e depois
-                vira parede. O que muda a cada visita e o NUMERO. */}
-            <p>
-              {situacao.modoTeste ? (
-                <>
-                  <strong>{situacao.numerosAutorizados}</strong>{' '}
-                  {palavra(
-                    situacao.numerosAutorizados,
-                    'número liberado',
-                    'números liberados',
-                  )}. Qualquer outro é barrado antes de sair.
-                </>
-              ) : (
-                <>
-                  Não há lista de autorizados filtrando nada. Confira o número antes de
-                  clicar em enviar.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
         {/* ----------------------------------------------------
             O ESTADO DA CONEXAO, EM UM LUGAR SO
 
@@ -232,8 +200,23 @@ export function ConfiguracaoWhatsApp() {
               <p className="conexao__estado">
                 {conectado ? 'No ar' : ROTULO_ESTADO[situacao.estado]}
               </p>
+              {/* O QUE ACONTECE SE EU ENVIAR AGORA, EM UMA LINHA.
+                  Isto era uma caixa vermelha de duas linhas acima do
+                  cartão. Vermelho nesta casa quer dizer "alguma coisa
+                  quebrou agora" — é a cor de parcela vencida e de erro
+                  de formulário. Nada está quebrado aqui, e usar a cor
+                  do alarme para informação de rotina ensina a ignorar
+                  o alarme quando ele for de verdade. */}
               <p className="conexao__numero">
                 {situacao.numero ?? 'Nenhum número conectado'}
+                {conectado && (
+                  <>
+                    {' · '}
+                    {situacao.modoTeste
+                      ? 'só os números liberados recebem'
+                      : 'as mensagens chegam no celular de quem está no cadastro'}
+                  </>
+                )}
               </p>
             </div>
 
@@ -276,18 +259,22 @@ export function ConfiguracaoWhatsApp() {
             <p className="conexao__explicacao">{situacao.detalhe}</p>
           )}
 
-          {/* A RESPOSTA DO CLIQUE MORA JUNTO DO BOTAO.
-              Enxugar nao e tirar o retorno: sem isto, conectar e
-              desconectar passavam a ser silenciosos. */}
-          {aviso && (
+          {/* A RESPOSTA DO CLIQUE MORA JUNTO DO BOTAO QUE FOI CLICADO.
+              Este cartão só mostra o que é DELE — conectar,
+              desconectar, atualizar. O envio de teste tem o próprio
+              aviso, lá embaixo: antes os dois dividiam o mesmo
+              estado e a confirmação do envio aparecia aqui em cima,
+              a meia tela do botão que a pessoa tinha acabado de
+              clicar. */}
+          {avisoConexao && (
             <p className="aviso aviso--sucesso" role="status">
-              <Icone nome="certo" /> {aviso}
+              <Icone nome="certo" /> {avisoConexao}
             </p>
           )}
 
-          {erro && (
+          {erroConexao && (
             <p className="aviso aviso--erro" role="alert">
-              <Icone nome="alerta" /> {erro}
+              <Icone nome="alerta" /> {erroConexao}
             </p>
           )}
 
@@ -508,87 +495,45 @@ export function ConfiguracaoWhatsApp() {
             </button>
           </div>
 
+          {avisoTeste && (
+            <p className="aviso aviso--sucesso" role="status">
+              <Icone nome="certo" /> {avisoTeste}
+            </p>
+          )}
+
+          {erroTeste && (
+            <p className="aviso aviso--erro" role="alert">
+              <Icone nome="alerta" /> {erroTeste}
+            </p>
+          )}
+
           {!conectado && (
             <p className="texto-fraco">Conecte primeiro para poder enviar.</p>
           )}
         </Cartao>
       </section>
 
-      {/* ---------- Histórico ---------- */}
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>Histórico de envios</h2>
-          <p className="secao__descricao">
-            {situacao.modoTeste
-              ? 'Inclui o que foi bloqueado: se alguém tentou mandar para fora da lista, aparece aqui.'
-              : 'Cada tentativa fica aqui, com o resultado — inclusive as que falharam.'}
-          </p>
-        </div>
+      {/* ---------- O histórico saiu da tela ----------
 
-        {historico.length === 0 ? (
-          <Vazio
-            titulo="Nada enviado ainda"
-            descricao="Cada tentativa fica registrada aqui, com o resultado."
-          />
-        ) : (
-          <Cartao semEspaco>
-            <TabelaArea>
-              <table className="tabela">
-                <caption className="apenas-leitor-tela">Mensagens enviadas pelo sistema</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Quando</th>
-                    <th scope="col">Para</th>
-                    <th scope="col">De onde</th>
-                    <th scope="col">Resultado</th>
-                    <th scope="col">Mensagem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.map((m) => (
-                    <tr key={m.id}>
-                      <td className="celula-texto">
-                        {dataHoraBr(m.criadoEm)}
-                        {m.enviadoPor && <small className="linha-extra">{m.enviadoPor}</small>}
-                      </td>
-                      <td>
-                        <span className="mono">{m.numeroMascarado}</span>
-                        {m.destino && <small className="linha-extra">{m.destino}</small>}
-                      </td>
-                      <td className="celula-texto">
-                        {m.contexto ?? '—'}
-                        {m.referencia && <small className="linha-extra">{m.referencia}</small>}
-                      </td>
-                      <td>
-                        <Selo tipo={COR_MENSAGEM[m.situacao]}>{ROTULO_MENSAGEM[m.situacao]}</Selo>
-                        {m.erro && <small className="linha-extra">{m.erro}</small>}
-                      </td>
-                      <td className="celula-texto">
-                        {m.temAnexo && <Selo tipo="info">anexo</Selo>}{' '}
-                        {m.texto.split('\n')[0].slice(0, 60)}
-                        {m.texto.length > 60 ? '...' : ''}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TabelaArea>
-          </Cartao>
-        )}
-      </section>
+          Ele mostrava as últimas tentativas, com data, destino
+          mascarado e resultado. Gravava os três caminhos — teste,
+          cotação e pedido —, não só o campo de teste.
 
-      <div className="aviso aviso--info">
-        <Icone nome="dica" className="aviso__icone" />
-        <div>
-          <strong>Use um chip de testes, não o número da empresa.</strong>
-          <p>
-            Esta conexão usa a biblioteca Baileys, que <strong>não é oficial</strong> do WhatsApp.
-            Existe risco real de bloqueio da conta. Quando a Porto Inc. tiver a conta comercial
-            aprovada pela Meta, trocar para a API oficial é uma linha de configuração — e nada
-            nesta tela muda.
-          </p>
-        </div>
-      </div>
+          O dono mandou tirar em 10/10/2026, e a razão dele é boa:
+          quem envia já vê a confirmação na hora, e esta tela virou
+          ferramenta de conferência, não lugar de trabalho.
+
+          O REGISTRO CONTINUA SENDO GRAVADO, de propósito. Ele
+          responde uma pergunta que a tela de cotação ainda não
+          responde: "o fornecedor diz que não recebeu — saiu ou não
+          saiu?". Lá, "ainda não visualizou" quer dizer tanto "não
+          abriu" quanto "nunca chegou", e nada separa as duas.
+
+          O lugar certo dele, quando fizer falta, é uma coluna
+          "enviado" na tabela de convidados da cotação, que é onde
+          o comprador faz essa pergunta. Os dados estão em
+          `mensagens_whatsapp`.
+          ---------------------------------------------------- */}
     </>
   );
 }

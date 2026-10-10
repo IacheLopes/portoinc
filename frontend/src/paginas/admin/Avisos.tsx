@@ -26,6 +26,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfiguracaoWhatsApp } from './WhatsApp';
 import { ConfiguracaoEmail } from './Email';
+import { HistoricoComunicacao } from './HistoricoComunicacao';
 import { CabecalhoDePagina } from '../../componentes/CabecalhoDePagina';
 import { Selo, type TipoSelo } from '../../componentes/Selo';
 import { buscarSituacao, type SituacaoWhatsApp } from '../../servicos/whatsapp';
@@ -45,6 +46,19 @@ const ABAS = [
     intro:
       'O mesmo convite e o mesmo pedido, pelo e-mail do fornecedor. O pedido vai com o ' +
       'PDF em anexo.',
+  },
+  {
+    //  A PROVA DE QUE SAIU.
+    //
+    //  Esta lista morava no pé da aba do WhatsApp e atrapalhava
+    //  duas vezes: enchia uma tela que é de configurar, e mostrava
+    //  um canal só. Aqui os dois ficam juntos, porque WhatsApp e
+    //  e-mail levam o MESMO convite.
+    chave: 'historico',
+    rotulo: 'Mensagens enviadas',
+    intro:
+      'Tudo que o sistema tentou mandar, pelos dois canais. É aqui que se confere quando ' +
+      'um fornecedor diz que não recebeu.',
   },
 ] as const;
 
@@ -155,7 +169,14 @@ export function Avisos() {
             dá para ver os DOIS canais sem clicar em nenhum. */}
         <div className="abas" role="tablist" aria-label="Canais de envio">
           {ABAS.map((a) => {
-            const leitura = a.chave === 'whatsapp' ? lerWhatsApp(whatsapp) : lerEmail(email);
+            //  O selo diz se o CANAL está de pé. A aba do histórico
+            //  não é um canal: ela não tem o que mostrar ali.
+            const leitura =
+              a.chave === 'whatsapp'
+                ? lerWhatsApp(whatsapp)
+                : a.chave === 'email'
+                  ? lerEmail(email)
+                  : null;
 
             return (
               <button
@@ -169,7 +190,7 @@ export function Avisos() {
                 onClick={() => setParametros({ ver: a.chave })}
               >
                 {a.rotulo}
-                <Selo tipo={leitura.tipo}>{leitura.texto}</Selo>
+                {leitura && <Selo tipo={leitura.tipo}>{leitura.texto}</Selo>}
               </button>
             );
           })}
@@ -187,6 +208,7 @@ export function Avisos() {
 
       {aba === 'whatsapp' && <ConfiguracaoWhatsApp />}
       {aba === 'email' && <ConfiguracaoEmail />}
+      {aba === 'historico' && <HistoricoComunicacao />}
     </>
   );
 }

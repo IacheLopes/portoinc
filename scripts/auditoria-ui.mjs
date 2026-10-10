@@ -203,6 +203,8 @@ const TELAS = [
   ['/admin/usuarios?ver=funcoes', 'admin-funcoes', [PG + 'admin/Funcoes.tsx']],
   ['/admin/avisos?ver=whatsapp', 'admin-avisos-whatsapp', [PG + 'admin/Avisos.tsx', PG + 'admin/WhatsApp.tsx']],
   ['/admin/avisos?ver=email', 'admin-avisos-email', [PG + 'admin/Avisos.tsx', PG + 'admin/Email.tsx']],
+  ['/admin/avisos?ver=historico', 'admin-avisos-historico',
+    [PG + 'admin/Avisos.tsx', PG + 'admin/HistoricoComunicacao.tsx']],
   ['/admin/status', 'admin-status', [PG + 'admin/StatusSistema.tsx']],
   ['/minha-senha', 'minha-senha', [PG + 'MinhaSenha.tsx']],
   //  O convite de senha quando o link nao serve. E a tela que quem

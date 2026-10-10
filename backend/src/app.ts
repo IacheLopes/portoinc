@@ -28,6 +28,7 @@ import { rotasAprovacoes } from './rotas/aprovacoes.js';
 import { rotasCotacoes } from './rotas/cotacoes.js';
 import { rotasPortal } from './rotas/portal.js';
 import { rotasConvite } from './rotas/convite.js';
+import { rotasHistoricoComunicacao } from './rotas/historico-comunicacao.js';
 import { conferirPartida } from './servicos/diario-whatsapp.js';
 import { integracoes } from './integracoes/index.js';
 import { rotasEqualizacao } from './rotas/equalizacao.js';
@@ -161,6 +162,7 @@ export async function criarApp(): Promise<FastifyInstance> {
   await app.register(rotasAutenticacao);
   await app.register(rotasUsuarios);
   await app.register(rotasConvite);
+  await app.register(rotasHistoricoComunicacao);
   await app.register(rotasObras);
   await app.register(rotasCatalogo);
   await app.register(rotasFornecedores);
