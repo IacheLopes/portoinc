@@ -109,7 +109,13 @@ const EXPLICACAO: Record<EstadoConexao, string> = {
   iniciando: 'Preparando a conexão...',
   qr_pronto: 'QR Code pronto. Leia com o celular em Aparelhos conectados.',
   aguardando_leitura: 'Esperando você escanear o QR Code.',
-  autenticando: 'QR lido. Confirmando com o WhatsApp...',
+  //  "QR LIDO" ERA MENTIRA NO UNICO CASO EM QUE ESTA FRASE APARECE.
+  //
+  //  Depois de alguem escanear, o QR ainda esta em memoria, entao
+  //  o estado vira `aguardando_leitura`. Este aqui so acontece
+  //  quando NAO ha QR nenhum — ou seja, retomando sessao salva.
+  //  A frase dizia justamente o contrario do que tinha havido.
+  autenticando: 'Confirmando a sessão salva com o WhatsApp...',
   conectado: 'Conectado.',
   reconectando: 'A conexão caiu. Reconectando sozinho, sem pedir QR de novo.',
   deslogado: 'A sessão foi encerrada no celular. Gere um QR novo para reconectar.',
@@ -130,6 +136,8 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
   private iniciando = false;
   /** Verdadeiro durante logout/limpeza: ignora fechamentos duplicados. */
   private encerrando = false;
+  /** Verdadeiro enquanto a conexao esta sendo retomada pelo proprio sistema. */
+  private retomando = false;
   /** Texto do QR. So memoria. */
   private qrAtual: string | null = null;
   private numero: string | null = null;
@@ -209,10 +217,50 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
   // --------------------------------------------------------
   //  Conexao
   // --------------------------------------------------------
+
+  /**
+   * Retoma a sessao sozinho quando a API sobe.
+   *
+   * POR QUE ISTO EXISTE, nas palavras dele em 10/10/2026:
+   *
+   *   "durante o suporte que vamos prestar no futuro, toda vez
+   *    que formos subir alguma atualizacao na producao ele vai
+   *    cair, entao e necessario que ele reconecte sozinho"
+   *
+   * Esta certo, e ja tinha acontecido duas vezes no mesmo dia:
+   * cada arquivo salvo no backend reinicia a API, e a conexao
+   * ficava no chao ate alguem abrir a tela e clicar.
+   *
+   * A TRAVA: so retoma o que JA foi autorizado por uma pessoa.
+   * Sem `creds.json` nao faz nada — em especial, nao gera QR.
+   * QR nascendo sozinho num servidor e um convite aberto
+   * esperando leitor, e ninguem estaria olhando a tela para ver.
+   */
+  async retomarSessao(): Promise<void> {
+    if (!this.temSessaoSalva()) return;
+
+    //  O diario precisa separar "alguem clicou em Conectar" de
+    //  "o sistema voltou e retomou sozinho". Sao a mesma conexao
+    //  e historias diferentes.
+    this.retomando = true;
+    try {
+      await this.conectar();
+    } finally {
+      this.retomando = false;
+    }
+  }
+
   async conectar(): Promise<void> {
     if (this.sock || this.iniciando) return; // socket unico
 
     this.iniciando = true;
+
+    if (this.retomando) {
+      this.mudarPara(
+        'iniciando',
+        'O sistema voltou e está retomando a conexão sozinho, com a sessão já salva.',
+      );
+    }
 
     try {
       mkdirSync(this.pastaSessao, { recursive: true });

@@ -74,4 +74,22 @@ export interface PortaWhatsApp {
    */
   qrPng(): Promise<Buffer | null>;
   enviar(mensagem: MensagemWhatsApp): Promise<ResultadoEnvio>;
+
+  /**
+   * Retoma sozinho uma sessao JA autorizada, se houver uma.
+   *
+   * Chamado quando a API sobe. Existe por um motivo bem concreto:
+   * toda atualizacao do sistema em producao reinicia a API, e com
+   * ela a conexao do WhatsApp caia — ficando no chao ate alguem
+   * lembrar de abrir a tela e clicar em Conectar. Ninguem lembra.
+   *
+   * REGRA: so retoma o que JA foi autorizado. Se nao houver sessao
+   * salva, nao faz nada — em especial, nao gera QR. QR que nasce
+   * sozinho num servidor e um convite aberto esperando leitor.
+   *
+   * Opcional de proposito: adaptador que nao tem sessao para
+   * retomar (o simulado, a API oficial) simplesmente nao
+   * implementa.
+   */
+  retomarSessao?(): Promise<void>;
 }

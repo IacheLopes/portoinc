@@ -196,16 +196,32 @@ export async function criarApp(): Promise<FastifyInstance> {
     });
   });
 
-  //  O DIÁRIO DO WHATSAPP OLHA PARA TRÁS NA PARTIDA.
+  //  O QUE ACONTECE COM O WHATSAPP QUANDO A API SOBE
   //
-  //  Quando a API é reiniciada, a conexão do WhatsApp cai sem que
-  //  ninguém consiga anotar — o processo morre antes. Aqui o
-  //  sistema confere se a última linha do diário ficou dizendo
-  //  "no ar" e, se ficou, registra o que de fato houve.
+  //  Duas coisas, nesta ordem, e nenhuma delas segura a partida:
   //
-  //  Não espera: partida de API não atrasa por causa de diário.
+  //  1. O DIÁRIO OLHA PARA TRÁS. Quando a API é reiniciada, a
+  //     conexão cai sem que ninguém consiga anotar — o processo
+  //     morre antes. Aqui o sistema confere se a última linha
+  //     ficou dizendo "no ar" e registra o que de fato houve.
+  //
+  //  2. A CONEXÃO VOLTA SOZINHA, se já houver sessão autorizada.
+  //     Pedido dele em 10/10/2026: "toda vez que formos subir
+  //     alguma atualização na produção ele vai cair, então é
+  //     necessário que ele reconecte sozinho". Sem isso, cada
+  //     atualização deixa o WhatsApp no chão até alguém lembrar
+  //     de abrir a tela — e ninguém lembra.
+  //
+  //  A ordem importa: o diário registra a queda ANTES de a volta
+  //  acontecer, senão a história sai sem o buraco no meio.
   if (!ehTeste) {
-    void conferirPartida(integracoes.whatsapp.situacao().estado);
+    void (async () => {
+      await conferirPartida(integracoes.whatsapp.situacao().estado);
+      await integracoes.whatsapp.retomarSessao?.();
+    })().catch(() => {
+      //  WhatsApp fora do ar não impede o sistema de subir: o
+      //  resto da empresa trabalha sem ele.
+    });
   }
 
   return app;
