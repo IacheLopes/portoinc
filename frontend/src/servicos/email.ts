@@ -97,3 +97,55 @@ export function enviarPedidoPorEmail(pedidoId: string) {
     metodo: 'POST',
   });
 }
+
+// ------------------------------------------------------------
+//  Ligar o e-mail pela TELA
+//
+//  Ate 10/10/2026 isto era um arquivo no servidor mais um
+//  reinicio da API. O WhatsApp nunca foi assim — ele se conecta
+//  pela tela —, e o e-mail e que estava fora do padrao da casa.
+// ------------------------------------------------------------
+
+export interface ConfiguracaoDeEmail {
+  configurado: boolean;
+  remetente: string | null;
+  /** So o fim da chave, para reconhecer qual e. Nunca ela inteira. */
+  chaveParcial: string | null;
+  /** Quando um envio de verdade chegou. E o que vira "funcionando". */
+  confirmadoEm: string | null;
+  atualizadoEm: string | null;
+  atualizadoPor: string | null;
+  ativo: boolean;
+}
+
+export interface RespostaDeLigar {
+  ok: boolean;
+  guardado?: boolean;
+  mensagem?: string;
+  erro?: string;
+  configuracao: ConfiguracaoDeEmail;
+}
+
+export function buscarConfiguracaoDeEmail() {
+  return chamar<ConfiguracaoDeEmail>('/api/email/configuracao');
+}
+
+/** Guarda E PROVA: manda um e-mail de teste na hora. */
+export function ligarEmail(dados: {
+  remetente: string;
+  chave: string;
+  provaPara?: string;
+}) {
+  return chamar<RespostaDeLigar>('/api/email/configuracao', {
+    metodo: 'POST',
+    corpo: dados,
+  });
+}
+
+export function desligarEmail() {
+  return chamar<RespostaDeLigar>('/api/email/configuracao/desligar', { metodo: 'POST' });
+}
+
+export function religarEmail() {
+  return chamar<RespostaDeLigar>('/api/email/configuracao/religar', { metodo: 'POST' });
+}

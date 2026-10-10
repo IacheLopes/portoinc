@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { banco } from '../plugins/banco.js';
 import { integracoes } from '../integracoes/index.js';
+import { recarregar as recarregarConfiguracao } from '../servicos/configuracao-email.js';
 import { erroDeValidacao, textoOpcional, textoObrigatorio } from '../servicos/util.js';
 import { formatarNumeroBid } from '../servicos/cotacao.js';
 import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
@@ -92,7 +93,22 @@ export async function rotasEmail(app: FastifyInstance) {
   app.get(
     '/api/email/situacao',
     { preHandler: app.exigirPermissao('sistema.integracoes') },
-    async () => ({
+    async () => {
+      //  RELÊ A CONFIGURAÇÃO ANTES DE RESPONDER.
+      //
+      //  O adaptador guarda em memória o que a tela configurou,
+      //  para poder responder `pronto()` sem esperar o banco. O
+      //  preço é que a memória pode ficar velha se a linha mudar
+      //  por fora — e foi o que aconteceu num teste, com a tela
+      //  dizendo "Pronto" depois de a configuração ser apagada
+      //  direto no banco.
+      //
+      //  Esta é a tela que a pessoa abre para saber a verdade, e
+      //  ela não é aberta o tempo todo: uma consulta a mais aqui
+      //  é barata e faz a tela nunca mentir.
+      await recarregarConfiguracao();
+
+      return {
       adaptador: integracoes.email.nome,
       simulado: integracoes.email.nome === 'mock',
       pronto: integracoes.email.pronto(),
@@ -104,7 +120,8 @@ export async function rotasEmail(app: FastifyInstance) {
           : integracoes.email.pronto()
             ? 'Ligado no provedor de verdade.'
             : 'Adaptador escolhido, mas faltam as credenciais no arquivo .env.',
-    }),
+      };
+    },
   );
 
   // --------------------------------------------------------

@@ -28,6 +28,7 @@ import { AdaptadorPagamentoCnab } from './pagamento/adaptador.cnab.js';
 import type { PortaEmail } from './email/porta.js';
 import { AdaptadorEmailMock } from './email/adaptador.mock.js';
 import { AdaptadorEmailResend } from './email/adaptador.resend.js';
+import { AdaptadorEmailConfiguravel } from './email/adaptador.configuravel.js';
 
 function montarWhatsApp(): PortaWhatsApp {
   switch (ambiente.WHATSAPP_ADAPTER) {
@@ -70,13 +71,22 @@ function montarPagamento(): PortaPagamento {
 }
 
 function montarEmail(): PortaEmail {
-  if (ambiente.EMAIL_ADAPTER === 'resend') {
-    return new AdaptadorEmailResend(
-      ambiente.EMAIL_API_TOKEN ?? '',
-      ambiente.EMAIL_REMETENTE ?? '',
-    );
-  }
-  return new AdaptadorEmailMock();
+  //  A RESERVA: o que o `.env` manda, como sempre mandou.
+  const reserva =
+    ambiente.EMAIL_ADAPTER === 'resend'
+      ? new AdaptadorEmailResend(
+          ambiente.EMAIL_API_TOKEN ?? '',
+          ambiente.EMAIL_REMETENTE ?? '',
+        )
+      : new AdaptadorEmailMock();
+
+  //  E por cima dela, o que a TELA configurar.
+  //
+  //  Esta ordem importa: quem ligou o e-mail pela tela mandou
+  //  depois de quem escreveu no `.env`, e a decisao mais recente
+  //  e a que vale. O `.env` continua funcionando para quem ja
+  //  dependia dele — nada do que existe hoje quebra.
+  return new AdaptadorEmailConfiguravel(reserva);
 }
 
 export const integracoes = {

@@ -29,6 +29,8 @@ import { rotasCotacoes } from './rotas/cotacoes.js';
 import { rotasPortal } from './rotas/portal.js';
 import { rotasConvite } from './rotas/convite.js';
 import { rotasHistoricoComunicacao } from './rotas/historico-comunicacao.js';
+import { rotasConfiguracaoEmail } from './rotas/configuracao-email.js';
+import { recarregar as recarregarEmail } from './servicos/configuracao-email.js';
 import { conferirPartida } from './servicos/diario-whatsapp.js';
 import { integracoes } from './integracoes/index.js';
 import { rotasEqualizacao } from './rotas/equalizacao.js';
@@ -163,6 +165,7 @@ export async function criarApp(): Promise<FastifyInstance> {
   await app.register(rotasUsuarios);
   await app.register(rotasConvite);
   await app.register(rotasHistoricoComunicacao);
+  await app.register(rotasConfiguracaoEmail);
   await app.register(rotasObras);
   await app.register(rotasCatalogo);
   await app.register(rotasFornecedores);
@@ -218,6 +221,10 @@ export async function criarApp(): Promise<FastifyInstance> {
   //  acontecer, senão a história sai sem o buraco no meio.
   if (!ehTeste) {
     void (async () => {
+      //  A configuração de e-mail feita pela TELA entra em vigor
+      //  aqui: sem isto, cada reinício voltaria para o `.env`.
+      await recarregarEmail();
+
       await conferirPartida(integracoes.whatsapp.situacao().estado);
       await integracoes.whatsapp.retomarSessao?.();
     })().catch(() => {

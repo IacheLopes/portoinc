@@ -19,7 +19,8 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   buscarSituacaoEmail, listarEmailsAutorizados, autorizarEmail, removerEmailAutorizado,
   enviarEmailDeTeste,
-  type SituacaoEmail, type EmailAutorizado,
+  buscarConfiguracaoDeEmail, ligarEmail, desligarEmail,
+  type SituacaoEmail, type EmailAutorizado, type ConfiguracaoDeEmail,
 } from '../../servicos/email';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
@@ -32,6 +33,10 @@ import { Icone } from '../../componentes/Icone';
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
   const [autorizados, setAutorizados] = useState<EmailAutorizado[]>([]);
+
+  const [config, setConfig] = useState<ConfiguracaoDeEmail | null>(null);
+  const [remetente, setRemetente] = useState('');
+  const [chave, setChave] = useState('');
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -51,9 +56,14 @@ export function ConfiguracaoEmail() {
     setCarregando(true);
     setErro(null);
     try {
-      const [s, a] = await Promise.all([buscarSituacaoEmail(), listarEmailsAutorizados()]);
+      const [s, a, c] = await Promise.all([
+        buscarSituacaoEmail(),
+        listarEmailsAutorizados(),
+        buscarConfiguracaoDeEmail(),
+      ]);
       setSituacao(s);
       setAutorizados(a.autorizados);
+      setConfig(c);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar a tela de e-mail.');
     } finally {
@@ -116,6 +126,53 @@ export function ConfiguracaoEmail() {
   //  condicoes juntas sao a unica leitura honesta.
   const podeEnviar = Boolean(situacao?.pronto && !situacao.simulado);
 
+  //  LIGADO quer dizer configurado PELA TELA e ativo. E diferente
+  //  de `podeEnviar`, que tambem e verdade quando o `.env` do
+  //  servidor ja trazia um provedor — nesse caso nao ha o que
+  //  desligar por aqui.
+  const ligado = Boolean(config?.configurado && config.ativo);
+
+  async function ligar() {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+
+    try {
+      const r = await ligarEmail({ remetente: remetente.trim(), chave: chave.trim() });
+      setConfig(r.configuracao);
+      setAviso(r.mensagem ?? 'E-mail ligado.');
+      //  A chave nunca mais aparece: some do campo junto com o
+      //  sucesso, para nao ficar em tela aberta na mesa de ninguem.
+      setChave('');
+      await carregar();
+    } catch (e) {
+      //  O 502 de "guardei mas a prova nao saiu" chega aqui, e a
+      //  mensagem dele e a explicacao do provedor — o que a pessoa
+      //  precisa para corrigir.
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível ligar o e-mail.');
+      await carregar();
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function desligar() {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+
+    try {
+      const r = await desligarEmail();
+      setConfig(r.configuracao);
+      setAviso(r.mensagem ?? 'Envio desligado.');
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível desligar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   if (carregando) return <Carregando mensagem="Carregando a configuração de e-mail..." />;
   if (erro && !situacao) return <Erro mensagem={erro} aoTentarNovamente={() => void carregar()} />;
 
@@ -160,43 +217,108 @@ export function ConfiguracaoEmail() {
             </div>
           </div>
 
-          {/* O QUE FALTA, EM VEZ DE SO "NAO ESTA PRONTO".
-              O adaptador de verdade ja esta escrito e funciona —
-              diferente do SEFAZ, aqui nao falta codigo. Falta a
-              empresa ter dominio e conta no provedor. Dizer isso
-              na tela poupa a pergunta "e agora?". */}
-          {!podeEnviar && (
-            <div className="conexao__tempos">
-              <div>
-                <dt>1. Domínio da empresa</dt>
-                <dd>
-                  Um endereço como <code>compras@portoinc.com.br</code>
-                  <span className="conexao__motivo">
-                    Não dá para mandar de Gmail: o fornecedor recebe como suspeito
-                  </span>
-                </dd>
-              </div>
+          {/* LIGAR, AQUI MESMO.
+              Até 10/10/2026 esta parte era uma LISTA do que
+              faltava, e ligar de verdade exigia abrir um arquivo
+              no servidor e reiniciar a API — ou seja, alguém da
+              AV2 Tech presente no dia do lançamento.
 
-              <div>
-                <dt>2. Conta no provedor</dt>
-                <dd>
-                  Uma chave de envio
-                  <span className="conexao__motivo">
-                    Entra no sistema como <code>EMAIL_API_TOKEN</code>
-                  </span>
-                </dd>
-              </div>
+              O WhatsApp nunca foi assim: conecta pela tela. O
+              e-mail é que estava fora do padrão da casa.
 
-              <div>
-                <dt>3. Dois registros no DNS</dt>
-                <dd>
-                  SPF e DKIM
-                  <span className="conexao__motivo">
-                    Sem eles o e-mail sai e cai no spam — pior do que não enviar
-                  </span>
-                </dd>
-              </div>
+              A lista não sumiu: virou a ajuda ao lado de cada
+              campo, que é onde ela serve. */}
+          {!ligado && (
+            <div className="formulario__linha formulario__linha--ligar">
+              <Campo
+                rotulo="Remetente"
+                valor={remetente}
+                aoMudar={setRemetente}
+                tipo="email"
+                exemplo="compras@portoinc.com.br"
+                ajuda="Precisa ser do domínio da empresa. De Gmail, o fornecedor recebe como suspeito."
+                obrigatorio
+              />
+              <Campo
+                rotulo="Chave do provedor"
+                valor={chave}
+                aoMudar={setChave}
+                tipo="password"
+                exemplo="re_..."
+                ajuda="A chave de envio da conta da empresa. Fica guardada cifrada e nunca mais aparece na tela."
+                obrigatorio
+              />
             </div>
+          )}
+
+          {ligado && (
+            <dl className="conexao__tempos">
+              <div>
+                <dt>Sai de</dt>
+                <dd>{config?.remetente}</dd>
+              </div>
+              <div>
+                <dt>Chave</dt>
+                <dd>
+                  {config?.chaveParcial}
+                  <span className="conexao__motivo">
+                    Guardada cifrada. Para trocar, desligue e ligue de novo
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt>Última prova</dt>
+                <dd>
+                  {config?.confirmadoEm ? (
+                    <>
+                      {dataHoraBr(config.confirmadoEm)}
+                      <span className="conexao__motivo">um e-mail de verdade chegou</span>
+                    </>
+                  ) : (
+                    <>
+                      Nenhuma
+                      <span className="conexao__motivo">
+                        a configuração está salva, mas o teste não chegou
+                      </span>
+                    </>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          )}
+
+          <div className="formulario__acoes formulario__acoes--fim">
+            {ligado ? (
+              <button
+                type="button"
+                className="botao botao--perigo"
+                onClick={() => void desligar()}
+                disabled={ocupado}
+              >
+                Desligar o e-mail
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => void ligar()}
+                disabled={ocupado || !remetente.trim() || !chave.trim()}
+              >
+                {ocupado ? 'Ligando e provando...' : 'Ligar o e-mail'}
+              </button>
+            )}
+          </div>
+
+          {/* "SALVAR" SERIA MENTIRA GENTIL.
+              Chave errada salva em silêncio quebra o envio em
+              silêncio, e a empresa descobre quando um fornecedor
+              reclama. O botão liga E manda uma prova: só fica
+              verde se ela chegar. */}
+          {!ligado && (
+            <p className="texto-fraco">
+              Ao ligar, o sistema manda um e-mail de prova para você. O canal só fica
+              verde se ele chegar.
+            </p>
           )}
 
           {situacao?.modoTeste && podeEnviar && (

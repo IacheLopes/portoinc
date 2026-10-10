@@ -183,6 +183,30 @@ model EventoWhatsApp {
   @@map("eventos_whatsapp")
 }
 
+/// Como o e-mail da empresa é enviado. Uma linha só.
+///
+/// Até 10/10/2026 isto morava no `.env` e exigia reiniciar a API.
+/// O WhatsApp sempre se ligou pela tela; o e-mail é que estava
+/// fora do padrão da casa.
+model ConfiguracaoEmail {
+  /// Sempre 'unico': não existe configuração por obra.
+  id String @id @default("unico")
+
+  /// De onde a mensagem sai: compras@portoinc.com.br
+  remetente String
+  /// A chave do provedor, cifrada. Nunca volta para a tela.
+  chaveCifrada String @map("chave_cifrada")
+
+  ativo Boolean @default(true)
+
+  /// Quando um envio de verdade deu certo pela última vez.
+  confirmadoEm  DateTime? @map("confirmado_em")
+  atualizadoEm  DateTime  @default(now()) @updatedAt @map("atualizado_em")
+  atualizadoPor String?   @map("atualizado_por")
+
+  @@map("configuracao_email")
+}
+
 // ============================================================
 //  CADASTROS
 // ============================================================

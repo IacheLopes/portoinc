@@ -2140,3 +2140,12 @@ input[type='file'].campo__entrada {
   font-size: var(--txt-sm);
   font-weight: 400;
 }
+
+/* O formulário de ligar o e-mail fica DEPOIS da régua, como os
+   tempos do cartão de conexão: o que está acima é o estado, o que
+   está abaixo é o que se faz a respeito dele. */
+.formulario__linha--ligar {
+  margin-top: var(--esp-5);
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+}

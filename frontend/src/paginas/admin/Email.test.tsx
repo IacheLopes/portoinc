@@ -12,7 +12,9 @@ import userEvent from '@testing-library/user-event';
 import { ConfiguracaoEmail } from './Email';
 import {
   buscarSituacaoEmail, listarEmailsAutorizados, listarHistoricoDeEmail, enviarEmailDeTeste,
+  buscarConfiguracaoDeEmail, ligarEmail,
   type SituacaoEmail, type EmailAutorizado, type EmailDoHistorico,
+  type ConfiguracaoDeEmail,
 } from '../../servicos/email';
 
 vi.mock('../../servicos/email', async (original) => ({
@@ -23,7 +25,21 @@ vi.mock('../../servicos/email', async (original) => ({
   enviarEmailDeTeste: vi.fn(),
   autorizarEmail: vi.fn(),
   removerEmailAutorizado: vi.fn(),
+  buscarConfiguracaoDeEmail: vi.fn(),
+  ligarEmail: vi.fn(),
+  desligarEmail: vi.fn(),
 }));
+
+/** Nada ligado pela tela: o estado de quem acabou de instalar. */
+const SEM_CONFIGURACAO: ConfiguracaoDeEmail = {
+  configurado: false,
+  remetente: null,
+  chaveParcial: null,
+  confirmadoEm: null,
+  atualizadoEm: null,
+  atualizadoPor: null,
+  ativo: false,
+};
 
 const SIMULADO: SituacaoEmail = {
   adaptador: 'mock',
@@ -67,6 +83,7 @@ function montar() {
 
 beforeEach(() => {
   vi.mocked(buscarSituacaoEmail).mockReset().mockResolvedValue(SIMULADO);
+  vi.mocked(buscarConfiguracaoDeEmail).mockReset().mockResolvedValue(SEM_CONFIGURACAO);
   vi.mocked(listarEmailsAutorizados).mockReset().mockResolvedValue({
     modoTeste: true,
     autorizados: [AUTORIZADO],
@@ -89,16 +106,32 @@ describe('O cartão de estado', () => {
     ).toBeInTheDocument();
   });
 
-  it('e diz O QUE FALTA, não só que falta', async () => {
-    //  "Não está pronto" sem dizer o que fazer é só frustração.
-    //  O adaptador de verdade já existe e funciona: o que falta é
-    //  a empresa ter domínio, conta no provedor e DNS.
+  it('e oferece LIGAR ali mesmo, sem mexer em arquivo nenhum', async () => {
+    //  Até 10/10/2026 aqui havia uma LISTA do que faltava, e ligar
+    //  de verdade exigia abrir o `.env` no servidor e reiniciar a
+    //  API — alguém da AV2 Tech presente no dia do lançamento.
     montar();
 
-    expect(await screen.findByText(/Domínio da empresa/)).toBeInTheDocument();
-    expect(screen.getByText(/Conta no provedor/)).toBeInTheDocument();
-    expect(screen.getByText(/SPF e DKIM/)).toBeInTheDocument();
-    expect(screen.getByText(/cai no spam/)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/Remetente/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Chave do provedor/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ligar o e-mail/ })).toBeInTheDocument();
+  });
+
+  it('a chave do provedor não fica legível na tela', async () => {
+    //  Ela é digitada numa mesa de escritório.
+    montar();
+
+    const campo = await screen.findByLabelText(/Chave do provedor/);
+    expect(campo).toHaveAttribute('type', 'password');
+  });
+
+  it('avisa que LIGAR manda uma prova, e não só salva', async () => {
+    //  Chave errada salva em silêncio quebra o envio em silêncio,
+    //  e a empresa descobre quando um fornecedor reclama.
+    montar();
+
+    expect(await screen.findByText(/manda um e-mail de prova/)).toBeInTheDocument();
+    expect(screen.getByText(/só fica verde se ele chegar/)).toBeInTheDocument();
   });
 
   it('quando o provedor está ligado, o aviso MUDA de tom', async () => {
@@ -114,11 +147,7 @@ describe('O cartão de estado', () => {
     montar();
 
     expect(await screen.findByText('Pronto')).toBeInTheDocument();
-    expect(screen.getByText(/Sai de/)).toBeInTheDocument();
     expect(screen.queryByText('Não sai ainda')).not.toBeInTheDocument();
-
-    //  E some a lista do que falta: nao falta mais nada.
-    expect(screen.queryByText(/SPF e DKIM/)).not.toBeInTheDocument();
   });
 
   it('a lista de autorizados se explica na própria seção', async () => {

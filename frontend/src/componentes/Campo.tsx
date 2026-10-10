@@ -37,7 +37,12 @@ interface Base {
 interface PropsTexto extends Base {
   valor: string;
   aoMudar: (valor: string) => void;
-  tipo?: 'text' | 'email' | 'number' | 'date' | 'search' | 'tel';
+  /**
+   * `password` entrou em 10/10/2026, para a chave do provedor de
+   * e-mail: ela e digitada numa mesa de escritorio e nao pode
+   * ficar legivel na tela para quem passa atras.
+   */
+  tipo?: 'text' | 'email' | 'number' | 'date' | 'search' | 'tel' | 'password';
   exemplo?: string;
   maximo?: number;
   /**
