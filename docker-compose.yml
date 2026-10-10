@@ -140,6 +140,16 @@ services:
       - /app/node_modules
     ports:
       - "5173:5173"
+      # A MESMA TELA TAMBEM NA PORTA 80, para o celular.
+      #
+      # O link do convite de cotacao viaja pelo WhatsApp, e com
+      # IP + PORTA o WhatsApp pinta so o IP de azul: o resto vira
+      # texto, e o que o dedo abre e `http://192.168.1.109` — sem
+      # porta, sem caminho, sem cotacao nenhuma.
+      #
+      # Sem a porta no endereco, ele transforma a linha inteira em
+      # link. `localhost:5173` continua funcionando igual.
+      - "80:5173"
     deploy:
       resources:
         limits:
