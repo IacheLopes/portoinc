@@ -6,8 +6,8 @@
 //  confirmada — ao lado de "um usuário pode acumular mais de uma
 //  função", que existe desde a Etapa 1.
 //
-//  Esta é a outra metade. Até 09/10/2026 havia nove funções
-//  vindas de migração e nenhuma forma de criar a décima: uma
+//  Esta é a outra metade. Até 09/10/2026 as funções vinham todas
+//  de migração e não havia forma de criar outra: uma
 //  construtora que cresce e precisa de "Encarregado" ou
 //  "Engenheiro de segurança" dependia de mudança de código.
 //
@@ -96,6 +96,13 @@ export function PainelDeFuncoes({ pedidoDeNovo }: { pedidoDeNovo: number }) {
   const daEmpresa = (funcoes ?? []).filter((f) => !f.sistema);
   const deFabrica = (funcoes ?? []).filter((f) => f.sistema);
 
+  //  O NÚMERO É CONTADO, NUNCA ESCRITO.
+  //
+  //  A frase dizia "as nove abaixo" — escrito à mão quando havia
+  //  nove. Depois a função FORNECEDOR saiu, a de DESENVOLVEDOR
+  //  deixou de aparecer aqui, e a tela passou a dizer nove com
+  //  sete na frente. Número escrito à mão envelhece sozinho.
+
   return (
     <>
       <section className="secao">
@@ -113,7 +120,7 @@ export function PainelDeFuncoes({ pedidoDeNovo }: { pedidoDeNovo: number }) {
         )}
 
         {/* AS DA EMPRESA PRIMEIRO.
-            As nove de fábrica são paisagem — estão lá desde o
+            As de fábrica são paisagem — estão lá desde o
             primeiro dia e ninguém mexe nelas toda semana. O que a
             empresa criou é o que ela vai revisitar. */}
         {/* MOLDURA EM VOLTA DE NADA, NÃO.
@@ -125,8 +132,9 @@ export function PainelDeFuncoes({ pedidoDeNovo }: { pedidoDeNovo: number }) {
           <p className="aviso" role="status">
             <Icone nome="informacao" />{' '}
             {podeGerenciar
-              ? 'Nenhuma função criada pela empresa ainda. As nove abaixo cobrem o fluxo '
-                + 'de compras — crie uma quando precisar de um papel que elas não descrevem.'
+              ? 'Nenhuma função criada pela empresa ainda. As ' + deFabrica.length
+                + ' abaixo cobrem o fluxo de compras — crie uma quando precisar de um '
+                + 'papel que elas não descrevem.'
               : 'A empresa ainda não criou nenhuma função própria. Quem cria é o administrador.'}
           </p>
         ) : (
