@@ -27,9 +27,15 @@
 import { banco } from '../plugins/banco.js';
 import { cifrar, decifrar, mostrarFim } from './segredos.js';
 
+export type Provedor = 'RESEND' | 'SMTP';
+
 export interface ConfiguracaoViva {
+  provedor: Provedor;
   remetente: string;
+  /** O segredo: token da API no Resend, senha no SMTP. */
   chave: string;
+  /** Só no SMTP. */
+  smtp: { host: string; porta: number; usuario: string } | null;
   confirmadoEm: Date | null;
   atualizadoEm: Date;
 }
@@ -57,9 +63,28 @@ export async function recarregar(): Promise<ConfiguracaoViva | null> {
       return null;
     }
 
+    const provedor: Provedor = linha.provedor === 'SMTP' ? 'SMTP' : 'RESEND';
+
+    //  SMTP SEM SERVIDOR NÃO É CONFIGURAÇÃO, é configuração pela
+    //  metade. Deixar passar faria o envio falhar na hora de
+    //  mandar, longe da tela onde dá para consertar.
+    if (provedor === 'SMTP' && (!linha.smtpHost || !linha.smtpPorta || !linha.smtpUsuario)) {
+      emMemoria = null;
+      return null;
+    }
+
     emMemoria = {
+      provedor,
       remetente: linha.remetente,
       chave,
+      smtp:
+        provedor === 'SMTP'
+          ? {
+              host: linha.smtpHost as string,
+              porta: linha.smtpPorta as number,
+              usuario: linha.smtpUsuario as string,
+            }
+          : null,
       confirmadoEm: linha.confirmadoEm,
       atualizadoEm: linha.atualizadoEm,
     };
@@ -78,7 +103,10 @@ export function configuracaoAtual(): ConfiguracaoViva | null {
 
 export interface ResumoDaConfiguracao {
   configurado: boolean;
+  provedor: Provedor;
   remetente: string | null;
+  /** Só no SMTP, e sem a senha: ela nunca volta para a tela. */
+  smtp: { host: string; porta: number; usuario: string } | null;
   /** Só o fim da chave, para reconhecer qual é. Nunca ela inteira. */
   chaveParcial: string | null;
   confirmadoEm: Date | null;
@@ -94,7 +122,9 @@ export async function resumir(): Promise<ResumoDaConfiguracao> {
   if (!linha) {
     return {
       configurado: false,
+      provedor: 'RESEND',
       remetente: null,
+      smtp: null,
       chaveParcial: null,
       confirmadoEm: null,
       atualizadoEm: null,
@@ -105,9 +135,16 @@ export async function resumir(): Promise<ResumoDaConfiguracao> {
 
   const chave = decifrar(linha.chaveCifrada);
 
+  const provedor: Provedor = linha.provedor === 'SMTP' ? 'SMTP' : 'RESEND';
+
   return {
     configurado: chave !== null,
+    provedor,
     remetente: linha.remetente,
+    smtp:
+      provedor === 'SMTP' && linha.smtpHost && linha.smtpPorta && linha.smtpUsuario
+        ? { host: linha.smtpHost, porta: linha.smtpPorta, usuario: linha.smtpUsuario }
+        : null,
     chaveParcial: chave ? mostrarFim(chave) : null,
     confirmadoEm: linha.confirmadoEm,
     atualizadoEm: linha.atualizadoEm,
@@ -123,13 +160,24 @@ export async function resumir(): Promise<ResumoDaConfiguracao> {
  * Ver a rota, que manda um e-mail de teste logo em seguida.
  */
 export async function guardar(dados: {
+  provedor?: Provedor;
   remetente: string;
   chave: string;
+  smtp?: { host: string; porta: number; usuario: string } | null;
   quem: string | null;
 }): Promise<void> {
+  const provedor: Provedor = dados.provedor ?? 'RESEND';
+
   const valores = {
+    provedor,
     remetente: dados.remetente.trim(),
     chaveCifrada: cifrar(dados.chave.trim()),
+    //  OS CAMPOS DO SMTP SÃO LIMPOS ao voltar para o Resend.
+    //  Deixar sobra de uma configuração antiga faz a próxima
+    //  pessoa depurar um servidor que ninguém mandou usar.
+    smtpHost: provedor === 'SMTP' ? (dados.smtp?.host.trim() ?? null) : null,
+    smtpPorta: provedor === 'SMTP' ? (dados.smtp?.porta ?? null) : null,
+    smtpUsuario: provedor === 'SMTP' ? (dados.smtp?.usuario.trim() ?? null) : null,
     ativo: true,
     confirmadoEm: null,
     atualizadoPor: dados.quem,

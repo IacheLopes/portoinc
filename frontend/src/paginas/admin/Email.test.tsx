@@ -112,17 +112,79 @@ describe('O cartão de estado', () => {
     //  API — alguém da AV2 Tech presente no dia do lançamento.
     montar();
 
-    expect(await screen.findByLabelText(/Remetente/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Chave do provedor/)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/E-mail da empresa/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Senha de aplicativo/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Ligar o e-mail/ })).toBeInTheDocument();
   });
 
-  it('a chave do provedor não fica legível na tela', async () => {
-    //  Ela é digitada numa mesa de escritório.
+  it('COMEÇA NO CAMINHO QUE NÃO DEPENDE DE NINGUÉM', async () => {
+    //  Gmail é o padrão de propósito: é o único caminho em que a
+    //  empresa usa a conta que já tem e resolve sozinha, com uma
+    //  senha de aplicativo. O Resend exige cadastrar o domínio e
+    //  publicar registros no DNS — e o domínio da Porto Inc. ainda
+    //  nem existe.
     montar();
 
-    const campo = await screen.findByLabelText(/Chave do provedor/);
-    expect(campo).toHaveAttribute('type', 'password');
+    const escolha = await screen.findByLabelText(/Por onde o e-mail sai/);
+    expect(escolha).toHaveValue('GMAIL');
+
+    //  E não pergunta servidor nem porta: o sistema já sabe.
+    expect(screen.queryByLabelText(/Servidor de saída/)).not.toBeInTheDocument();
+  });
+
+  it('só pede servidor e porta quando o caminho é "outro"', async () => {
+    montar();
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText(/Por onde o e-mail sai/),
+      'OUTRO',
+    );
+
+    expect(screen.getByLabelText(/Servidor de saída/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Porta/)).toBeInTheDocument();
+  });
+
+  it('no Resend, os campos mudam de nome', async () => {
+    //  "Senha de aplicativo" e "chave de API" são coisas
+    //  diferentes, e chamar as duas pelo mesmo nome faria a pessoa
+    //  colar uma no lugar da outra.
+    montar();
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText(/Por onde o e-mail sai/),
+      'RESEND',
+    );
+
+    expect(screen.getByLabelText(/Chave do provedor/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Senha de aplicativo/)).not.toBeInTheDocument();
+  });
+
+  it('o segredo não fica legível na tela, em nenhum caminho', async () => {
+    //  Ele é digitado numa mesa de escritório.
+    montar();
+
+    expect(await screen.findByLabelText(/Senha de aplicativo/)).toHaveAttribute(
+      'type', 'password',
+    );
+
+    await userEvent.selectOptions(
+      screen.getByLabelText(/Por onde o e-mail sai/),
+      'RESEND',
+    );
+
+    expect(screen.getByLabelText(/Chave do provedor/)).toHaveAttribute('type', 'password');
+  });
+
+  it('UM BOTÃO PRINCIPAL SÓ', async () => {
+    //  A tela tinha dois azuis ao mesmo tempo — "Ligar o e-mail" e
+    //  "Enviar teste" — e dois convites principais não convidam
+    //  nada. A régua acusou isso o dia inteiro em 10/10/2026.
+    montar();
+
+    await screen.findByRole('button', { name: /Ligar o e-mail/ });
+
+    const principais = document.querySelectorAll('.botao--principal');
+    expect(principais.length).toBe(1);
   });
 
   it('avisa que LIGAR manda uma prova, e não só salva', async () => {

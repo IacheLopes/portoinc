@@ -28,12 +28,45 @@ import {
   religar,
 } from '../servicos/configuracao-email.js';
 
-const esquema = z.object({
-  remetente: z.string().email('Informe um e-mail válido para o remetente.'),
-  chave: z.string().min(8, 'A chave do provedor parece curta demais.'),
-  /** Para onde mandar a prova. Em branco, usa o e-mail de quem ligou. */
-  provaPara: z.string().email('Informe um e-mail válido para a prova.').optional(),
-});
+const esquema = z
+  .object({
+    /**
+     * Por onde o e-mail sai.
+     *
+     * SMTP usa a conta da própria empresa — Gmail ou 365 —, e é o
+     * caminho que não exige mexer no DNS do domínio. RESEND é o
+     * serviço por HTTP, mais robusto para volume, e exige cadastrar
+     * o domínio. Em branco, RESEND, que era o único até 10/10/2026.
+     */
+    provedor: z.enum(['RESEND', 'SMTP']).optional(),
+    remetente: z.string().email('Informe um e-mail válido para o remetente.'),
+    /** Token da API no Resend; senha de aplicativo no SMTP. */
+    chave: z.string().min(8, 'A senha ou chave parece curta demais.'),
+    smtpHost: z.string().min(3).optional(),
+    smtpPorta: z.coerce.number().int().min(1).max(65535).optional(),
+    smtpUsuario: z.string().min(3).optional(),
+    /** Para onde mandar a prova. Em branco, usa o e-mail de quem ligou. */
+    provaPara: z.string().email('Informe um e-mail válido para a prova.').optional(),
+  })
+  //  SMTP SEM SERVIDOR NÃO É CONFIGURAÇÃO.
+  //
+  //  Sem esta conferência, salvar com o servidor em branco guarda
+  //  uma configuração que o carregador descarta — e a tela fica
+  //  dizendo "não configurado" logo depois de alguém ter salvo,
+  //  sem explicar o porquê.
+  .superRefine((d, ctx) => {
+    if (d.provedor !== 'SMTP') return;
+
+    if (!d.smtpHost) {
+      ctx.addIssue({ code: 'custom', path: ['smtpHost'], message: 'Informe o servidor de saída.' });
+    }
+    if (!d.smtpPorta) {
+      ctx.addIssue({ code: 'custom', path: ['smtpPorta'], message: 'Informe a porta.' });
+    }
+    if (!d.smtpUsuario) {
+      ctx.addIssue({ code: 'custom', path: ['smtpUsuario'], message: 'Informe o usuário.' });
+    }
+  });
 
 export async function rotasConfiguracaoEmail(app: FastifyInstance) {
   // --------------------------------------------------------
@@ -58,8 +91,17 @@ export async function rotasConfiguracaoEmail(app: FastifyInstance) {
       const provaPara = dados.data.provaPara ?? req.usuario!.email;
 
       await guardar({
+        provedor: dados.data.provedor ?? 'RESEND',
         remetente: dados.data.remetente,
         chave: dados.data.chave,
+        smtp:
+          dados.data.provedor === 'SMTP'
+            ? {
+                host: dados.data.smtpHost as string,
+                porta: dados.data.smtpPorta as number,
+                usuario: dados.data.smtpUsuario as string,
+              }
+            : null,
         quem: req.usuario?.nome ?? null,
       });
 

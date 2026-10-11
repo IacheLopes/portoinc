@@ -24,11 +24,37 @@ import {
 } from '../../servicos/email';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
-import { Campo } from '../../componentes/Campo';
+import { Campo, Selecao } from '../../componentes/Campo';
 import { Carregando, Erro, Vazio } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
 import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
+
+/**
+ * Os quatro caminhos, na ordem do que a Porto Inc. consegue usar
+ * mais rápido. Gmail primeiro porque é o único que não depende de
+ * ninguém além de quem já tem a conta.
+ */
+const CAMINHOS = [
+  { valor: 'GMAIL', rotulo: 'Gmail ou Google Workspace' },
+  { valor: 'MICROSOFT', rotulo: 'Microsoft 365 ou Outlook' },
+  { valor: 'OUTRO', rotulo: 'Outro servidor de e-mail' },
+  { valor: 'RESEND', rotulo: 'Resend (serviço de envio)' },
+];
+
+const AJUDA_DO_CAMINHO: Record<string, string> = {
+  GMAIL:
+    'Usa a conta de e-mail que a empresa já tem. Precisa de uma senha de aplicativo, '
+    + 'gerada nas configurações da conta Google.',
+  MICROSOFT:
+    'Usa a conta que a empresa já tem no 365. Precisa de uma senha de aplicativo, '
+    + 'gerada nas configurações de segurança da conta.',
+  OUTRO:
+    'Para quem tem servidor de e-mail próprio. Peça o endereço e a porta a quem cuida dele.',
+  RESEND:
+    'Serviço de envio por fora. Aguenta volume maior, mas exige cadastrar o domínio da '
+    + 'empresa e publicar registros no DNS — tarefa de quem administra o domínio.',
+};
 
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
@@ -37,6 +63,20 @@ export function ConfiguracaoEmail() {
   const [config, setConfig] = useState<ConfiguracaoDeEmail | null>(null);
   const [remetente, setRemetente] = useState('');
   const [chave, setChave] = useState('');
+
+  //  POR ONDE O E-MAIL SAI.
+  //
+  //  Até 10/10/2026 havia um caminho só, o Resend, que exige
+  //  cadastrar o domínio da empresa e publicar registros no DNS —
+  //  tarefa de quem administra o domínio, e o domínio da Porto Inc.
+  //  ainda nem existe.
+  //
+  //  Com Gmail ou 365 a empresa usa a conta que já tem: informa o
+  //  endereço e uma senha de aplicativo, que uma pessoa gera em
+  //  cinco minutos sozinha.
+  const [caminho, setCaminho] = useState('GMAIL');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPorta, setSmtpPorta] = useState('587');
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -138,7 +178,31 @@ export function ConfiguracaoEmail() {
     setAviso(null);
 
     try {
-      const r = await ligarEmail({ remetente: remetente.trim(), chave: chave.trim() });
+      //  O CAMINHO VIRA CONFIGURAÇÃO AQUI.
+      //
+      //  Gmail e 365 têm endereço e porta conhecidos — a pessoa não
+      //  precisa saber o que é "servidor de saída" para usar a
+      //  própria conta. E o usuário é o próprio e-mail: pedir os
+      //  dois seria pedir a mesma coisa duas vezes.
+      const servidor =
+        caminho === 'GMAIL'
+          ? { host: 'smtp.gmail.com', porta: 587 }
+          : caminho === 'MICROSOFT'
+            ? { host: 'smtp.office365.com', porta: 587 }
+            : { host: smtpHost.trim(), porta: Number(smtpPorta) || 587 };
+
+      const r = await ligarEmail({
+        provedor: caminho === 'RESEND' ? 'RESEND' : 'SMTP',
+        remetente: remetente.trim(),
+        chave: chave.trim(),
+        ...(caminho === 'RESEND'
+          ? {}
+          : {
+              smtpHost: servidor.host,
+              smtpPorta: servidor.porta,
+              smtpUsuario: remetente.trim(),
+            }),
+      });
       setConfig(r.configuracao);
       setAviso(r.mensagem ?? 'E-mail ligado.');
       //  A chave nunca mais aparece: some do campo junto com o
@@ -229,26 +293,69 @@ export function ConfiguracaoEmail() {
               A lista não sumiu: virou a ajuda ao lado de cada
               campo, que é onde ela serve. */}
           {!ligado && (
-            <div className="formulario__linha formulario__linha--ligar">
-              <Campo
-                rotulo="Remetente"
-                valor={remetente}
-                aoMudar={setRemetente}
-                tipo="email"
-                exemplo="compras@portoinc.com.br"
-                ajuda="Precisa ser do domínio da empresa. De Gmail, o fornecedor recebe como suspeito."
-                obrigatorio
+            <>
+              <Selecao
+                rotulo="Por onde o e-mail sai"
+                valor={caminho}
+                aoMudar={setCaminho}
+                opcoes={CAMINHOS}
+                ajuda={AJUDA_DO_CAMINHO[caminho]}
               />
-              <Campo
-                rotulo="Chave do provedor"
-                valor={chave}
-                aoMudar={setChave}
-                tipo="password"
-                exemplo="re_..."
-                ajuda="A chave de envio da conta da empresa. Fica guardada cifrada e nunca mais aparece na tela."
-                obrigatorio
-              />
-            </div>
+
+              <div className="formulario__linha formulario__linha--ligar">
+                <Campo
+                  rotulo={caminho === 'RESEND' ? 'Remetente' : 'E-mail da empresa'}
+                  valor={remetente}
+                  aoMudar={setRemetente}
+                  tipo="email"
+                  exemplo="compras@portoinc.com.br"
+                  ajuda={
+                    caminho === 'RESEND'
+                      ? 'Precisa ser de um domínio cadastrado no provedor.'
+                      : 'A conta que vai mandar. É dela que o fornecedor recebe.'
+                  }
+                  obrigatorio
+                />
+                <Campo
+                  rotulo={caminho === 'RESEND' ? 'Chave do provedor' : 'Senha de aplicativo'}
+                  valor={chave}
+                  aoMudar={setChave}
+                  tipo="password"
+                  exemplo={caminho === 'RESEND' ? 're_...' : 'abcd efgh ijkl mnop'}
+                  ajuda={
+                    caminho === 'RESEND'
+                      ? 'Fica guardada cifrada e nunca mais aparece na tela.'
+                      : 'NÃO é a senha de entrar no e-mail. É uma senha separada, '
+                        + 'gerada nas configurações da conta, que serve só para isto e '
+                        + 'pode ser revogada sozinha.'
+                  }
+                  obrigatorio
+                />
+              </div>
+
+              {/* Só para quem tem servidor próprio. Gmail e 365 já
+                  sabem o endereço e a porta — perguntar seria exigir
+                  que a pessoa soubesse algo que o sistema sabe. */}
+              {caminho === 'OUTRO' && (
+                <div className="formulario__linha">
+                  <Campo
+                    rotulo="Servidor de saída"
+                    valor={smtpHost}
+                    aoMudar={setSmtpHost}
+                    exemplo="smtp.suaempresa.com.br"
+                    obrigatorio
+                  />
+                  <Campo
+                    rotulo="Porta"
+                    valor={smtpPorta}
+                    aoMudar={setSmtpPorta}
+                    modoTeclado="numeric"
+                    ajuda="587 na maioria dos servidores. 465 quando a conexão é SSL direta."
+                    obrigatorio
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {ligado && (
@@ -466,9 +573,22 @@ export function ConfiguracaoEmail() {
           </div>
 
           <div className="formulario__acoes formulario__acoes--fim">
+            {/* SECUNDÁRIO, e isso é decisão.
+
+                A tela tinha DOIS botões azuis ao mesmo tempo —
+                "Ligar o e-mail" e "Enviar teste" — e dois convites
+                principais não convidam nada: o olho não sabe qual é
+                a saída. A régua acusou isso o dia inteiro em
+                10/10/2026.
+
+                Qual dos dois fica azul não é gosto: é qual deles
+                AVANÇA o trabalho. Ligar o e-mail é o que transforma
+                a tela de "não configurado" em "funcionando". Mandar
+                um teste confere algo que já está de pé — útil, mas
+                não é o passo seguinte de ninguém. */}
             <button
               type="button"
-              className="botao botao--principal"
+              className="botao botao--secundario"
               onClick={() => void testar()}
               disabled={ocupado || !paraTeste}
             >

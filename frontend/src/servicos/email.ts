@@ -132,8 +132,14 @@ export function buscarConfiguracaoDeEmail() {
 
 /** Guarda E PROVA: manda um e-mail de teste na hora. */
 export function ligarEmail(dados: {
+  /** SMTP usa a conta da própria empresa; RESEND, o serviço. */
+  provedor?: 'RESEND' | 'SMTP';
   remetente: string;
+  /** Token da API no Resend; senha de aplicativo no SMTP. */
   chave: string;
+  smtpHost?: string;
+  smtpPorta?: number;
+  smtpUsuario?: string;
   provaPara?: string;
 }) {
   return chamar<RespostaDeLigar>('/api/email/configuracao', {

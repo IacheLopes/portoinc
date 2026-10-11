@@ -28,6 +28,7 @@
 import type { PortaEmail, Email, ResultadoEmail } from './porta.js';
 import { AdaptadorEmailResend } from './adaptador.resend.js';
 import { configuracaoAtual } from '../../servicos/configuracao-email.js';
+import { AdaptadorEmailSmtp } from './adaptador.smtp.js';
 
 export class AdaptadorEmailConfiguravel implements PortaEmail {
   /**
@@ -38,8 +39,13 @@ export class AdaptadorEmailConfiguravel implements PortaEmail {
    * que alguém ligou pela tela.
    */
   get nome(): string {
-    return configuracaoAtual() ? 'resend' : this.reserva.nome;
+    const config = configuracaoAtual();
+    if (!config) return this.reserva.nome;
+    return config.provedor === 'SMTP' ? 'smtp' : 'resend';
   }
+
+  /** Ver o comentário em `enviar`: o SMTP abre conexão. */
+  private smtpCache: { config: unknown; adaptador: AdaptadorEmailSmtp } | null = null;
 
   constructor(private readonly reserva: PortaEmail) {}
 
@@ -55,10 +61,35 @@ export class AdaptadorEmailConfiguravel implements PortaEmail {
     const config = configuracaoAtual();
     if (!config) return this.reserva.enviar(email);
 
-    //  Um adaptador por envio. Criar o Resend é só guardar duas
-    //  strings — não abre conexão, não custa nada — e assim uma
-    //  troca de chave vale no envio seguinte, sem cache para
-    //  invalidar e sem estado velho escondido aqui dentro.
+    //  QUEM ATENDE DEPENDE DO QUE A TELA ESCOLHEU.
+    //
+    //  SMTP manda pela conta de e-mail da própria empresa; Resend
+    //  manda por um serviço, e exige o domínio cadastrado no DNS.
+    //  A escolha mora no banco, não aqui — e muda sem reiniciar.
+    if (config.provedor === 'SMTP' && config.smtp) {
+      //  O transportador do SMTP abre conexão, então ele NÃO é
+      //  descartável como o do Resend: guardamos enquanto a
+      //  configuração for a mesma. Trocou a configuração, o
+      //  `recarregar` devolve outro objeto e este cache cai fora.
+      if (this.smtpCache?.config !== config) {
+        this.smtpCache = {
+          config,
+          adaptador: new AdaptadorEmailSmtp({
+            host: config.smtp.host,
+            porta: config.smtp.porta,
+            usuario: config.smtp.usuario,
+            senha: config.chave,
+            remetente: config.remetente,
+          }),
+        };
+      }
+
+      return this.smtpCache.adaptador.enviar(email);
+    }
+
+    //  Criar o Resend é só guardar duas strings — não abre conexão,
+    //  não custa nada — e assim uma troca de chave vale no envio
+    //  seguinte, sem cache para invalidar.
     const provedor = new AdaptadorEmailResend(config.chave, config.remetente);
     return provedor.enviar(email);
   }
