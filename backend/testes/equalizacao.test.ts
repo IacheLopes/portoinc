@@ -339,22 +339,57 @@ describe('Última chamada', () => {
     assert.equal(eq.corpo.cotacao.rodada, 2);
   });
 
-  it('o link do fornecedor volta a funcionar', async () => {
+  it('o link do fornecedor volta a funcionar, E A RODADA É O MOTIVO', async () => {
+    //  ESTE TESTE GUARDA O ENCAIXE DE DUAS REGRAS QUE SE
+    //  ATROPELAM.
+    //
+    //  Desde 10/10/2026 o portal trava quem já respondeu. Mas a
+    //  última chamada existe para pedir que o fornecedor REVEJA o
+    //  preço — ela manda link justamente para quem já respondeu.
+    //  Se a trava olhasse só para "já respondeu", este link
+    //  recusaria o fornecedor e o recurso morreria.
+    //
+    //  A trava é por RODADA, e é isso que as etapas abaixo
+    //  provam: travado na 1, fechado no encerramento, liberado na
+    //  2 — sem ninguém ter de lembrar de destravar nada.
     const { id, convidados } = await pacoteComRespostas([
       { f1: 10, f2: 20 }, { f1: 10, f2: 20 },
     ]);
 
+    //  1. Respondeu na rodada 1: travado na rodada 1.
+    const travado = await chamar('/api/portal/' + convidados[0].token);
+    assert.equal(travado.status, 409);
+    assert.equal(travado.corpo.motivo, 'ja-respondido');
+
+    //  2. Encerrado: a recusa muda de motivo.
     await chamar('/api/cotacoes/' + id + '/encerrar', { metodo: 'POST', token: comprador });
 
     const fechado = await chamar('/api/portal/' + convidados[0].token);
     assert.equal(fechado.status, 409);
+    assert.equal(fechado.corpo.motivo, 'pacote-fechado');
 
+    //  3. Última chamada: rodada 2, e o link abre de novo.
     await chamar('/api/cotacoes/' + id + '/ultima-chamada', {
       metodo: 'POST', token: comprador, corpo: { novoPrazo: prazo(3) },
     });
 
     const reaberto = await chamar('/api/portal/' + convidados[0].token);
     assert.equal(reaberto.status, 200);
+
+    //  4. E ao responder de novo, trava outra vez — agora na 2.
+    const respondeu = await chamar('/api/portal/' + convidados[0].token, {
+      metodo: 'POST',
+      corpo: {
+        itens: reaberto.corpo.cotacao.itens.map((i: { id: string }) => ({
+          bidItemId: i.id, disponivel: true, valorUnitario: 9,
+        })),
+      },
+    });
+    assert.equal(respondeu.status, 200);
+
+    const travadoDeNovo = await chamar('/api/portal/' + convidados[0].token);
+    assert.equal(travadoDeNovo.status, 409);
+    assert.equal(travadoDeNovo.corpo.motivo, 'ja-respondido');
   });
 
   it('avisa quantos itens cada um está atrás', async () => {

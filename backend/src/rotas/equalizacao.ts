@@ -12,7 +12,9 @@ import {
 } from '../servicos/cotacao.js';
 import {
   montarComparativo, mensagemUltimaChamada, conferirEscolhas, formatarNumeroPedido,
+  type ItemAtras,
 } from '../servicos/equalizacao.js';
+import { conferirCondicaoDePagamento } from '../servicos/fiscal.js';
 import { gerarPdfPedido } from '../servicos/pdf-pedido.js';
 import { lerPaginacao, camposDaPagina } from '../servicos/paginacao.js';
 // Aliás porque três serviços exportam `formatarNumero`, cada um com
@@ -23,6 +25,7 @@ import {
   type FaixaAlcada,
 } from '../servicos/solicitacao.js';
 import { enviarPeloWhatsApp } from '../servicos/whatsapp.js';
+import { enviarPorEmail } from '../servicos/email.js';
 import { ambiente } from '../config/ambiente.js';
 import { fimDoDiaBr } from '../servicos/data-br.js';
 
@@ -621,6 +624,8 @@ export async function rotasEqualizacao(app: FastifyInstance) {
       const base = process.env.URL_PUBLICA ?? ambiente.CORS_ORIGIN;
       const avisos: Array<{
         fornecedor: string;
+        /** Por onde foi, ou `nenhum` se o fornecedor não tem contato. */
+        canal: 'whatsapp' | 'email' | 'nenhum';
         itensAtras: number;
         enviado: boolean;
         bloqueado: boolean;
@@ -633,45 +638,106 @@ export async function rotasEqualizacao(app: FastifyInstance) {
         const itensAtras = resumo.itensAtras
           .map((itemId) => {
             const linha = comparativo.linhas.find((l) => l.bidItemId === itemId);
+            //  A QUANTIDADE VAI JUNTO, e não é enfeite: o pacote
+            //  agrupa solicitações de obras diferentes, então o
+            //  mesmo material aparece em várias linhas. Sem ela, o
+            //  fornecedor recebe a mesma frase repetida.
             return linha
-              ? { codigo: linha.codigo, descricao: linha.descricao }
+              ? {
+                  codigo: linha.codigo,
+                  descricao: linha.descricao,
+                  quantidade: linha.quantidade,
+                  unidadeMedida: linha.unidadeMedida,
+                }
               : null;
           })
-          .filter((x): x is { codigo: string; descricao: string } => x !== null);
+          .filter((x): x is ItemAtras => x !== null);
 
         // Link ABSOLUTO: relativo não abre no celular de ninguém.
-        const texto =
-          mensagemUltimaChamada(formatarNumeroBid(bid.numero), itensAtras, prazo) +
-          (dados.data.observacao ? '\n' + dados.data.observacao : '') +
-          '\nLink: ' + base + '/p/' + convite.token;
+        const texto = mensagemUltimaChamada({
+          titulo: bid.titulo,
+          itensAtras,
+          novoPrazo: prazo,
+          link: base + '/p/' + convite.token,
+          fornecedor: convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial,
+          recado: dados.data.observacao,
+        });
 
-        if (!convite.fornecedor.whatsapp) {
+        const nome = convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial;
+
+        //  WHATSAPP QUANDO HÁ, E-MAIL QUANDO NÃO HÁ.
+        //
+        //  Até 11/10/2026 esta rota só falava por WhatsApp, e quem
+        //  não tinha número era simplesmente pulado: recebia o
+        //  convite por e-mail e NUNCA recebia a última chamada.
+        //  Ficava de fora da rodada de desconto sem ninguém notar —
+        //  nem ele, nem o comprador.
+        //
+        //  É o mesmo tipo de defeito que a varredura do financeiro
+        //  achou: o sistema esquecendo alguém em silêncio.
+        //
+        //  Não manda pelos dois: quem tem WhatsApp lê ali, e a
+        //  mesma mensagem chegando duas vezes faz a Porto Inc.
+        //  parecer desorganizada.
+        if (convite.fornecedor.whatsapp) {
+          // Pela porta única. Chamar o adaptador direto pulava a
+          // trava da lista de autorizados — ver o comentário em
+          // rotas/cotacoes.ts, mesmo defeito.
+          const resultado = await enviarPeloWhatsApp({
+            para: convite.fornecedor.whatsapp,
+            destino: nome,
+            texto,
+            contexto: 'cotacao',
+            referencia: formatarNumeroBid(bid.numero),
+            usuarioId: req.usuario!.id,
+          });
+
           avisos.push({
             fornecedor: convite.fornecedor.razaoSocial,
+            canal: 'whatsapp' as const,
             itensAtras: itensAtras.length,
-            enviado: false,
-            bloqueado: false,
+            enviado: resultado.sucesso,
+            bloqueado: resultado.bloqueado,
           });
           continue;
         }
 
-        // Pela porta única. Chamar o adaptador direto pulava a
-        // trava da lista de autorizados — ver o comentário em
-        // rotas/cotacoes.ts, mesmo defeito.
-        const resultado = await enviarPeloWhatsApp({
-          para: convite.fornecedor.whatsapp,
-          destino: convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial,
-          texto,
-          contexto: 'cotacao',
-          referencia: formatarNumeroBid(bid.numero),
-          usuarioId: req.usuario!.id,
-        });
+        if (convite.fornecedor.email) {
+          const resultado = await enviarPorEmail({
+            para: convite.fornecedor.email,
+            destino: nome,
+            assunto:
+              'Última chamada — ' + formatarNumeroBid(bid.numero) + ' — Porto Inc.',
+            //  O MESMO TEXTO, sem a linha do cartão: no e-mail não
+            //  existe prévia de link para tocar. Trocar "toque no
+            //  cartão acima" por "abra o link abaixo" é a única
+            //  diferença — a regra de não revelar preço de
+            //  concorrente é a mesma, e ela mora na mensagem.
+            corpo: texto.replace('Toque no cartão acima para', 'Abra o link abaixo para')
+              .replace('toque no cartão acima', 'abra o link abaixo'),
+            contexto: 'cotacao',
+            referencia: formatarNumeroBid(bid.numero),
+            usuarioId: req.usuario!.id,
+          });
 
+          avisos.push({
+            fornecedor: convite.fornecedor.razaoSocial,
+            canal: 'email' as const,
+            itensAtras: itensAtras.length,
+            enviado: resultado.sucesso,
+            bloqueado: resultado.bloqueado,
+          });
+          continue;
+        }
+
+        //  Sem contato nenhum: fica registrado para o comprador
+        //  saber que este fornecedor não foi avisado.
         avisos.push({
           fornecedor: convite.fornecedor.razaoSocial,
+          canal: 'nenhum' as const,
           itensAtras: itensAtras.length,
-          enviado: resultado.sucesso,
-          bloqueado: resultado.bloqueado,
+          enviado: false,
+          bloqueado: false,
         });
       }
 
@@ -771,6 +837,37 @@ export async function rotasEqualizacao(app: FastifyInstance) {
       }
 
       const criados: Array<{ numero: string; fornecedor: string; total: number; id: string }> = [];
+
+      //  A CONDIÇÃO DE PAGAMENTO É CONGELADA NO PEDIDO, e depois
+      //  não há tela para editá-la. Esta é a ÚLTIMA porta em que
+      //  ainda dá para consertar: daqui em diante só reabrindo a
+      //  cotação numa última chamada.
+      //
+      //  Conferimos TODOS antes de criar QUALQUER UM: gerar metade
+      //  dos pedidos e parar no meio deixaria o pacote num estado
+      //  que ninguém sabe desfazer.
+      for (const [bidFornecedorId] of porFornecedor) {
+        const convite = bid.convidados.find((c) => c.id === bidFornecedorId);
+        if (!convite) continue;
+
+        const problema = conferirCondicaoDePagamento({
+          percentualEntrada: numero(convite.percentualEntrada),
+          quantidadeParcelas: convite.quantidadeParcelas,
+          intervaloDias: convite.intervaloParcelasDias,
+        });
+
+        if (problema) {
+          const nome = convite.fornecedor.nomeFantasia ?? convite.fornecedor.razaoSocial;
+          return res.status(409).send({
+            erro: 'A condição de pagamento de ' + nome + ' está incompleta.',
+            detalhes: [
+              problema,
+              'Abra uma última chamada e peça que ' + nome + ' complete a condição. ' +
+              'Depois de gerado, o pedido congela esse dado e não há como corrigir.',
+            ],
+          });
+        }
+      }
 
       for (const [bidFornecedorId, itens] of porFornecedor) {
         const convite = bid.convidados.find((c) => c.id === bidFornecedorId);

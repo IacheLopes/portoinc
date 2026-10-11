@@ -459,6 +459,20 @@
    O alinhamento do flex considera a MARGEM, não a borda: com a
    margem, o campo subia 16px e ficava desalinhado dos botões ao
    lado. Isso valia para todas as telas com barra de ações. */
+/* A BARRA QUE VEM DEPOIS DO QUE ELA COMANDA.
+
+   `.barra-acoes` nasceu em cima do conteudo, e por isso a folga dela
+   e embaixo. Na equalizacao ela desceu para o fim da tabela — e onde
+   o trabalho termina, pedido dele em 10/10/2026 — e a folga precisa
+   trocar de lado: sem isto os botoes encostam na borda do cartao.
+
+   Modificador, e nao mudanca na `.barra-acoes`: ela esta em dezenas
+   de telas onde continua vindo primeiro. */
+.barra-acoes--depois {
+  margin-top: var(--esp-5);
+  margin-bottom: 0;
+}
+
 .barra-acoes .campo {
   margin-bottom: 0;
 }

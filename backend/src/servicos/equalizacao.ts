@@ -7,7 +7,7 @@
 // ============================================================
 
 import { dataBr } from './data-br.js';
-import { plural } from './util.js';
+import { plural, quantidadeBr } from './util.js';
 
 export interface RespostaDeFornecedor {
   bidFornecedorId: string;
@@ -60,9 +60,14 @@ export interface ResumoFornecedor {
   cotouTudo: boolean;
   itensCotados: number;
   itensIndisponiveis: number;
-  /** Em quantos itens ele deu o melhor preço. */
+  /**
+   * Em quantos itens ele deu o melhor preço.
+   *
+   * Havendo empate, conta para TODOS os empatados — a pergunta é
+   * sobre preço, não sobre quem leva o item.
+   */
   itensVencidos: number;
-  /** Itens em que ele NÃO está com o melhor preço. */
+  /** Itens em que ele está cobrando MAIS que o melhor preço. */
   itensAtras: string[];
   frete: number;
   outrosCustos: number;
@@ -128,7 +133,30 @@ export function montarComparativo(
           r.disponivel && r.valorUnitario !== null
             ? r.valorUnitario * item.quantidade
             : null,
-        ehMelhor: r.bidFornecedorId === melhor?.bidFornecedorId,
+        //  ESTAR NO MELHOR PRECO NAO E TER GANHO O DESEMPATE.
+        //
+        //  Isto era `r.bidFornecedorId === melhor?.bidFornecedorId`,
+        //  e misturava duas perguntas diferentes:
+        //
+        //    1. Quem LEVA este item?        -> um so, desempate por prazo
+        //    2. Quem esta no MELHOR PRECO?  -> todos que empataram nele
+        //
+        //  Medido em 10/10/2026, no BID-00005: Ferragens e Eletro
+        //  Minas cotaram exatamente o mesmo preco nos tres itens.
+        //  O desempate deu a Eletro Minas — e a Ferragens, com o
+        //  preco identico, apareceu "atras em 3", igual a Cimenteira,
+        //  que estava 87% mais cara.
+        //
+        //  O estrago nao era so na tela: `itensAtras` alimenta a
+        //  ULTIMA CHAMADA, e ela sairia dizendo a Ferragens
+        //  "recebemos propostas melhores nestes itens" — pedindo que
+        //  ela baixasse um preco que ja era o mais barato, com uma
+        //  justificativa falsa.
+        //
+        //  `melhorFornecedorId` continua sendo o desempate: e ele que
+        //  o botao "Aceitar todos os melhores precos" usa. Quem de
+        //  fato leva cada item e o comprador, clicando.
+        ehMelhor: r.disponivel && r.valorUnitario !== null && r.valorUnitario === melhorValor,
         acimaEmPorcento:
           r.disponivel && r.valorUnitario !== null && melhorValor !== null && melhorValor > 0
             ? Math.round(((r.valorUnitario - melhorValor) / melhorValor) * 1000) / 10
@@ -230,6 +258,15 @@ export function montarComparativo(
   };
 }
 
+/** Um item em que o fornecedor não está na frente. */
+export interface ItemAtras {
+  codigo: string;
+  descricao: string;
+  /** A QUANTIDADE É O QUE DIFERENCIA DUAS LINHAS DO MESMO MATERIAL. */
+  quantidade: number;
+  unidadeMedida: string;
+}
+
 /**
  * Mensagem da última chamada.
  *
@@ -239,38 +276,85 @@ export function montarComparativo(
  * prazo — além do risco jurídico.
  *
  * Dizemos apenas EM QUAIS ITENS ele não está na frente.
+ *
+ * ------------------------------------------------------------
+ *  DOIS DEFEITOS CORRIGIDOS EM 10/10/2026, antes do primeiro
+ *  envio de verdade — achados lendo o código, não testando:
+ *
+ *  1. A LISTA SAÍA COM LINHAS IDÊNTICAS. Ela levava só código e
+ *     descrição, e um pacote agrupa solicitações de obras
+ *     diferentes: no BID-00005 o mesmo cabo apareceu três vezes,
+ *     em 20, 100 e 400 rolos. O fornecedor receberia a mesma
+ *     linha três vezes, sem saber qual rever — e isso parece
+ *     sistema quebrado. A quantidade é o que as separa.
+ *
+ *  2. ABRIA COM CÓDIGO. "Porto Inc. — BID-00005 · ÚLTIMA
+ *     CHAMADA" é a mesma cara de sistema que saiu do convite no
+ *     mesmo dia. Quem recebe é um vendedor, e o número do pacote
+ *     ele nunca viu: o convite não o manda. Some daqui também.
+ * ------------------------------------------------------------
  */
-export function mensagemUltimaChamada(
-  numeroBid: string,
-  itensAtras: Array<{ codigo: string; descricao: string }>,
-  novoPrazo: Date,
-): string {
-  if (itensAtras.length === 0) {
-    return (
-      'Porto Inc. — ' + numeroBid + '\n' +
-      'Sua proposta está com o melhor preço em todos os itens. ' +
-      'Se quiser revisar algo, o prazo foi estendido até ' +
-      dataBr(novoPrazo) + '.'
-    );
+export function mensagemUltimaChamada(dados: {
+  titulo: string;
+  itensAtras: ItemAtras[];
+  novoPrazo: Date;
+  link: string;
+  /** Para quem está indo. Sem isto a mensagem abre sem saudação. */
+  fornecedor?: string;
+  /** O recado que o comprador digitou na tela, se digitou. */
+  recado?: string | null;
+}): string {
+  const abertura = dados.fornecedor ? 'Olá, ' + dados.fornecedor + '!' : 'Olá!';
+  const prazo = 'Novo prazo: ' + dataBr(dados.novoPrazo) + '.';
+  const recado = dados.recado?.trim() ? [dados.recado.trim(), ''] : [];
+
+  //  O LINK FICA NO TEXTO, mesmo havendo cartão de prévia em
+  //  cima: quem desligou prévia de link, quem está em economia
+  //  de dados ou numa versão antiga recebe a mensagem sem ele.
+  //  O porquê inteiro está em `servicos/whatsapp.ts`.
+  const fim = ['', dados.link];
+
+  if (dados.itensAtras.length === 0) {
+    return [
+      abertura,
+      '',
+      'A Porto Inc. reabriu o prazo desta cotação.',
+      dados.titulo,
+      '',
+      'Sua proposta está com o melhor preço em todos os itens.',
+      ...recado,
+      'Se quiser revisar algo, toque no cartão acima.',
+      prazo,
+      ...fim,
+    ].join('\n');
   }
 
-  const lista = itensAtras
+  const lista = dados.itensAtras
     .slice(0, 10)
-    .map((i) => '- ' + i.codigo + ' ' + i.descricao)
-    .join('\n');
+    .map(
+      (i) =>
+        '- ' + i.codigo + ' ' + i.descricao +
+        ' (' + quantidadeBr(i.quantidade) + ' ' + i.unidadeMedida + ')',
+    );
 
-  const resto =
-    itensAtras.length > 10
-      ? '\n(e mais ' + plural(itensAtras.length - 10, 'item', 'itens') + ')'
-      : '';
+  if (dados.itensAtras.length > 10) {
+    lista.push('(e mais ' + plural(dados.itensAtras.length - 10, 'item', 'itens') + ')');
+  }
 
-  return (
-    'Porto Inc. — ' + numeroBid + ' · ÚLTIMA CHAMADA\n' +
-    'Recebemos propostas melhores nos itens abaixo:\n' +
-    lista + resto + '\n' +
-    'Se puder rever seu preço, atualize pelo mesmo link até ' +
-    dataBr(novoPrazo) + '.'
-  );
+  return [
+    abertura,
+    '',
+    'ÚLTIMA CHAMADA — a Porto Inc. reabriu o prazo.',
+    dados.titulo,
+    '',
+    'Recebemos propostas melhores nestes itens:',
+    ...lista,
+    '',
+    ...recado,
+    'Toque no cartão acima para rever seu preço.',
+    prazo,
+    ...fim,
+  ].join('\n');
 }
 
 export interface EscolhaPendente {

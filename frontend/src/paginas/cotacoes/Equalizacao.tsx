@@ -53,6 +53,15 @@ export function Equalizacao() {
   const [erro, setErro] = useState<string | null>(null);
   const [impedimentos, setImpedimentos] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
+  //  A RESPOSTA DO SALVAR FICA NO BOTÃO, não num aviso no alto da
+  //  tela. Ele clicava em "Salvar escolhas" no fim de uma tabela
+  //  longa e a confirmação aparecia fora do campo de visão —
+  //  resposta que ninguém vê é resposta que não existe.
+  //
+  //  E ela se desfaz sozinha: mexeu numa escolha, o botão volta a
+  //  dizer "Salvar escolhas". Um aviso parado continuaria dizendo
+  //  "salvas" depois de a pessoa mudar tudo.
+  const [salvo, setSalvo] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [painelChamada, setPainelChamada] = useState(false);
   const [novoPrazo, setNovoPrazo] = useState(daquiADias(3));
@@ -97,6 +106,7 @@ export function Equalizacao() {
   }, [carregar]);
 
   function escolher(bidItemId: string, bidFornecedorId: string) {
+    setSalvo(false);
     setEscolhas((a) => {
       const novo = { ...a };
       if (novo[bidItemId] === bidFornecedorId) delete novo[bidItemId];
@@ -107,6 +117,7 @@ export function Equalizacao() {
 
   function aceitarTodosOsMelhores() {
     if (!dados) return;
+    setSalvo(false);
 
     const novo: Record<string, string> = {};
     for (const l of dados.comparativo.linhas) {
@@ -128,7 +139,7 @@ export function Equalizacao() {
           bidFornecedorId: escolhas[l.bidItemId] ?? null,
         })),
       );
-      setAviso('Escolhas salvas.');
+      setSalvo(true);
       await carregar();
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao salvar.');
@@ -323,37 +334,6 @@ export function Equalizacao() {
           </p>
         </div>
 
-        {!concluido && podeDecidir && (
-          <div className="barra-acoes">
-            <button
-              type="button"
-              className="botao botao--secundario"
-              onClick={aceitarTodosOsMelhores}
-            >
-              <Icone nome="certo" /> Aceitar todos os melhores preços
-            </button>
-            {/* SECUNDÁRIO, e isso é decisão, não descuido.
-
-                A tela tinha TRÊS botões azuis — salvar, gerar pedidos
-                e reabrir — e três chamadas principais não chamam
-                nada: o olho não sabe qual é a saída.
-
-                No fluxo de compras da Porto Inc., o passo da
-                equalização termina em PEDIDO. Guardar escolhas
-                preserva o trabalho e não avança o processo; quem
-                avança é "Gerar pedidos de compra", e esse ficou com o
-                azul. */}
-            <button
-              type="button"
-              className="botao botao--secundario"
-              onClick={() => void salvar()}
-              disabled={ocupado}
-            >
-              {ocupado ? 'Salvando...' : 'Salvar escolhas'}
-            </button>
-          </div>
-        )}
-
         <Cartao semEspaco>
           {/* `rolar`: aqui a tabela e de COMPARACAO — a mesma linha em
                                 varias colunas de fornecedor. Virar cartao desmonta
@@ -370,8 +350,12 @@ export function Equalizacao() {
                   {c.fornecedores.map((f) => (
                     <th key={f.bidFornecedorId} scope="col" className="numero">
                       {f.fornecedorNome}
+                      {/* "melhor preço em", e não "vence": num empate
+                          dois fornecedores podem estar no melhor preço
+                          do mesmo item, e "vence" sugere um só. Quem
+                          leva o item é o comprador, clicando. */}
                       <small className="linha-extra">
-                        vence {f.itensVencidos} de {c.linhas.length}
+                        melhor preço em {f.itensVencidos} de {c.linhas.length}
                       </small>
                     </th>
                   ))}
@@ -492,6 +476,60 @@ export function Equalizacao() {
             </table>
           </TabelaArea>
         </Cartao>
+
+        {/* ---------------- OS BOTÕES VÊM DEPOIS DA TABELA ----------------
+
+            Estavam acima dela até 10/10/2026, e ele apontou o motivo
+            de mudarem: "quando o usuário termina de escolher ele vai
+            procurar embaixo e não em cima".
+
+            É pior do que parece com três itens na tela. Um pacote de
+            verdade junta solicitações de várias obras e a tabela passa
+            de quarenta linhas: a pessoa escolhe item a item descendo,
+            chega ao fim e tem de voltar ao topo para guardar o que
+            acabou de fazer — rolagem que existe só porque o botão
+            ficou longe de onde o trabalho termina.
+
+            Aqui eles ficam colados na tabela sobre a qual agem, e
+            antes de "Fechar a compra", que é o passo seguinte. */}
+        {!concluido && podeDecidir && (
+          <div className="barra-acoes barra-acoes--depois">
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={aceitarTodosOsMelhores}
+            >
+              <Icone nome="certo" /> Aceitar todos os melhores preços
+            </button>
+            {/* SECUNDÁRIO, e isso é decisão, não descuido.
+
+                A tela tinha TRÊS botões azuis — salvar, gerar pedidos
+                e reabrir — e três chamadas principais não chamam
+                nada: o olho não sabe qual é a saída.
+
+                No fluxo de compras da Porto Inc., o passo da
+                equalização termina em PEDIDO. Guardar escolhas
+                preserva o trabalho e não avança o processo; quem
+                avança é "Gerar pedidos de compra", e esse ficou com o
+                azul. */}
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => void salvar()}
+              disabled={ocupado || salvo}
+            >
+              {ocupado ? (
+                'Salvando...'
+              ) : salvo ? (
+                <>
+                  <Icone nome="certo" /> Escolhas salvas
+                </>
+              ) : (
+                'Salvar escolhas'
+              )}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ---------------- Condições comerciais ---------------- */}
