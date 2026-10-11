@@ -116,8 +116,10 @@ export const MENSAGEM_RECUSA: Record<MotivoRecusa, string> = {
     'O prazo para responder esta cotação já encerrou. Fale com o comprador da Porto Inc.',
   'pacote-fechado':
     'Esta cotação não está mais aberta para respostas.',
-  'ja-respondido':
-    'Você já respondeu esta cotação. Para alterar, fale com o comprador.',
+  //  A FRASE É DELE, e é um agradecimento, não uma recusa. Quem
+  //  abre este link de novo quase sempre está conferindo se deu
+  //  certo — tratar isso como erro assusta sem motivo.
+  'ja-respondido': 'Você já enviou a sua cotação, muito obrigado!',
 };
 
 /** Código HTTP adequado a cada recusa. */
@@ -133,8 +135,15 @@ export interface EstadoDoLink {
   expiraEm?: Date;
   situacaoBid?: SituacaoBid;
   respondidoEm?: Date | null;
-  /** Quando true, o fornecedor pode revisar a resposta. */
-  permiteRevisao?: boolean;
+  /**
+   * Em qual rodada o fornecedor respondeu.
+   *
+   * Nulo em convite antigo, de antes da coluna existir: aí não
+   * trava, que era o comportamento de então.
+   */
+  rodadaRespondida?: number | null;
+  /** A rodada em que o pacote está agora. */
+  rodadaAtual?: number;
   agora?: Date;
 }
 
@@ -158,9 +167,30 @@ export function conferirLink(estado: EstadoDoLink): ResultadoLink {
 
   const jaRespondeu = Boolean(estado.respondidoEm);
 
-  // O fluxo da Porto Inc. prevê "rever cotação": o fornecedor
-  // pode corrigir enquanto o prazo estiver correndo.
-  if (jaRespondeu && estado.permiteRevisao === false) {
+  //  A COTAÇÃO ENVIADA É FINAL — DENTRO DA RODADA.
+  //
+  //  Até 10/10/2026 o portal deixava revisar à vontade enquanto o
+  //  prazo corresse. Ele testou com um celular de verdade e
+  //  pediu o contrário: "após eu responder, se eu clicar no link
+  //  novamente eu posso mudar as informações, isso não pode
+  //  acontecer".
+  //
+  //  Mas a trava não pode olhar só para "já respondeu", senão
+  //  atropela a última chamada — que existe exatamente para pedir
+  //  que o fornecedor REVEJA o preço, e manda link para quem já
+  //  respondeu. Por isso a comparação é com a RODADA: respondeu na
+  //  1, travado na 1; a última chamada leva o pacote para a 2 e o
+  //  link destrava sozinho, sem ninguém ter de lembrar.
+  //
+  //  O ">=" e não "===" por segurança: se por algum caminho a
+  //  rodada respondida ficar à frente da atual, o certo é travar,
+  //  não liberar.
+  const respondeuNestaRodada =
+    estado.rodadaRespondida != null &&
+    estado.rodadaAtual != null &&
+    estado.rodadaRespondida >= estado.rodadaAtual;
+
+  if (jaRespondeu && respondeuNestaRodada) {
     return { ok: false, motivo: 'ja-respondido' };
   }
 
@@ -217,7 +247,22 @@ export function descreverPagamento(
   parcelas: number | null,
   intervaloDias: number | null,
 ): string {
-  if (!parcelas && !percentualEntrada) return 'Não informada';
+  //  VAZIO É À VISTA, e não "não sei".
+  //
+  //  Três lugares já tratavam assim; só o texto hesitava:
+  //
+  //    1. O portal diz ao fornecedor, embaixo dos campos:
+  //       "Deixe tudo vazio se for à vista".
+  //    2. `gerarParcelas` monta UMA parcela na data da nota —
+  //       e tem o comentário "Sem condição nenhuma: à vista".
+  //    3. `descreverCondicao`, do financeiro, já devolve "À vista"
+  //       para a mesma entrada. Duas funções descrevendo a mesma
+  //       coisa, no mesmo sistema, discordando.
+  //
+  //  Dizer "Não informada" fazia o pedido parecer incompleto para
+  //  quem recebe — e ele sai em PDF e em mensagem de WhatsApp, que
+  //  é documento comercial.
+  if (!parcelas && !percentualEntrada) return 'À vista';
 
   const partes: string[] = [];
 
@@ -256,6 +301,20 @@ export function prazoMedioDePagamento(
   parcelas: number | null,
   intervaloDias: number | null,
 ): number | null {
+  //  NADA PREENCHIDO É À VISTA: o dinheiro sai no dia, prazo zero.
+  //
+  //  CUIDADO AO MEXER: existem dois "não sei" diferentes aqui, e
+  //  unificá-los conserta uma mentira criando outra.
+  //
+  //    - nada preenchido          -> à vista, por definição do portal
+  //    - entrada sem parcelas     -> e o resto, quando? ninguém sabe
+  //    - parcelas sem intervalo   -> a cada quantos dias? ninguém sabe
+  //
+  //  Só o primeiro vira zero. Os outros dois continuam nulos, e o
+  //  motivo está logo abaixo: inventar número é pôr palavra na boca
+  //  do fornecedor.
+  if (!percentualEntrada && !parcelas) return 0;
+
   const entrada = percentualEntrada ?? 0;
   const resto = 100 - entrada;
 

@@ -241,6 +241,43 @@ export interface CotacaoDoPortal {
   };
 }
 
+/**
+ * O COMPROVANTE DE QUEM JÁ ENVIOU.
+ *
+ * Vem junto com a recusa, e só nela: "já enviou" é a única recusa
+ * do portal em que existe algo do fornecedor para mostrar. Nas
+ * outras — link errado, prazo vencido, pacote fechado — não há o
+ * que provar.
+ */
+export interface ComprovanteDoPortal {
+  respondidoEm: string | null;
+  itensCotados: number;
+  itensIndisponiveis: number;
+  subtotal: number;
+  frete: number;
+  outros: number;
+  total: number;
+  pagamento: string;
+}
+
+/**
+ * A recusa do portal, com o motivo legível por código.
+ *
+ * O `motivo` existe porque a TELA muda conforme ele: "já enviou"
+ * é um agradecimento em verde, e as outras três são erro. Decidir
+ * isso comparando o texto da mensagem quebraria no dia em que
+ * alguém melhorar a frase.
+ */
+export interface RecusaDoPortal extends Error {
+  motivo?: 'nao-encontrado' | 'vencido' | 'pacote-fechado' | 'ja-respondido';
+  resumo?: ComprovanteDoPortal;
+  cotacao?: {
+    numeroFormatado: string;
+    titulo: string;
+    fornecedor: { razaoSocial: string; nomeFantasia: string | null; cnpj: string };
+  };
+}
+
 /** Estas duas não usam o crachá: são públicas. */
 export async function abrirPortal(token: string) {
   const r = await fetch('/api/portal/' + encodeURIComponent(token), {
@@ -250,7 +287,15 @@ export async function abrirPortal(token: string) {
   const corpo = await r.json().catch(() => ({}));
 
   if (!r.ok) {
-    throw new Error(corpo.erro ?? 'Não foi possível abrir esta cotação.');
+    const recusa = new Error(
+      corpo.erro ?? 'Não foi possível abrir esta cotação.',
+    ) as RecusaDoPortal;
+
+    recusa.motivo = corpo.motivo;
+    recusa.resumo = corpo.resumo;
+    recusa.cotacao = corpo.cotacao;
+
+    throw recusa;
   }
 
   return corpo as { cotacao: CotacaoDoPortal };

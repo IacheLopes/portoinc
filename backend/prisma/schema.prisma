@@ -194,7 +194,17 @@ model ConfiguracaoEmail {
 
   /// De onde a mensagem sai: compras@portoinc.com.br
   remetente String
-  /// A chave do provedor, cifrada. Nunca volta para a tela.
+  /// RESEND (servico por HTTP) ou SMTP (a conta de e-mail da
+  /// propria empresa). Ver a migracao 0034.
+  provedor String @default("RESEND")
+
+  /// So no SMTP. No Gmail e no 365 a tela preenche sozinha.
+  smtpHost    String? @map("smtp_host")
+  smtpPorta   Int?    @map("smtp_porta")
+  smtpUsuario String? @map("smtp_usuario")
+
+  /// O SEGREDO, cifrado, seja ele qual for: token do Resend ou
+  /// senha do SMTP. Uma gaveta so. Nunca volta para a tela.
   chaveCifrada String @map("chave_cifrada")
 
   ativo Boolean @default(true)
@@ -679,6 +689,17 @@ model BidFornecedor {
 
   visualizadoEm DateTime? @map("visualizado_em")
   respondidoEm  DateTime? @map("respondido_em")
+
+  /// EM QUAL RODADA ELE RESPONDEU.
+  ///
+  /// A cotacao enviada e final, mas so dentro da rodada: a ultima
+  /// chamada leva o pacote para a rodada seguinte e o link
+  /// destrava sozinho, porque e justamente dela que o fornecedor
+  /// recebe "toque no cartao para rever seu preco".
+  ///
+  /// Nulo em linha antiga, de antes desta coluna: ai nao trava,
+  /// que era o comportamento de entao.
+  rodadaRespondida Int? @map("rodada_respondida")
 
   // --- Condições comerciais (pedidas no fluxo da Porto Inc.) ---
   valorFrete            Decimal? @map("valor_frete") @db.Decimal(14, 2)

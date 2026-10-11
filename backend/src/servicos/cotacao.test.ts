@@ -9,8 +9,10 @@ import {
   podeIrPara, podeEditarBid, formatarNumeroBid, gerarToken,
   conferirAbertura, conferirLink, calcularTotais, descreverPagamento,
   prazoMedioDePagamento,
-  STATUS_RECUSA,
+  STATUS_RECUSA, MENSAGEM_RECUSA,
 } from './cotacao.js';
+//  Para provar que as duas descricoes da mesma condicao concordam.
+import { descreverCondicao } from './fiscal.js';
 
 describe('Caminhos do pacote', () => {
   it('rascunho pode abrir ou cancelar', () => {
@@ -192,27 +194,18 @@ describe('Validade do link do fornecedor', () => {
     if (!r.ok) assert.equal(r.motivo, 'pacote-fechado');
   });
 
-  it('permite rever a resposta enquanto o prazo corre', () => {
+  it('TRAVA quem já respondeu nesta rodada', () => {
+    //  Pedido dele em 10/10/2026, depois de testar com um celular
+    //  de verdade: "após eu responder a cotação, se eu clicar no
+    //  link novamente eu posso mudar as informações, isso não pode
+    //  acontecer".
     const r = conferirLink({
       existe: true,
       situacaoBid: 'ABERTO',
       expiraEm: futuro,
       respondidoEm: new Date('2026-10-02T10:00:00Z'),
-      permiteRevisao: true,
-      agora,
-    });
-
-    assert.equal(r.ok, true);
-    if (r.ok) assert.equal(r.jaRespondeu, true);
-  });
-
-  it('bloqueia a revisão quando ela não é permitida', () => {
-    const r = conferirLink({
-      existe: true,
-      situacaoBid: 'ABERTO',
-      expiraEm: futuro,
-      respondidoEm: new Date('2026-10-02T10:00:00Z'),
-      permiteRevisao: false,
+      rodadaRespondida: 1,
+      rodadaAtual: 1,
       agora,
     });
 
@@ -220,10 +213,69 @@ describe('Validade do link do fornecedor', () => {
     if (!r.ok) assert.equal(r.motivo, 'ja-respondido');
   });
 
+  it('A ÚLTIMA CHAMADA DESTRAVA, porque a rodada virou', () => {
+    //  Este é o teste que impede alguém de "simplificar" a trava
+    //  para um booleano. A última chamada existe para pedir que o
+    //  fornecedor REVEJA o preço, e ela manda link justamente para
+    //  quem já respondeu. Trava cega mataria o recurso.
+    const r = conferirLink({
+      existe: true,
+      situacaoBid: 'ABERTO',
+      expiraEm: futuro,
+      respondidoEm: new Date('2026-10-02T10:00:00Z'),
+      rodadaRespondida: 1,
+      rodadaAtual: 2,
+      agora,
+    });
+
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal(r.jaRespondeu, true);
+  });
+
+  it('convite antigo, sem rodada guardada, não trava', () => {
+    //  Linha de antes da coluna existir. Travar por falta de dado
+    //  deixaria um fornecedor sem poder responder, sem ninguém
+    //  entender por quê.
+    const r = conferirLink({
+      existe: true,
+      situacaoBid: 'ABERTO',
+      expiraEm: futuro,
+      respondidoEm: new Date('2026-10-02T10:00:00Z'),
+      rodadaRespondida: null,
+      rodadaAtual: 1,
+      agora,
+    });
+
+    assert.equal(r.ok, true);
+  });
+
+  it('quem ainda não respondeu entra normalmente', () => {
+    const r = conferirLink({
+      existe: true,
+      situacaoBid: 'ABERTO',
+      expiraEm: futuro,
+      rodadaAtual: 1,
+      agora,
+    });
+
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal(r.jaRespondeu, false);
+  });
+
   it('cada recusa tem o código HTTP certo', () => {
     assert.equal(STATUS_RECUSA['nao-encontrado'], 404);
     assert.equal(STATUS_RECUSA.vencido, 410);
     assert.equal(STATUS_RECUSA['pacote-fechado'], 409);
+    assert.equal(STATUS_RECUSA['ja-respondido'], 409);
+  });
+
+  it('a frase de "já enviou" AGRADECE, não repreende', () => {
+    //  Quem reabre o link quase sempre está conferindo se deu
+    //  certo. A frase é dele, palavra por palavra.
+    assert.equal(
+      MENSAGEM_RECUSA['ja-respondido'],
+      'Você já enviou a sua cotação, muito obrigado!',
+    );
   });
 });
 
@@ -282,8 +334,23 @@ describe('Descrição do pagamento', () => {
     assert.equal(descreverPagamento(null, 1, null), 'pagamento em 1 vez');
   });
 
-  it('avisa quando não foi informado', () => {
-    assert.equal(descreverPagamento(null, null, null), 'Não informada');
+  it('VAZIO É À VISTA, e o texto diz isso', () => {
+    //  O portal manda o fornecedor deixar tudo vazio se for à
+    //  vista, e `gerarParcelas` monta uma parcela só na data da
+    //  nota. Dizer "Não informada" fazia o pedido parecer
+    //  incompleto para quem o recebe em PDF.
+    assert.equal(descreverPagamento(null, null, null), 'À vista');
+    assert.equal(descreverPagamento(0, 0, null), 'À vista');
+  });
+
+  it('e combina com o que o financeiro já dizia', () => {
+    //  `descreverCondicao`, em `fiscal.ts`, sempre devolveu "À
+    //  vista" para a mesma entrada. Eram duas funções descrevendo a
+    //  mesma coisa com palavras diferentes.
+    assert.equal(
+      descreverPagamento(null, null, null),
+      descreverCondicao({ percentualEntrada: null, quantidadeParcelas: null, intervaloDias: null }),
+    );
   });
 });
 
@@ -308,7 +375,23 @@ describe('Prazo de pagamento vira dinheiro', () => {
     assert.equal(prazoMedioDePagamento(null, 3, null), null);
   });
 
-  it('sem condição nenhuma, não há prazo', () => {
-    assert.equal(prazoMedioDePagamento(null, null, null), null);
+  it('sem condição nenhuma, o prazo é ZERO: é à vista', () => {
+    //  Era nulo, e virava "—" na tela ao lado de um "À vista" que a
+    //  mesma tela já sabia escrever quando o prazo era zero.
+    assert.equal(prazoMedioDePagamento(null, null, null), 0);
+    assert.equal(prazoMedioDePagamento(0, 0, null), 0);
+  });
+
+  it('MAS OS OUTROS DOIS "NÃO SEI" CONTINUAM NULOS', () => {
+    //  Este teste existe para impedir que alguém "simplifique"
+    //  devolvendo zero sempre. São desconhecidos de verdade:
+    //
+    //    entrada sem parcelas   -> e os outros 70%, quando?
+    //    parcelas sem intervalo -> a cada quantos dias?
+    //
+    //  Inventar 30 dias aqui seria pôr palavra na boca do
+    //  fornecedor — e essa palavra vira conta a pagar.
+    assert.equal(prazoMedioDePagamento(30, null, null), null, 'entrada sem parcelas');
+    assert.equal(prazoMedioDePagamento(null, 3, null), null, 'parcelas sem intervalo');
   });
 });

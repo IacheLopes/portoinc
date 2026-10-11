@@ -2149,3 +2149,72 @@ input[type='file'].campo__entrada {
   padding-top: var(--esp-4);
   border-top: 1px solid var(--borda);
 }
+
+/* ------------------------------------------------------------
+   A conferência antes de enviar (portal do fornecedor)
+
+   A lista do que a pessoa digitou, dentro do modal. Não reusa
+   `.destinos` de propósito: lá cada linha é um DESTINATÁRIO, e
+   classe com nome errado vira entendimento errado no próximo que
+   vier mexer.
+   ------------------------------------------------------------ */
+.portal__conferencia {
+  list-style: none;
+  margin: 0 0 var(--esp-4);
+  padding: 0;
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.portal__conferencia li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--borda);
+  font-size: var(--txt-sm);
+}
+
+.portal__conferencia li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* `min-width: 0` para a descrição longa quebrar em vez de empurrar
+   o preço para fora do modal no celular. */
+.portal__conferencia-item { min-width: 0; }
+
+.portal__conferencia-qtd {
+  display: block;
+  color: var(--texto-secundario);
+  font-size: var(--txt-xs);
+}
+
+/* Numeral tabular: é uma coluna de preços, e algarismo de largura
+   variável faz a vírgula dançar entre as linhas — que é justamente
+   o que a pessoa está aqui para conferir. */
+.portal__conferencia-valor {
+  flex: 0 0 auto;
+  text-align: right;
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.portal__conferencia-valor--fora {
+  font-weight: var(--peso-normal);
+  color: var(--texto-secundario);
+}
+
+/* O TOTAL FECHA A COLUNA QUE ELE SOMA.
+   `.dados` põe o rótulo numa coluna fixa e o valor logo ao lado —
+   serve para "Pagamento: 30% de entrada", não para dinheiro. Aqui,
+   embaixo de uma coluna de valores alinhados à direita, o total
+   parava no meio da caixa e o olho não fechava a conta. */
+.portal__conferencia ~ .dados > div {
+  justify-content: space-between;
+}
+
+.portal__conferencia ~ .dados dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

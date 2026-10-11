@@ -13,13 +13,14 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   abrirPortal, responderPortal,
-  type CotacaoDoPortal, type ItemDoPortal,
+  type CotacaoDoPortal, type ItemDoPortal, type RecusaDoPortal,
 } from '../servicos/cotacoes';
-import { dataBr } from '../servicos/solicitacoes';
+import { dataBr, dataHoraBr } from '../servicos/solicitacoes';
 import { Carregando } from '../componentes/Estado';
+import { Modal } from '../componentes/Modal';
 import { Selo } from '../componentes/Selo';
 import { Icone } from '../componentes/Icone';
-import { plural, dinheiro, quantidade as qtdBr } from '../servicos/texto';
+import { plural, dinheiro, porcento, quantidade as qtdBr } from '../servicos/texto';
 import {
   mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo,
 } from '../servicos/mascaras';
@@ -54,7 +55,10 @@ export function Portal() {
 
   const [cotacao, setCotacao] = useState<CotacaoDoPortal | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [erroAbertura, setErroAbertura] = useState<string | null>(null);
+  //  A RECUSA INTEIRA, e não só a frase dela: a tela muda conforme
+  //  o motivo — "já enviou" é um agradecimento em verde, as outras
+  //  três são erro —, e ela traz o comprovante do que foi enviado.
+  const [recusa, setRecusa] = useState<RecusaDoPortal | null>(null);
 
   const [respostas, setRespostas] = useState<Record<string, RespostaItem>>({});
   const [frete, setFrete] = useState('');
@@ -68,10 +72,13 @@ export function Portal() {
   const [detalhes, setDetalhes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState<{ total: number; itens: number } | null>(null);
+  //  A parada antes de enviar. Ver o porquê junto do modal, no fim
+  //  do formulário.
+  const [confirmando, setConfirmando] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
-    setErroAbertura(null);
+    setRecusa(null);
 
     try {
       const r = await abrirPortal(token);
@@ -89,7 +96,11 @@ export function Portal() {
       setIntervalo(c.intervaloParcelasDias != null ? String(c.intervaloParcelasDias) : '');
       setObservacao(c.observacaoFornecedor ?? '');
     } catch (e) {
-      setErroAbertura(e instanceof Error ? e.message : 'Não foi possível abrir a cotação.');
+      setRecusa(
+        e instanceof Error
+          ? (e as RecusaDoPortal)
+          : (new Error('Não foi possível abrir a cotação.') as RecusaDoPortal),
+      );
     } finally {
       setCarregando(false);
     }
@@ -116,8 +127,21 @@ export function Portal() {
     return r?.disponivel && lerDinheiro(r.valorUnitario) === null;
   }).length;
 
-  async function enviar(evento: FormEvent) {
+  /**
+   * O SUBMIT NÃO ENVIA MAIS: ele abre a conferência.
+   *
+   * Continua sendo submit de verdade, e não um `onClick`, porque é
+   * ele que dá o Enter no teclado e a validação do navegador de
+   * graça.
+   */
+  function pedirConfirmacao(evento: FormEvent) {
     evento.preventDefault();
+    setErro(null);
+    setDetalhes([]);
+    setConfirmando(true);
+  }
+
+  async function enviar() {
     setErro(null);
     setDetalhes([]);
     setEnviando(true);
@@ -144,9 +168,13 @@ export function Portal() {
         observacaoFornecedor: observacao || undefined,
       });
 
+      setConfirmando(false);
       setEnviado({ total: r.resumo.total, itens: r.resumo.itensCotados });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
+      //  O MODAL FECHA PARA O ERRO APARECER. Ele fica no
+      //  formulário, e erro atrás de janela é erro que ninguém lê.
+      setConfirmando(false);
       setErro(e instanceof Error ? e.message : 'Não foi possível enviar.');
       setDetalhes((e as Error & { detalhes?: string[] }).detalhes ?? []);
       setEnviando(false);
@@ -162,7 +190,95 @@ export function Portal() {
     );
   }
 
-  if (erroAbertura || !cotacao) {
+  /* ---------------- JÁ ENVIOU: AGRADECIMENTO, NÃO ERRO ----------------
+
+     Esta tela existe porque a cotação enviada passou a ser final.
+     Antes, reabrir o link trazia o formulário preenchido de volta.
+
+     Ela NÃO usa a caixa vermelha das outras recusas, e isso não é
+     capricho: quem reabre este link quase sempre está conferindo
+     se deu certo. Receber um alerta vermelho em resposta a um
+     acerto ensina a pessoa a desconfiar de uma tela que está certa.
+
+     E o comprovante não é enfeite. Sem ele a pessoa lê "você já
+     enviou" e continua sem saber O QUE enviou — que é exatamente
+     a dúvida que faz o fornecedor ligar para o comprador. */
+  if (recusa?.motivo === 'ja-respondido' && recusa.resumo) {
+    const r = recusa.resumo;
+
+    return (
+      <div className="portal">
+        <div className="portal__cartao">
+          <MarcaPorto />
+
+          <div className="portal__sucesso">
+            <Icone nome="certo" className="portal__sucesso-icone" />
+            <h1>{recusa.message}</h1>
+            {recusa.cotacao && <p>{recusa.cotacao.titulo}</p>}
+          </div>
+
+          <div className="portal__resumo">
+            <dl className="dados">
+              {r.respondidoEm && (
+                <div>
+                  {/* "Enviada", e não "Enviada em": a coluna do rótulo
+                      tem 70px neste bloco, e as duas palavras
+                      quebravam em duas linhas ao lado de uma data de
+                      uma linha só. */}
+                  <dt>Enviada</dt>
+                  <dd>{dataHoraBr(r.respondidoEm)}</dd>
+                </div>
+              )}
+              <div>
+                <dt>Itens</dt>
+                <dd>
+                  {r.itensCotados} cotados
+                  {r.itensIndisponiveis > 0 &&
+                    ', ' + r.itensIndisponiveis + ' que você não tem'}
+                </dd>
+              </div>
+              {r.frete > 0 && (
+                <div>
+                  <dt>Frete</dt>
+                  <dd>{dinheiro(r.frete)}</dd>
+                </div>
+              )}
+              {r.outros > 0 && (
+                <div>
+                  <dt>Outros</dt>
+                  <dd>{dinheiro(r.outros)}</dd>
+                </div>
+              )}
+              {/* Sempre aparece. Antes era escondida quando vinha
+                  "Não informada" — uma linha dizendo que não havia
+                  linha. Agora o servidor devolve "À vista" quando o
+                  fornecedor deixa os campos vazios, que é o que o
+                  próprio portal combinou com ele, e aí a linha
+                  informa de verdade. */}
+              {r.pagamento && (
+                <div>
+                  <dt>Pagamento</dt>
+                  <dd>{r.pagamento}</dd>
+                </div>
+              )}
+              <div className="portal__resumo-soma">
+                <dt>Total</dt>
+                <dd>{dinheiro(r.total)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <p className="portal__rodape">
+            O comprador da Porto Inc. está analisando as propostas. Se precisar
+            corrigir alguma coisa, fale com ele — ele pode reabrir a cotação
+            para você.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (recusa || !cotacao) {
     return (
       <div className="portal">
         <div className="portal__cartao">
@@ -170,7 +286,7 @@ export function Portal() {
           <div className="aviso aviso--erro" role="alert">
             <Icone nome="alerta" className="aviso__icone" />
             <div>
-              <strong>{erroAbertura}</strong>
+              <strong>{recusa?.message ?? 'Não foi possível abrir a cotação.'}</strong>
               <p>
                 Se você acha que isso é um engano, entre em contato com o comprador da
                 Porto Inc. que lhe enviou este link.
@@ -194,22 +310,18 @@ export function Portal() {
               Recebemos sua proposta de <strong>{dinheiro(enviado.total)}</strong> para{' '}
               {plural(enviado.itens, 'item', 'itens')}.
             </p>
+            {/* A PROMESSA DE REVISAR SAIU DAQUI.
+                Dizia "você pode revisar sua resposta até <data>
+                reabrindo este mesmo link", e tinha um botão
+                "Revisar minha resposta". Desde que a cotação
+                enviada é final, o link recusaria a pessoa no
+                clique seguinte — e promessa desmentida pelo
+                próprio sistema é pior que regra apertada. */}
             <p className="portal__nota">
-              O comprador da Porto Inc. vai analisar e entrar em contato. Você pode
-              revisar sua resposta até <strong>{dataBr(cotacao.prazoResposta)}</strong>{' '}
-              reabrindo este mesmo link.
+              O comprador da Porto Inc. vai analisar e entrar em contato. Sua
+              proposta está fechada: se precisar corrigir alguma coisa, fale com
+              ele — ele pode reabrir a cotação para você.
             </p>
-            <button
-              type="button"
-              className="botao botao--secundario"
-              onClick={() => {
-                setEnviado(null);
-                setEnviando(false);
-                void carregar();
-              }}
-            >
-              Revisar minha resposta
-            </button>
           </div>
         </div>
       </div>
@@ -221,7 +333,7 @@ export function Portal() {
 
   return (
     <div className="portal">
-      <form className="portal__cartao" onSubmit={enviar} noValidate>
+      <form className="portal__cartao" onSubmit={pedirConfirmacao} noValidate>
         <MarcaPorto />
 
         <header className="portal__topo">
@@ -634,6 +746,124 @@ export function Portal() {
             </p>
           )}
         </div>
+
+        {/* ---------------- A conferência antes de enviar ----------------
+
+            MODAL QUE SÓ PERGUNTA "TEM CERTEZA?" É QUEBRA-MOLAS: em
+            três dias a pessoa aprende a clicar em "Sim" sem ler, e
+            aí ele atrasa o trabalho sem proteger de nada. Por isso
+            a pergunta está no TÍTULO, e o corpo é a única coisa que
+            dá para conferir — o que ela digitou.
+
+            É a mesma regra do `ConfirmarEnvio`, a janela que o
+            comprador vê antes de mandar o convite. Aqui o papel se
+            inverte: do outro lado está o vendedor, e o que ele
+            arrisca é um dígito.
+
+            IDEIA DELE, em 10/10/2026, e melhor que as três que eu
+            tinha proposto. As minhas remediavam DEPOIS — carência
+            de quinze minutos, botão de pedir correção ao comprador.
+            Esta previne antes, que é o único momento em que sai de
+            graça: a cotação enviada é final. */}
+        <Modal
+          aberto={confirmando}
+          aoFechar={() => setConfirmando(false)}
+          titulo={
+            cotacao.jaRespondeu ? 'Confira antes de atualizar' : 'Confira antes de enviar'
+          }
+          descricao="Depois de enviar, esta cotação não aceita mais mudanças."
+          acoes={
+            <>
+              <button
+                type="button"
+                className="botao botao--secundario"
+                onClick={() => setConfirmando(false)}
+                disabled={enviando}
+              >
+                Voltar e corrigir
+              </button>
+              <button
+                type="button"
+                className="botao botao--principal"
+                onClick={() => void enviar()}
+                disabled={enviando}
+              >
+                {enviando
+                  ? 'Enviando...'
+                  : cotacao.jaRespondeu
+                    ? 'Confirmar e atualizar'
+                    : 'Confirmar e enviar'}
+              </button>
+            </>
+          }
+        >
+          <ul className="portal__conferencia">
+            {cotacao.itens.map((item) => {
+              const r = respostas[item.id];
+              const unitario = lerDinheiro(r?.valorUnitario ?? '') ?? 0;
+
+              return (
+                <li key={item.id}>
+                  <span className="portal__conferencia-item">
+                    {item.descricao}
+                    <span className="portal__conferencia-qtd">
+                      {qtdBr(item.quantidade)} {item.unidadeMedida}
+                      {r?.disponivel && ' × ' + dinheiro(unitario)}
+                    </span>
+                  </span>
+                  <span
+                    className={
+                      'portal__conferencia-valor' +
+                      (r?.disponivel ? '' : ' portal__conferencia-valor--fora')
+                    }
+                  >
+                    {r?.disponivel
+                      ? dinheiro(item.quantidade * unitario)
+                      : 'não tenho'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <dl className="dados">
+            {(lerDinheiro(frete) ?? 0) > 0 && (
+              <div>
+                <dt>Frete</dt>
+                <dd>{dinheiro(lerDinheiro(frete) ?? 0)}</dd>
+              </div>
+            )}
+            {(lerDinheiro(outros) ?? 0) > 0 && (
+              <div>
+                <dt>Outros</dt>
+                <dd>{dinheiro(lerDinheiro(outros) ?? 0)}</dd>
+              </div>
+            )}
+            {(entrada || parcelas) && (
+              <div>
+                <dt>Pagamento</dt>
+                <dd>
+                  {[
+                    //  `porcento` e não `entrada + '%'`: número colado
+                    //  em texto no JavaScript sai com o ponto do
+                    //  inglês, e aqui ele fica ao lado de "R$ 10.020,00".
+                    entrada && 'entrada de ' + porcento(Number(entrada)),
+                    parcelas &&
+                      parcelas +
+                        'x' +
+                        (intervalo ? ' a cada ' + plural(Number(intervalo), 'dia', 'dias') : ''),
+                  ]
+                    .filter(Boolean)
+                    .join(' + ')}
+                </dd>
+              </div>
+            )}
+            <div className="portal__resumo-soma">
+              <dt>Total</dt>
+              <dd>{dinheiro(total)}</dd>
+            </div>
+          </dl>
+        </Modal>
       </form>
     </div>
   );

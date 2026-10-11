@@ -21,6 +21,7 @@ import {
   MENSAGEM_RECUSA, STATUS_RECUSA,
   type SituacaoBid,
 } from '../servicos/cotacao.js';
+import { conferirCondicaoDePagamento } from '../servicos/fiscal.js';
 
 const esquemaResposta = z.object({
   itens: z.array(
@@ -41,19 +42,33 @@ const esquemaResposta = z.object({
   intervaloParcelasDias: z.coerce.number().int().min(1).max(365).nullable().optional(),
   observacaoFornecedor: textoOpcional(1000),
 })
-  // 100% DE ENTRADA E PARCELAS NÃO EXISTEM JUNTOS.
+  // A CONDIÇÃO DE PAGAMENTO NÃO SAI PELA METADE.
   //
-  // Um fornecedor respondeu "100% de entrada + 5x a cada 30 dias" e
-  // o sistema guardou. Não é preciosismo: é a conta do prazo médio
-  // de pagamento, que compara propostas. Com 100% de entrada ela dá
-  // "à vista", e as cinco parcelas somem sem ninguém ser avisado.
-  .refine(
-    (d) => !(d.percentualEntrada === 100 && (d.quantidadeParcelas ?? 0) > 1),
-    {
-      path: ['quantidadeParcelas'],
-      message: 'Com 100% de entrada não há parcelas. Reduza a entrada ou deixe as parcelas em branco.',
-    },
-  );
+  // PRIMEIRA das três portas, e a única em que a pessoa que sabe a
+  // resposta ainda está presente. Daqui a três meses, quando a nota
+  // chegar, ninguém mais consegue perguntar ao vendedor de quantos
+  // em quantos dias ele queria receber.
+  //
+  // A regra mora em `conferirCondicaoDePagamento`, e é a MESMA usada
+  // ao gerar o pedido e ao gerar as parcelas. Se cada lugar tivesse
+  // a sua, elas divergiriam — foi o que aconteceu com a palavra "à
+  // vista", que o financeiro escrevia e a cotação não.
+  //
+  // O que isto barra, medido na varredura de 10/10/2026:
+  //   "100% de entrada + 5x"       já era barrado (caso real)
+  //   "entrada de 30%" e nada mais  perdia os outros 70% da nota
+  //   "3 parcelas" sem o intervalo  virava 30 dias chutados
+  .superRefine((d, ctx) => {
+    const problema = conferirCondicaoDePagamento({
+      percentualEntrada: d.percentualEntrada,
+      quantidadeParcelas: d.quantidadeParcelas,
+      intervaloDias: d.intervaloParcelasDias,
+    });
+
+    if (problema) {
+      ctx.addIssue({ code: 'custom', path: ['quantidadeParcelas'], message: problema });
+    }
+  });
 
 /** Carrega o convite pelo token, com tudo que o portal precisa. */
 async function carregarConvite(token: string) {
@@ -84,6 +99,51 @@ async function carregarConvite(token: string) {
   });
 }
 
+type Convite = NonNullable<Awaited<ReturnType<typeof carregarConvite>>>;
+
+/**
+ * O QUE ELE ENVIOU, montado do que está guardado.
+ *
+ * Serve de comprovante na tela travada. Sem isto, quem abre o
+ * link de novo lê "você já enviou" e continua sem saber O QUE
+ * enviou — que é justamente a dúvida que faz o fornecedor ligar
+ * para o comprador.
+ *
+ * É o mesmo cálculo que a resposta do POST devolve, só que a
+ * partir do banco em vez do corpo da requisição.
+ */
+function resumoDoQueEnviou(convite: Convite) {
+  const quantidadePor = new Map(
+    convite.bid.itens.map((i) => [i.id, numero(i.quantidade) ?? 0]),
+  );
+
+  const totais = calcularTotais(
+    convite.cotacoes.map((c) => ({
+      disponivel: c.disponivel,
+      valorUnitario: numero(c.valorUnitario),
+      quantidade: quantidadePor.get(c.bidItemId) ?? 0,
+    })),
+    numero(convite.valorFrete) ?? 0,
+    numero(convite.outrosCustos) ?? 0,
+    convite.bid.itens.length,
+  );
+
+  return {
+    respondidoEm: convite.respondidoEm,
+    itensCotados: totais.itensCotados,
+    itensIndisponiveis: totais.itensIndisponiveis,
+    subtotal: totais.subtotal,
+    frete: totais.frete,
+    outros: totais.outros,
+    total: totais.total,
+    pagamento: descreverPagamento(
+      numero(convite.percentualEntrada),
+      convite.quantidadeParcelas,
+      convite.intervaloParcelasDias,
+    ),
+  };
+}
+
 export async function rotasPortal(app: FastifyInstance) {
   // Limite bem mais apertado que o do resto do sistema: estas
   // rotas são abertas, então são o alvo mais provável.
@@ -101,16 +161,32 @@ export async function rotasPortal(app: FastifyInstance) {
       expiraEm: convite?.expiraEm,
       situacaoBid: convite?.bid.situacao as SituacaoBid | undefined,
       respondidoEm: convite?.respondidoEm,
-      // O fluxo prevê "rever cotação": enquanto o prazo corre,
-      // o fornecedor pode corrigir o que enviou.
-      permiteRevisao: true,
+      rodadaRespondida: convite?.rodadaRespondida,
+      rodadaAtual: convite?.bid.rodada,
     });
 
     if (!conferencia.ok || !convite) {
       const motivo = conferencia.ok ? 'nao-encontrado' : conferencia.motivo;
+
       return res.status(STATUS_RECUSA[motivo]).send({
         erro: MENSAGEM_RECUSA[motivo],
         motivo,
+        //  O COMPROVANTE VAI JUNTO COM A RECUSA.
+        //
+        //  Só nesta: "já enviou" é a única recusa em que existe
+        //  algo dele para mostrar — e é a mais comum, porque o
+        //  fornecedor reabre o link justamente para conferir se
+        //  deu certo. Nas outras não há o que provar.
+        resumo: convite && motivo === 'ja-respondido'
+          ? resumoDoQueEnviou(convite)
+          : undefined,
+        cotacao: convite && motivo === 'ja-respondido'
+          ? {
+              numeroFormatado: formatarNumeroBid(convite.bid.numero),
+              titulo: convite.bid.titulo,
+              fornecedor: convite.fornecedor,
+            }
+          : undefined,
       });
     }
 
@@ -188,12 +264,13 @@ export async function rotasPortal(app: FastifyInstance) {
       expiraEm: convite?.expiraEm,
       situacaoBid: convite?.bid.situacao as SituacaoBid | undefined,
       respondidoEm: convite?.respondidoEm,
-      permiteRevisao: true,
+      rodadaRespondida: convite?.rodadaRespondida,
+      rodadaAtual: convite?.bid.rodada,
     });
 
     if (!conferencia.ok || !convite) {
       const motivo = conferencia.ok ? 'nao-encontrado' : conferencia.motivo;
-      return res.status(STATUS_RECUSA[motivo]).send({ erro: MENSAGEM_RECUSA[motivo] });
+      return res.status(STATUS_RECUSA[motivo]).send({ erro: MENSAGEM_RECUSA[motivo], motivo });
     }
 
     // Os itens precisam pertencer a ESTE pacote. Sem esta conferência,
@@ -242,6 +319,9 @@ export async function rotasPortal(app: FastifyInstance) {
         where: { id: convite.id },
         data: {
           respondidoEm: new Date(),
+          //  A RODADA EM QUE ELE RESPONDEU é o que trava o link.
+          //  Ver o porquê inteiro em `conferirLink`.
+          rodadaRespondida: convite.bid.rodada,
           valorFrete: dados.data.valorFrete ?? null,
           outrosCustos: dados.data.outrosCustos ?? null,
           percentualEntrada: dados.data.percentualEntrada ?? null,
@@ -281,7 +361,11 @@ export async function rotasPortal(app: FastifyInstance) {
           dados.data.intervaloParcelasDias ?? null,
         ),
       },
-      podeRevisar: true,
+      //  NÃO PODE MAIS REVISAR, e a tela precisa saber antes de
+      //  prometer. Era `true`, e a tela de sucesso dizia "você
+      //  pode revisar reabrindo este mesmo link" — promessa que a
+      //  trava desmentiria no clique seguinte.
+      podeRevisar: false,
       prazoResposta: convite.bid.prazoResposta,
     };
   });

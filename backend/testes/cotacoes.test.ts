@@ -2,10 +2,11 @@
 //  Testes da Etapa 5 - Cotação e portal do fornecedor
 // ============================================================
 
-import { before, after, describe, it } from 'node:test';
+import { before, beforeEach, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar } from './ajuda.js';
+import { banco } from '../src/plugins/banco.js';
 
 let admin = '';
 let comprador = '';
@@ -426,6 +427,26 @@ describe('Portal do fornecedor', () => {
     itensDoPacote = aberto.corpo.cotacao.itens;
   });
 
+  //  FOLHA LIMPA ANTES DE CADA TESTE.
+  //
+  //  Desde 10/10/2026 a cotação enviada é final: o segundo envio
+  //  pelo mesmo link é recusado. Os testes daqui conferem a
+  //  VALIDAÇÃO da resposta — preço faltando, item de outro pacote,
+  //  100% de entrada com parcelas —, e cada um precisa poder
+  //  enviar uma vez.
+  //
+  //  Sem isto, o primeiro teste que responde trava o link e os
+  //  cinco seguintes passam a falhar por um motivo que não é o
+  //  deles. A trava tem os seus próprios testes, logo abaixo, e
+  //  eles montam o estado dentro de si justamente para não
+  //  depender desta limpeza.
+  beforeEach(async () => {
+    await banco.bidFornecedor.updateMany({
+      where: { bidId },
+      data: { respondidoEm: null, rodadaRespondida: null },
+    });
+  });
+
   it('abre SEM login', async () => {
     const r = await chamar('/api/portal/' + token);
 
@@ -588,31 +609,78 @@ describe('Portal do fornecedor', () => {
     assert.ok(r.corpo.erro.includes('não pertence'));
   });
 
-  it('permite revisar enquanto o prazo corre', async () => {
-    await chamar('/api/portal/' + token, {
+  /** Responde o pacote inteiro ao mesmo preço. */
+  function responder(valorUnitario: number) {
+    return chamar('/api/portal/' + token, {
       metodo: 'POST',
       corpo: {
         itens: itensDoPacote.map((i) => ({
-          bidItemId: i.id, disponivel: true, valorUnitario: 50,
+          bidItemId: i.id, disponivel: true, valorUnitario,
         })),
       },
     });
+  }
 
-    const revisao = await chamar('/api/portal/' + token, {
-      metodo: 'POST',
-      corpo: {
-        itens: itensDoPacote.map((i) => ({
-          bidItemId: i.id, disponivel: true, valorUnitario: 45,
-        })),
-      },
-    });
+  it('A COTAÇÃO ENVIADA É FINAL: o segundo envio é recusado', async () => {
+    //  Até 10/10/2026 este teste afirmava o contrário — "permite
+    //  revisar enquanto o prazo corre" —, e era um recurso de
+    //  propósito. Ele testou com um celular de verdade e pediu a
+    //  troca: "após eu responder a cotação, se eu clicar no link
+    //  novamente eu posso mudar as informações, isso não pode
+    //  acontecer".
+    const primeiro = await responder(50);
 
-    assert.equal(revisao.status, 200);
-    // Vale a última: 12 × 45 + 20 × 45
-    assert.equal(revisao.corpo.resumo.subtotal, 32 * 45);
+    assert.equal(primeiro.status, 200);
+    assert.equal(primeiro.corpo.podeRevisar, false, 'não pode prometer revisão');
+
+    const segundo = await responder(45);
+
+    assert.equal(segundo.status, 409);
+    assert.equal(segundo.corpo.motivo, 'ja-respondido');
+
+    //  E O PREÇO GUARDADO CONTINUA SENDO O PRIMEIRO. Recusar o
+    //  pedido e gravar de qualquer jeito seria pior que não
+    //  travar: o comprador veria 45 sem ninguém ter autorizado.
+    const abrindo = await chamar('/api/portal/' + token);
+    assert.equal(abrindo.status, 409);
+    assert.equal(abrindo.corpo.resumo.subtotal, 32 * 50);
+  });
+
+  it('a tela travada mostra O QUE ele enviou, como comprovante', async () => {
+    //  Sem isto, quem reabre o link lê "você já enviou" e continua
+    //  sem saber o que enviou — que é justamente a dúvida que faz
+    //  o fornecedor ligar para o comprador.
+    await responder(50);
+
+    const r = await chamar('/api/portal/' + token);
+
+    assert.equal(r.status, 409);
+    assert.equal(r.corpo.erro, 'Você já enviou a sua cotação, muito obrigado!');
+    assert.ok(r.corpo.resumo.respondidoEm, 'tem de dizer quando foi');
+    assert.ok(r.corpo.resumo.total > 0);
+    assert.equal(r.corpo.resumo.itensCotados, itensDoPacote.length);
+    assert.equal(r.corpo.cotacao.titulo, 'Pacote do portal');
+  });
+
+  it('a recusa NÃO vaza nada dos concorrentes', async () => {
+    //  A tela travada ganhou corpo, e corpo novo é lugar novo por
+    //  onde vazar. A regra do portal continua: ele só enxerga o
+    //  próprio convite.
+    await responder(50);
+
+    const r = await chamar('/api/portal/' + token);
+    const tudo = JSON.stringify(r.corpo);
+
+    assert.ok(!tudo.includes('convidados'), 'não pode listar quem mais foi convidado');
+    assert.ok(!tudo.toLowerCase().includes('concorrente'));
   });
 
   it('o comprador enxerga o total de cada fornecedor', async () => {
+    //  Responde dentro do teste: a folha limpa do `beforeEach`
+    //  apaga a marca de quem respondeu, e este teste precisa de
+    //  alguem que tenha respondido.
+    await responder(50);
+
     const bid = await chamar('/api/cotacoes/' + bidId, { token: comprador });
     const respondeu = bid.corpo.cotacao.convidados.filter(
       (c: { respondeu: boolean }) => c.respondeu,
