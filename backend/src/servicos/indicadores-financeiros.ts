@@ -10,7 +10,7 @@
 //  nenhuma não entrou.
 // ============================================================
 
-import { diasAte } from './fiscal.js';
+import { diasAte, aindaDevido } from './fiscal.js';
 
 export interface ParcelaParaIndicador {
   valor: number;
@@ -68,10 +68,16 @@ export function resumirCarteira(
   };
 }
 
+/**
+ * O que se deve destas parcelas.
+ *
+ * SALDO, não valor cheio: parcela com baixa parcial ainda deve a
+ * diferença, e é ela que precisa aparecer no "em aberto".
+ */
 function resumir(parcelas: ParcelaParaIndicador[]): Resumo {
   return {
     quantidade: parcelas.length,
-    valor: arredondar(parcelas.reduce((s, p) => s + p.valor, 0)),
+    valor: arredondar(parcelas.reduce((s, p) => s + aindaDevido(p), 0)),
   };
 }
 
@@ -122,10 +128,10 @@ export function calcularIndicadores(
   return {
     prazoMedioPagamento: prazos.length > 0 ? Math.round(media(prazos)) : 0,
     pontualidade: pagas.length > 0 ? Math.round((emDia.length / pagas.length) * 100) : 100,
-    totalComprometido: arredondar(abertas.reduce((s, p) => s + p.valor, 0)),
-    maiorParcelaAberta: abertas.length > 0 ? Math.max(...abertas.map((p) => p.valor)) : 0,
+    totalComprometido: arredondar(abertas.reduce((s, p) => s + aindaDevido(p), 0)),
+    maiorParcelaAberta: abertas.length > 0 ? Math.max(...abertas.map(aindaDevido)) : 0,
     diasParaProximoVencimento: proximos.length > 0 ? proximos[0] : null,
-    ticketMedio: abertas.length > 0 ? arredondar(media(abertas.map((p) => p.valor))) : 0,
+    ticketMedio: abertas.length > 0 ? arredondar(media(abertas.map(aindaDevido))) : 0,
   };
 }
 
@@ -216,9 +222,9 @@ export function montarFluxo(
     if (p.situacao === 'PAGA') {
       mes.pago = arredondar(mes.pago + (p.valorPago ?? p.valor));
     } else if (diasAte(p.vencimento, hoje) < 0) {
-      mes.vencido = arredondar(mes.vencido + p.valor);
+      mes.vencido = arredondar(mes.vencido + aindaDevido(p));
     } else {
-      mes.aVencer = arredondar(mes.aVencer + p.valor);
+      mes.aVencer = arredondar(mes.aVencer + aindaDevido(p));
     }
   }
 
@@ -315,8 +321,9 @@ export function fatiarCarteira(
 //  Apoio
 // ------------------------------------------------------------
 
+/** Usada so para parcelas EM ABERTO: soma o saldo, nao o cheio. */
 function soma(parcelas: ParcelaParaIndicador[]): number {
-  return arredondar(parcelas.reduce((s, p) => s + p.valor, 0));
+  return arredondar(parcelas.reduce((s, p) => s + aindaDevido(p), 0));
 }
 
 function media(valores: number[]): number {

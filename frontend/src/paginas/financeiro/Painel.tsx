@@ -39,7 +39,7 @@ import { TabelaArea } from '../../componentes/TabelaArea';
 import { Paginacao, ContaDaPagina } from '../../componentes/Paginacao';
 import { usePagina } from '../../ganchos/pagina';
 import { Icone } from '../../componentes/Icone';
-import { mascaraDinheiro, dinheiroCompleto, lerDinheiro } from '../../servicos/mascaras';
+import { mascaraDinheiro, dinheiroCompleto, lerDinheiro, dinheiroParaCampo } from '../../servicos/mascaras';
 
 const FILTROS = [
   { valor: '', rotulo: 'Todas' },
@@ -117,6 +117,13 @@ export function PainelFinanceiro() {
   const [dataPagamento, setDataPagamento] = useState(hojeIso());
   const [forma, setForma] = useState('');
   const [valorPago, setValorPago] = useState('');
+  //  PAGOU MENOS: desconto ou pagamento parcial?
+  //
+  //  São coisas diferentes e o sistema tratava as duas como
+  //  desconto: a parcela fechava e o que faltava sumia de todos os
+  //  números. Medido em 10/10/2026 — R$ 1,00 numa parcela de
+  //  R$ 634,80 apagava R$ 633,80 da dívida.
+  const [quitacao, setQuitacao] = useState<'TOTAL' | 'PARCIAL'>('TOTAL');
 
   const pag = usePagina(quando + '|' + situacao);
 
@@ -161,7 +168,23 @@ export function PainelFinanceiro() {
     setPagando(t);
     setDataPagamento(hojeIso());
     setForma('');
-    setValorPago(String(t.valor));
+
+    //  COM MÁSCARA, e não `String(t.valor)`.
+    //
+    //  Era o número cru do banco: "634.8". O leitor de dinheiro é
+    //  brasileiro e lê o PONTO como separador de milhar, então
+    //  `lerDinheiro('634.8')` devolve 6348 — e a baixa registrava
+    //  R$ 6.348,00 numa parcela de R$ 634,80. Dez vezes mais, em
+    //  silêncio, sem ninguém tocar no campo.
+    //
+    //  Ficou invisível porque nada comparava o valor digitado com o
+    //  da parcela. Apareceu em 10/10/2026, na primeira foto depois
+    //  que o modal passou a mostrar a diferença.
+    //
+    //  E o campo nasce com o que FALTA, não com o valor cheio:
+    //  parcela que já recebeu baixa parcial deve só o saldo.
+    setValorPago(dinheiroParaCampo(t.valor - (t.valorPago ?? 0)));
+    setQuitacao('TOTAL');
     setErro(null);
     setAviso(null);
   }
@@ -182,8 +205,19 @@ export function PainelFinanceiro() {
   const mexeuNaBaixa =
     pagando !== null &&
     (forma.trim() !== '' ||
-      valorPago !== String(pagando.valor) ||
+      //  Compara com o valor MASCARADO, que é o que o campo recebe
+      //  ao abrir. Com `String(pagando.valor)` a conta dizia que a
+      //  pessoa tinha mexido mesmo sem ter tocado em nada.
+      valorPago !== dinheiroParaCampo(pagando.valor - (pagando.valorPago ?? 0)) ||
       dataPagamento !== hojeIso());
+
+  //  Quanto falta nesta parcela e quanto a pessoa digitou. A
+  //  diferença é o que decide se a pergunta aparece.
+  const faltaNaParcela = pagando ? pagando.valor - (pagando.valorPago ?? 0) : 0;
+  const digitado = lerDinheiro(valorPago) ?? faltaNaParcela;
+  const diferenca = Math.abs(digitado - faltaNaParcela) < 0.005
+    ? 0
+    : Math.round((digitado - faltaNaParcela) * 100) / 100;
 
   async function confirmarBaixa() {
     if (!pagando) return;
@@ -197,6 +231,10 @@ export function PainelFinanceiro() {
       const r = await pagarTitulo(pagando.id, {
         pagoEm: new Date(dataPagamento + 'T12:00:00').toISOString(),
         valorPago: Number.isFinite(valor) && valor > 0 ? valor : undefined,
+        //  Só vai quando o valor difere: pagando o que falta, não há
+        //  o que perguntar, e mandar "TOTAL" sempre faria o servidor
+        //  aceitar calado uma diferença que ninguém viu.
+        quitacao: diferenca !== 0 ? quitacao : undefined,
         formaPagamento: forma.trim() || undefined,
       });
 
@@ -562,7 +600,7 @@ export function PainelFinanceiro() {
               aoMudar={(v) => setValorPago(mascaraDinheiro(v))}
               aoSair={() => setValorPago(dinheiroCompleto(valorPago))}
               modoTeclado="decimal"
-              ajuda="Mude se pagou com desconto ou juros."
+              ajuda="Mude se pagou a menos ou a mais."
             />
             <Campo
               rotulo="Forma de pagamento"
@@ -571,6 +609,62 @@ export function PainelFinanceiro() {
               exemplo="PIX, boleto, transferência"
             />
           </div>
+
+          {/* ---------- PAGOU MENOS: O QUE ACONTECEU? ----------
+
+              A pergunta só aparece quando o valor difere do que
+              falta — perguntar sempre seria quebra-molas, e em três
+              dias ninguém mais lê.
+
+              Ela existe porque o sistema tratava todo valor menor
+              como DESCONTO: a parcela fechava e o resto sumia da
+              carteira, do painel e da previsão de caixa. Pagamento
+              parcial é tão comum numa construtora quanto desconto,
+              e são coisas opostas — numa a dívida acaba, na outra
+              ela continua. */}
+          {diferenca < 0 && (
+            <div className="aviso aviso--atencao">
+              <Icone nome="alerta" className="aviso__icone" />
+              <div>
+                <strong>
+                  Está faltando {dinheiro(Math.abs(diferenca))} para quitar esta parcela.
+                </strong>
+                <p>O que aconteceu?</p>
+
+                <label className="opcao">
+                  <input
+                    type="radio"
+                    name="quitacao"
+                    checked={quitacao === 'PARCIAL'}
+                    onChange={() => setQuitacao('PARCIAL')}
+                  />
+                  <span>
+                    <strong>Paguei só uma parte.</strong> O restante continua em aberto.
+                  </span>
+                </label>
+
+                <label className="opcao">
+                  <input
+                    type="radio"
+                    name="quitacao"
+                    checked={quitacao === 'TOTAL'}
+                    onChange={() => setQuitacao('TOTAL')}
+                  />
+                  <span>
+                    <strong>Foi desconto.</strong> A parcela fica quitada e a Porto Inc.
+                    não deve mais nada dela.
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {diferenca > 0 && (
+            <p className="campo__ajuda">
+              {dinheiro(diferenca)} acima do que falta. A parcela será quitada e a
+              diferença fica registrada como juros ou multa.
+            </p>
+          )}
         </Modal>
 
         <ContaDaPagina

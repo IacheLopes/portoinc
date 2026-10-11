@@ -31,7 +31,7 @@
 // ============================================================
 
 import type { MesDoFluxo } from './indicadores-financeiros.js';
-import { diasAte } from './fiscal.js';
+import { diasAte, aindaDevido } from './fiscal.js';
 
 /** O número que aparece na tela: LC-00001. */
 export function formatarNumeroLancamento(numero: number): string {
@@ -142,11 +142,20 @@ export function montarCaixa(
   // Porto Inc. negocia desconto na hora de pagar, e o caixa precisa
   // do valor real. Por isso `valorPago ?? valor`.
   const pagas = contas.filter((c) => c.situacao === 'PAGA');
+  const abertas = contas.filter((c) => c.situacao === 'ABERTA');
+
+  //  O QUE SAIU inclui o que já foi pago POR CIMA de parcela que
+  //  continua aberta. Uma baixa parcial tira dinheiro do caixa hoje;
+  //  contar só as quitadas esconderia uma saída que aconteceu.
   const comprasPagas = arredondar(
-    pagas.reduce((s, c) => s + (c.valorPago ?? c.valor), 0),
+    pagas.reduce((s, c) => s + (c.valorPago ?? c.valor), 0) +
+      abertas.reduce((s, c) => s + (c.valorPago ?? 0), 0),
   );
+
+  //  E O QUE FALTA é o SALDO, não o valor cheio: numa parcela de
+  //  R$ 1.000 com R$ 300 já pagos, ainda se deve R$ 700.
   const comprasEmAberto = arredondar(
-    contas.filter((c) => c.situacao === 'ABERTA').reduce((s, c) => s + c.valor, 0),
+    abertas.reduce((s, c) => s + aindaDevido(c), 0),
   );
 
   const saiu = arredondar(comprasPagas + despesasFeitas);

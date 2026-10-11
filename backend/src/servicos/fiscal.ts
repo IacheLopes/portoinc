@@ -189,6 +189,28 @@ export function conferirNotaContraPedido(
 //  Parcelas
 // ------------------------------------------------------------
 
+/**
+ * QUANTO AINDA SE DEVE DESTA PARCELA.
+ *
+ * Nasceu em 10/10/2026, da varredura do financeiro. Até então o
+ * sistema só sabia pensar em DESCONTO: pagar menos que o combinado
+ * significava, sempre, que o resto tinha sido perdoado. A parcela
+ * fechava e a diferença sumia de todos os números.
+ *
+ * Provado no sistema: numa parcela de R$ 634,80 paguei R$ 1,00, e
+ * os R$ 633,80 restantes desapareceram do painel, da carteira e da
+ * previsão de caixa. Sem aviso.
+ *
+ * Mas pagamento parcial é o dia a dia de uma construtora, tanto
+ * quanto desconto é. São coisas diferentes, e agora quem dá a baixa
+ * diz qual das duas aconteceu. Esta função é o que faz o "ainda
+ * devo" ser verdade em toda tela que o mostra.
+ */
+export function aindaDevido(parcela: { valor: number; valorPago?: number | null }): number {
+  const resto = parcela.valor - (parcela.valorPago ?? 0);
+  return resto > 0 ? arredondar(resto) : 0;
+}
+
 export interface CondicaoDePagamento {
   /** Ex.: 30 para 30% de entrada. Nulo = sem entrada. */
   percentualEntrada?: number | null;
@@ -196,6 +218,94 @@ export interface CondicaoDePagamento {
   quantidadeParcelas?: number | null;
   /** Dias entre uma parcela e outra. */
   intervaloDias?: number | null;
+}
+
+/**
+ * A CONDIÇÃO ESTÁ COMPLETA? Devolve o problema, ou nulo.
+ *
+ * Existe porque meia condição vira dinheiro perdido lá na frente, e
+ * em dois formatos diferentes — medido em 10/10/2026, varrendo o
+ * financeiro antes do lançamento:
+ *
+ *   "entrada de 30%" e nada mais
+ *       Uma nota de R$ 10.000 virava R$ 3.000 de conta a pagar. Os
+ *       R$ 7.000 que a empresa devia não existiam em lugar nenhum —
+ *       nem no painel, nem na previsão de caixa, nem em aviso. A
+ *       Porto Inc. só descobriria quando o fornecedor ligasse.
+ *
+ *   "3 parcelas" sem dizer de quantos em quantos dias
+ *       O sistema usava 30 dias calados. As três contas nasciam com
+ *       vencimento que ninguém combinou — e pagar atrasado, no ramo
+ *       dela, não gera multa: gera preço mais alto na próxima
+ *       cotação, sem ninguém ligar uma coisa à outra.
+ *
+ * UMA REGRA, TRÊS PORTAS. Esta função é usada no portal do
+ * fornecedor, ao gerar os pedidos e ao gerar as parcelas. Se cada
+ * lugar tivesse a sua, elas divergiriam — foi exatamente o que
+ * aconteceu com a palavra "à vista", que o financeiro escrevia e a
+ * cotação não.
+ */
+export function conferirCondicaoDePagamento(condicao: CondicaoDePagamento): string | null {
+  const entrada = condicao.percentualEntrada ?? 0;
+  const parcelas = condicao.quantidadeParcelas ?? 0;
+  const intervalo = condicao.intervaloDias ?? 0;
+
+  //  Nada preenchido é à vista, e à vista é condição completa.
+  if (entrada <= 0 && parcelas <= 0) return null;
+
+  if (entrada > 100) {
+    return 'A entrada não pode passar de 100%.';
+  }
+
+  if (entrada === 100 && parcelas > 0) {
+    return 'Com 100% de entrada não há parcelas. Reduza a entrada ou deixe as parcelas em branco.';
+  }
+
+  //  Entrada que não cobre tudo precisa dizer como o resto é pago.
+  if (entrada > 0 && entrada < 100 && parcelas <= 0) {
+    return 'Falta dizer em quantas vezes o restante será pago. ' +
+      'Informe as parcelas, ou deixe a entrada em branco se for tudo na entrega.';
+  }
+
+  if (parcelas > 0 && intervalo <= 0) {
+    return 'Falta dizer de quantos em quantos dias as parcelas vencem.';
+  }
+
+  return null;
+}
+
+/**
+ * As parcelas geradas fecham com a nota?
+ *
+ * A rede de segurança, conferida na hora de gravar. As duas portas
+ * anteriores deveriam impedir que algo chegue aqui errado; esta
+ * existe para o dia em que um dado entrar por um caminho que ainda
+ * não existe — uma importação, o SEFAZ, uma tela futura.
+ *
+ * Dinheiro que some em silêncio é pior do que sistema que trava
+ * reclamando.
+ */
+export function conferirParcelasGeradas(
+  parcelas: Parcela[],
+  valorTotal: number,
+): string | null {
+  if (parcelas.length === 0) return 'Não há valor para parcelar.';
+
+  const soma = arredondar(parcelas.reduce((s, p) => s + p.valor, 0));
+  const total = arredondar(valorTotal);
+
+  if (soma !== total) {
+    return 'As parcelas somam ' + reaisBr(soma) + ', e a nota é de ' + reaisBr(total) +
+      '. Confira a condição de pagamento do pedido.';
+  }
+
+  const invalida = parcelas.find((p) => p.valor <= 0);
+  if (invalida) {
+    return 'A parcela ' + invalida.parcela + ' ficaria em ' + reaisBr(invalida.valor) +
+      '. Reduza a quantidade de parcelas.';
+  }
+
+  return null;
 }
 
 export interface Parcela {
@@ -249,7 +359,18 @@ export function gerarParcelas(
   }
 
   const restante = arredondar(total - acumulado);
-  const valorParcela = quantidade > 0 ? arredondar(restante / quantidade) : 0;
+
+  //  PARA BAIXO, e não para o mais próximo.
+  //
+  //  Com `arredondar` (meio para cima), as parcelas podiam somar
+  //  MAIS que o restante, e a última — que absorve a diferença —
+  //  saía negativa: R$ 10,00 em 60x gerava uma parcela de R$ -0,18.
+  //  Conta a pagar negativa envenena todo relatório que a soma.
+  //
+  //  Truncando, as n-1 primeiras nunca passam do restante, e a
+  //  última sempre absorve um valor POSITIVO. E a conta de sempre
+  //  não muda: R$ 700 em 3x continua 233,33 / 233,33 / 233,34.
+  const valorParcela = quantidade > 0 ? Math.floor((restante / quantidade) * 100) / 100 : 0;
 
   for (let i = 1; i <= quantidade; i++) {
     const ultima = i === quantidade;

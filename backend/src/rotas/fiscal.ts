@@ -19,6 +19,7 @@ import {
   chaveValida, limparChave, formatarChave, conferirNotaContraPedido,
   gerarParcelas, descreverCondicao, situacaoVencimento, descreverVencimento,
   formatarNumeroConta, lerXmlNotaFiscal, diasAte,
+  conferirCondicaoDePagamento, conferirParcelasGeradas, aindaDevido,
 } from '../servicos/fiscal.js';
 import {
   resumirCarteira, calcularIndicadores, montarFluxo, ranquearPor, fatiarCarteira,
@@ -26,8 +27,11 @@ import {
 } from '../servicos/indicadores-financeiros.js';
 import { gerarArquivoDaTabela, formatoValido } from '../servicos/tabela-arquivo.js';
 import { gerarPdfNotaFiscal } from '../servicos/pdf-nota-fiscal.js';
-import { dataBr } from '../servicos/data-br.js';
+import { dataBr, inicioDoDiaBr } from '../servicos/data-br.js';
 import { formatarCnpj, reaisBr as reais } from '../servicos/util.js';
+
+/** Centavos, sem sobra de ponto flutuante. */
+const arredondarReais = (v: number) => Math.round(v * 100) / 100;
 import {
   guardarArquivo, lerArquivo, apagarArquivo, tipoAceito, tamanhoLegivel,
   ErroDeArquivo, TAMANHO_MAXIMO,
@@ -224,7 +228,18 @@ export async function rotasFiscal(app: FastifyInstance) {
         });
       }
 
-      const emitidaEm = new Date(d.emitidaEm);
+      //  A DATA SE PROTEGE NO SERVIDOR.
+      //
+      //  Era `new Date(d.emitidaEm)`. Com "2026-10-10" isso vira
+      //  meia-noite em UTC, que no Brasil é 21h do dia 9 — e a data
+      //  base dos vencimentos vai junto: toda parcela nasceria um
+      //  dia antes do combinado.
+      //
+      //  Hoje a tela disfarça, mandando "T12:00:00". Mas a proteção
+      //  mora no navegador, e o SEFAZ não passa por navegador
+      //  nenhum: o XML alimenta esta rota direto. No dia em que ele
+      //  entrar, o defeito acorda.
+      const emitidaEm = inicioDoDiaBr(d.emitidaEm);
       if (Number.isNaN(emitidaEm.getTime())) {
         return res.status(400).send({ erro: 'Data de emissão inválida.' });
       }
@@ -389,7 +404,7 @@ export async function rotasFiscal(app: FastifyInstance) {
         }
       }
 
-      const emitidaEm = d.emitidaEm ? new Date(d.emitidaEm) : atual.emitidaEm;
+      const emitidaEm = d.emitidaEm ? inicioDoDiaBr(d.emitidaEm) : atual.emitidaEm;
       if (Number.isNaN(emitidaEm.getTime())) {
         return res.status(400).send({ erro: 'Data de emissão inválida.' });
       }
@@ -562,14 +577,35 @@ export async function rotasFiscal(app: FastifyInstance) {
         intervaloDias: nota.pedido?.intervaloParcelasDias ?? null,
       };
 
-      const parcelas = gerarParcelas(
-        numero(nota.valorTotal) ?? 0,
-        condicao,
-        nota.emitidaEm,
-      );
+      //  A CONDIÇÃO PRECISA ESTAR COMPLETA antes de virar dívida.
+      //
+      //  Terceira e última porta. O portal e a geração do pedido já
+      //  deveriam ter barrado — esta pega o que vier por um caminho
+      //  que ainda não existe.
+      const problema = conferirCondicaoDePagamento(condicao);
+      if (problema) {
+        return res.status(409).send({
+          erro: 'A condição de pagamento deste pedido está incompleta: ' + problema,
+          detalhes: [
+            'O pedido ' + (nota.pedido ? formatarNumeroPedido(nota.pedido.numero) : '') +
+            ' guarda a condição que o fornecedor informou na cotação. ' +
+            'Para corrigir, abra uma última chamada e peça que ele complete.',
+          ],
+        });
+      }
 
-      if (parcelas.length === 0) {
-        return res.status(400).send({ erro: 'Não há valor para parcelar.' });
+      const valorDaNota = numero(nota.valorTotal) ?? 0;
+      const parcelas = gerarParcelas(valorDaNota, condicao, nota.emitidaEm);
+
+      //  E AS PARCELAS PRECISAM FECHAR COM A NOTA.
+      //
+      //  Dinheiro que some em silêncio é pior do que sistema que
+      //  trava reclamando. Antes daqui, uma nota de R$ 10.000 com
+      //  "30% de entrada" gerava R$ 3.000 de conta a pagar e os
+      //  R$ 7.000 restantes não existiam para ninguém.
+      const contaErrada = conferirParcelasGeradas(parcelas, valorDaNota);
+      if (contaErrada) {
+        return res.status(409).send({ erro: contaErrada });
       }
 
       await banco.contaPagar.createMany({
@@ -706,6 +742,13 @@ export async function rotasFiscal(app: FastifyInstance) {
         .object({
           pagoEm: z.string().optional().nullable(),
           valorPago: z.number().positive().optional().nullable(),
+          /**
+           * PAGOU MENOS: foi desconto, ou foi só uma parte?
+           *
+           * São coisas diferentes e o sistema não sabia distinguir.
+           * Ver o bloco grande logo abaixo.
+           */
+          quitacao: z.enum(['TOTAL', 'PARCIAL']).optional(),
           formaPagamento: textoOpcional(60),
           observacoes: textoOpcional(500),
         })
@@ -729,25 +772,116 @@ export async function rotasFiscal(app: FastifyInstance) {
         return res.status(400).send({ erro: 'Data de pagamento inválida.' });
       }
 
-      const atualizado = await banco.contaPagar.update({
-        where: { id },
+      // ----------------------------------------------------------
+      //  PAGAR MENOS TEM DOIS SIGNIFICADOS, E O SISTEMA SÓ SABIA UM
+      //
+      //  Até 10/10/2026 qualquer valor fechava a parcela. Provado na
+      //  varredura: numa parcela de R$ 634,80 paguei R$ 1,00, e os
+      //  R$ 633,80 restantes sumiram do painel, da carteira e da
+      //  previsão de caixa — sem aviso, sem registro.
+      //
+      //  O código assumia que pagar menos era sempre DESCONTO. E
+      //  desconto existe mesmo: a Porto Inc. negocia abatimento na
+      //  hora de pagar. Só que PAGAMENTO PARCIAL também existe, e é
+      //  igualmente comum numa construtora — e nele o resto continua
+      //  devido.
+      //
+      //  Agora quem dá a baixa DIZ qual dos dois aconteceu. Travar o
+      //  valor diferente seria pior: o financeiro acabaria digitando
+      //  um número falso para o sistema aceitar o que de fato houve.
+      // ----------------------------------------------------------
+      const valorCheio = numero(titulo.valor) ?? 0;
+      const jaPago = numero(titulo.valorPago) ?? 0;
+      const devido = aindaDevido({ valor: valorCheio, valorPago: jaPago });
+      const agora = dados.data.valorPago ?? devido;
+
+      const diferente = Math.abs(agora - devido) > 0.005;
+
+      if (diferente && !dados.data.quitacao) {
+        return res.status(400).send({
+          erro: 'O valor pago é diferente do que falta nesta parcela.',
+          detalhes: [
+            'Falta ' + reais(devido) + ' e você informou ' + reais(agora) + '.',
+            'Diga o que aconteceu: "TOTAL" quita a parcela e registra a diferença ' +
+            'como desconto ou juros; "PARCIAL" guarda o que foi pago e mantém o ' +
+            'restante em aberto.',
+          ],
+          falta: devido,
+          informado: agora,
+        });
+      }
+
+      //  Pagamento parcial só faz sentido pagando MENOS. Pagou mais
+      //  (juros, multa), a parcela quita e a diferença fica anotada.
+      const parcial = dados.data.quitacao === 'PARCIAL' && agora < devido;
+
+      // ----------------------------------------------------------
+      //  DOIS CLIQUES NO MESMO SEGUNDO
+      //
+      //  As conferências acima leem a linha e decidem. Entre a
+      //  decisão e a gravação existe uma fresta, e duas pessoas
+      //  dando baixa na mesma parcela ao mesmo tempo passam as
+      //  duas por ela.
+      //
+      //  O estrago é de dinheiro, e silencioso: as duas leem
+      //  `valorPago = 100`, as duas gravam `100 + 50`, e o
+      //  resultado é 150 em vez de 200. Cinquenta reais saíram do
+      //  caixa e não ficaram registrados em lugar nenhum.
+      //
+      //  A correção é gravar SÓ SE A LINHA AINDA ESTIVER COMO FOI
+      //  LIDA. O `where` carrega o estado que a decisão usou —
+      //  situação e valor pago —, e o Postgres resolve o UPDATE
+      //  inteiro de uma vez: a segunda tentativa casa com zero
+      //  linhas e é recusada.
+      //
+      //  Aqui não cabe trava de banco como nas notas fiscais: o
+      //  estado válido não é um valor fixo, é "o mesmo de um
+      //  instante atrás".
+      // ----------------------------------------------------------
+      const gravou = await banco.contaPagar.updateMany({
+        where: {
+          id,
+          situacao: 'ABERTA',
+          valorPago: titulo.valorPago,
+        },
         data: {
-          situacao: 'PAGA',
+          situacao: parcial ? 'ABERTA' : 'PAGA',
+          //  Em baixa parcial a parcela continua aberta, e `pagoEm`
+          //  guarda QUANDO SAIU a última parte. Quem lê a carteira
+          //  olha a situação, não esta data.
           pagoEm: quando,
-          valorPago: dados.data.valorPago ?? titulo.valor,
+          valorPago: arredondarReais(jaPago + agora),
           formaPagamento: dados.data.formaPagamento,
           pagoPorId: req.usuario!.id,
           observacoes: dados.data.observacoes,
         },
       });
 
+      if (gravou.count === 0) {
+        return res.status(409).send({
+          erro: 'Esta parcela mudou enquanto você preenchia.',
+          detalhes: [
+            'Alguém deu baixa nela agora há pouco. Recarregue a tela e confira ' +
+            'antes de pagar de novo — pagar duas vezes é mais caro que recomeçar.',
+          ],
+        });
+      }
+
+      const atualizado = (await banco.contaPagar.findUniqueOrThrow({ where: { id } }));
+
+      const saldo = aindaDevido({
+        valor: valorCheio,
+        valorPago: numero(atualizado.valorPago) ?? 0,
+      });
+
       return {
         ok: true,
-        mensagem:
-          formatarNumeroConta(atualizado.numero) +
-          ' baixada: ' +
-          reais(numero(atualizado.valorPago) ?? 0) +
-          '.',
+        parcial,
+        saldo,
+        mensagem: parcial
+          ? formatarNumeroConta(atualizado.numero) + ': pagos ' + reais(agora) +
+            '. Ainda em aberto ' + reais(saldo) + '.'
+          : formatarNumeroConta(atualizado.numero) + ' baixada: ' + reais(agora) + '.',
       };
     },
   );
@@ -761,17 +895,38 @@ export async function rotasFiscal(app: FastifyInstance) {
     async () => {
       const hoje = new Date();
 
+      const inicioDoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+      //  `valorPago` entra na conta: parcela com baixa PARCIAL
+      //  continua aberta, e o que ainda se deve é o SALDO. Sem isto
+      //  o painel cobraria de novo um dinheiro que já saiu.
       const abertas = await banco.contaPagar.findMany({
         where: { situacao: 'ABERTA' },
-        select: { valor: true, vencimento: true },
+        select: { valor: true, valorPago: true, vencimento: true },
       });
 
       const pagasNoMes = await banco.contaPagar.findMany({
-        where: {
-          situacao: 'PAGA',
-          pagoEm: { gte: new Date(hoje.getFullYear(), hoje.getMonth(), 1) },
-        },
+        where: { situacao: 'PAGA', pagoEm: { gte: inicioDoMes } },
         select: { valorPago: true, valor: true },
+      });
+
+      //  AS BAIXAS PARCIAIS DO MÊS também são dinheiro que saiu.
+      //  Antes elas não apareciam em lugar nenhum: a parcela segue
+      //  aberta, então ficava de fora de "pago no mês" — e o valor
+      //  tinha saído do caixa.
+      //
+      //  Limite conhecido: `pagoEm` guarda a data da ÚLTIMA parte
+      //  paga. Duas parciais em meses diferentes somam no mês da
+      //  segunda. Resolver isso de vez pede uma tabela de
+      //  pagamentos, que é mudança de modelo — e some em silêncio é
+      //  pior do que somar no mês vizinho.
+      const parciaisNoMes = await banco.contaPagar.findMany({
+        where: {
+          situacao: 'ABERTA',
+          valorPago: { not: null },
+          pagoEm: { gte: inicioDoMes },
+        },
+        select: { valorPago: true },
       });
 
       const vencidas = abertas.filter((t) => diasAte(t.vencimento, hoje) < 0);
@@ -788,22 +943,31 @@ export async function rotasFiscal(app: FastifyInstance) {
         where: { situacao: { not: 'CANCELADA' }, titulos: { none: {} } },
       });
 
+      const saldoDe = (t: { valor: unknown; valorPago?: unknown }) =>
+        aindaDevido({
+          valor: numero(t.valor as never) ?? 0,
+          valorPago: numero((t.valorPago ?? null) as never),
+        });
+
       return {
         emAberto: {
           quantidade: abertas.length,
-          valor: soma(abertas.map((t) => numero(t.valor) ?? 0)),
+          valor: soma(abertas.map(saldoDe)),
         },
         vencidas: {
           quantidade: vencidas.length,
-          valor: soma(vencidas.map((t) => numero(t.valor) ?? 0)),
+          valor: soma(vencidas.map(saldoDe)),
         },
         proximos7Dias: {
           quantidade: seteDias.length,
-          valor: soma(seteDias.map((t) => numero(t.valor) ?? 0)),
+          valor: soma(seteDias.map(saldoDe)),
         },
         pagoNoMes: {
-          quantidade: pagasNoMes.length,
-          valor: soma(pagasNoMes.map((t) => numero(t.valorPago) ?? numero(t.valor) ?? 0)),
+          quantidade: pagasNoMes.length + parciaisNoMes.length,
+          valor: soma([
+            ...pagasNoMes.map((t) => numero(t.valorPago) ?? numero(t.valor) ?? 0),
+            ...parciaisNoMes.map((t) => numero(t.valorPago) ?? 0),
+          ]),
         },
         notasComPendencia: notasPendentes,
         notasSemParcelas: semTitulo,
@@ -1007,9 +1171,36 @@ export async function rotasFiscal(app: FastifyInstance) {
         orderBy: [{ vencimento: 'asc' }, { parcela: 'asc' }],
       });
 
-      const emAberto = titulos.filter((t) => t.situacao !== 'PAGA');
-      const soma = (lista: typeof titulos) =>
+      //  O ARQUIVO CONTA A MESMA COISA QUE A TELA.
+      //
+      //  Aqui havia duas contas diferentes das do painel, e as duas
+      //  inflavam a dívida:
+      //
+      //    `situacao !== 'PAGA'`  ->  parcela CANCELADA entrava no
+      //                               "em aberto". Cancelada não é
+      //                               dívida; é dívida desfeita.
+      //
+      //    soma de `t.valor`      ->  parcela com baixa parcial
+      //                               aparecia pelo valor cheio,
+      //                               cobrando de novo o que já saiu.
+      //
+      //  Este PDF é o número que vai para reunião. Divergir da tela
+      //  por conta própria é o jeito mais rápido de alguém decidir
+      //  errado e descobrir depois.
+      const emAberto = titulos.filter((t) => t.situacao === 'ABERTA');
+      const naoCanceladas = titulos.filter((t) => t.situacao !== 'CANCELADA');
+
+      const saldoDoTitulo = (t: (typeof titulos)[number]) =>
+        aindaDevido({ valor: numero(t.valor) ?? 0, valorPago: numero(t.valorPago) });
+
+      const somaSaldo = (lista: typeof titulos) =>
+        lista.reduce((s, t) => s + saldoDoTitulo(t), 0);
+
+      const somaCheia = (lista: typeof titulos) =>
         lista.reduce((s, t) => s + (numero(t.valor) ?? 0), 0);
+
+      const somaPaga = (lista: typeof titulos) =>
+        lista.reduce((s, t) => s + (numero(t.valorPago) ?? 0), 0);
 
       const arquivo = await gerarArquivoDaTabela({
         arquivo: 'contas-a-pagar',
@@ -1017,8 +1208,9 @@ export async function rotasFiscal(app: FastifyInstance) {
         subtitulo: 'Parcelas geradas a partir das notas fiscais lançadas',
         resumo: [
           { rotulo: 'Parcelas', valor: String(titulos.length) },
-          { rotulo: 'Em aberto', valor: emAberto.length + ' · ' + reais(soma(emAberto)) },
-          { rotulo: 'Total lançado', valor: reais(soma(titulos)) },
+          { rotulo: 'Em aberto', valor: emAberto.length + ' · ' + reais(somaSaldo(emAberto)) },
+          { rotulo: 'Já pago', valor: reais(somaPaga(naoCanceladas)) },
+          { rotulo: 'Total lançado', valor: reais(somaCheia(naoCanceladas)) },
         ],
         tabelas: [{
           colunas: [
@@ -1042,9 +1234,17 @@ export async function rotasFiscal(app: FastifyInstance) {
             parcela: t.parcela + '/' + t.totalParcelas,
             valor: reais(numero(t.valor) ?? 0),
             vencimento: dataBr(t.vencimento),
-            situacao: SITUACAO_DA_CONTA[t.situacao] ?? t.situacao,
+            //  Parcela aberta COM pagamento é baixa parcial, e o
+            //  arquivo diz isso com todas as letras — senão ela
+            //  aparece como "Aberta" com uma data de pagamento ao
+            //  lado, que não se explica para quem lê.
+            situacao:
+              t.situacao === 'ABERTA' && (numero(t.valorPago) ?? 0) > 0
+                ? 'Paga em parte'
+                : SITUACAO_DA_CONTA[t.situacao] ?? t.situacao,
             pagamento: t.pagoEm
-              ? dataBr(t.pagoEm) + ' · ' + reais(numero(t.valorPago) ?? 0)
+              ? dataBr(t.pagoEm) + ' · ' + reais(numero(t.valorPago) ?? 0) +
+                (t.situacao === 'ABERTA' ? ' · falta ' + reais(saldoDoTitulo(t)) : '')
               : '—',
           })),
         }],

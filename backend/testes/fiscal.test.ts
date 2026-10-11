@@ -6,6 +6,7 @@ import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { limparDados, criarUsuarioTeste, entrarComo, chamar, encerrar } from './ajuda.js';
+import { banco } from '../src/plugins/banco.js';
 
 let admin = '';
 let comprador = '';
@@ -497,6 +498,162 @@ describe('Resumo e exportação', () => {
     assert.ok(r.corpo.emAberto.quantidade > 0);
     assert.ok(r.corpo.emAberto.valor > 0);
     assert.ok(typeof r.corpo.notasComPendencia === 'number');
+  });
+
+  it('A BAIXA PARCIAL NÃO SOME DOS NÚMEROS', async () => {
+    //  O defeito mais caro da varredura de 10/10/2026: pagar menos
+    //  que o valor fechava a parcela, e a diferença desaparecia do
+    //  painel, da carteira e da previsão de caixa.
+    //
+    //  A regra de ouro: o que falta mais o que saiu é SEMPRE a
+    //  dívida original. Se este teste quebrar, há dinheiro que o
+    //  sistema esqueceu de cobrar.
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    await chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/gerar-titulos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    const antes = await chamar('/api/financeiro/resumo', { token: comprador });
+    const dividaAntes = antes.corpo.emAberto.valor;
+    const pagoAntes = antes.corpo.pagoNoMes.valor;
+
+    //  A parcela tem de ser DESTA nota. A lista traz as abertas de
+    //  todas, e pegar a primeira alcança a de outro teste — que
+    //  pode já ter recebido baixa parcial, e aí a conta não fecha
+    //  por um motivo que não é o do teste.
+    const parcela = await banco.contaPagar.findFirstOrThrow({
+      where: { notaFiscalId: nota.corpo.nota.id, situacao: 'ABERTA' },
+    });
+
+    //  Valor diferente SEM dizer o que é: recusado.
+    const semDizer = await chamar('/api/contas-pagar/' + parcela.id + '/pagar', {
+      metodo: 'POST', token: comprador, corpo: { valorPago: 10 },
+    });
+    assert.equal(semDizer.status, 400, 'tem de perguntar o que aconteceu');
+
+    //  Agora como PARCIAL.
+    const r = await chamar('/api/contas-pagar/' + parcela.id + '/pagar', {
+      metodo: 'POST', token: comprador,
+      corpo: { valorPago: 10, quitacao: 'PARCIAL' },
+    });
+
+    assert.equal(r.status, 200);
+    assert.equal(r.corpo.parcial, true);
+    assert.ok(r.corpo.saldo > 0, 'tem de sobrar saldo devendo');
+
+    const depois = await chamar('/api/financeiro/resumo', { token: comprador });
+
+    //  A dívida caiu exatamente o que foi pago. Nem mais, nem menos.
+    assert.equal(
+      Math.round((dividaAntes - depois.corpo.emAberto.valor) * 100) / 100, 10,
+      'em aberto tinha de cair só os R$ 10 pagos',
+    );
+
+    //  E o dinheiro que saiu aparece.
+    assert.equal(
+      Math.round((depois.corpo.pagoNoMes.valor - pagoAntes) * 100) / 100, 10,
+      'o que saiu precisa aparecer em "pago no mês"',
+    );
+
+    //  A parcela continua na lista, ainda cobrável.
+    const relista = await chamar('/api/contas-pagar', { token: comprador });
+    const mesma = relista.corpo.titulos.find((t: { id: string }) => t.id === parcela.id);
+    assert.equal(mesma.situacao, 'ABERTA', 'parcela paga em parte continua aberta');
+  });
+
+  it('condição incompleta não vira dívida a descoberto', async () => {
+    //  Uma nota de R$ 10.000 com "30% de entrada" e mais nada
+    //  gerava R$ 3.000 de conta a pagar. Os R$ 7.000 restantes não
+    //  existiam para o sistema.
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    //  Quebra a condição do pedido por baixo, simulando um dado
+    //  que entrou por um caminho que a validação não cobre.
+    await banco.pedido.update({
+      where: { id: pedido.id },
+      data: { percentualEntrada: 30, quantidadeParcelas: null, intervaloParcelasDias: null },
+    });
+
+    const r = await chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/gerar-titulos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    assert.equal(r.status, 409, 'tem de recusar em vez de gerar dívida pela metade');
+    assert.match(r.corpo.erro, /incompleta/);
+
+    const contas = await banco.contaPagar.count({ where: { notaFiscalId: nota.corpo.nota.id } });
+    assert.equal(contas, 0, 'não pode ter gravado parcela nenhuma');
+  });
+
+  it('DOIS CLIQUES NO MESMO SEGUNDO: só um passa', async () => {
+    //  A conferência "esta parcela já está paga?" lê a linha e
+    //  decide. Entre a decisão e a gravação existe uma fresta.
+    //
+    //  O estrago é silencioso: as duas requisições leem o mesmo
+    //  valor pago, as duas gravam "lido + agora", e o resultado
+    //  registra UMA das baixas. O dinheiro da outra saiu do caixa
+    //  e não ficou em lugar nenhum.
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    await chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/gerar-titulos', {
+      metodo: 'POST', token: comprador,
+    });
+
+    //  Desta nota, e não a primeira aberta do banco: ver o teste
+    //  acima.
+    const parcela = await banco.contaPagar.findFirstOrThrow({
+      where: { notaFiscalId: nota.corpo.nota.id, situacao: 'ABERTA' },
+    });
+
+    const baixa = () =>
+      chamar('/api/contas-pagar/' + parcela.id + '/pagar', {
+        metodo: 'POST', token: comprador,
+        corpo: { valorPago: 5, quitacao: 'PARCIAL' },
+      });
+
+    const [a, b] = await Promise.all([baixa(), baixa()]);
+
+    const vitorias = [a, b].filter((r) => r.status === 200);
+    const recusas = [a, b].filter((r) => r.status === 409);
+
+    assert.equal(vitorias.length, 1, 'só uma das duas pode gravar');
+    assert.equal(recusas.length, 1, 'a outra tem de ser recusada, não ignorada');
+
+    //  E o valor registrado é o de UMA baixa, não de meia nem de
+    //  duas somadas por acidente.
+    const depois = await banco.contaPagar.findUniqueOrThrow({ where: { id: parcela.id } });
+    assert.equal(Number(depois.valorPago), 5);
+  });
+
+  it('as parcelas da mesma nota não são geradas duas vezes nem em paralelo', async () => {
+    //  Dois cliques simultâneos em "Gerar parcelas" criariam DOIS
+    //  conjuntos, e a dívida dobraria. Aqui quem barra é o banco,
+    //  com índice único em (nota, parcela) — trava de banco não
+    //  tem fresta.
+    const pedido = await pedidoPronto(40, 25);
+    const nota = await lancarNota(pedido.id, pedido.total);
+
+    const gerar = () =>
+      chamar('/api/notas-fiscais/' + nota.corpo.nota.id + '/gerar-titulos', {
+        metodo: 'POST', token: comprador,
+      });
+
+    await Promise.all([gerar(), gerar()]);
+
+    const contas = await banco.contaPagar.findMany({
+      where: { notaFiscalId: nota.corpo.nota.id },
+    });
+
+    const soma = contas.reduce((s, c) => s + Number(c.valor), 0);
+
+    assert.equal(
+      Math.round(soma * 100) / 100, Math.round(pedido.total * 100) / 100,
+      'a dívida tem de ser a da nota, não o dobro',
+    );
   });
 
   it('baixa as contas em PDF', async () => {

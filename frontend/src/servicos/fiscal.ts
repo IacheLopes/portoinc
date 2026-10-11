@@ -164,12 +164,27 @@ export function listarTitulos(
 
 export function pagarTitulo(
   id: string,
-  dados: { pagoEm?: string; valorPago?: number; formaPagamento?: string; observacoes?: string },
+  dados: {
+    pagoEm?: string;
+    valorPago?: number;
+    /**
+     * Só quando o valor difere do que falta.
+     *
+     * TOTAL quita a parcela e registra a diferença como desconto ou
+     * juros. PARCIAL guarda o que foi pago e mantém o restante em
+     * aberto — sem isto o sistema apagava a dívida que sobrava.
+     */
+    quitacao?: 'TOTAL' | 'PARCIAL';
+    formaPagamento?: string;
+    observacoes?: string;
+  },
 ) {
-  return chamar<{ ok: boolean; mensagem: string }>('/api/contas-pagar/' + id + '/pagar', {
-    metodo: 'POST',
-    corpo: dados,
-  });
+  return chamar<{ ok: boolean; mensagem: string; parcial?: boolean; saldo?: number }>(
+    '/api/contas-pagar/' + id + '/pagar', {
+      metodo: 'POST',
+      corpo: dados,
+    },
+  );
 }
 
 export function listarNotas(situacao?: string, pagina?: number) {
