@@ -63,6 +63,25 @@ const DOCUMENTOS = {
       'Para saber o que cada tela faz, veja o <strong>Guia de Navegação</strong>.',
   },
 
+  //  DOIS DOCUMENTOS DE SEFAZ, e de proposito.
+  //
+  //  `sefaz` e o levantamento tecnico inteiro: o que falta, o que
+  //  ja esta pronto, o que vamos construir. Serve para decidir.
+  //
+  //  `sefaz-pedido` e a LISTA que vai para a Porto Inc.: sete itens,
+  //  cada um com o porque. Serve para alguem providenciar, e por
+  //  isso nao tem nada que nao seja pedido.
+  'sefaz-pedido': {
+    entrada: join(RAIZ, 'docs', 'sefaz', 'PEDIDO-A-PORTO-SEFAZ.md'),
+    saida: join(RAIZ, 'docs', 'sefaz', 'Pedido-a-Porto-SEFAZ.pdf'),
+    compacto: true,
+    titulo: 'O que precisamos da Porto Inc.',
+    subtitulo: 'Para ligar o SEFAZ e completar os documentos emitidos',
+    aviso:
+      'Nenhum destes sete itens depende da AV2 Tech. São o que está travando a '
+      + 'integração — do nosso lado, está tudo pronto.',
+  },
+
   sefaz: {
     entrada: join(RAIZ, 'docs', 'sefaz', 'LEVANTAMENTO-SEFAZ.md'),
     saida: join(RAIZ, 'docs', 'sefaz', 'Levantamento-SEFAZ-PortoInc.pdf'),

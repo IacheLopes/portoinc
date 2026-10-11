@@ -1330,6 +1330,94 @@ O sistema não grita com quem usa. Se aparecer "TODAS" em maiúsculas, é resqu�
 
 ---
 
+## CT-393 · O botão não envia: ele abre a conferência
+
+1. Abra o link do portal e preencha o preço de **todos** os itens
+2. Preencha um **Frete** qualquer
+3. Toque em **Enviar cotação**
+
+**Esperado:** nada é enviado ainda. Abre uma janela **"Confira antes de enviar"**, dizendo
+que depois do envio a cotação não aceita mais mudanças.
+
+4. Confira a janela
+
+**Esperado:** cada item aparece numa linha, com a **quantidade × o preço** que você digitou
+e o **total daquela linha**. Embaixo, o frete e o **Total**. Os números batem com o que está
+no formulário atrás.
+
+5. Toque em **Voltar e corrigir**
+
+**Esperado:** a janela fecha e o formulário continua **preenchido**, do jeito que estava.
+
+6. Toque em **Enviar cotação** de novo e depois em **Confirmar e enviar**
+
+**Esperado:** aí sim a cotação é enviada.
+
+> A cotação enviada é final: não há como corrigir depois. Esta janela é a última chance de
+> pegar um dígito errado — R$ 5.100,00 no lugar de R$ 51,00 vira proposta comercial. Ela
+> não pergunta só "tem certeza?": o corpo dela é a conta, que é a única coisa que dá para
+> conferir.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-394 · A cotação enviada é final
+
+1. Depois de enviar (CT-393), **feche a aba** e abra **o mesmo link** de novo
+
+**Esperado:** **não** aparece o formulário. Aparece uma tela com um **certo verde** e a
+frase **"Você já enviou a sua cotação, muito obrigado!"**.
+
+2. Olhe a tela inteira
+
+**Esperado:** nenhuma caixa **vermelha** de alerta. Embaixo da frase, um quadro com
+**Enviada** (data e hora), **Itens**, o **Pagamento** se você informou, e o **Total** —
+o comprovante do que você mandou.
+
+3. Procure um campo para digitar, ou um botão de enviar
+
+**Esperado:** não existe nenhum.
+
+> Duas coisas de propósito aqui. A trava, porque o preço já foi usado para comparar
+> propostas e mudar depois desfaria a comparação sem ninguém saber. E o **verde**: quem
+> reabre este link quase sempre está conferindo se deu certo — alerta vermelho em resposta
+> a um acerto ensina a pessoa a desconfiar de uma tela que está certa.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-395 · A última chamada destrava o link
+
+1. Com o fornecedor já travado (CT-394), entre como comprador
+2. **Compras → Cotações → o pacote → Encerrar cotação**
+3. Abra o link do fornecedor
+
+**Esperado:** recusa, agora dizendo que a cotação **não está mais aberta** — motivo
+diferente do CT-394.
+
+4. Volte ao comprador: **Equalizar e escolher → Última chamada**, informe um **novo prazo**
+   e confirme em **Reabrir e avisar os fornecedores**
+5. Abra o link do fornecedor outra vez
+
+**Esperado:** o formulário **volta**, preenchido com o que ele tinha enviado, e o botão
+agora diz **Atualizar minha cotação**.
+
+6. Envie de novo e reabra o link
+
+**Esperado:** travado de novo, com a tela do CT-394.
+
+> Este é o encaixe de duas regras que se atropelam. A última chamada existe para pedir que
+> o fornecedor **reveja** o preço, e manda link justamente para quem já respondeu. Se a
+> trava olhasse só para "já respondeu", ela recusaria exatamente quem foi convidado a voltar
+> — e mataria o recurso. Por isso a trava é por **rodada**: a última chamada leva o pacote
+> para a rodada seguinte e o link destrava sozinho.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 # 8. Etapa 6 — Equalização e pedido de compra
 
 > **Antes de começar:** você precisa de uma cotação **aberta** com pelo menos **dois fornecedores que já responderam** (CT-77). Se não tiver, faça primeiro os casos CT-73 a CT-77.
@@ -1392,6 +1480,40 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 1. Clique em **Aceitar todos os melhores preços**
 
 **Esperado:** todas as linhas ficam marcadas no vencedor, e o rodapé mostra *"0 itens faltando"*.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-396 · Empate no melhor preço
+
+1. Monte um pacote e faça **dois fornecedores cotarem exatamente o mesmo preço** num item
+2. Abra **Equalizar e escolher**
+
+**Esperado:** as **duas** células ficam verdes e **as duas** dizem *"melhor preço"*. No
+cabeçalho, o item conta para os dois: *"melhor preço em 1 de 1"* nas duas colunas.
+
+3. Olhe um terceiro fornecedor, mais caro
+
+**Esperado:** esse sim aparece com o percentual acima (*"+12,5%"*, por exemplo) e **não**
+conta no cabeçalho.
+
+4. Clique em **Aceitar todos os melhores preços**
+
+**Esperado:** marca **um** dos empatados — o que tiver o **menor prazo de entrega**. Você
+pode clicar na outra célula para trocar.
+
+5. Encerre a cotação e dispare a **Última chamada**
+
+**Esperado:** o fornecedor que empatou recebe *"Sua proposta está com o melhor preço em
+todos os itens"* — **nunca** *"recebemos propostas melhores nestes itens"*.
+
+> **O defeito que este caso guarda**, medido em 10/10/2026 no BID-00005: duas transportadoras
+> cotaram o mesmo valor nos três itens, e quem perdeu o desempate apareceu "atrás em 3",
+> igual a um fornecedor 87% mais caro. A causa era o sistema usar o **destaque visual** (que
+> precisa escolher uma célula só) para responder **quem está mais caro** — duas perguntas
+> diferentes com uma resposta só. O estrago saía da tela: a última chamada pediria desconto
+> a quem já tinha o menor preço, com uma justificativa falsa.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -2182,6 +2304,73 @@ Entre como **Comprador** (`neilma@portoinc.com.br`).
 1. Clique em **Gerar parcelas** de novo na mesma nota
 
 **Esperado:** *"As parcelas desta nota já foram geradas."*
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-397 · O campo já vem com o valor certo
+
+1. Em **Financeiro → Contas a pagar**, clique em **Dar baixa** numa parcela
+2. Olhe o campo **Valor pago**, sem tocar em nada
+
+**Esperado:** o valor aparece **formatado**, como `R$ 634,80` — nunca `634.8`. E é o que **falta** na parcela, não o valor cheio, se ela já recebeu uma baixa parcial.
+
+3. Confirme o pagamento sem mexer no campo
+
+**Esperado:** a baixa registra exatamente o valor da parcela.
+
+> **O defeito que este caso guarda**, achado em 10/10/2026: o campo nascia com o número cru do banco (`634.8`), e o leitor de dinheiro brasileiro lê o ponto como separador de **milhar**. Confirmar sem tocar em nada registrava **R$ 6.348,00** numa parcela de R$ 634,80 — dez vezes mais, em silêncio. Ficou invisível porque nada comparava o valor digitado com o da parcela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-398 · Pagou menos: parte ou desconto?
+
+1. Abra **Dar baixa** numa parcela e troque o **Valor pago** por um valor **menor**
+
+**Esperado:** aparece um aviso em amarelo: *"Está faltando R$ X para quitar esta parcela. O que aconteceu?"*, com duas escolhas — **Paguei só uma parte** e **Foi desconto**.
+
+2. Escolha **Paguei só uma parte** e confirme
+
+**Esperado:** a mensagem diz *"pagos R$ X. Ainda em aberto R$ Y."* A parcela **continua na lista**, ainda com botão **Dar baixa**.
+
+3. Anote os cartões do alto: **Total em aberto** e **Pago no mês**
+
+**Esperado:** o que faltava saiu do "em aberto" **só na parte paga**, e entrou no "pago no mês". Somando os dois, dá a dívida original.
+
+4. Dê baixa de novo, agora no restante
+
+**Esperado:** aí sim a parcela some do "em aberto".
+
+5. Repita do passo 1 em outra parcela, escolhendo **Foi desconto**
+
+**Esperado:** a parcela **quita** e sai do "em aberto" por inteiro. A Porto Inc. não deve mais nada dela.
+
+> **Por que isto é o caso mais importante do financeiro.** Antes, qualquer valor menor fechava a parcela. Pagar R$ 1,00 numa parcela de R$ 634,80 apagava R$ 633,80 da dívida — sem aviso, sem registro, sumindo do painel e da previsão de caixa. Pagamento parcial e desconto são coisas **opostas**: numa a dívida continua, na outra ela acaba. O sistema só sabia a segunda.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-399 · Condição de pagamento pela metade é recusada
+
+1. Abra o link do portal de uma cotação aberta
+2. Em **Como você quer receber?**, preencha **só** a Entrada com `30` e deixe Parcelas em branco
+3. Envie
+
+**Esperado:** recusa, dizendo que falta informar **em quantas vezes o restante será pago**.
+
+4. Agora preencha **só** Parcelas com `3`, deixando "A cada (dias)" em branco, e envie
+
+**Esperado:** recusa, dizendo que falta informar **de quantos em quantos dias** as parcelas vencem.
+
+5. Preencha Entrada `30`, Parcelas `3`, A cada `30` e envie
+
+**Esperado:** aceita normalmente.
+
+> **O que isto evita.** Uma nota de R$ 10.000 com *"30% de entrada"* e mais nada gerava **R$ 3.000** de conta a pagar — os R$ 7.000 restantes não existiam para o sistema. E *"3 parcelas"* sem intervalo virava 30 dias chutados: vencimentos que ninguém combinou. O portal é o único lugar onde a pessoa que sabe a resposta ainda está na tela.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -6270,11 +6459,15 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-82 | O comprador acompanha |  |
 | CT-83 | Encerrar derruba os links |  |
 | CT-84 | O portal no celular |  |
+| CT-393 | O botão não envia: ele abre a conferência |  |
+| CT-394 | A cotação enviada é final |  |
+| CT-395 | A última chamada destrava o link |  |
 | CT-85 | Chegar na equalização |  |
 | CT-86 | O mapa comparativo |  |
 | CT-87 | O frete entra na conta da mistura |  |
 | CT-88 | Escolher item a item |  |
 | CT-89 | Aceitar todos os melhores preços |  |
+| CT-396 | Empate no melhor preço |  |
 | CT-90 | As escolhas ficam salvas |  |
 | CT-91 | Última chamada não revela preço |  |
 | CT-92 | A última chamada reabre a cotação |  |
@@ -6330,6 +6523,9 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-142 | Gerar as parcelas |  |
 | CT-143 | A soma das parcelas bate com a nota |  |
 | CT-144 | Não gera parcelas duas vezes |  |
+| CT-397 | O campo já vem com o valor certo |  |
+| CT-398 | Pagou menos: parte ou desconto? |  |
+| CT-399 | Condição de pagamento pela metade é recusada |  |
 | CT-145 | Os quatro cartões do financeiro |  |
 | CT-146 | Cada parcela diz em que pé está |  |
 | CT-147 | Dar baixa |  |

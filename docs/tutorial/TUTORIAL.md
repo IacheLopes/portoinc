@@ -1131,13 +1131,35 @@ Este é o ponto mais importante da tela:
 
 Ele enxerga **apenas o próprio convite**.
 
-## Ele pode corrigir
+## Ele confere antes de enviar
 
-Enquanto o prazo estiver correndo, o fornecedor pode reabrir o mesmo link e alterar a resposta. Os campos voltam preenchidos com o que ele enviou.
+Quando o fornecedor toca em **Enviar cotação**, nada sai ainda: abre uma janela de
+conferência com o resumo do que ele digitou — cada item com a quantidade, o preço unitário,
+o total daquela linha, e o total geral embaixo.
 
-> Isso atende ao passo *"Rever Cotação"* do fluxo da Porto Inc.
+Ele escolhe entre **Voltar e corrigir**, que devolve o formulário preenchido, e
+**Confirmar e enviar**, que manda.
 
-Vale sempre a **última** resposta.
+> **Por que a janela existe.** Ela não pergunta só *"tem certeza?"* — janela assim vira
+> quebra-molas, e em três dias a pessoa clica em "Sim" sem ler. O corpo dela é a conta,
+> que é a única coisa que dá para conferir. E ela é a **última chance**: um dígito errado,
+> R$ 5.100,00 no lugar de R$ 51,00, vira proposta comercial depois do envio.
+
+## A resposta enviada é final
+
+Depois de enviar, abrir o mesmo link **não** traz o formulário de volta. Aparece uma tela
+verde com *"Você já enviou a sua cotação, muito obrigado!"* e o comprovante do que ele
+mandou: data e hora, quantos itens e o total.
+
+> **Por que travou.** Até 10/10/2026 o fornecedor podia reabrir o link e mudar o preço
+> enquanto o prazo corresse — era o passo *"Rever Cotação"* do fluxo da Porto Inc. Só que
+> o preço dele já entrou na comparação com os concorrentes: mudar depois desfaz a
+> comparação sem ninguém ficar sabendo.
+
+**Quem destrava é o comprador.** A **última chamada** reabre o pacote numa rodada nova, e
+o link volta a aceitar resposta sozinho — é justamente dela que o fornecedor recebe o
+convite para rever o preço. É assim que o passo *"Rever Cotação"* continua existindo, agora
+com a Porto Inc. decidindo quando ele acontece.
 
 ## Quando o link para de funcionar
 
@@ -1146,8 +1168,13 @@ Vale sempre a **última** resposta.
 | Link errado ou incompleto | *"Este link não é válido"* |
 | Prazo vencido | *"O prazo já encerrou. Fale com o comprador"* |
 | Cotação encerrada | *"Esta cotação não está mais aberta"* |
+| **Já respondeu nesta rodada** | *"Você já enviou a sua cotação, muito obrigado!"*, com o comprovante |
 
 Todas as mensagens dizem o que fazer, e nenhuma expõe detalhe técnico.
+
+> A última é a única que **não** aparece em vermelho. Quem reabre o link depois de responder
+> quase sempre está conferindo se deu certo — alerta vermelho em resposta a um acerto ensina
+> a pessoa a desconfiar de uma tela que está certa.
 
 ---
 
@@ -1218,6 +1245,27 @@ Marca de uma vez o vencedor de cada linha. Serve como **ponto de partida**: depo
 
 > Use quando a decisão for só preço. Quando prazo ou marca pesarem, vale ir item a item.
 
+O botão fica **embaixo da tabela**, junto do "Salvar escolhas". É onde o trabalho termina:
+num pacote grande você desce escolhendo item a item, e seria ruim ter de voltar ao topo
+para guardar o que acabou de fazer.
+
+## Quando dois fornecedores empatam
+
+Acontece: dois cotam exatamente o mesmo preço num item. Nesse caso **as duas células ficam
+verdes**, as duas dizem *"melhor preço"*, e o cabeçalho conta o item para os dois.
+
+É de propósito. A tela está dizendo *"empatou, a escolha é sua"* — e aí você decide pelo que
+o preço não mostra: prazo de entrega, marca, quem costuma cumprir.
+
+O atalho **Aceitar todos os melhores preços** precisa marcar um só, e nesse caso ele marca
+**quem entrega mais rápido**. Você pode clicar na outra célula e trocar.
+
+> **Por que isto é importante.** Até 10/10/2026 o sistema tratava quem perdia o empate como
+> se estivesse mais caro — aparecia como "atrás", igualzinho a um fornecedor 87% acima. Pior:
+> a **última chamada** usava essa conta, e mandaria para o empatado a frase *"recebemos
+> propostas melhores nestes itens"*, pedindo que ele baixasse um preço que já era o mais
+> barato. Estar empatado no melhor preço não é estar atrás de ninguém.
+
 ## Preço não é tudo
 
 Abaixo do mapa fica o quadro **Condições comerciais**, com o que cada fornecedor ofereceu de pagamento, frete e validade da proposta.
@@ -1285,11 +1333,27 @@ Na tela de equalização, botão **📣 Última chamada**. Você informa:
 
 A mensagem que sai é assim:
 
-> Porto Inc. — BID-00002 · ÚLTIMA CHAMADA
-> Recebemos propostas melhores nos itens abaixo:
-> - 00131 Capacete de segurança classe B
-> - 00134 Luva de raspa cano curto par
-> Se puder rever seu preço, atualize pelo mesmo link até 15/10/2026.
+> Olá, Eletro Minas!
+>
+> ÚLTIMA CHAMADA — a Porto Inc. reabriu o prazo.
+> EPI — Residencial Aurora
+>
+> Recebemos propostas melhores nestes itens:
+> - 00131 Capacete de segurança classe B (40 UN)
+> - 00134 Luva de raspa cano curto par (120 PR)
+>
+> Toque no cartão acima para rever seu preço.
+> Novo prazo: 15/10/2026.
+>
+> https://.../p/Xk3mQ9pL2vTz
+
+> **A quantidade vai junto, e não é enfeite.** Um pacote agrupa solicitações de obras
+> diferentes, então o mesmo material aparece em várias linhas — 20, 100 e 400 rolos do
+> mesmo cabo. Sem a quantidade, o fornecedor recebia a mesma frase repetida três vezes e
+> não sabia qual rever.
+
+Quem está na frente em tudo recebe outro texto, sem lista nenhuma: *"Sua proposta está com
+o melhor preço em todos os itens. Se quiser revisar algo, toque no cartão acima."*
 
 Repare no que **não** está ali:
 
@@ -1907,6 +1971,8 @@ Nota de R$ 1.208,00 com *30% de entrada + 3x a cada 30 dias*:
 
 > Repare no centavo da última parcela. **A última sempre absorve o arredondamento**, para a soma bater exatamente com a nota. Sem isso sobra ou falta centavo — e é sempre o financeiro que descobre, do jeito ruim.
 
+> E a conta das primeiras é arredondada **para baixo**, de propósito. Arredondando para o mais próximo, as primeiras podiam somar mais que o total e a última virava **negativa** — R$ 10,00 em 60x gerava uma parcela de R$ -0,18. Conta a pagar negativa envenena todo relatório que a soma.
+
 Nota sem pedido vinculado vira **parcela única, à vista**.
 
 ## A tela
@@ -2055,10 +2121,45 @@ Botão **Dar baixa** na linha. Você informa:
 | Campo | Para quê |
 |---|---|
 | **Pago em** | A data real do pagamento, que pode não ser hoje |
-| **Valor pago** | Mude se pagou com desconto ou com juros |
+| **Valor pago** | Já vem com o que falta. Mude se pagou a menos ou a mais |
 | **Forma de pagamento** | PIX, boleto, transferência |
 
 A mesma parcela **não é paga duas vezes** — o sistema barra.
+
+## Pagou menos? O sistema pergunta o que aconteceu
+
+Se o valor for **menor** que o que falta, aparece a pergunta:
+
+> **Está faltando R$ 500,00 para quitar esta parcela. O que aconteceu?**
+>
+> ☐ **Paguei só uma parte.** O restante continua em aberto.
+> ☐ **Foi desconto.** A parcela fica quitada e a Porto Inc. não deve mais nada dela.
+
+São coisas opostas, e a diferença é dinheiro:
+
+- **Parte** → a parcela **continua aberta** pelo saldo. Numa de R$ 1.000 com R$ 300 pagos, o painel mostra R$ 700 ainda devidos, e o botão **Dar baixa** continua lá para quando o resto sair.
+- **Desconto** → a parcela **fecha**. A diferença fica registrada, e a dívida acaba ali.
+
+> **Por que essa pergunta existe.** Até 10/10/2026 qualquer valor fechava a parcela — o sistema tratava todo pagamento menor como desconto. Numa varredura do financeiro, pagar R$ 1,00 numa parcela de R$ 634,80 apagou R$ 633,80 da dívida: a parcela saiu do "em aberto", sumiu da previsão de caixa, e nenhum aviso apareceu. A empresa só descobriria quando o fornecedor ligasse cobrando — e, numa obra, fornecedor não pago para de entregar.
+
+Pagando **a mais** (juros, multa), a parcela quita e a diferença fica anotada. Aí não há pergunta: só um aviso dizendo quanto passou.
+
+## A condição de pagamento não entra pela metade
+
+Três momentos barram condição incompleta, e sempre com a mesma regra:
+
+| Onde | Quando |
+|---|---|
+| **No portal do fornecedor** | Na hora de ele enviar a cotação |
+| **Ao gerar os pedidos** | Última chance de corrigir, antes de congelar |
+| **Ao gerar as parcelas** | Rede de segurança, já com a nota na mão |
+
+O que é recusado:
+
+- *"Entrada de 30%"* sem dizer **em quantas vezes** o resto será pago
+- *"3 parcelas"* sem dizer **de quantos em quantos dias** elas vencem
+
+> **O portal é a porta que importa.** É o único momento em que a pessoa que sabe a resposta — o vendedor — está na tela. Três meses depois, com a nota chegando, ninguém mais consegue perguntar a ele de quanto em quanto tempo queria receber. E o pedido congela a condição: depois de gerado, não há tela para editá-la. A saída seria reabrir a cotação numa última chamada.
 
 ## Baixar as contas
 

@@ -416,11 +416,21 @@ A tela tem três partes:
 | **Equalizar e escolher** | vai para a comparação |
 | **Encerrar cotação** | fecha o pacote sem comprar nada |
 
-> ⚠️ **Está tudo em modo de teste.** Nenhuma mensagem sai para fornecedor de verdade.
+> ⚠️ **O WhatsApp envia de verdade.** A trava de teste foi desligada em 10/10/2026, e a
+> mensagem sai para o número cadastrado no fornecedor. Antes de convidar, confira a lista
+> de destinatários na janela que aparece — ela mostra o número inteiro de cada um.
 
 **Como o fornecedor responde:** ele recebe um link, abre **sem senha**, vê só os itens
 daquele pacote e preenche preço e prazo. Ele **não vê** quem mais foi convidado nem quanto
 os outros ofereceram.
+
+**A resposta dele é final.** Antes de enviar, o fornecedor passa por uma janela de
+conferência com o resumo do que digitou — quantidade, preço de cada item e o total. Depois
+de enviar, abrir o mesmo link mostra **"Você já enviou a sua cotação, muito obrigado!"** com
+o comprovante do que mandou, e **não** o formulário de novo.
+
+**Se ele precisar corrigir**, quem destrava é você: a **Última chamada** (em Equalizar e
+escolher) reabre o pacote numa rodada nova, e o link volta a aceitar resposta sozinho.
 
 ---
 
@@ -752,9 +762,15 @@ tem acesso a elas.
 - Ver se o WhatsApp e o e-mail estão ligados
 - Ver tudo que já foi enviado
 
-**Passo:** **Administração** → **Comunicação** → escolha **WhatsApp** ou **E-mail** → veja o histórico.
+**Passo:** **Administração** → **Comunicação** → escolha **WhatsApp**, **E-mail** ou
+**Mensagens enviadas** → veja o histórico.
 
-> ⚠️ **Está tudo em modo de teste.** Nenhuma mensagem sai para fornecedor de verdade.
+> ⚠️ **O WhatsApp envia de verdade** desde 10/10/2026, pelo aparelho conectado na aba
+> **WhatsApp**. A aba **Mensagens enviadas** é a prova do que saiu: dá para filtrar por
+> período, por canal e por resultado.
+>
+> O **e-mail** ainda sai simulado enquanto não houver um remetente cadastrado na aba
+> **E-mail** — é cadastrar e passa a valer na hora, sem reiniciar nada.
 
 ---
 
@@ -776,6 +792,23 @@ Ela **não fica no menu**, porque não é para quem trabalha na Porto Inc. O for
 recebe um link e abre sem senha.
 
 **Passo para mostrar:** **Compras** → **Cotações** → abra uma → **Copiar link** → cole numa aba anônima.
+
+### As três telas que o link tem
+
+| Quando | O que ele vê |
+|---|---|
+| **Ainda não respondeu** | O formulário: os itens, o campo de preço e o total preso no pé da tela |
+| **Clicou em Enviar** | Uma janela de conferência com o que ele digitou, item por item, e o total. Só depois de **Confirmar e enviar** a proposta sai |
+| **Já respondeu** | **"Você já enviou a sua cotação, muito obrigado!"**, com o comprovante: data, itens e total. Sem campo para digitar |
+
+> **Por que a resposta é final.** O preço dele já entrou na comparação com os concorrentes.
+> Deixar mudar depois desfaria a comparação sem ninguém ficar sabendo. A janela de
+> conferência existe por causa disso: é a última chance de pegar um dígito errado, porque
+> depois não há volta pelo link.
+
+> **Quem destrava é o comprador.** A **Última chamada** reabre o pacote numa rodada nova, e
+> aí o link aceita resposta de novo — é justamente dela que o fornecedor recebe o convite
+> para rever o preço.
 
 ---
 

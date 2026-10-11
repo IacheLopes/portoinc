@@ -1842,9 +1842,9 @@ está ali não tem uma senha dela ainda.
 A descrição era `string`, e por isso tela vazia nenhuma conseguia dar o **caminho**:
 "lance em Receitas e despesas" sem o link é uma instrução para a pessoa procurar sozinha.
 
-# Parte 4 — As vinte e três vezes em que o defeito era a medição
+# Parte 4 — As vinte e quatro vezes em que o defeito era a medição
 
-É a lição mais cara desta obra, e ela se repetiu **vinte e três vezes**. Vale estar
+É a lição mais cara desta obra, e ela se repetiu **vinte e quatro vezes**. Vale estar
 escrita junta, porque separada cada uma parece azar.
 
 | # | Onde | A régua dizia | A verdade |
@@ -1872,6 +1872,7 @@ escrita junta, porque separada cada uma parece azar.
 | 21 | Produção 10/10 | "a assinatura do Gestor não mudou a situação da solicitação" | a solicitação valia R$ 7.440 e cai na faixa que pede **duas** assinaturas — a própria tela avisa, em "Quem aprova: 2 assinaturas · Gestor de obra e Engenheiro". Uma de duas deixa parado de propósito. O teste é que só sabia assinar uma vez |
 | 22 | Produção 10/10 | "R$ 25.200 não caiu em faixa nenhuma" | o teste carregava faixas que eu inventei (0–5k / 5k–50k / 50k+). As **cadastradas** são 0–2.000, 2.000–15.000 com as duas assinaturas, e acima de 15.000 com o Fundador. R$ 25.200 foi para o Fundador, que é o certo |
 | 23 | Produção 10/10 | "o Recebimento não tem atalho para «chegou tudo»" | o botão "Preencher com o saldo" existe e a varredura anterior o listou. Nesta o pedido **já estava recebido por inteiro**, e aí a tela não oferece botão nenhum — que é a trava funcionando |
+| 24 | Cotação 10/10 | a tela de **Pedidos** rolava 17px no celular, e "R$ 25.667,60" estourava a caixa (194 > 128) | **não reproduziu**: três medições seguidas na mesma largura deram limpo, e a foto mostra o valor folgado dentro do cartão. A causa provável é o momento — o fechamento mede logo depois das provas, e eu tinha acabado de salvar `Portal.tsx` e `cotacao.ts`; a página foi medida com o Vite ainda recompilando, antes de a caixa assentar. **Fica o aviso:** se reaparecer com a tela parada, é defeito de verdade e não repetição desta |
 
 ### Três delas nasceram do mesmo lugar: o teste envelheceu junto com o sistema
 
