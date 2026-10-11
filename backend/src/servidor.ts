@@ -21,6 +21,44 @@ async function iniciar() {
   for (const i of resumoIntegracoes()) {
     app.log.info('    - ' + i.area + ': ' + i.adaptador + (i.simulado ? ' (simulado)' : ''));
   }
+
+  //  AS TRAVAS SÃO ANUNCIADAS EM VOZ ALTA, toda partida.
+  //
+  //  Elas são silenciosas por natureza: ligada, a trava faz a
+  //  mensagem ser registrada como "bloqueada" e nada chega — sem
+  //  erro, sem alerta. Quem for procurar o defeito vai procurar no
+  //  provedor, na rede, no número do fornecedor. Nunca aqui.
+  //
+  //  E o padrão delas é LIGADO, de propósito: variável faltando
+  //  significa ambiente incompleto, e aí o seguro é não mandar
+  //  nada para fora. O preço desse acerto é justamente este risco
+  //  — subir para produção sem as linhas no `.env` e demorar uma
+  //  manhã para entender por quê. Esta linha cobra esse preço no
+  //  primeiro segundo.
+  const travaWhats = ambiente.WHATSAPP_MODO_TESTE !== 'false';
+  const travaEmail = ambiente.EMAIL_MODO_TESTE !== 'false';
+
+  app.log.info('  Travas de teste:');
+  app.log.info(
+    '    - WhatsApp: ' +
+      (travaWhats
+        ? 'LIGADA — só sai para número autorizado'
+        : 'desligada — sai para qualquer número'),
+  );
+  app.log.info(
+    '    - E-mail:   ' +
+      (travaEmail
+        ? 'LIGADA — só sai para endereço autorizado'
+        : 'desligada — sai para qualquer endereço'),
+  );
+
+  if (travaWhats || travaEmail) {
+    app.log.warn(
+      '  ATENÇÃO: com a trava ligada o fornecedor NÃO recebe. ' +
+        'Em produção, ponha WHATSAPP_MODO_TESTE=false e EMAIL_MODO_TESTE=false no .env.',
+    );
+  }
+
   app.log.info('----------------------------------------------');
 
   // Faxina de sessões vencidas, uma vez por hora.

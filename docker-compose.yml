@@ -86,6 +86,22 @@ services:
       # Trava de seguranca: com "true", so sai mensagem para numero que
       # estiver na lista de autorizados.
       WHATSAPP_MODO_TESTE: ${WHATSAPP_MODO_TESTE:-true}
+      # O E-MAIL FALTAVA AQUI, e isso foi defeito ate 11/10/2026.
+      #
+      # As duas linhas existiam no `.env` desde que o e-mail nasceu,
+      # mas nao eram repassadas ao container: o app caia no padrao do
+      # `ambiente.ts` e ninguem via por que. Quem editasse o `.env`
+      # para ligar o e-mail no dia do lancamento nao veria nada
+      # acontecer, e nao haveria mensagem nenhuma explicando.
+      #
+      # Achado porque ele perguntou "se eu lancasse hoje, ja
+      # funcionaria?" — e a resposta honesta exigiu conferir.
+      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-mock}
+      # Trava de seguranca: com "true", so sai e-mail para endereco
+      # que estiver na lista de autorizados.
+      EMAIL_MODO_TESTE: ${EMAIL_MODO_TESTE:-true}
+      EMAIL_API_TOKEN: ${EMAIL_API_TOKEN:-}
+      EMAIL_REMETENTE: ${EMAIL_REMETENTE:-}
       FISCAL_ADAPTER: ${FISCAL_ADAPTER}
       PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}
       # Necessario no Windows para o hot-reload enxergar as alteracoes

@@ -61,8 +61,27 @@ services:
       WHATSAPP_ADAPTER: ${WHATSAPP_ADAPTER}
       WHATSAPP_SESSAO_DIR: /app/sessao-whatsapp
       WHATSAPP_MODO_TESTE: ${WHATSAPP_MODO_TESTE:-true}
+      # O E-MAIL FALTAVA AQUI — e este e o arquivo que sobe.
+      #
+      # O mesmo buraco existia no compose de desenvolvimento e foi
+      # tapado em 11/10/2026; este passou batido na mesma varredura.
+      # Sem estas linhas, nada do `.env` da VPS chegaria ao
+      # container: o e-mail cairia no padrao do codigo, que e a
+      # TRAVA LIGADA — e nenhum fornecedor receberia nada, sem erro
+      # nenhum aparecer.
+      #
+      # Achado porque ele pediu para conferir se sobrou trava antes
+      # de subir. Sobrou, e era a pior: a do arquivo de producao.
+      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-mock}
+      EMAIL_MODO_TESTE: ${EMAIL_MODO_TESTE:-true}
+      EMAIL_API_TOKEN: ${EMAIL_API_TOKEN:-}
+      EMAIL_REMETENTE: ${EMAIL_REMETENTE:-}
       FISCAL_ADAPTER: ${FISCAL_ADAPTER}
       PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}
+      # Certificado do SEFAZ: ainda nao chegou. Ver
+      # docs/sefaz/Pedido-a-Porto-SEFAZ.pdf
+      SEFAZ_CERTIFICADO_CAMINHO: ${SEFAZ_CERTIFICADO_CAMINHO:-}
+      SEFAZ_CERTIFICADO_SENHA: ${SEFAZ_CERTIFICADO_SENHA:-}
     ports:
       # 3001 no computador, para não disputar com a de desenvolvimento.
       - "3001:3000"
