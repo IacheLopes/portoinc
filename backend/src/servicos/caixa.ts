@@ -7,9 +7,9 @@
 //  em contas a pagar e pronto. Dava para ver quanto a Porto Inc.
 //  devia, e nunca quanto ela tinha.
 //
-//  Iache, perguntando onde se cadastra a receita da empresa e as
-//  despesas que não vêm de compra, e Emerson, na reunião de
-//  08/10/2026: "ele vai descontar de uma conta que não tem
+//  Perguntado pelo cliente na reunião de 08/10/2026: onde se
+//  cadastra a receita da empresa e a despesa que não vem de
+//  compra. "Ele vai descontar de uma conta que não tem
 //  cadastro de dinheiro de entrada".
 //
 //  As contas ficam aqui, longe do banco, para poderem ser testadas

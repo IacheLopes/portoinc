@@ -90,9 +90,9 @@ o que o financeiro já usa.
 > **O formato.** "CSV/Excel" não vale mais: o dono decidiu que **nada sai em CSV**. Todo
 > arquivo que o sistema entrega é PDF ou Word, e quem baixa escolhe na hora.
 >
-> **O escopo.** "Sem fluxo de caixa" também não vale. Na reunião de 08/10/2026 o Iache
+> **O escopo.** "Sem fluxo de caixa" também não vale. Na reunião de 08/10/2026 o cliente
 > perguntou onde se cadastra a receita da empresa e as despesas que não vêm de compra, e
-> o Emerson resumiu: *"ele vai descontar de uma conta que não tem cadastro de dinheiro de
+> resumiram assim: *"ele vai descontar de uma conta que não tem cadastro de dinheiro de
 > entrada"*. O Financeiro ganhou entradas e saídas avulsas, caixa, fluxo semanal e
 > categorias — e, em 09/10, o **saldo de abertura**, para a empresa que chega com dinheiro
 > no dia em que sai da planilha.

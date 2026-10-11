@@ -3,7 +3,7 @@
 //
 //  A TELA QUE NÃO EXISTIA.
 //
-//  Iache perguntou onde se cadastra a receita da empresa e a
+//  O cliente perguntou onde se cadastra a receita da empresa e a
 //  despesa que não vem de compra. Não havia resposta: o financeiro
 //  só sabia tirar, porque toda saída nascia da nota do fornecedor
 //  e entrada nenhuma tinha lugar.

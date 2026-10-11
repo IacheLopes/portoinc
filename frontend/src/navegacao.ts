@@ -16,7 +16,7 @@ import type { NomeDoIcone } from './componentes/Icone';
  * A BARRA LATERAL NÃO LISTA TELAS. LISTA QUATRO DESTINOS.
  *
  * Ela listava as 14 telas, agrupadas sob quatro títulos: 18 linhas
- * para quem administra. Emerson, na reunião de 08/10/2026: "vai
+ * para quem administra. Da reunião de 08/10/2026: "vai
  * tudo ficar meio que encolhido, pra parecer que é pouca coisa, e
  * ele querer colocar mais... fica coisa demais... é pra dar uma
  * resumida no tanto de aba que tem aí".

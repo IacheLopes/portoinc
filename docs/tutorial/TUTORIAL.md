@@ -3724,8 +3724,8 @@ Quatro provas guardam isso em `testes/acesso.test.ts`.
 O financeiro **só sabia tirar**. Toda saída nascia da nota do fornecedor, virava parcela em
 contas a pagar, e pronto. Entrada nenhuma tinha lugar.
 
-Iache, em 08/10/2026, perguntando onde se cadastra a receita da empresa e as despesas que
-não são automatizadas. Emerson, na reunião do mesmo dia: *"como é que tu fez um
+Perguntado em 08/10/2026: onde se cadastra a receita da empresa e as despesas que
+não são automatizadas. Da mesma reunião: *"como é que tu fez um
 financeiro que eu não consigo cadastrar receita e despesa? Ele vai descontar de uma conta
 que não tem cadastro de dinheiro de entrada"*.
 
@@ -3952,7 +3952,7 @@ texto obrigatório, unidades. Os testes dela já moravam lá.
 
 # 42.11. O menu encolheu, e não vai crescer de novo
 
-Emerson, na reunião de 08/10/2026, logo no começo:
+Da reunião de 08/10/2026, logo no começo:
 
 > *"Vai tudo ficar meio que encolhido, pra parecer que é pouca coisa — e ele querer
 > colocar mais. Assim, mano, fica coisa demais. É pra dar meio que uma resumida no tanto
@@ -4122,7 +4122,7 @@ mudou foi a escrita.
 # 42.13. As oito pendências, conferidas contra o documento de origem
 
 Havia oito perguntas em aberto. O dono mandou conferir cada uma contra o **PDF do fluxo de
-compras**, as **anotações do Iache** e a **transcrição da reunião de 08/10/2026**, em vez
+compras**, as **anotações do cliente** e a **transcrição da reunião de 08/10/2026**, em vez
 de decidir no achismo. Três se fecharam só com a leitura.
 
 ## Fechadas pelo documento, sem código
@@ -4450,7 +4450,7 @@ As oito regras passaram, com dívida zero nas oito.
 
 ---
 
-# 42.17. A varredura que o Emerson pediu, e o que ela achou
+# 42.17. A varredura pedida na reunião, e o que ela achou
 
 Na reunião de 08/10 o pedido foi literal: *"pede pro Claude testar um por um e ver se está
 funcionando, o que não está funcionando você me diz, corrige, e depois me diz o que ele
@@ -4481,7 +4481,7 @@ a chave usada é revogada, de modo que uma chave roubada denuncia o roubo na seg
 R$ 339,50  +7.8%
 ```
 
-Na **Equalização** — a tela que a anotação do Iache pede nominalmente: *"mostrar onde cada
+Na **Equalização** — a tela que a anotação do cliente pede nominalmente: *"mostrar onde cada
 fornecedor chegou no preço melhor"*. O backend calcula `7.8` e a tela colava o número no
 texto, e juntar número com texto em JavaScript usa o ponto do inglês. Ao lado de
 `R$ 339,50`, dois separadores decimais na mesma linha.

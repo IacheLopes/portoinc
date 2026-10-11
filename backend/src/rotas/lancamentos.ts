@@ -7,7 +7,7 @@
 //  pronto. Não havia de onde descontar: o sistema controlava a
 //  saída de um caixa que nunca tinha recebido nada.
 //
-//  Emerson, na reunião de 08/10/2026: "como é que tu fez um
+//  Da reunião de 08/10/2026: "como é que tu fez um
 //  financeiro que eu não consigo cadastrar receita e despesa? Ele
 //  vai descontar de uma conta que não tem cadastro de dinheiro de
 //  entrada". A regra que ficou para a casa: todo financeiro da AV2

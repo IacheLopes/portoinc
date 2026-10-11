@@ -1,8 +1,8 @@
 // ============================================================
 //  Testes das receitas e despesas lançadas à mão
 //
-//  O lugar que o Iache não achava: onde se cadastra a receita da
-//  empresa e a despesa que não vem de compra.
+//  O lugar que ninguém achava na reunião de 08/10/2026: onde se
+//  cadastra a receita da empresa e a despesa que não vem de compra.
 // ============================================================
 
 import { before, after, describe, it } from 'node:test';

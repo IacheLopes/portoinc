@@ -5196,7 +5196,7 @@ a solicitação ou não aparece, ou aparece sem botão de decidir.
 
 ## CT-331 · Onde se cadastra a receita da empresa
 
-Era a pergunta do Iache, e o sistema não tinha resposta.
+Era a pergunta do cliente, e o sistema não tinha resposta.
 
 1. Entre como **Administrador** (`admin@portoinc.com.br`)
 2. Ache **Receitas e despesas** no menu, grupo **Gestão**
@@ -5313,7 +5313,7 @@ e volte.
 **Esperado:** o **Saiu** subiu o valor da baixa, e quem subiu no detalhe foi o lado
 **Compras** — nem um centavo foi para o lado **avulsas**.
 
-> Esse é o ponto do Emerson: o financeiro descontava de uma conta que não tinha entrada.
+> Esse é o ponto levantado na reunião: o financeiro descontava de uma conta que não tinha entrada.
 > Agora as duas origens de saída somam no mesmo saldo, e continuam distinguíveis.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>

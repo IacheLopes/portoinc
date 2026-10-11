@@ -157,12 +157,12 @@ certa: **o que chega é dado, não um documento pronto para imprimir.**
 
 | | Passo | De quem é |
 |---|---|---|
-| 1 | Decidir se a empresa vai manifestar as notas (seção 5) | Iache + contador |
-| 2 | Contratar ou localizar o certificado **A1** | Iache |
-| 3 | Entregar o `.pfx`, a senha, o CNPJ e a UF | Iache |
+| 1 | Decidir se a empresa vai manifestar as notas (seção 5) | a Porto Inc. + contador |
+| 2 | Contratar ou localizar o certificado **A1** | a Porto Inc. |
+| 3 | Entregar o `.pfx`, a senha, o CNPJ e a UF | a Porto Inc. |
 | 4 | Construir e testar em homologação | AV2 Tech |
 | 5 | Ligar em produção, acompanhando a primeira semana | AV2 Tech |
-| 6 | Combinar quem renova o certificado todo ano | Iache |
+| 6 | Combinar quem renova o certificado todo ano | a Porto Inc. |
 
 **Os passos 1 a 3 não dependem de nós, e são o que está travando.**
 

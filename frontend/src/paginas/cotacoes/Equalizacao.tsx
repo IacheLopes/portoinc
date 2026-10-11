@@ -432,7 +432,7 @@ export function Equalizacao() {
                                   // saía "+7.8%" ao lado de "R$ 339,50", dois
                                   // separadores decimais na mesma linha.
                                   //
-                                  // É a tela que a anotação do Iache pede
+                                  // É a tela que a anotação do cliente pede
                                   // nominalmente — "mostrar onde cada
                                   // fornecedor chegou no preço melhor" — e o
                                   // "+7,8%" é a frase que responde isso.
