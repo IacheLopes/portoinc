@@ -34,6 +34,7 @@ import { join } from 'node:path';
 import { createRequire } from 'node:module';
 
 import type {
+  MensagemRecebida,
   PortaWhatsApp, MensagemWhatsApp, ResultadoEnvio, EstadoConexao, SituacaoWhatsApp,
 } from './porta.js';
 
@@ -55,6 +56,17 @@ interface Biblioteca {
   fetchLatestBaileysVersion?: () => Promise<{ version: number[] }>;
   makeCacheableSignalKeyStore?: (chaves: unknown, logger: unknown) => unknown;
   DisconnectReason: Record<string, number>;
+  /**
+   * Baixa e DESCRIPTOGRAFA a midia de uma mensagem.
+   *
+   * O arquivo nao viaja na mensagem: o que chega e uma referencia
+   * cifrada, e so a biblioteca sabe busca-la e abrir.
+   */
+  downloadMediaMessage?: (
+    mensagem: unknown,
+    tipo: 'buffer',
+    opcoes: Record<string, unknown>,
+  ) => Promise<Buffer>;
 }
 
 interface SocketWhatsApp {
@@ -70,6 +82,12 @@ interface SocketWhatsApp {
     destino: string,
     conteudo: Record<string, unknown>,
   ) => Promise<{ key?: { id?: string } } | undefined>;
+  /** Os dados de um grupo. `subject` e o nome que aparece no celular. */
+  groupMetadata?: (jid: string) => Promise<{ subject?: string } | undefined>;
+  /** Todos os grupos de que a conta participa. */
+  groupFetchAllParticipating?: () => Promise<Record<string, { subject?: string }>>;
+  /** Pede de novo a midia que o servidor ja descartou. */
+  updateMediaMessage?: (mensagem: unknown) => Promise<unknown>;
 }
 
 /** Mantem DDI, DDD e os dois ultimos digitos. O resto vira ponto. */
@@ -150,8 +168,33 @@ const EXPLICACAO: Record<EstadoConexao, string> = {
   erro: 'Algo deu errado na conexão.',
 };
 
+/** O formato cru do Baileys, so a parte que a gente le. */
+interface RecadoCru {
+  key?: {
+    remoteJid?: string;
+    fromMe?: boolean;
+    id?: string;
+    participant?: string;
+    //  O TELEFONE DE VERDADE, quando o WhatsApp manda o LID por
+    //  cima. Ver o comentario em `peneirar`.
+    participantPn?: string;
+    senderPn?: string;
+  };
+  pushName?: string;
+  messageTimestamp?: number | { toNumber?: () => number };
+  message?: {
+    conversation?: string;
+    extendedTextMessage?: { text?: string };
+    imageMessage?: { caption?: string };
+    videoMessage?: { caption?: string };
+    audioMessage?: { mimetype?: string; seconds?: number };
+  } | null;
+}
+
 export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
   readonly nome = 'baileys';
+
+  private ouvintes: ((m: MensagemRecebida) => void)[] = [];
 
   private lib: Biblioteca | null = null;
   private sock: SocketWhatsApp | null = null;
@@ -325,6 +368,71 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
       this.sock = sock;
 
       sock.ev.on('creds.update', saveCreds as never);
+
+      //  O OUVIDO. Ver `aoReceber` e `peneirar`, logo abaixo.
+      sock.ev.on('messages.upsert', ((lote: {
+        type?: string;
+        messages?: RecadoCru[];
+      }) => {
+        //  `notify` E MENSAGEM NOVA DE OUTRA PESSOA.
+        //
+        //  O que VOCE MESMO manda, do seu celular, nao chega como
+        //  `notify`: chega como `append` — "acrescente isto a
+        //  conversa, foi voce que escreveu de outro aparelho".
+        //
+        //  Descobri isso em 14/10/2026, com ele mandando mensagem
+        //  no grupo pelo proprio numero conectado e o assistente
+        //  mudo. A mensagem chegava e morria nesta linha.
+        //
+        //  `append` tambem e o tipo da SINCRONIZACAO DE HISTORICO,
+        //  e ai esta o cuidado: aceitar `append` sem mais nada
+        //  faria o assistente responder meses de conversa de uma
+        //  vez na primeira reconexao. Por isso duas cercas —
+        //  so o que e `fromMe`, e so o que acabou de acontecer.
+        const ehNova = lote.type === 'notify';
+        const ehMinha = lote.type === 'append';
+
+        if (!ehNova && !ehMinha) return;
+
+        for (const cru of lote.messages ?? []) {
+          if (ehMinha && !cru.key?.fromMe) continue;
+
+          //  DIAGNOSTICO TEMPORARIO (14/10/2026): o WhatsApp passou
+          //  a mandar LID no lugar do telefone, e precisamos ver
+          //  quais campos vem preenchidos de verdade. Sai daqui
+          //  assim que o reconhecimento estiver confirmado.
+          if (process.env.IA_DIAGNOSTICO === 'true') {
+            console.log(
+              '[chave] tipo=' + lote.type +
+              ' fromMe=' + cru.key?.fromMe +
+              ' remoteJid=' + cru.key?.remoteJid +
+              ' participant=' + cru.key?.participant +
+              ' participantPn=' + cru.key?.participantPn +
+              ' senderPn=' + cru.key?.senderPn,
+            );
+          }
+
+          const recado = this.peneirar(cru);
+          if (!recado) continue;
+
+          //  A CERCA DO TEMPO, para historico antigo nao virar
+          //  pergunta.
+          //
+          //  Eram dois minutos. Subiu para QUINZE em 14/10/2026,
+          //  porque e por aqui que chega a mensagem que ficou sem
+          //  resposta enquanto o sistema estava fora do ar — e
+          //  responde-la na volta foi pedido dele.
+          //
+          //  O que protege do despejo de historico deixou de ser so
+          //  o relogio: e a regra de que ele so responde se a
+          //  pergunta ainda for A ULTIMA da conversa. Em conversa
+          //  antiga sempre ha algo depois, entao ele se cala
+          //  sozinho. Ver `repescagem`, em `servicos/atendimento`.
+          if (Date.now() - recado.recebidaEm.getTime() > 15 * 60 * 1000) continue;
+
+          for (const ouvinte of this.ouvintes) ouvinte(recado);
+        }
+      }) as never);
       sock.ev.on('connection.update', ((atualizacao: {
         connection?: string;
         qr?: string;
@@ -339,6 +447,113 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
       this.sock = null;
       this.mudarPara('erro', erro instanceof Error ? erro.message : 'Falha ao conectar.');
       throw erro;
+    }
+  }
+
+  /**
+   * O NOME DO GRUPO NAO VEM NA MENSAGEM.
+   *
+   * O `messages.upsert` entrega o JID — aquele numero enorme — e
+   * mais nada. O nome que aparece no celular ("Obra Porto Belo")
+   * precisa ser PERGUNTADO ao WhatsApp, numa chamada separada.
+   *
+   * Por isso ela e chamada so quando o nome ainda nao e conhecido:
+   * pedir metadado de grupo a cada mensagem e o tipo de insistencia
+   * que faz o WhatsApp comecar a recusar.
+   */
+  async nomeDoGrupo(jid: string): Promise<string | null> {
+    try {
+      if (!this.sock?.groupMetadata) return null;
+
+      const dados = await this.sock.groupMetadata(jid);
+      return dados?.subject?.trim() || null;
+    } catch {
+      //  Grupo de que a conta saiu, ou sem internet. O grupo
+      //  continua na lista pelo JID, so que sem nome — melhor do
+      //  que derrubar o atendimento por causa de um rotulo.
+      return null;
+    }
+  }
+
+  /**
+   * TODOS OS GRUPOS DE QUE A CONTA PARTICIPA.
+   *
+   * Existe para a tela poder OFERECER a escolha, em vez de a lista
+   * ir se enchendo sozinha com todo grupo que manda mensagem — o
+   * que, num celular pessoal, significava a tela da empresa
+   * listando o grupo da familia e o das ofertas.
+   */
+  async listarGrupos(): Promise<Array<{ jid: string; nome: string | null }>> {
+    try {
+      if (!this.sock?.groupFetchAllParticipating) return [];
+
+      const todos = await this.sock.groupFetchAllParticipating();
+
+      return Object.entries(todos ?? {})
+        .map(([jid, dados]) => ({ jid, nome: dados?.subject?.trim() || null }))
+        .sort((a, b) => (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR'));
+    } catch {
+      return [];
+    }
+  }
+
+  aoReceber(ouvinte: (m: MensagemRecebida) => void): void {
+    this.ouvintes.push(ouvinte);
+  }
+
+  /**
+   * AS QUATRO PENEIRAS.
+   *
+   * O `messages.upsert` entrega TUDO que acontece na conta: o que
+   * a gente mesmo manda, grupo, status, figurinha, audio. Quase
+   * nada disso e pergunta para o assistente, e cada uma destas
+   * peneiras fecha uma brecha concreta:
+   *
+   *   1. `fromMe` — a propria mensagem do numero conectado. Sem
+   *      isto o assistente le a resposta que ele acabou de mandar,
+   *      responde a ela, le de novo, e o laco so para quando a
+   *      conta e banida;
+   *   2. `@g.us` — grupo. Robo respondendo em grupo e spam, e o
+   *      grupo quase nunca e da empresa;
+   *   3. `status@broadcast` — status e lista de transmissao. Nao
+   *      sao conversa com ninguem;
+   *   4. sem texto — audio, figurinha, foto sem legenda. Ficam na
+   *      conta da pessoa, mas nao viram pergunta: responder "nao
+   *      entendi" a cada figurinha e pior do que ficar quieto.
+   *
+   * Devolve `null` quando a mensagem nao e para o assistente.
+   */
+  private peneirar(cru: RecadoCru): MensagemRecebida | null {
+    return peneirar(cru, (recado) => this.baixarMidia(recado), this.numero);
+  }
+
+  /**
+   * Baixa o audio do WhatsApp.
+   *
+   * O arquivo nao vem na mensagem: vem uma referencia cifrada, e
+   * quem busca e descriptografa e a propria biblioteca. Por isso
+   * o download e PREGUICOSO — so acontece se o atendimento
+   * decidir que vale transcrever. Audio de grupo em que ninguem
+   * chamou o assistente nao precisa ser baixado.
+   */
+  private async baixarMidia(cru: RecadoCru): Promise<Buffer | null> {
+    try {
+      const lib = await this.carregarBiblioteca();
+      if (!lib.downloadMediaMessage) return null;
+
+      const conteudo = await lib.downloadMediaMessage(cru, 'buffer', {
+        logger: LOGGER_MUDO,
+        //  Midia que o WhatsApp ja descartou do servidor precisa
+        //  ser pedida de novo ao aparelho de quem mandou. Sem
+        //  isto, audio de alguns minutos atras falha em silencio.
+        reuploadRequest: this.sock?.updateMediaMessage,
+      });
+
+      return Buffer.isBuffer(conteudo) ? conteudo : null;
+    } catch {
+      //  Midia expirada ou sem internet: o atendimento segue sem
+      //  o audio, e a mensagem fica registrada do mesmo jeito.
+      return null;
     }
   }
 
@@ -485,6 +700,14 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
       fetchLatestBaileysVersion: b.fetchLatestBaileysVersion as Biblioteca['fetchLatestBaileysVersion'],
       makeCacheableSignalKeyStore: b.makeCacheableSignalKeyStore as Biblioteca['makeCacheableSignalKeyStore'],
       DisconnectReason: b.DisconnectReason as Record<string, number>,
+      //  SEM ESTA LINHA O AUDIO NAO CHEGA.
+      //
+      //  A `lib` e montada a mao, funcao por funcao — e em
+      //  14/10/2026 o assistente passou a transcrever audio sem
+      //  que `downloadMediaMessage` tivesse sido incluida aqui.
+      //  Resultado: o recado de voz chegava, o download devolvia
+      //  nulo e a mensagem morria como "audio sem transcricao".
+      downloadMediaMessage: b.downloadMediaMessage as Biblioteca['downloadMediaMessage'],
     };
 
     return this.lib;
@@ -503,6 +726,21 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
         adaptador: this.nome,
         enviadoEm: agora,
       };
+    }
+
+    //  GRUPO NAO E TELEFONE.
+    //
+    //  O endereco de um grupo e `120363411210921556@g.us`: dezoito
+    //  digitos e um sufixo proprio. Passando isso pela validacao de
+    //  telefone, ela recusa — com razao — e a resposta do assistente
+    //  morre com "informe um telefone, nao um endereco interno".
+    //
+    //  Foi o que aconteceu em 14/10/2026: ele reconhecia quem
+    //  perguntou, montava a resposta certa, e nao conseguia
+    //  entrega-la. Para grupo o endereco ja E o destino: nao ha o
+    //  que normalizar nem a quem perguntar se existe.
+    if (mensagem.para.endsWith('@g.us')) {
+      return this.entregar(mensagem, mensagem.para, agora);
     }
 
     let digitos: string;
@@ -543,6 +781,22 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
       };
     }
 
+    return this.entregar(mensagem, encontrado.jid, agora);
+  }
+
+  /**
+   * A entrega em si, comum a pessoa e a grupo.
+   *
+   * O que muda entre os dois e so COMO SE CHEGA ao endereco:
+   * telefone passa por validacao e por uma consulta ao WhatsApp,
+   * grupo ja vem pronto. Daqui para baixo e identico, e por isso
+   * mora num lugar so.
+   */
+  private async entregar(
+    mensagem: MensagemWhatsApp,
+    destino: string,
+    agora: Date,
+  ): Promise<ResultadoEnvio> {
     try {
       const conteudo: Record<string, unknown> = mensagem.anexo
         ? {
@@ -553,7 +807,7 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
           }
         : { text: mensagem.texto };
 
-      const enviada = await this.sock.sendMessage(encontrado.jid, conteudo);
+      const enviada = await this.sock!.sendMessage(destino, conteudo);
 
       return {
         sucesso: true,
@@ -566,8 +820,137 @@ export class AdaptadorWhatsAppBaileys implements PortaWhatsApp {
         sucesso: false,
         erro: erro instanceof Error ? erro.message : 'Falha ao enviar.',
         adaptador: this.nome,
-        enviadoEm: new Date(),
+        enviadoEm: agora,
       };
     }
   }
+}
+
+/**
+ * A peneira, fora da classe PARA PODER SER TESTADA.
+ *
+ * Ela e regra pura: entra o recado cru do Baileys, sai a mensagem
+ * ou `null`. Nao precisa de socket, de sessao nem de internet —
+ * e e justamente a parte que, se falhar, faz o assistente
+ * responder a si mesmo para sempre.
+ */
+export function peneirar(
+  cru: RecadoCru,
+  baixarMidia?: (cru: RecadoCru) => Promise<Buffer | null>,
+  meuNumero?: string | null,
+): MensagemRecebida | null {
+  const jid = cru.key?.remoteJid ?? '';
+
+  //  1. STATUS E TRANSMISSAO nao sao conversa com ninguem.
+  if (jid === 'status@broadcast' || jid.endsWith('@broadcast')) return null;
+
+  if (!jid.includes('@')) return null;
+
+  const ehGrupo = jid.endsWith('@g.us');
+  const deMim = Boolean(cru.key?.fromMe);
+
+  const soDigitos = (t: string) => t.split('@')[0].split(':')[0].replace(/\D/g, '');
+  const meu = meuNumero ? soDigitos(meuNumero) : '';
+  const comigoMesmo = !ehGrupo && Boolean(meu) && soDigitos(jid) === meu;
+
+  //  2. O QUE SAI DO PROPRIO NUMERO, e a parte delicada.
+  //
+  //     Tudo que o celular conectado manda vem marcado como
+  //     "minha". Isso e TRES coisas diferentes:
+  //
+  //       a) a resposta que o sistema acabou de mandar — responder
+  //          a ela seria laco infinito;
+  //       b) o dono digitando no grupo ou na conversa consigo
+  //          mesmo — e gente da empresa perguntando, tem de ser
+  //          atendido;
+  //       c) o dono conversando com a esposa, com o fornecedor,
+  //          com quem for — NAO e assunto do assistente, e ler
+  //          isso seria bisbilhotar a conversa alheia.
+  //
+  //     Aqui so o (c) morre. O (a) e o (b) seguem, e quem os
+  //     separa e o `atendimento`, que sabe quais mensagens o
+  //     sistema mandou.
+  if (deMim && !ehGrupo && !comigoMesmo) return null;
+
+  //  3. QUEM FALOU, e nao de onde.
+  //
+  //     Em grupo o `remoteJid` e a SALA; quem falou vem em
+  //     `participant`. Identidade e sempre de pessoa: sem isto,
+  //     todo mundo do grupo seria "o grupo" e ninguem seria
+  //     reconhecido como da equipe.
+  //  QUEM FALOU — E O LID.
+  //
+  //  O WhatsApp passou a identificar gente por LID: um numero
+  //  grande e sem significado, que ESCONDE o telefone. Em
+  //  14/10/2026 uma mensagem no grupo chegou como
+  //  `256375338881247` — nao e telefone de ninguem, e por isso o
+  //  assistente nao reconheceu o proprio dono do sistema.
+  //
+  //  A biblioteca manda o telefone de verdade NUM CAMPO AO LADO:
+  //  `participantPn` em grupo, `senderPn` no privado. E dele que
+  //  a identificacao precisa — o LID nao casa com cadastro nenhum.
+  //
+  //  O `participant` continua como reserva: em conversa antiga, e
+  //  em conta que ainda nao migrou, e ele que vem preenchido. E
+  //  quando a mensagem e SUA, o WhatsApp as vezes nao preenche
+  //  nenhum dos dois — do ponto de vista dele, obviamente foi
+  //  voce —, entao sobra o numero conectado.
+  //  SE E MINHA, SOU EU — e ponto. Esta linha vem PRIMEIRO de
+  //  proposito: medido em 14/10/2026, a propria mensagem no grupo
+  //  chega com `fromMe=true` e `participant=256375338881247@lid`,
+  //  sem telefone nenhum ao lado. Perguntar quem e o dono do LID
+  //  quando o WhatsApp acabou de dizer "foi voce" e dar voltas
+  //  para chegar onde ja se estava.
+  const deJid = deMim
+    ? (meuNumero ?? cru.key?.participantPn ?? cru.key?.senderPn ?? '')
+    : ehGrupo
+      ? (cru.key?.participantPn || cru.key?.participant || '')
+      : (cru.key?.senderPn || jid);
+  const de = deJid.split('@')[0].split(':')[0].replace(/\D/g, '');
+  if (!de) return null;
+
+  const texto =
+    cru.message?.conversation ??
+    cru.message?.extendedTextMessage?.text ??
+    cru.message?.imageMessage?.caption ??
+    cru.message?.videoMessage?.caption ??
+    '';
+
+  const audioCru = cru.message?.audioMessage;
+
+  //  4. SEM TEXTO E SEM AUDIO nao e pergunta. Figurinha e foto sem
+  //     legenda ficam de fora: responder "nao entendi" a cada
+  //     figurinha e pior do que ficar quieto.
+  if (!texto.trim() && !audioCru) return null;
+
+  const carimbo = cru.messageTimestamp;
+  const segundos =
+    typeof carimbo === 'number'
+      ? carimbo
+      : typeof carimbo?.toNumber === 'function'
+        ? carimbo.toNumber()
+        : 0;
+
+  return {
+    de,
+    texto: texto.trim(),
+    idMensagem: cru.key?.id ?? '',
+    nomeDeExibicao: cru.pushName,
+    recebidaEm: segundos ? new Date(segundos * 1000) : new Date(),
+    grupo: ehGrupo ? { jid } : null,
+    deMim,
+    comigoMesmo,
+    //  A resposta volta para o GRUPO quando a pergunta veio do
+    //  grupo. Responder no privado quem perguntou na sala e
+    //  esconder a resposta de quem tambem queria saber.
+    responderPara: jid,
+    ...(audioCru && baixarMidia
+      ? {
+          audio: {
+            tipoMime: audioCru.mimetype ?? 'audio/ogg',
+            baixar: () => baixarMidia(cru),
+          },
+        }
+      : {}),
+  };
 }

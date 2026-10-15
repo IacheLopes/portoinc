@@ -65,6 +65,13 @@ export async function limparDados(): Promise<void> {
 
   await banco.$executeRawUnsafe(`
     TRUNCATE TABLE
+      -- O assistente do WhatsApp, acrescentado em 14/10/2026. Sem
+      -- estas tres, um teste que cria grupo ou liga o cerebro
+      -- deixa o rastro para o proximo — e o proximo quebra por
+      -- chave repetida, sozinho, sem ninguem ter mexido nele.
+      mensagens_whatsapp,
+      grupos_whatsapp,
+      configuracao_ia,
       lancamentos_financeiros,
       sessoes,
       usuarios_funcoes,

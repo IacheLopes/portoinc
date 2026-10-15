@@ -33,6 +33,8 @@ import { rotasConfiguracaoEmail } from './rotas/configuracao-email.js';
 import { recarregar as recarregarEmail } from './servicos/configuracao-email.js';
 import { conferirPartida } from './servicos/diario-whatsapp.js';
 import { integracoes } from './integracoes/index.js';
+import { ligarAssistente } from './servicos/atendimento.js';
+import { recarregar as recarregarIA } from './servicos/configuracao-ia.js';
 import { rotasEqualizacao } from './rotas/equalizacao.js';
 import { rotasRecebimentos } from './rotas/recebimentos.js';
 import { rotasEstoque } from './rotas/estoque.js';
@@ -40,6 +42,7 @@ import { rotasFiscal } from './rotas/fiscal.js';
 import { rotasLancamentos } from './rotas/lancamentos.js';
 import { rotasWhatsApp } from './rotas/whatsapp.js';
 import { rotasEmail } from './rotas/email.js';
+import { rotasIA } from './rotas/ia.js';
 import { rotasRelatorios } from './rotas/relatorios.js';
 import { rotasLocacao } from './rotas/locacao.js';
 
@@ -180,6 +183,7 @@ export async function criarApp(): Promise<FastifyInstance> {
   await app.register(rotasLancamentos);
   await app.register(rotasWhatsApp);
   await app.register(rotasEmail);
+  await app.register(rotasIA);
   await app.register(rotasRelatorios);
   await app.register(rotasLocacao);
   await app.register(rotasPortal);
@@ -225,7 +229,22 @@ export async function criarApp(): Promise<FastifyInstance> {
       //  aqui: sem isto, cada reinício voltaria para o `.env`.
       await recarregarEmail();
 
+      //  E o cerebro da IA: nome, instrucoes, modelo e as chaves
+      //  de ligar vem da Area IA, nao do codigo.
+      await recarregarIA();
+
       await conferirPartida(integracoes.whatsapp.situacao().estado);
+
+      //  3. O ASSISTENTE PASSA A OUVIR.
+      //
+      //  Antes de retomar a sessao, de proposito: assim nenhuma
+      //  mensagem que chegue durante a reconexao passa batido por
+      //  o ouvido ainda nao estar ligado.
+      //
+      //  Quem ele atende e o numero que leu o QR — qualquer um.
+      //  Nao ha numero no codigo.
+      ligarAssistente();
+
       await integracoes.whatsapp.retomarSessao?.();
     })().catch(() => {
       //  WhatsApp fora do ar não impede o sistema de subir: o

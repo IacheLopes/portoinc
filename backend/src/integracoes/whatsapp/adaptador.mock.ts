@@ -58,6 +58,22 @@ export class AdaptadorWhatsAppMock implements PortaWhatsApp {
   }
 
   async enviar(mensagem: MensagemWhatsApp): Promise<ResultadoEnvio> {
+    //  DESCONECTADO RECUSA, como o de verdade.
+    //
+    //  Ate 14/10/2026 este simulado dizia "enviei" em qualquer
+    //  situacao — inclusive desligado. Dublê que nunca falha
+    //  esconde justamente a falha mais comum, que e o WhatsApp
+    //  cair no meio do expediente. A prova de ponta a ponta nao
+    //  conseguia nem descrever esse caso.
+    if (this.conexao !== 'conectado') {
+      return {
+        sucesso: false,
+        erro: 'WhatsApp não está conectado (simulado).',
+        adaptador: this.nome,
+        enviadoEm: new Date(),
+      };
+    }
+
     const resultado: ResultadoEnvio = {
       sucesso: true,
       idMensagem: 'mock-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),

@@ -35,27 +35,21 @@ async function iniciar() {
   //  — subir para produção sem as linhas no `.env` e demorar uma
   //  manhã para entender por quê. Esta linha cobra esse preço no
   //  primeiro segundo.
+  //  O E-MAIL NÃO APARECE AQUI porque não tem mais trava: ela saiu
+  //  em 12/10/2026. Ver o comentário em `servicos/email.ts`.
   const travaWhats = ambiente.WHATSAPP_MODO_TESTE !== 'false';
-  const travaEmail = ambiente.EMAIL_MODO_TESTE !== 'false';
 
-  app.log.info('  Travas de teste:');
   app.log.info(
-    '    - WhatsApp: ' +
+    '  Trava de teste do WhatsApp: ' +
       (travaWhats
         ? 'LIGADA — só sai para número autorizado'
         : 'desligada — sai para qualquer número'),
   );
-  app.log.info(
-    '    - E-mail:   ' +
-      (travaEmail
-        ? 'LIGADA — só sai para endereço autorizado'
-        : 'desligada — sai para qualquer endereço'),
-  );
 
-  if (travaWhats || travaEmail) {
+  if (travaWhats) {
     app.log.warn(
       '  ATENÇÃO: com a trava ligada o fornecedor NÃO recebe. ' +
-        'Em produção, ponha WHATSAPP_MODO_TESTE=false e EMAIL_MODO_TESTE=false no .env.',
+        'Em produção, ponha WHATSAPP_MODO_TESTE=false no .env.',
     );
   }
 

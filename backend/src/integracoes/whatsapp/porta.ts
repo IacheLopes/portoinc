@@ -60,6 +60,45 @@ export interface SituacaoWhatsApp {
   detalhe: string | null;
 }
 
+/** Uma mensagem que CHEGOU. */
+export interface MensagemRecebida {
+  /**
+   * Numero de QUEM FALOU, so digitos.
+   *
+   * Em grupo isto NAO e o grupo: e o participante. A identidade
+   * de quem pergunta e sempre de uma pessoa, nunca de uma sala.
+   */
+  de: string;
+  texto: string;
+  /** Identificador no provedor, para nao processar duas vezes. */
+  idMensagem: string;
+  /** Nome que a pessoa usa no WhatsApp, quando ele informa. */
+  nomeDeExibicao?: string;
+  recebidaEm: Date;
+
+  /** O grupo de onde veio, ou null quando e conversa privada. */
+  grupo: { jid: string; nome?: string } | null;
+
+  /** Para onde a resposta volta: o grupo, ou a pessoa. */
+  responderPara: string;
+
+  /**
+   * Saiu do PROPRIO numero conectado.
+   *
+   * Pode ser duas coisas muito diferentes: a resposta que o
+   * sistema acabou de mandar (e ai responder seria laco), ou o
+   * dono do celular digitando — que e gente da empresa e tem todo
+   * direito de perguntar. Quem separa as duas e o `atendimento`.
+   */
+  deMim: boolean;
+
+  /** E a conversa do numero consigo mesmo ("Mensagem para mim"). */
+  comigoMesmo: boolean;
+
+  /** Audio esperando transcricao. */
+  audio?: { baixar: () => Promise<Buffer | null>; tipoMime: string };
+}
+
 export interface PortaWhatsApp {
   readonly nome: string;
   conectar(): Promise<void>;
@@ -92,4 +131,43 @@ export interface PortaWhatsApp {
    * implementa.
    */
   retomarSessao?(): Promise<void>;
+
+  /**
+   * Avisa a cada mensagem que CHEGA.
+   *
+   * O ASSISTENTE ATENDE NO NUMERO QUE LEU O QR — seja ele qual
+   * for. Nao ha numero escrito em lugar nenhum do codigo: quem
+   * decide e a sessao conectada. Trocou o QR, trocou o atendente,
+   * e nada precisa ser reconfigurado.
+   *
+   * O QUE NAO CHEGA AQUI, e cada uma destas e uma brecha fechada:
+   *
+   *   · as proprias mensagens do numero conectado. Sem isto o
+   *     assistente responderia a si mesmo, em circulo, para
+   *     sempre;
+   *   · grupo. Um robo respondendo em grupo e spam, e o grupo
+   *     costuma nao ser da empresa;
+   *   · status e transmissao, que nao sao conversa;
+   *   · o que nao e texto. Audio, figurinha e foto ficam
+   *     registrados, mas nao viram pergunta.
+   *
+   * Opcional: adaptador que nao recebe (o simulado, a API
+   * oficial por enquanto) simplesmente nao implementa.
+   */
+  aoReceber?(ouvinte: (mensagem: MensagemRecebida) => void): void;
+
+  /**
+   * O nome do grupo, perguntado ao provedor.
+   *
+   * Nao vem na mensagem: o que chega e o JID, um numero enorme que
+   * nao diz nada a ninguem. Sem isto a tela lista "Grupo sem nome"
+   * e quem administra tem de adivinhar qual liberar.
+   */
+  nomeDoGrupo?(jid: string): Promise<string | null>;
+
+  /**
+   * Os grupos de que a conta participa, para a tela oferecer a
+   * escolha. Adaptador que nao sabe listar devolve vazio.
+   */
+  listarGrupos?(): Promise<Array<{ jid: string; nome: string | null }>>;
 }
