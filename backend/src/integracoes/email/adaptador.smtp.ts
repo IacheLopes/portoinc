@@ -42,6 +42,17 @@ export interface DadosSmtp {
   senha: string;
   /** De onde a mensagem sai. Normalmente igual ao usuário. */
   remetente: string;
+  /**
+   * O nome que aparece no lugar do endereço, na caixa de entrada.
+   *
+   * Sem ele, o fornecedor recebe `natsu15ep@gmail.com` e precisa
+   * adivinhar quem é. Com ele, lê **Porto Inc. — Compras**.
+   *
+   * Conta pessoal de Gmail mandando convite comercial sem nome é
+   * um dos padrões que filtro de spam pontua, e é também o que faz
+   * uma pessoa não abrir.
+   */
+  nomeRemetente?: string;
 }
 
 export class AdaptadorEmailSmtp implements PortaEmail {
@@ -49,7 +60,22 @@ export class AdaptadorEmailSmtp implements PortaEmail {
 
   private transportador: Transportador | null = null;
 
-  constructor(private readonly dados: DadosSmtp) {}
+  /**
+   * A biblioteca entra pelo construtor, e só nas provas.
+   *
+   * Sem isto não havia como conferir o que vai no envelope — o
+   * nome do remetente, o `Reply-To` e a parte HTML — sem abrir
+   * conexão com um servidor de e-mail de verdade. E é exatamente o
+   * tipo de coisa que quebra calada: a mensagem sai, ninguém vê
+   * erro, e o fornecedor recebe um endereço cru sem nome.
+   *
+   * Em produção fica `undefined` e o `import('nodemailer')`
+   * acontece como sempre.
+   */
+  constructor(
+    private readonly dados: DadosSmtp,
+    private readonly biblioteca?: Nodemailer,
+  ) {}
 
   remetente(): string | null {
     return this.pronto() ? this.dados.remetente : null;
@@ -72,11 +98,13 @@ export class AdaptadorEmailSmtp implements PortaEmail {
   private async obter(): Promise<Transportador> {
     if (this.transportador) return this.transportador;
 
-    const lib = (await import('nodemailer')) as unknown as {
-      default?: Nodemailer;
-    } & Nodemailer;
+    const lib =
+      this.biblioteca ??
+      ((await import('nodemailer')) as unknown as {
+        default?: Nodemailer;
+      } & Nodemailer);
 
-    const nodemailer = lib.default ?? lib;
+    const nodemailer = (lib as { default?: Nodemailer }).default ?? (lib as Nodemailer);
 
     this.transportador = nodemailer.createTransport({
       host: this.dados.host,
@@ -107,10 +135,26 @@ export class AdaptadorEmailSmtp implements PortaEmail {
       const transportador = await this.obter();
 
       const enviada = await transportador.sendMail({
-        from: this.dados.remetente,
+        //  COM NOME, quando houver. O nodemailer monta o
+        //  `Nome <endereco>` sozinho a partir deste par — fazer a
+        //  string na mão quebra em nome com acento ou com vírgula.
+        from: this.dados.nomeRemetente
+          ? { name: this.dados.nomeRemetente, address: this.dados.remetente }
+          : this.dados.remetente,
         to: email.para,
         subject: email.assunto,
         text: email.corpo,
+        //  As DUAS versões, quando a de HTML existe. O nodemailer
+        //  monta `multipart/alternative` ao receber `text` e `html`
+        //  juntos, e cada programa escolhe a que sabe mostrar.
+        ...(email.corpoHtml ? { html: email.corpoHtml } : {}),
+        //  PARA ONDE VAI A RESPOSTA.
+        //
+        //  Sem isto, responder cai no endereço que autenticou no
+        //  SMTP — que pode não ser o do setor de compras. O ganho
+        //  contra spam é pequeno; o ganho é o fornecedor conseguir
+        //  responder e alguém ler.
+        replyTo: this.dados.remetente,
         attachments: (email.anexos ?? []).map((a) => ({
           filename: a.nomeArquivo,
           content: a.conteudo,

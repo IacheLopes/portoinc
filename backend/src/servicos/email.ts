@@ -36,6 +36,58 @@ export interface RespostaDeEmail {
 }
 
 /**
+ * O MESMO texto, em HTML.
+ *
+ * Não é uma segunda mensagem: é a mesma, para o e-mail sair em
+ * `multipart/alternative`. Mensagem só-texto é minoria no mundo
+ * real, e filtro de spam pontua o que é incomum.
+ *
+ * Deliberadamente simples. Um modelo com logotipo, tabela e botão
+ * colorido pesa MAIS contra a entrega do que a falta de HTML: é o
+ * desenho do e-mail promocional, e é o que os filtros aprenderam a
+ * olhar com desconfiança. Aqui é uma fonte legível, o texto que a
+ * pessoa já receberia, e os links clicáveis.
+ *
+ * `escapar()` vem antes de tudo: o corpo carrega nome de
+ * fornecedor e título de cotação, que são texto digitado por
+ * gente. Um `<` solto quebraria a mensagem no cliente de e-mail.
+ */
+export function htmlDoTexto(texto: string): string {
+  const escapar = (t: string) =>
+    t
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  //  Os links viram clicáveis. O texto puro já os mostra inteiros;
+  //  aqui eles ganham o `<a>` — e o endereço continua visível, em
+  //  vez de virar "clique aqui". Link escondido atrás de texto é
+  //  outro padrão que conta contra a entrega.
+  const comLinks = escapar(texto).replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" style="color:#1a5f9e">$1</a>',
+  );
+
+  //  Parágrafo por linha em branco, quebra simples dentro deles.
+  const paragrafos = comLinks
+    .split(/\n{2,}/)
+    .map((p) => '<p style="margin:0 0 16px">' + p.replace(/\n/g, '<br>') + '</p>')
+    .join('');
+
+  return (
+    '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+    '<body style="margin:0;padding:24px;background:#f5f5f5">' +
+    '<div style="max-width:600px;margin:0 auto;padding:24px;background:#ffffff;' +
+    'border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;' +
+    'line-height:1.6;color:#222222">' +
+    paragrafos +
+    '</div></body></html>'
+  );
+}
+
+/**
  * Formato de endereço, sem exagero.
  *
  * Validar e-mail por expressão regular ao pé da letra é um poço
@@ -152,6 +204,14 @@ export async function enviarPorEmail(pedido: PedidoDeEmail): Promise<RespostaDeE
     para: endereco,
     assunto: pedido.assunto,
     corpo: pedido.corpo,
+    //  A VERSÃO HTML NASCE AQUI, e não em cada tela.
+    //
+    //  É o mesmo motivo de esta função existir: há uma porta só.
+    //  Gerar o HTML aqui dá a parte HTML ao convite de cotação, ao
+    //  pedido de compra, ao link de senha e ao teste de envio de
+    //  uma vez — sem reescrever quatro corpos de mensagem e sem
+    //  deixar um deles para trás.
+    corpoHtml: htmlDoTexto(pedido.corpo),
     anexos: pedido.anexos,
   });
 

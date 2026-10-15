@@ -22,7 +22,7 @@ import { AdaptadorEmailConfiguravel } from './adaptador.configuravel.js';
 const UM_EMAIL = {
   para: 'fornecedor@exemplo.com.br',
   assunto: 'Convite para cotação',
-  texto: 'Você foi convidado a cotar.',
+  corpo: 'Você foi convidado a cotar.',
 };
 
 describe('O e-mail desligado', () => {

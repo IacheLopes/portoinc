@@ -30,6 +30,18 @@ import { AdaptadorEmailResend } from './adaptador.resend.js';
 import { configuracaoAtual } from '../../servicos/configuracao-email.js';
 import { AdaptadorEmailSmtp } from './adaptador.smtp.js';
 
+/**
+ * O nome que o fornecedor lê na caixa de entrada.
+ *
+ * Fica numa constante, e não num campo de tela, porque o sistema é
+ * de UMA empresa: um campo para digitar "Porto Inc." seria uma
+ * pergunta cuja resposta já se sabe, e mais uma coisa para alguém
+ * deixar em branco.
+ *
+ * Vira campo no dia em que o sistema atender mais de uma empresa.
+ */
+const NOME_NA_CAIXA_DE_ENTRADA = 'Porto Inc. — Compras';
+
 export class AdaptadorEmailConfiguravel implements PortaEmail {
   /**
    * O nome muda conforme quem vai atender.
@@ -80,6 +92,7 @@ export class AdaptadorEmailConfiguravel implements PortaEmail {
             usuario: config.smtp.usuario,
             senha: config.chave,
             remetente: config.remetente,
+            nomeRemetente: NOME_NA_CAIXA_DE_ENTRADA,
           }),
         };
       }

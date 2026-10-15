@@ -19,8 +19,25 @@ export interface Email {
   /** Um endereco so. Lista de destinatarios vira uma chamada cada. */
   para: string;
   assunto: string;
-  /** Texto puro. Nada de HTML: menos chance de cair em caixa de spam. */
+  /** Texto puro. E a versao que vale: toda mensagem tem esta. */
   corpo: string;
+  /**
+   * A MESMA mensagem em HTML, quando houver.
+   *
+   * Aqui estava escrito "nada de HTML: menos chance de cair em
+   * caixa de spam", e era CRENCA ERRADA — do tipo que custa caro,
+   * porque soa prudente. Mensagem so-texto e minoria no mundo
+   * real, e filtro de spam pontua o que e incomum: um e-mail
+   * transacional sem parte HTML parece script, nao parece empresa.
+   *
+   * O certo e `multipart/alternative`: as duas versoes juntas, e
+   * cada programa de e-mail escolhe a que sabe mostrar. Quem le em
+   * texto puro continua lendo igual.
+   *
+   * Descoberto em 15/10/2026, quando o e-mail de teste caiu na
+   * caixa de spam dele.
+   */
+  corpoHtml?: string;
   anexos?: AnexoEmail[];
 }
 

@@ -1,8 +1,30 @@
+// ============================================================
+//  Conferencia de tipos, INCLUINDO as provas
+//
+//  O `exclude` do tsconfig.json derruba `**/*.test.ts` e a pasta
+//  `testes` — e `exclude` GANHA de `include`. O resultado e que
+//  este arquivo listava os testes no `include` e o tsc nao olhava
+//  nenhum deles: `npm run tipos` dizia "ok" sem ter aberto as
+//  cerca de quarenta provas do projeto.
+//
+//  Achado em 15/10/2026, pelo caminho mais humilhante: uma prova
+//  minha, escrita no mesmo dia, passava um campo `texto` onde a
+//  porta pede `corpo`. O teste ficava verde porque o adaptador
+//  desligado ignora o argumento, e o tipo errado nunca foi
+//  conferido por ninguem.
+//
+//  Reabrir custou TRES erros, os tres dessa mesma prova. O resto
+//  do projeto ja estava limpo — o buraco escondia pouco, mas
+//  escondia justamente o que acabou de entrar.
+// ============================================================
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "testes/**/*.ts", "prisma/**/*.ts"]
+  "include": ["src/**/*.ts", "testes/**/*.ts", "prisma/**/*.ts"],
+  //  Repetido de proposito: sem esta linha vale o `exclude` do
+  //  arquivo estendido, e os testes saem da conferencia outra vez.
+  "exclude": ["node_modules", "dist"]
 }
