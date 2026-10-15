@@ -2218,3 +2218,136 @@ input[type='file'].campo__entrada {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   ÁREA IA — as linhas com ação à direita
+
+   Nome próprio, e não emprestado de `.conta-da-lista`, que já
+   existia e faria o mesmo: classe emprestada amarra duas telas
+   que não têm nada a ver uma com a outra, e a primeira mudança
+   numa quebra a outra sem aviso.
+   ============================================================ */
+.lista-ia {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha-ia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-4) 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+/* O último não precisa de risco: não há nada depois dele. */
+.linha-ia:last-child { border-bottom: 0; }
+
+.linha-ia--coluna {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-2);
+}
+
+.linha-ia__titulo {
+  margin: 0 0 var(--esp-1);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+
+.linha-ia__selos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+/* A linha de texto não pode esticar até a outra margem da tela:
+   passando de ~80 caracteres o olho perde a volta. */
+.linha-ia--coluna > p { max-width: 70ch; margin: 0; }
+
+/* O FIO QUE SEPARA O QUE SE ADICIONA DO QUE JÁ ESTÁ ADICIONADO.
+
+   Mesma régua do `.conexao__tempos`, e pelo mesmo motivo: é a
+   única divisória do bloco, então ela significa alguma coisa.
+   Antes eram dois cartões encostados — e dois cartões colados
+   parecem um cartão quebrado ao meio. */
+.lista-ia--com-fio {
+  margin-top: var(--esp-5);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--borda);
+}
+
+/* ============================================================
+   ÁREA IA — o próximo passo, e os ajustes recolhidos
+   ============================================================ */
+
+/* O PRÓXIMO PASSO MORA DENTRO DO CARTÃO DE ESTADO.
+
+   Era uma seção inteira com seis linhas, quatro delas verdes.
+   Lista de coisas certas não ajuda ninguém a agir: aqui sobrou
+   uma frase, do lado da ação que a resolve. */
+.ia-passo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: var(--esp-4) 0 0;
+  padding-top: var(--esp-4);
+  border-top: 1px solid var(--borda);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+/* O aviso que explica a decisão PRECISA de ar antes do campo que
+   a executa. Colados, parecem rótulo de campo — e um aviso que
+   parece rótulo não é lido. */
+.ia-nota {
+  max-width: 70ch;
+  margin: 0 0 var(--esp-5);
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+}
+
+/* OS AJUSTES TÉCNICOS, FECHADOS POR PADRÃO.
+
+   Primeiro `<details>` do sistema. O elemento nativo em vez de um
+   acordeão inventado: abre sem JavaScript, funciona no teclado e
+   o navegador já sabe anunciá-lo para quem usa leitor de tela. */
+.ia-ajustes__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: 44px;
+  color: var(--texto-secundario);
+  font-size: var(--txt-sm);
+  font-weight: var(--peso-forte);
+  cursor: pointer;
+  list-style: none;
+}
+
+/* O triângulo padrão do navegador muda de desenho em cada um.
+   Este é nosso, e gira ao abrir. */
+.ia-ajustes__titulo::-webkit-details-marker { display: none; }
+
+.ia-ajustes__titulo::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 150ms ease;
+}
+
+.ia-ajustes[open] .ia-ajustes__titulo::before { transform: rotate(90deg); }
+
+.ia-ajustes__titulo:hover { color: var(--texto); }
+
+/* Quem pede para não ver movimento não vê nem este. */
+@media (prefers-reduced-motion: reduce) {
+  .ia-ajustes__titulo::before { transition: none; }
+}

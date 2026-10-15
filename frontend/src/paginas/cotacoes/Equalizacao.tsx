@@ -217,26 +217,53 @@ export function Equalizacao() {
   ).length;
 
   if (c.fornecedores.length === 0) {
+    //  O VAZIO TAMBÉM PRECISA DIZER ONDE A PESSOA ESTÁ.
+    //
+    //  Antes esta volta devolvia só o aviso, solto: sem título,
+    //  sem trilha e sem caminho de volta. Quem abria a equalização
+    //  antes da primeira resposta caía numa página órfã, diferente
+    //  de todas as outras do sistema.
+    //
+    //  Encontrado em 12/10/2026, com uma cotação recém-aberta —
+    //  exatamente o estado de quem está montando a primeira compra.
     return (
-      <section className="secao">
-        <Vazio
-          titulo="Nenhum fornecedor respondeu ainda"
-          descricao="O comparativo aparece assim que chegar a primeira cotação."
-        />
-      </section>
+      <>
+        <section className="secao">
+          <CabecalhoDePagina
+            titulo="Equalização"
+            marcadores={
+              <Selo tipo={COR_SITUACAO_BID[cotacao.situacao]}>
+                {ROTULO_SITUACAO_BID[cotacao.situacao]}
+              </Selo>
+            }
+            descricao={
+              <>
+                {cotacao.numeroFormatado} · {cotacao.titulo} ·{' '}
+                {cotacao.totalResponderam} de {cotacao.totalConvidados} fornecedores responderam
+              </>
+            }
+          />
+
+          <Vazio
+            titulo="Nenhum fornecedor respondeu ainda"
+            descricao="O comparativo aparece assim que chegar a primeira cotação."
+          />
+        </section>
+      </>
     );
   }
 
   return (
     <>
       <section className="secao">
-        <nav className="migalhas" aria-label="Você está em">
-          <Link to="/cotacoes">Cotações</Link>
-          <span aria-hidden="true">›</span>
-          <Link to={'/cotacoes/' + id}>{cotacao.numeroFormatado}</Link>
-          <span aria-hidden="true">›</span>
-          <span aria-current="page">Equalização</span>
-        </nav>
+        {/*  A TRILHA DESTA PAGINA SAIU EM 12/10/2026.
+
+             Ela era a unica do sistema: as outras 42 telas se
+             apoiam na trilha do layout, que ja diz
+             "Inicio > Compras > Cotacoes > Pacote de cotacao >
+             Equalizacao" e ainda traz o "Voltar". Com as duas, a
+             tela abria com DOIS caminhos empilhados, um por cima
+             do outro.  */}
 
         <CabecalhoDePagina
           titulo="Equalização"

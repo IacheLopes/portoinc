@@ -29,7 +29,7 @@ import { PrismaClient } from '@prisma/client';
 
 const banco = new PrismaClient();
 const BASE = process.env.API_URL ?? 'http://localhost:3000';
-const SENHA = 'Porto@2026';
+const SENHA = 'admin123';
 
 interface Resposta {
   status: number;

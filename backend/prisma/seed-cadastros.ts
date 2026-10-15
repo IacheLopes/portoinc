@@ -69,6 +69,14 @@ const FORNECEDORES = [
   { razao: 'Constrular Depósito de Materiais Ltda', fantasia: 'Constrular', cnpj: '47960950000121', cidade: 'São Paulo', uf: 'SP', email: 'atendimento@constrular.com.br', whatsapp: '550090000004', familias: ['CIM', 'AGR', 'PIN', 'REV'] },
   { razao: 'Segurança Total EPI Comércio Ltda', fantasia: 'Segurança Total', cnpj: '60746948000112', cidade: 'Barueri', uf: 'SP', email: 'vendas@segurancatotal.com.br', whatsapp: '550090000005', familias: ['EPI'] },
   { razao: 'LocaMaq Locação de Equipamentos Ltda', fantasia: 'LocaMaq', cnpj: '02558157000162', cidade: 'São Paulo', uf: 'SP', email: 'locacao@locamaq.com.br', whatsapp: '550090000006', familias: ['LOC'] },
+  //  Os quatro abaixo entraram em 12/10/2026, para a demonstração
+  //  ao cliente. Cobrem as famílias que ficavam sem NENHUM
+  //  fornecedor — e família sem fornecedor não aparece na hora de
+  //  montar a cotação, que é onde a tela parecia quebrada.
+  { razao: 'Tintas Coral Vale Comércio Ltda', fantasia: 'Coral Vale', cnpj: '27194088000186', cidade: 'Diadema', uf: 'SP', email: 'vendas@coralvale.com.br', whatsapp: '550090000007', familias: ['PIN'] },
+  { razao: 'Aço Forte Distribuidora de Ferro e Aço Ltda', fantasia: 'Aço Forte', cnpj: '38452217000105', cidade: 'Mauá', uf: 'SP', email: 'comercial@acoforte.com.br', whatsapp: '550090000008', familias: ['ACO', 'CIM'] },
+  { razao: 'Revest Brasil Pisos e Revestimentos Ltda', fantasia: 'Revest Brasil', cnpj: '46301759000105', cidade: 'Santo André', uf: 'SP', email: 'pedidos@revestbrasil.com.br', whatsapp: '550090000009', familias: ['REV', 'PIN'] },
+  { razao: 'Empreiteira Vila Nova Serviços de Construção Ltda', fantasia: 'Vila Nova Serviços', cnpj: '52983644000140', cidade: 'São Paulo', uf: 'SP', email: 'contato@vilanovaservicos.com.br', whatsapp: '550090000010', familias: ['SER'] },
 ];
 
 const OBRAS = [

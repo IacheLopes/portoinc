@@ -145,3 +145,21 @@ export function fimDoDiaBr(data: string | Date): Date {
   const DIA = 24 * 60 * 60 * 1000;
   return new Date(inicioDoDiaBr(data).getTime() + DIA - 1);
 }
+
+/**
+ * A hora, no fuso de Brasília: "14h07".
+ *
+ * Nasceu para o assistente do WhatsApp. Modelo de linguagem não
+ * tem relógio: sem isto ele dá "bom dia" às onze da noite, e erra
+ * qualquer conta de "esta semana" ou "já passou do prazo".
+ */
+export function horaBr(valor: Date = new Date()): string {
+  return valor
+    .toLocaleTimeString('pt-BR', { timeZone: FUSO, hour: '2-digit', minute: '2-digit' })
+    .replace(':', 'h');
+}
+
+/** "terça-feira", no fuso de Brasília. */
+export function diaDaSemanaBr(valor: Date = new Date()): string {
+  return valor.toLocaleDateString('pt-BR', { timeZone: FUSO, weekday: 'long' });
+}

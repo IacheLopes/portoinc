@@ -13,7 +13,7 @@ import { hash, Algorithm } from '@node-rs/argon2';
 
 const banco = new PrismaClient();
 
-const SENHA_PADRAO = 'Porto@2026';
+const SENHA_PADRAO = 'admin123';
 
 /** Nomes reais citados na reunião: ajuda a testar pensando nas pessoas. */
 const PESSOAS: Array<{
@@ -83,7 +83,6 @@ const PESSOAS: Array<{
   {
     nome: 'DEV-Porto',
     email: 'porto@dev.com',
-    senha: 'admin123',
     funcoes: [
       // DESENVOLVEDOR É O QUE ABRE "STATUS DO SISTEMA".
       //
@@ -159,7 +158,6 @@ async function principal() {
   console.log('  [seed] Contas de teste: ' + criados + ' criadas, ' + existentes + ' já existiam.');
   if (criados > 0) {
     console.log('  [seed] Senha de todas: ' + SENHA_PADRAO);
-    console.log('  [seed] Menos a conta DEV (porto@dev.com), que tem senha própria.');
   }
   console.log('');
 }
