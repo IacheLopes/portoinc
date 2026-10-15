@@ -17,17 +17,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  buscarSituacaoEmail, listarEmailsAutorizados, autorizarEmail, removerEmailAutorizado,
-  enviarEmailDeTeste,
+  buscarSituacaoEmail, enviarEmailDeTeste,
   buscarConfiguracaoDeEmail, ligarEmail, desligarEmail,
-  type SituacaoEmail, type EmailAutorizado, type ConfiguracaoDeEmail,
+  type SituacaoEmail, type ConfiguracaoDeEmail,
 } from '../../servicos/email';
 import { dataHoraBr } from '../../servicos/solicitacoes';
 import { ErroApi } from '../../servicos/api';
 import { Campo, Selecao } from '../../componentes/Campo';
-import { Carregando, Erro, Vazio } from '../../componentes/Estado';
+import { Carregando, Erro } from '../../componentes/Estado';
 import { Cartao } from '../../componentes/Cartao';
-import { TabelaArea } from '../../componentes/TabelaArea';
 import { Icone } from '../../componentes/Icone';
 
 /**
@@ -58,7 +56,6 @@ const AJUDA_DO_CAMINHO: Record<string, string> = {
 
 export function ConfiguracaoEmail() {
   const [situacao, setSituacao] = useState<SituacaoEmail | null>(null);
-  const [autorizados, setAutorizados] = useState<EmailAutorizado[]>([]);
 
   const [config, setConfig] = useState<ConfiguracaoDeEmail | null>(null);
   const [remetente, setRemetente] = useState('');
@@ -83,11 +80,6 @@ export function ConfiguracaoEmail() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
-  // Cadastro de endereço autorizado.
-  const [email, setEmail] = useState('');
-  const [nome, setNome] = useState('');
-  const [observacao, setObservacao] = useState('');
-
   // Envio de teste.
   const [paraTeste, setParaTeste] = useState('');
   const [assuntoTeste, setAssuntoTeste] = useState('');
@@ -96,13 +88,11 @@ export function ConfiguracaoEmail() {
     setCarregando(true);
     setErro(null);
     try {
-      const [s, a, c] = await Promise.all([
+      const [s, c] = await Promise.all([
         buscarSituacaoEmail(),
-        listarEmailsAutorizados(),
         buscarConfiguracaoDeEmail(),
       ]);
       setSituacao(s);
-      setAutorizados(a.autorizados);
       setConfig(c);
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Falha ao carregar a tela de e-mail.');
@@ -134,20 +124,6 @@ export function ConfiguracaoEmail() {
     } finally {
       setOcupado(false);
     }
-  }
-
-  async function adicionarEndereco() {
-    await executar(async () => {
-      const r = await autorizarEmail({
-        email,
-        nome,
-        observacao: observacao || undefined,
-      });
-      setEmail('');
-      setNome('');
-      setObservacao('');
-      return r;
-    });
   }
 
   async function testar() {
@@ -428,13 +404,6 @@ export function ConfiguracaoEmail() {
             </p>
           )}
 
-          {situacao?.modoTeste && podeEnviar && (
-            <p className="conexao__explicacao">
-              Envio restrito: só os endereços da lista abaixo recebem. Qualquer outro é
-              barrado antes de sair.
-            </p>
-          )}
-
           {aviso && (
             <p className="aviso aviso--sucesso" role="status">
               <Icone nome="certo" /> {aviso}
@@ -449,99 +418,21 @@ export function ConfiguracaoEmail() {
         </Cartao>
       </section>
 
-      {/* ---------- Lista de autorizados ---------- */}
-      <section className="secao">
-        <div className="secao__cabecalho">
-          <h2>Endereços autorizados</h2>
-          <p className="secao__descricao">
-            Enquanto o envio estiver restrito, só estes endereços recebem e-mail.
-          </p>
-        </div>
+      {/* A LISTA DE ENDEREÇOS AUTORIZADOS FICAVA AQUI.
 
-        <Cartao>
-          <div className="formulario__linha">
-            <Campo
-              rotulo="E-mail"
-              valor={email}
-              aoMudar={setEmail}
-              tipo="email"
-              exemplo="voce@suaempresa.com.br"
-              obrigatorio
-              ajuda="Comece pelo seu próprio, para testar com segurança."
-            />
-            <Campo
-              rotulo="De quem é"
-              valor={nome}
-              aoMudar={setNome}
-              exemplo="Meu e-mail"
-              obrigatorio
-            />
-            <Campo rotulo="Observação" valor={observacao} aoMudar={setObservacao} maximo={200} />
-          </div>
+          Saiu em 12/10/2026, junto com a trava de teste do
+          e-mail. Ela existia para limitar o envio a endereços
+          liberados enquanto se testava — e, desligada, era um
+          formulário que não fazia nada.
 
-          <div className="formulario__acoes formulario__acoes--fim">
-            <button
-              type="button"
-              className="botao botao--secundario"
-              onClick={() => void adicionarEndereco()}
-              disabled={ocupado || !email || !nome}
-            >
-              Liberar e-mail
-            </button>
-          </div>
-        </Cartao>
+          No WhatsApp a lista equivalente FICOU: lá, depois do QR,
+          o sistema está pronto para disparar, e a lista é a forma
+          rápida de testar sem alcançar fornecedor de verdade.
 
-        {autorizados.length === 0 ? (
-          <Vazio
-            titulo="Nenhum endereço liberado"
-            descricao="Comece liberando o seu próprio e-mail para testar com segurança."
-          />
-        ) : (
-          <Cartao semEspaco>
-            <TabelaArea>
-              <table className="tabela">
-                <caption className="apenas-leitor-tela">Endereços autorizados a receber</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">E-mail</th>
-                    <th scope="col">De quem é</th>
-                    <th scope="col">Observação</th>
-                    <th scope="col">Liberado por</th>
-                    <th scope="col">
-                      <span className="apenas-leitor-tela">Ações</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {autorizados.map((a) => (
-                    <tr key={a.id}>
-                      <th scope="row" className="mono">
-                        {a.emailMascarado}
-                      </th>
-                      <td>{a.nome}</td>
-                      <td className="celula-texto">{a.observacao ?? '—'}</td>
-                      <td className="celula-texto">
-                        {a.criadoPor}
-                        <small className="linha-extra">{dataHoraBr(a.criadoEm)}</small>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="botao botao--discreto"
-                          onClick={() => void executar(() => removerEmailAutorizado(a.id))}
-                          disabled={ocupado}
-                        >
-                          Tirar da lista
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TabelaArea>
-          </Cartao>
-        )}
-      </section>
+          No e-mail o freio é outro: nada sai enquanto ninguém
+          cadastrar um remetente aqui em cima, que é ato
+          deliberado. E para testar basta o campo abaixo, que
+          aceita qualquer destinatário. */}
 
       {/* ---------- Envio de teste ---------- */}
       <section className="secao">

@@ -13,18 +13,7 @@ export interface SituacaoEmail {
   simulado: boolean;
   pronto: boolean;
   remetente: string | null;
-  modoTeste: boolean;
   detalhe: string;
-}
-
-export interface EmailAutorizado {
-  id: string;
-  email: string;
-  emailMascarado: string;
-  nome: string;
-  observacao: string | null;
-  criadoPor: string;
-  criadoEm: string;
 }
 
 export interface EmailDoHistorico {
@@ -51,23 +40,6 @@ export interface RespostaDeEnvio {
 
 export function buscarSituacaoEmail() {
   return chamar<SituacaoEmail>('/api/email/situacao');
-}
-
-export function listarEmailsAutorizados() {
-  return chamar<{ modoTeste: boolean; autorizados: EmailAutorizado[] }>('/api/email/autorizados');
-}
-
-export function autorizarEmail(dados: { email: string; nome: string; observacao?: string }) {
-  return chamar<{ autorizado: EmailAutorizado; mensagem: string }>('/api/email/autorizados', {
-    metodo: 'POST',
-    corpo: dados,
-  });
-}
-
-export function removerEmailAutorizado(id: string) {
-  return chamar<{ ok: boolean; mensagem: string }>('/api/email/autorizados/' + id, {
-    metodo: 'DELETE',
-  });
 }
 
 export function enviarEmailDeTeste(dados: { para: string; assunto?: string; corpo?: string }) {

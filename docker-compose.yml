@@ -96,11 +96,24 @@ services:
       #
       # Achado porque ele perguntou "se eu lancasse hoje, ja
       # funcionaria?" — e a resposta honesta exigiu conferir.
-      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-mock}
+      #
+      # O PADRAO VIROU `desligado` EM 15/10/2026. Era `mock`, e
+      # `mock` MENTE: dizia "enviei" sem nada sair da maquina, e a
+      # tela de Status pintava o e-mail de verde. Quem clonasse o
+      # projeto sem escrever `EMAIL_ADAPTER` no `.env` teria um
+      # sistema que anunciava e-mail funcionando e nao enviava um.
+      # `desligado` recusa o envio e diz onde ligar.
+      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-desligado}
       # Trava de seguranca: com "true", so sai e-mail para endereco
       # que estiver na lista de autorizados.
-      EMAIL_MODO_TESTE: ${EMAIL_MODO_TESTE:-true}
       EMAIL_API_TOKEN: ${EMAIL_API_TOKEN:-}
+      # Assistente de IA no WhatsApp. Sem IA_API_TOKEN ele fica
+      # simulado, e a tela diz o que falta.
+      IA_ADAPTER: ${IA_ADAPTER:-mock}
+      IA_API_TOKEN: ${IA_API_TOKEN:-}
+      IA_MODELO: ${IA_MODELO:-}
+      # Diagnostico temporario do reconhecimento por LID.
+      IA_DIAGNOSTICO: ${IA_DIAGNOSTICO:-false}
       EMAIL_REMETENTE: ${EMAIL_REMETENTE:-}
       FISCAL_ADAPTER: ${FISCAL_ADAPTER}
       PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}

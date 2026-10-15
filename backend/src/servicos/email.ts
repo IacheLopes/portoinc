@@ -73,26 +73,25 @@ export function mascararEmail(email: string): string {
 }
 
 /** O modo de teste está ligado? */
-export function modoTeste(): boolean {
-  return ambiente.EMAIL_MODO_TESTE !== 'false';
-}
-
-/**
- * Confere se o endereço pode receber.
+/*
+ *  A TRAVA DE TESTE DO E-MAIL SAIU EM 12/10/2026.
  *
- * Com o modo de teste ligado, só sai para quem está na lista. Sem
- * ele, sai para qualquer endereço — por isso desligar é decisão
- * consciente, feita no .env.
+ *  Havia aqui `modoTeste()` e `podeEnviarPara()`: com a trava
+ *  ligada, só saía e-mail para endereços de uma lista.
+ *
+ *  O WhatsApp MANTÉM a dele, e a diferença é real: lá, depois de
+ *  ler o QR, o sistema está pronto para disparar para qualquer
+ *  número do cadastro — a lista é a forma rápida de testar sem
+ *  alcançar fornecedor de verdade.
+ *
+ *  No e-mail o freio é outro e já existe: nada sai enquanto
+ *  ninguém cadastrar um remetente pela tela, o que é ato
+ *  deliberado. E para conferir basta o envio de teste, que aceita
+ *  qualquer destinatário.
+ *
+ *  Desligada, a trava virava um formulário na tela que não fazia
+ *  nada — e o texto dele falava de uma restrição inexistente.
  */
-export async function podeEnviarPara(email: string): Promise<boolean> {
-  if (!modoTeste()) return true;
-
-  const autorizado = await banco.emailAutorizado.findUnique({
-    where: { email: email.trim().toLowerCase() },
-  });
-
-  return autorizado !== null;
-}
 
 async function registrar(dados: {
   para: string;
@@ -145,25 +144,6 @@ export async function enviarPorEmail(pedido: PedidoDeEmail): Promise<RespostaDeE
       sucesso: false,
       bloqueado: false,
       mensagem: erro instanceof Error ? erro.message : 'Endereço inválido.',
-      registroId: registro.id,
-    };
-  }
-
-  if (!(await podeEnviarPara(endereco))) {
-    const registro = await registrar({
-      para: endereco,
-      pedido,
-      situacao: 'BLOQUEADA',
-      adaptador: adaptador.nome,
-      erro: 'Endereço fora da lista de autorizados.',
-    });
-
-    return {
-      sucesso: false,
-      bloqueado: true,
-      mensagem:
-        'O envio está restrito e ' + mascararEmail(endereco) +
-        ' não está na lista de autorizados. Nada foi enviado.',
       registroId: registro.id,
     };
   }

@@ -59,7 +59,7 @@ export function StatusSistema() {
   if (!status) return null;
 
   const memoriaPorcento = Math.round((status.memoria.usadaMb / status.memoria.limiteMb) * 100);
-  const integracoesReais = status.integracoes.filter((i) => !i.simulado).length;
+  const integracoesReais = status.integracoes.filter((i) => !i.simulado && i.pronto).length;
 
   return (
     <>
@@ -147,10 +147,17 @@ export function StatusSistema() {
                     <td>{item.descricao}</td>
                     <td className="mono">{item.adaptador}</td>
                     <td>
+                      {/*  TRES ESTADOS, nao dois.
+
+                           "Nao simulado" nao quer dizer ligado: o
+                           e-mail sem conta cadastrada nao finge
+                           nada, e aparecia como ATIVO. */}
                       {item.simulado ? (
                         <Selo tipo="atencao">Simulado</Selo>
-                      ) : (
+                      ) : item.pronto ? (
                         <Selo tipo="sucesso">Ativo</Selo>
+                      ) : (
+                        <Selo tipo="atencao">Desligado</Selo>
                       )}
                     </td>
                   </tr>

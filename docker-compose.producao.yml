@@ -72,9 +72,18 @@ services:
       #
       # Achado porque ele pediu para conferir se sobrou trava antes
       # de subir. Sobrou, e era a pior: a do arquivo de producao.
-      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-mock}
-      EMAIL_MODO_TESTE: ${EMAIL_MODO_TESTE:-true}
+      #
+      # O PADRAO VIROU `desligado` EM 15/10/2026, e aqui importa
+      # mais que no desenvolvimento: um servidor de producao que
+      # cai no `mock` anuncia e-mail no ar e nao entrega convite de
+      # cotacao nenhum, sem erro em log nem aviso em tela.
+      EMAIL_ADAPTER: ${EMAIL_ADAPTER:-desligado}
       EMAIL_API_TOKEN: ${EMAIL_API_TOKEN:-}
+      # Assistente de IA no WhatsApp. Sem IA_API_TOKEN ele fica
+      # simulado, e a tela diz o que falta.
+      IA_ADAPTER: ${IA_ADAPTER:-mock}
+      IA_API_TOKEN: ${IA_API_TOKEN:-}
+      IA_MODELO: ${IA_MODELO:-}
       EMAIL_REMETENTE: ${EMAIL_REMETENTE:-}
       FISCAL_ADAPTER: ${FISCAL_ADAPTER}
       PAGAMENTO_ADAPTER: ${PAGAMENTO_ADAPTER}

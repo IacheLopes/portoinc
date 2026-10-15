@@ -1,10 +1,10 @@
 // ============================================================
-//  E-mail: lista de autorizados, histórico e envios
+//  E-mail: histórico e envios
 //
 //  O fluxo de compras manda o pedido sair "por e-mail/WhatsApp".
-//  Esta é a metade do e-mail, com a mesma trava do WhatsApp:
-//  enquanto o modo de teste está ligado, só sai para quem está
-//  na lista.
+//  Esta é a metade do e-mail, e ela NÃO tem trava de teste: o
+//  e-mail sai para qualquer endereço. O que segura o envio é não
+//  haver remetente configurado — ver `servicos/email.ts`.
 // ============================================================
 
 import type { FastifyInstance } from 'fastify';
@@ -17,14 +17,8 @@ import { formatarNumeroBid } from '../servicos/cotacao.js';
 import { prepararPedidoParaEnvio, marcarPedidoComoEnviado } from '../servicos/envio-pedido.js';
 import { dataBr } from '../servicos/data-br.js';
 import {
-  enviarPorEmail, modoTeste, mascararEmail, normalizarEmail,
+  enviarPorEmail, mascararEmail,
 } from '../servicos/email.js';
-
-const esquemaAutorizado = z.object({
-  email: textoObrigatorio(5, 'O e-mail'),
-  nome: textoObrigatorio(2, 'O nome'),
-  observacao: textoOpcional(200),
-});
 
 const esquemaTeste = z.object({
   para: textoObrigatorio(5, 'O e-mail'),
@@ -113,7 +107,6 @@ export async function rotasEmail(app: FastifyInstance) {
       simulado: integracoes.email.nome === 'mock',
       pronto: integracoes.email.pronto(),
       remetente: integracoes.email.remetente(),
-      modoTeste: modoTeste(),
       detalhe:
         integracoes.email.nome === 'mock'
           ? 'Todos ficam registrados aqui, com o resultado de cada tentativa.'
@@ -125,88 +118,12 @@ export async function rotasEmail(app: FastifyInstance) {
   );
 
   // --------------------------------------------------------
-  //  Lista de endereços autorizados
+  //  AS ROTAS DA LISTA DE AUTORIZADOS FICAVAM AQUI
+  //
+  //  `GET`, `POST` e `DELETE` em /api/email/autorizados. Saíram
+  //  em 12/10/2026 com a trava de teste do e-mail — ver o
+  //  comentário em `servicos/email.ts`.
   // --------------------------------------------------------
-  app.get(
-    '/api/email/autorizados',
-    { preHandler: app.exigirPermissao('sistema.integracoes') },
-    async () => {
-      const lista = await banco.emailAutorizado.findMany({
-        include: { criadoPor: { select: { nome: true } } },
-        orderBy: { criadoEm: 'desc' },
-      });
-
-      return {
-        modoTeste: modoTeste(),
-        autorizados: lista.map((a) => ({
-          id: a.id,
-          email: a.email,
-          emailMascarado: mascararEmail(a.email),
-          nome: a.nome,
-          observacao: a.observacao,
-          criadoPor: a.criadoPor.nome,
-          criadoEm: a.criadoEm,
-        })),
-      };
-    },
-  );
-
-  app.post(
-    '/api/email/autorizados',
-    { preHandler: app.exigirPermissao('sistema.integracoes') },
-    async (req, res) => {
-      const dados = esquemaAutorizado.safeParse(req.body);
-      if (!dados.success) return res.status(400).send(erroDeValidacao(dados.error));
-
-      let endereco: string;
-      try {
-        endereco = normalizarEmail(dados.data.email);
-      } catch (erro) {
-        return res.status(400).send({
-          erro: erro instanceof Error ? erro.message : 'E-mail inválido.',
-        });
-      }
-
-      const repetido = await banco.emailAutorizado.findUnique({ where: { email: endereco } });
-      if (repetido) {
-        return res.status(409).send({ erro: 'Este e-mail já está na lista.' });
-      }
-
-      const criado = await banco.emailAutorizado.create({
-        data: {
-          email: endereco,
-          nome: dados.data.nome,
-          observacao: dados.data.observacao,
-          criadoPorId: req.usuario!.id,
-        },
-      });
-
-      return res.status(201).send({
-        autorizado: {
-          id: criado.id,
-          email: criado.email,
-          emailMascarado: mascararEmail(criado.email),
-          nome: criado.nome,
-        },
-        mensagem: criado.nome + ' liberado para receber e-mails de teste.',
-      });
-    },
-  );
-
-  app.delete(
-    '/api/email/autorizados/:id',
-    { preHandler: app.exigirPermissao('sistema.integracoes') },
-    async (req, res) => {
-      const { id } = req.params as { id: string };
-
-      const existe = await banco.emailAutorizado.findUnique({ where: { id } });
-      if (!existe) return res.status(404).send({ erro: 'E-mail não encontrado na lista.' });
-
-      await banco.emailAutorizado.delete({ where: { id } });
-
-      return { ok: true, mensagem: existe.nome + ' saiu da lista de autorizados.' };
-    },
-  );
 
   // --------------------------------------------------------
   //  Histórico
@@ -344,9 +261,8 @@ export async function rotasEmail(app: FastifyInstance) {
           (resultados.length === 1 ? ' convite enviado' : ' convites enviados') +
           (bloqueados > 0
             ? '. ' + (bloqueados === 1
-              ? '1 foi bloqueado'
-              : bloqueados + ' foram bloqueados') +
-              ' pela lista de autorizados.'
+              ? '1 não saiu'
+              : bloqueados + ' não saíram') + '.'
             : '.'),
       };
     },

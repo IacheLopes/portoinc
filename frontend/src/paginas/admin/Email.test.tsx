@@ -11,20 +11,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ConfiguracaoEmail } from './Email';
 import {
-  buscarSituacaoEmail, listarEmailsAutorizados, listarHistoricoDeEmail, enviarEmailDeTeste,
+  buscarSituacaoEmail, listarHistoricoDeEmail, enviarEmailDeTeste,
   buscarConfiguracaoDeEmail,
-  type SituacaoEmail, type EmailAutorizado, type EmailDoHistorico,
+  type SituacaoEmail, type EmailDoHistorico,
   type ConfiguracaoDeEmail,
 } from '../../servicos/email';
 
 vi.mock('../../servicos/email', async (original) => ({
   ...(await original<typeof import('../../servicos/email')>()),
   buscarSituacaoEmail: vi.fn(),
-  listarEmailsAutorizados: vi.fn(),
   listarHistoricoDeEmail: vi.fn(),
   enviarEmailDeTeste: vi.fn(),
-  autorizarEmail: vi.fn(),
-  removerEmailAutorizado: vi.fn(),
   buscarConfiguracaoDeEmail: vi.fn(),
   ligarEmail: vi.fn(),
   desligarEmail: vi.fn(),
@@ -46,18 +43,7 @@ const SIMULADO: SituacaoEmail = {
   simulado: true,
   pronto: true,
   remetente: 'simulado@portoinc.local',
-  modoTeste: true,
   detalhe: 'Modo simulado: nada sai para fora. Os e-mails ficam registrados aqui.',
-};
-
-const AUTORIZADO: EmailAutorizado = {
-  id: 'a1',
-  email: 'fornecedor@exemplo.com.br',
-  emailMascarado: 'fo••••••••@exemplo.com.br',
-  nome: 'Fornecedor de teste',
-  observacao: null,
-  criadoPor: 'Administrador',
-  criadoEm: '2026-09-23T10:00:00.000Z',
 };
 
 const BLOQUEADO: EmailDoHistorico = {
@@ -84,10 +70,6 @@ function montar() {
 beforeEach(() => {
   vi.mocked(buscarSituacaoEmail).mockReset().mockResolvedValue(SIMULADO);
   vi.mocked(buscarConfiguracaoDeEmail).mockReset().mockResolvedValue(SEM_CONFIGURACAO);
-  vi.mocked(listarEmailsAutorizados).mockReset().mockResolvedValue({
-    modoTeste: true,
-    autorizados: [AUTORIZADO],
-  });
   vi.mocked(listarHistoricoDeEmail).mockReset().mockResolvedValue({ historico: [BLOQUEADO] });
   vi.mocked(enviarEmailDeTeste).mockReset();
 });
@@ -212,25 +194,29 @@ describe('O cartão de estado', () => {
     expect(screen.queryByText('Não sai ainda')).not.toBeInTheDocument();
   });
 
-  it('a lista de autorizados se explica na própria seção', async () => {
-    //  A frase sobre a restrição saiu do cartão de estado: com o
-    //  adaptador simulado NADA sai, e falar de restrição ali
-    //  sugere que a restrição é o que está segurando — quando o
-    //  que segura é não haver provedor nenhum.
+  it('NÃO EXISTE MAIS LISTA DE AUTORIZADOS', async () => {
+    //  Ela saiu em 12/10/2026, junto com a trava de teste do
+    //  e-mail. Enquanto a trava esteve desligada, o formulário
+    //  continuou na tela sem fazer nada — e o texto dele falava de
+    //  uma restrição que não existia.
+    //
+    //  No WhatsApp a lista equivalente FICOU: lá, depois do QR, o
+    //  sistema está pronto para disparar, e a lista é a forma
+    //  rápida de testar sem alcançar fornecedor de verdade. No
+    //  e-mail o freio é não haver remetente cadastrado.
     montar();
 
-    expect(
-      await screen.findByText(/só estes endereços recebem e-mail/),
-    ).toBeInTheDocument();
+    await screen.findByRole('heading', { name: /Enviar um e-mail de teste/ });
+
+    expect(screen.queryByText(/Endereços autorizados/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/só estes endereços recebem/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Liberar e-mail/ })).not.toBeInTheDocument();
   });
-});
 
-describe('A lista de autorizados', () => {
-  it('mostra o endereço MASCARADO, não o endereço inteiro', async () => {
+  it('e o envio de teste continua lá, que é como se confere', async () => {
     montar();
 
-    expect(await screen.findByText('fo••••••••@exemplo.com.br')).toBeInTheDocument();
-    expect(screen.queryByText('fornecedor@exemplo.com.br')).not.toBeInTheDocument();
+    expect(await screen.findByLabelText(/^Para/)).toBeInTheDocument();
   });
 });
 

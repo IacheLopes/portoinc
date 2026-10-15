@@ -197,7 +197,15 @@ describe('O diagnóstico do sistema é só do desenvolvedor', () => {
     assert.equal(r.status, 200);
 
     const areas = r.corpo.integracoes.map((i: { area: string }) => i.area);
-    assert.deepEqual(areas, ['WhatsApp', 'Fiscal (NF-e)', 'Pagamento', 'E-mail']);
+
+    //  O "Assistente de IA" entrou em 14/10/2026. A lista continua
+    //  sendo conferida INTEIRA, de proposito: o que esta tela
+    //  promete e o que o sistema tem, e um nome a mais aqui sem
+    //  tomada atras dele e a mesma mentira que a GS1 era.
+    assert.deepEqual(areas, [
+      'WhatsApp', 'Assistente de IA', 'Fiscal (NF-e)', 'Pagamento', 'E-mail',
+    ]);
+    assert.ok(!areas.includes('Código de barras'), 'a GS1 saiu em 08/10/2026');
   });
 
   it('a função do desenvolvedor não aparece na lista de funções', async () => {

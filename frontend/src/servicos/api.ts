@@ -20,6 +20,8 @@ export interface ResumoIntegracao {
   area: string;
   adaptador: string;
   simulado: boolean;
+  /** Consegue fazer o trabalho agora? Simulado e desligado não. */
+  pronto: boolean;
   descricao: string;
 }
 
@@ -192,15 +194,36 @@ function minuscula(frase: string): string {
   return frase.charAt(0).toLowerCase() + frase.slice(1);
 }
 
+/**
+ * QUANTO SE ESPERA, por padrão.
+ *
+ * Quinze segundos é generoso para uma consulta ao banco e curto o
+ * bastante para a pessoa não ficar olhando a tela sem saber se
+ * quebrou.
+ */
+const ESPERA_PADRAO = 15000;
+
 export interface Opcoes {
   metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   corpo?: unknown;
   /** Impede laço infinito na renovação. */
   semRenovar?: boolean;
+  /**
+   * Quanto esperar, em milissegundos.
+   *
+   * Existe por causa do assistente de IA. Uma pergunta dele faz
+   * DUAS idas ao modelo — uma para escolher a consulta, outra
+   * para escrever a resposta —, roda a consulta no banco no meio,
+   * e às vezes espera a vez na fila do provedor. Em 14/10/2026
+   * uma pergunta real levou 24 segundos: o navegador cortou aos
+   * 15 e a tela ficou muda, parecendo defeito quando a resposta
+   * estava a caminho.
+   */
+  espera?: number;
 }
 
 export async function chamar<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
-  const { metodo = 'GET', corpo, semRenovar = false } = opcoes;
+  const { metodo = 'GET', corpo, semRenovar = false, espera = ESPERA_PADRAO } = opcoes;
 
   const cabecalhos: Record<string, string> = { Accept: 'application/json' };
   if (corpo !== undefined) cabecalhos['Content-Type'] = 'application/json';
@@ -214,7 +237,7 @@ export async function chamar<T>(caminho: string, opcoes: Opcoes = {}): Promise<T
       headers: cabecalhos,
       body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
       credentials: 'include', // envia o cookie da sessão
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(espera),
     });
   } catch (erro) {
     if (erro instanceof DOMException && erro.name === 'TimeoutError') {
