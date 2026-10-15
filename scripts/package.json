@@ -7,7 +7,7 @@
     "tutorial": "node gerar-pdf.mjs tutorial",
     "guia-testes": "node gerar-pdf.mjs guia-testes",
     "design": "node gerar-pdf.mjs design",
-    "pdfs": "npm run tutorial && npm run guia-testes && npm run design && npm run navegacao && npm run alimentar",
+    "pdfs": "npm run tutorial && npm run guia-testes && npm run design && npm run navegacao && npm run pratico && npm run alimentar && npm run sefaz && npm run sefaz-pedido",
     "auditoria": "node auditoria-ui.mjs ./auditoria 1440",
     "auditoria:celular": "node auditoria-ui.mjs ./auditoria-celular 420",
     "backup": "node backup.mjs",
@@ -17,7 +17,10 @@
     "fechar": "node fechar.mjs",
     "pente-fino": "node pente-fino.mjs",
     "navegacao": "node gerar-pdf.mjs navegacao",
-    "alimentar": "node gerar-pdf.mjs alimentar"
+    "alimentar": "node gerar-pdf.mjs alimentar",
+    "pratico": "node gerar-pdf.mjs pratico",
+    "sefaz": "node gerar-pdf.mjs sefaz",
+    "sefaz-pedido": "node gerar-pdf.mjs sefaz-pedido"
   },
   "dependencies": {
     "marked": "^15.0.6"

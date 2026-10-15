@@ -1,4 +1,4 @@
-<!-- versao: 0.59.0 -->
+<!-- versao: 0.60.0 -->
 
 # Guia de Navegação Simples
 
@@ -57,14 +57,14 @@ Abra **http://localhost:5173** e use uma destas contas:
 |---|---|---|
 | **`porto@dev.com`** | **`admin123`** | **Tem os sete papéis. É esta que você usa** |
 | `admin@portoinc.com.br` | `admin123` | Cuida do sistema |
-| `washington@portoinc.com.br` | `Porto@2026` | Fundador |
-| `andre@portoinc.com.br` | `Porto@2026` | Comprador |
-| `bras@portoinc.com.br` | `Porto@2026` | Gestor de obra **e** Solicitante |
-| `gilson@portoinc.com.br` | `Porto@2026` | Almoxarife |
-| `neilma@portoinc.com.br` | `Porto@2026` | Comprador **e** Solicitante |
-| `engenheiro@portoinc.com.br` | `Porto@2026` | Engenheiro |
+| `washington@portoinc.com.br` | `admin123` | Fundador |
+| `andre@portoinc.com.br` | `admin123` | Comprador |
+| `bras@portoinc.com.br` | `admin123` | Gestor de obra **e** Solicitante |
+| `gilson@portoinc.com.br` | `admin123` | Almoxarife |
+| `neilma@portoinc.com.br` | `admin123` | Comprador **e** Solicitante |
+| `engenheiro@portoinc.com.br` | `admin123` | Engenheiro |
 
-> **Repare na senha:** as seis de papel usam `Porto@2026`; as duas de cima, `admin123`.
+> **Repare na senha:** as seis de papel usam `admin123`; as duas de cima, `admin123`.
 
 > **Use a `porto@dev.com` para tudo.** Ela enxerga o sistema inteiro, então nenhum botão
 > some da sua frente no meio de uma demonstração.
@@ -78,7 +78,7 @@ realmente não consegue aprovar uma compra, que o solicitante não vê o Finance
 nascem com a instalação, com a senha da tabela acima.
 
 > Esta parte do guia dizia, até 09/10/2026, que as seis **foram criadas por você** e que
-> "só quem criou sabe a senha". Era mentira: a instalação as planta com `Porto@2026`, e
+> "só quem criou sabe a senha". Era mentira: a instalação as planta com `admin123`, e
 > quem lesse isso achava que não conseguia entrar como o Andre.
 
 Se você trocar uma senha e esquecer, entre em **Usuários**, abra a pessoa e **gere uma
@@ -230,7 +230,7 @@ número do que está esperando.
 | **Compras** | Solicitações · Aprovações · Cotações · Pedidos |
 | **Almoxarifado** | Recebimento · Estoque · Locação |
 | **Financeiro** | Contas a pagar · Notas fiscais · Receitas e despesas |
-| **Administração** | Famílias · Materiais · Fornecedores · Obras · Alçadas · Usuários · Avisos |
+| **Administração** | Famílias · Materiais · Fornecedores · Obras · Alçadas · Usuários · Comunicação · Área IA · Status do sistema |
 
 > **Por que mudou.** O menu listava as 14 telas, e para quem administra isso eram 18
 > linhas. O sistema vai crescer, e cada tela nova era mais uma linha. Agora tela nova
@@ -769,8 +769,42 @@ tem acesso a elas.
 > **WhatsApp**. A aba **Mensagens enviadas** é a prova do que saiu: dá para filtrar por
 > período, por canal e por resultado.
 >
-> O **e-mail** ainda sai simulado enquanto não houver um remetente cadastrado na aba
+> O **e-mail** fica **desligado** enquanto não houver uma conta cadastrada na aba
 > **E-mail** — é cadastrar e passa a valer na hora, sem reiniciar nada.
+>
+> **Desligado não é simulado.** Desligado recusa o envio e diz onde ligar. Simulado
+> responderia "enviei" sem nada sair, e a tela ficaria verde — por isso o e-mail deixou
+> de começar simulado em 15/10/2026.
+
+---
+
+## 13.1. Área IA
+
+**Essa tela serve para** ligar e configurar o assistente que responde perguntas no
+WhatsApp.
+
+**Aqui você consegue:**
+- Ligar e desligar o assistente, num botão só
+- Escolher em quais **grupos** ele atende
+- Experimentar uma pergunta sem nada sair no WhatsApp
+
+**Passo:** **Administração** → **Área IA** → clique em **Ligar o Porto**.
+
+**O que você vê:** um cartão grande com o nome dele e um botão. Embaixo do botão, **uma
+linha** diz qual é o próximo passo, se faltar algo.
+
+| Bloco | Para que serve |
+|---|---|
+| **Quem ele é** | o nome que as pessoas vão dizer para chamá-lo |
+| **Onde ele atende** | privado, grupo, áudio — e a lista de grupos liberados |
+| **Pergunte a ele** | experimentar aqui; **nada sai no WhatsApp** |
+| **Ajustes técnicos** | fica fechado: modelo e opções que raramente se mexem |
+
+> **Quem responde é o número do QR Code.** Não existe um número da IA. Se o QR foi lido
+> com o celular do comprador, é pelo WhatsApp do comprador que as respostas saem.
+
+> **Ele só lê.** Não aprova, não cria, não muda preço. Se pedirem, ele explica que não
+> faz e diz em que tela resolver.
 
 ---
 
@@ -778,9 +812,18 @@ tem acesso a elas.
 
 **Essa tela serve para** conferir se está tudo funcionando.
 
-**Aqui você consegue:** ver se o sistema está no ar.
+**Aqui você consegue:** ver se o sistema está no ar, e em que estado está cada
+integração com o mundo de fora.
 
 **Passo:** **Administração** → **Status do sistema** → se estiver tudo verde, está tudo certo.
+
+**Os selos das integrações, embaixo:**
+
+| Selo | O que quer dizer |
+|---|---|
+| **Ativo** | ligado de verdade; o que sair daqui chega a alguém |
+| **Desligado** | não está ligado, e não finge que está |
+| **Simulado** | finge que deu certo; registra o que *teria* saído |
 
 ---
 
@@ -856,7 +899,7 @@ Se o tempo for curto, são estes:
 | A tela não abre | Veja **Status do sistema** |
 | Não achei um botão | Aquela conta não faz aquilo. Entre com `porto@dev.com` |
 | Apareceu "Muitas requisições" | Espere 1 minuto e tente de novo |
-| A senha não entra | São **duas senhas**: `admin123` para `porto@dev.com` e `admin@portoinc.com.br`, e `Porto@2026` para as seis de nome. Trocou e esqueceu? Gere uma nova em **Usuários** |
+| A senha não entra | São **duas senhas**: `admin123` para `porto@dev.com` e `admin@portoinc.com.br`, e `admin123` para as seis de nome. Trocou e esqueceu? Gere uma nova em **Usuários** |
 | Ele pediu para trocar a senha | É a regra funcionando: conta criada por outra pessoa troca a senha no primeiro acesso |
 | Uma tela está vazia | Leia o que ela diz. Tela vazia sempre explica **por que** está vazia e o que fazer |
 | A lista não mostra tudo | Ela mostra 20 por vez. A frase em cima diz o total, e os botões embaixo levam às outras páginas |

@@ -1,11 +1,11 @@
 {
   "name": "portoink-api",
-  "version": "0.59.0",
+  "version": "0.60.0",
   "private": true,
   "description": "API do sistema de compras e almoxarifado da Porto Inc.",
   "type": "module",
-  "_porque_EMAIL_MODO_TESTE_nos_testes": "Mesmo motivo do WhatsApp, e pelo mesmo caminho: em 11/10/2026 a trava do e-mail foi desligada para o lancamento, e os testes que provam que ela existe herdavam o valor do .env. Teste cujo resultado depende de um botao de producao nao prova nada. A suite FIXA true aqui.",
   "_porque_WHATSAPP_MODO_TESTE_nos_testes": "A suite FIXA a trava em true em vez de herdar do .env. Em 10/10/2026 a trava foi desligada para um teste de envio real, e sete testes de integracao quebraram — entre eles o que prova que 'a trava vem ligada por padrao'. Teste cujo resultado depende de um botao de producao nao prova nada.",
+  "_porque_IA_ADAPTER_nos_testes": "As provas NAO podem falar com a Groq de verdade. Em 14/10/2026 a suite inteira estava chamando o provedor: gastava cota diaria, dependia de internet e dava resultado diferente a cada rodada — modelo de linguagem nao responde igual duas vezes. O simulado e roteirizado pelo proprio teste.",
   "scripts": {
     "dev": "tsx watch src/servidor.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
@@ -16,11 +16,13 @@
     "seed": "tsx prisma/seed-desenvolvimento.ts && tsx prisma/seed-cadastros.ts",
     "seed-se-vazio": "tsx prisma/semear-se-vazio.ts",
     "test": "npm run test:unidade && npm run test:integracao",
-    "test:unidade": "WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock EMAIL_MODO_TESTE=true node --import tsx --test \"src/**/*.test.ts\"",
-    "test:integracao": "npm run test:preparar && NODE_ENV=test DATABASE_URL=$DATABASE_URL_TESTE WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock EMAIL_MODO_TESTE=true node --import tsx --test --test-concurrency=1 \"testes/**/*.test.ts\"",
+    "test:unidade": "WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock IA_ADAPTER=mock node --import tsx --test \"src/**/*.test.ts\"",
+    "test:integracao": "npm run test:preparar && NODE_ENV=test DATABASE_URL=$DATABASE_URL_TESTE WHATSAPP_ADAPTER=mock WHATSAPP_MODO_TESTE=true EMAIL_ADAPTER=mock IA_ADAPTER=mock node --import tsx --test --test-concurrency=1 \"testes/**/*.test.ts\"",
     "test:preparar": "DATABASE_URL=$DATABASE_URL_TESTE prisma migrate deploy",
     "tipos": "tsc --noEmit -p tsconfig.test.json",
     "seed:historico": "tsx prisma/seed-historico.ts",
+    "seed:demonstracao": "tsx prisma/seed-demonstracao.ts",
+    "seed:situacoes": "tsx prisma/seed-situacoes.ts",
     "criar-admin": "tsx prisma/criar-administrador.ts"
   },
   "dependencies": {

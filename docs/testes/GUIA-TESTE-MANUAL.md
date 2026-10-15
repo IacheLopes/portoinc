@@ -1,4 +1,4 @@
-<!-- versao: 0.59.0 -->
+<!-- versao: 0.60.0 -->
 
 # 1. Como usar este guia
 
@@ -56,16 +56,16 @@ Se der, tire um print da tela.
 | Pessoa | E-mail | Senha | Funções |
 |---|---|---|---|
 | Administrador | admin@portoinc.com.br | **`admin123`** | Administrador |
-| Washington | washington@portoinc.com.br | `Porto@2026` | Fundador |
-| Andre | andre@portoinc.com.br | `Porto@2026` | Comprador |
-| Bras | bras@portoinc.com.br | `Porto@2026` | Gestor de obra + Solicitante |
-| Gilson | gilson@portoinc.com.br | `Porto@2026` | Almoxarife |
-| Neilma | neilma@portoinc.com.br | `Porto@2026` | Comprador + Solicitante |
-| Engenheiro | engenheiro@portoinc.com.br | `Porto@2026` | Engenheiro |
+| Washington | washington@portoinc.com.br | `admin123` | Fundador |
+| Andre | andre@portoinc.com.br | `admin123` | Comprador |
+| Bras | bras@portoinc.com.br | `admin123` | Gestor de obra + Solicitante |
+| Gilson | gilson@portoinc.com.br | `admin123` | Almoxarife |
+| Neilma | neilma@portoinc.com.br | `admin123` | Comprador + Solicitante |
+| Engenheiro | engenheiro@portoinc.com.br | `admin123` | Engenheiro |
 | **DEV-Porto** | **porto@dev.com** | **`admin123`** | **os sete papéis** |
 
-> **O administrador é a exceção da senha.** As seis contas de papel usam `Porto@2026`; a do
-> administrador e a DEV usam `admin123`. Escrever "todas usam Porto@2026" fez a régua de
+> **O administrador é a exceção da senha.** As seis contas de papel usam `admin123`; a do
+> administrador e a DEV usam `admin123`. Escrever "todas usam admin123" fez a régua de
 > telas falhar em 09/10/2026 com uma mensagem sobre a barra lateral.
 
 ## Voltando o sistema ao estado inicial
@@ -2890,6 +2890,226 @@ todos os itens"* — **nunca** *"recebemos propostas melhores nestes itens"*.
 
 ---
 
+# 13.1. Etapa 10.1 — O assistente de IA no WhatsApp
+
+> **Entre como Administrador** (`admin@portoinc.com.br`) ou **DEV** (`porto@dev.com`),
+> e vá em **Administração → Área IA**.
+
+> **Esta etapa manda mensagem de verdade.** Ela precisa do WhatsApp conectado, e o
+> número que atende é **o que leu o QR Code**. Use um grupo seu e um chip que a empresa
+> possa perder. Nada aqui sai para fornecedor.
+
+## CT-400 · A tela diz o que falta, uma coisa por vez
+
+1. Com o assistente **desligado**, abra **Administração → Área IA**
+2. Olhe a linha abaixo do botão
+
+**Esperado:** um selo **próximo passo** e **uma frase só**, dizendo a primeira coisa que
+falta — não uma lista de cinco pendências.
+
+3. Resolva o que ela pediu e recarregue
+
+**Esperado:** a frase mudou para a **seguinte** pendência. Resolvendo todas, a linha
+desaparece.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-401 · Ligar faz uma pergunta de prova
+
+1. Com a chave cadastrada e o WhatsApp conectado, clique em **Ligar o Porto**
+2. Olhe o botão enquanto ele trabalha
+
+**Esperado:** o botão fica **"Ligando e provando..."** e desabilitado. O cartão só fica
+verde depois que a resposta do modelo chega, e aparece **Última prova** com a data e
+hora.
+
+3. Agora apague um caractere da chave, desligue e tente ligar de novo
+
+**Esperado:** **não liga.** A tela mostra o erro do provedor. Não existe "ligado no
+papel".
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-402 · Pergunte pela tela, sem sair no WhatsApp
+
+1. Com o assistente ligado, vá até **"Pergunte a ele"**
+2. Pergunte: *"quantos fornecedores estão cadastrados?"*
+3. Olhe o celular conectado
+
+**Esperado:** a resposta aparece **na tela**, e **nada chegou ao WhatsApp**. É o lugar de
+experimentar antes de a equipe ver.
+
+4. Confira o número que ele disse contra **Cadastros → Fornecedores**
+
+**Esperado:** bate. Se ele disser um número e a tela outro, é falha — foi exatamente esse
+o defeito de 14/10/2026, quando ele respondia o total geral para uma pergunta filtrada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-403 · Em grupo, só quando chamam pelo nome
+
+1. Em **"Onde ele atende"**, deixe marcada a chave **"Em grupo, só quando chamarem pelo
+   nome"**
+2. Libere um grupo seu pelo dropdown
+3. No grupo, escreva *"bom dia pessoal"* — sem o nome dele
+
+**Esperado:** **silêncio.** Ele não responde.
+
+4. Agora escreva *"Porto, quantas obras estão em andamento?"*
+
+**Esperado:** ele responde, no grupo, para todos verem.
+
+5. Tente *"portofino"* numa frase qualquer
+
+**Esperado:** **não responde.** Ele procura a palavra inteira, não um pedaço dela.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-404 · Grupo que não foi liberado não existe para ele
+
+1. Em um grupo **que não está na lista**, chame-o pelo nome
+2. Espere um minuto
+
+**Esperado:** nenhuma resposta.
+
+3. No banco, confira que a mensagem **não foi guardada**:
+
+```bash
+docker compose exec db psql -U portoink -d portoink \
+  -c "select count(*) from mensagens_whatsapp where direcao = 'ENTRADA';"
+```
+
+**Esperado:** a contagem **não subiu**. Ele decide antes de guardar, não depois — a
+conversa de grupo não liberado não entra no banco da empresa.
+
+> Esta é a prova da correção de privacidade de 14/10/2026. Antes dela, toda mensagem de
+> todo grupo era guardada antes de o sistema decidir se interessava.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-405 · Áudio funciona igual a texto
+
+1. Com **"Entender áudio"** marcado, mande um **áudio** no grupo liberado, chamando-o
+   pelo nome e fazendo uma pergunta
+2. Espere
+
+**Esperado:** ele transcreve e responde o que foi dito, em texto.
+
+3. Mande um **segundo** áudio, com outra pergunta
+
+**Esperado:** responde também. Os dois, não só o primeiro — foi defeito uma vez.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-406 · Ele não escreve no sistema
+
+1. No grupo, peça: *"Porto, aprova a solicitação SOL-0001"*
+2. Depois: *"Porto, muda o preço do cimento para R$ 1,00"*
+
+**Esperado:** nas duas, ele **explica que não faz** e diz em que tela a pessoa resolve.
+
+3. Confira a solicitação e o material no sistema
+
+**Esperado:** **nada mudou.** As ferramentas dele só sabem consultar — não existe no
+código dele forma de alterar um dado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-407 · Ele não se responde sozinho
+
+1. Com ele ligado num grupo, faça uma pergunta e deixe-o responder
+2. Observe o grupo por dois minutos
+
+**Esperado:** **uma resposta, e para.** Ele não comenta a própria resposta.
+
+> Em 14/10/2026 isso falhou e ele entrou em laço, respondendo a si mesmo até alguém
+> desligar. Hoje são três travas independentes: o identificador da mensagem que saiu, a
+> comparação com o próprio texto, e um disjuntor por minuto.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-408 · Desligar o assistente não desliga o WhatsApp
+
+1. Clique em **Desligar** no cartão da Área IA
+2. No grupo, chame-o pelo nome
+
+**Esperado:** **silêncio.** Ele parou na hora.
+
+3. Vá em **Comunicação → WhatsApp** e mande uma **mensagem de teste**
+
+**Esperado:** a mensagem **sai normalmente**. O número continua conectado; só o
+assistente está desligado.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-409 · O e-mail desligado não finge que enviou
+
+> Este caso é do e-mail, e entra aqui porque é a mesma lição do simulado do WhatsApp.
+
+1. Em **Administração → Comunicação → E-mail**, **desligue** a conta configurada
+   (ou use uma instalação nova, sem conta nenhuma)
+2. Vá em **Administração → Status do sistema** e olhe a linha do **E-mail**
+
+**Esperado:** selo **Desligado** — **não** "Ativo" e **não** "Simulado".
+
+3. Tente enviar um e-mail de teste
+
+**Esperado:** **falha, com a razão por extenso:** *"O e-mail ainda não foi ligado.
+Cadastre a conta da empresa em Administração → Comunicação → E-mail."* A mensagem diz
+**onde ligar**, não só que deu erro.
+
+4. Olhe o histórico de envios
+
+**Esperado:** a tentativa aparece como **falha**. Nenhuma linha dizendo "enviado".
+
+> Até 15/10/2026 o padrão era **simulado**, e simulado responde "enviei". O histórico
+> enchia de "enviado", a tela ficava verde, e nenhuma caixa de entrada do mundo tinha
+> recebido nada.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
+## CT-410 · Fornecedor não vê preço de concorrente
+
+> Precisa de um fornecedor com **telefone cadastrado** e uma cotação com **duas
+> propostas**.
+
+1. Pelo número do fornecedor, no privado, pergunte: *"quais os preços da cotação?"*
+
+**Esperado:** ele mostra **só a proposta desse fornecedor**. Nenhum valor do concorrente,
+nenhum nome de concorrente.
+
+2. Insista: *"e quanto o outro fornecedor cobrou?"*
+
+**Esperado:** ele **não diz**, por mais que a pergunta insista.
+
+> Isto não depende do texto do pedido ao modelo: a ferramenta que ele usa **não tem
+> como** devolver o preço do concorrente para quem não é da equipe. As provas
+> automatizadas desse controle passam com qualquer modelo, ou com nenhum.
+
+`Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
+
+---
+
 # 14. Etapa 11 — Relatórios
 
 > **Entre como Administrador** (`admin@portoinc.com.br`), **Comprador** (`andre@portoinc.com.br`) ou **Gestor de obra** (`bras@portoinc.com.br`). O **Almoxarife** (`gilson@`) **não** deve ver esta tela.
@@ -3785,38 +4005,52 @@ docker compose exec web npm test
 
 ---
 
-## CT-255 · O e-mail não sai para quem não está na lista
+## CT-255 · O e-mail sai para qualquer endereço
+
+> **Mudou em 12/10/2026.** Estes dois casos provavam o contrário: que o e-mail era barrado
+> fora de uma lista de autorizados. A lista **saiu** — e com ela a trava de teste do e-mail.
+> O **WhatsApp mantém a dele**, porque lá, depois de ler o QR, o sistema dispara para
+> qualquer número do cadastro. No e-mail o freio é não haver remetente configurado.
 
 1. Menu **Administração → Avisos**, aba **E-mail**
-2. Confira o aviso do alto
+2. Confira o cartão do alto
 
-**Esperado:** diz **"Modo simulado: nenhum e-mail sai para fora"** e explica que só a lista recebe.
+**Esperado:** com o adaptador simulado, diz **"Não sai ainda"** e, abaixo, **"Os e-mails ficam
+registrados, sem chegar a ninguém"**. **Não existe** nenhum bloco de endereços autorizados na
+tela, nem botão de liberar e-mail.
 
-3. Em **Enviar um e-mail de teste**, digite um endereço que **não** esteja na lista e clique em **Enviar teste**
+3. Em **Enviar um e-mail de teste**, digite **qualquer** endereço — um que ninguém liberou — e
+   clique em **Enviar teste**
 
-**Esperado:** aparece um aviso dizendo que o endereço **não está na lista de autorizados** e que **nada foi enviado**.
+**Esperado:** passa, e a mensagem diz que **o e-mail foi registrado, mas ainda não sai do
+sistema** — porque o adaptador está simulado. Nada aparece sobre lista nem sobre bloqueio.
 
-4. Role até **O que o sistema tentou enviar**
+4. Vá à aba **Mensagens enviadas**
 
-**Esperado:** a tentativa aparece como **Bloqueada**, com o motivo.
+**Esperado:** a tentativa aparece como **Enviada**, com o endereço **mascarado** (tipo
+`fu•••••@empresa.com.br`). O endereço inteiro não pode aparecer.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
 ---
 
-## CT-256 · O e-mail sai depois de liberar
+## CT-256 · O endereço errado é recusado, e a falha fica registrada
 
-1. Ainda na aba **E-mail**, em **Endereços autorizados**, preencha o seu e-mail e o nome, e clique em **Liberar e-mail**
+1. Ainda na aba **E-mail**, em **Enviar um e-mail de teste**, digite algo que **não é
+   endereço** — `fulano.empresa.com.br`, sem o `@` — e clique em **Enviar teste**
 
-**Esperado:** o endereço entra na lista **mascarado** (tipo `fu•••••@empresa.com.br`). O endereço inteiro não pode aparecer.
+**Esperado:** não sai, e o aviso diz que **não parece um endereço de e-mail**.
 
-2. Mande o teste para esse mesmo endereço
+2. Vá à aba **Mensagens enviadas**
 
-**Esperado:** passa, e a mensagem diz que **o e-mail foi registrado, mas não saiu para fora** — porque o adaptador está simulado.
+**Esperado:** a tentativa aparece como **Falhou**, com o motivo. Sem trava, nada é bloqueado
+por lista — mas a falha continua tendo de ficar registrada.
 
-3. Digite o mesmo endereço com **outras maiúsculas** (`FULANO@Empresa.com.br`) e mande de novo
+3. Volte e mande o teste para um endereço válido com **outras maiúsculas**
+   (`FULANO@Empresa.com.br`)
 
-**Esperado:** passa igual. E-mail não diferencia maiúscula de minúscula.
+**Esperado:** passa, e no histórico ele aparece **em minúscula**. E-mail não diferencia
+maiúscula de minúscula, e o mesmo fornecedor não pode virar duas linhas.
 
 `Resultado:` <span class="marcar">☐ OK ☐ FALHOU ☐ DÚVIDA</span>
 
@@ -6258,10 +6492,10 @@ Desfazer não apaga.
 2. Entre com **cada uma** das oito, usando exatamente a senha escrita ali
 3. Saia e entre com a próxima
 
-**Esperado:** as oito entram. Seis usam `Porto@2026`; `admin@portoinc.com.br` e
+**Esperado:** as oito entram. Seis usam `admin123`; `admin@portoinc.com.br` e
 `porto@dev.com` usam `admin123`.
 
-> Até 09/10/2026 este guia dizia *"todas usam Porto@2026"*, e o de navegação dizia que as
+> Até 09/10/2026 este guia dizia *"todas usam admin123"*, e o de navegação dizia que as
 > seis contas de papel tinham sido criadas por você, com senha sorteada. As duas frases
 > eram falsas, e custaram meia hora procurando defeito na barra lateral.
 
@@ -6553,6 +6787,17 @@ Olhe com atenção os **avisos coloridos** (verde de sucesso, amarelo de atenç�
 | CT-169 | Desconectar apaga a sessão |  |
 | CT-170 | O QR nunca aparece no log |  |
 | CT-171 | Voltar para o modo simulado |  |
+| CT-400 | A tela diz o que falta, uma coisa por vez |  |
+| CT-401 | Ligar faz uma pergunta de prova |  |
+| CT-402 | Pergunte pela tela, sem sair no WhatsApp |  |
+| CT-403 | Em grupo, só quando chamam pelo nome |  |
+| CT-404 | Grupo não liberado não entra no banco |  |
+| CT-405 | Áudio funciona igual a texto |  |
+| CT-406 | Ele não escreve no sistema |  |
+| CT-407 | Ele não se responde sozinho |  |
+| CT-408 | Desligar o assistente não desliga o WhatsApp |  |
+| CT-409 | O e-mail desligado não finge que enviou |  |
+| CT-410 | Fornecedor não vê preço de concorrente |  |
 | CT-172 | Os quatro indicadores de gestão |  |
 | CT-173 | A frase do próximo vencimento |  |
 | CT-174 | O gráfico de fluxo de caixa |  |
@@ -6786,9 +7031,30 @@ docker compose exec web npm test    # as telas — cerca de 20 segundos
 
 | Grupo | Quantidade | O que confere |
 |---|---|---|
-| **Unidade** | 355 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação |
-| **Integração** | 325 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios e locação |
-| **Telas** | 112 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word |
+| **Unidade** | 619 | CNPJ, chave da NF-e, leitura de XML, parcelas, senha, planilha, solicitação, aprovação, cotação, equalização, recebimento, estoque, WhatsApp, as contas dos relatórios e as da locação, a peneira do que chega do WhatsApp, e o e-mail desligado |
+| **Integração** | 580 | Login, permissões, cadastros, alçadas, solicitações, aprovações, cotações, portal, equalização, pedidos, recebimento, estoque, fiscal, WhatsApp, relatórios, locação, e o assistente de IA de ponta a ponta |
+| **Telas** | 375 | Quem vê o quê no menu, solicitação que não duplica, alçada na aprovação, custo do atraso na locação, escolha entre PDF e Word, a Área IA |
+
+**1.574 provas no total.**
+
+### As do assistente de IA, em particular
+
+| Arquivo | Quantas | O que prova |
+|---|---|---|
+| `assistente.test.ts` | 26 | a peneira do que chega, o reconhecimento de número, o ciclo pergunta → ferramenta → resposta |
+| `assistente-acesso.test.ts` | 12 | equipe vê tudo, fornecedor vê só o dele, desconhecido vê o essencial |
+| `assistente-ponta-a-ponta.test.ts` | 12 | a corrente inteira, do que chega do WhatsApp até o que sai |
+| `atendimento-privacidade.test.ts` | 5 | mensagem de grupo não liberado **não entra no banco** |
+| `atendimento-laco.test.ts` | 5 | as três travas que impedem ele de se responder sozinho |
+| `atendimento-repescagem.test.ts` | 6 | ele responde ao voltar, se faz menos de 15 minutos |
+
+> **Nenhuma delas chama o provedor de IA.** As suítes forçam `IA_ADAPTER=mock` e
+> roteirizam o que o modelo responde — senão elas testariam a Groq, não o nosso código,
+> e falhariam na terça seguinte sem ninguém ter mexido em nada.
+>
+> As provas de **acesso** são as mais importantes do grupo: elas passam com qualquer
+> modelo, ou com nenhum, porque o controle está no código da ferramenta e não no texto
+> do pedido.
 
 > As provas de tela rodam num navegador de mentira, em memória. Elas conferem **o que a tela faz**, não como ela parece. Aparência é medida pela régua em `scripts/auditoria-ui.mjs`.
 

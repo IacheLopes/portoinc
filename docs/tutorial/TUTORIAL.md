@@ -1,4 +1,4 @@
-<!-- versao: 0.59.0 -->
+<!-- versao: 0.60.0 -->
 
 # 1. Antes de começar
 
@@ -124,21 +124,23 @@ O cursor já começa no campo de e-mail — você pode digitar direto, sem clica
 
 ## Contas para teste
 
-Enquanto o sistema está em desenvolvimento, existem contas prontas com os nomes das pessoas da reunião. **São duas senhas, e a tabela diz qual é a de cada uma.**
+Enquanto o sistema está em desenvolvimento, existem contas prontas com os nomes das pessoas da reunião. **A senha de todas é `admin123`.**
 
 | Pessoa | E-mail | Senha | Função no sistema |
 |---|---|---|---|
 | **DEV-Porto** | **porto@dev.com** | **`admin123`** | **Os sete papéis de uma vez** |
 | Administrador | admin@portoinc.com.br | `admin123` | Administrador |
-| Washington | washington@portoinc.com.br | `Porto@2026` | Fundador |
-| Andre | andre@portoinc.com.br | `Porto@2026` | Comprador |
-| Bras | bras@portoinc.com.br | `Porto@2026` | Gestor de obra + Solicitante |
-| Gilson | gilson@portoinc.com.br | `Porto@2026` | Almoxarife |
-| Neilma | neilma@portoinc.com.br | `Porto@2026` | Comprador + Solicitante |
-| Engenheiro | engenheiro@portoinc.com.br | `Porto@2026` | Engenheiro |
+| Washington | washington@portoinc.com.br | `admin123` | Fundador |
+| Andre | andre@portoinc.com.br | `admin123` | Comprador |
+| Bras | bras@portoinc.com.br | `admin123` | Gestor de obra + Solicitante |
+| Gilson | gilson@portoinc.com.br | `admin123` | Almoxarife |
+| Neilma | neilma@portoinc.com.br | `admin123` | Comprador + Solicitante |
+| Engenheiro | engenheiro@portoinc.com.br | `admin123` | Engenheiro |
 
-> **As duas de cima são a exceção.** Esta página dizia "todas usam a mesma senha" até
-> 09/10/2026, e era falso: a conta do administrador nunca usou `Porto@2026`.
+> **A senha ficou uma só em 15/10/2026.** Durante um tempo havia duas, e esta página
+> chegou a dizer "todas usam a mesma" quando não era verdade — a conta do
+> administrador tinha outra, e quem seguia o manual batia na porta. Hoje é `admin123`
+> em todas as oito, e a tabela acima pode ser lida sem ressalva.
 
 > **Experimente:** entre como **Gilson** e depois como **Administrador**. Você vai ver que o menu da esquerda muda completamente. É assim que o sistema respeita o que cada pessoa faz.
 
@@ -2359,18 +2361,30 @@ Na tela do WhatsApp, seção **Enviar uma mensagem de teste**. Serve para confer
 
 ## Onde fica
 
-Menu **Administração → Avisos**. A tela tem duas abas: **WhatsApp** e **E-mail**. Elas fazem
-o mesmo trabalho — levar o convite e o pedido até o fornecedor —, têm a mesma trava e o
-mesmo histórico, então ficam juntas.
+Menu **Administração → Avisos**. A tela tem três abas: **WhatsApp**, **E-mail** e
+**Mensagens enviadas**. As duas primeiras fazem o mesmo trabalho — levar o convite e o
+pedido até o fornecedor —, e a terceira é o histórico dos dois juntos: os dois canais
+levam o **mesmo** convite e o **mesmo** pedido, e quem pergunta "o BID-00005 saiu?" não
+quer perguntar duas vezes.
 
-## A trava é a mesma
+## O e-mail NÃO tem trava de teste
 
-Enquanto o **modo de teste** estiver ligado, o sistema só manda e-mail para os endereços
-da **lista de autorizados**. Qualquer outro é barrado **antes de sair**, e a tentativa
-fica registrada.
+> **Mudou em 12/10/2026.** Antes havia aqui uma **lista de autorizados**: com o modo de
+> teste ligado, o e-mail só saía para endereços liberados na tela. A lista **saiu**, e o
+> e-mail agora sai para qualquer endereço.
 
-> Comece liberando o **seu próprio e-mail**. É assim que se confere a configuração sem
-> risco de chegar alguma coisa na caixa de entrada de um fornecedor antes da hora.
+O **WhatsApp mantém a trava dele**, e a diferença é real:
+
+| Canal | O que segura o envio |
+|---|---|
+| **WhatsApp** | A lista de números liberados. Depois de ler o QR, o sistema está pronto para disparar para qualquer número do cadastro — a lista é o que permite testar sem alcançar fornecedor de verdade. |
+| **E-mail** | Não haver remetente configurado. Enquanto ninguém ligar o e-mail na tela, nada sai — e ligar é ato deliberado, feito por quem administra. |
+
+O que ficou de guarda no e-mail é o **formato do endereço**: `fulano.empresa.com.br`, sem
+o `@`, é recusado na hora. O resto quem diz é o provedor, ao recusar.
+
+> Para conferir a configuração, use **Enviar um e-mail de teste**, que aceita qualquer
+> destinatário. Mande para **você mesmo** primeiro.
 
 ## Como se manda
 
@@ -2387,19 +2401,241 @@ sozinho — igual ao WhatsApp.
 
 Fornecedor sem e-mail cadastrado é **pulado com aviso**, e os outros seguem normalmente.
 
-## Hoje ele está simulado
+## Ligar o e-mail: pela conta que a empresa já tem
 
-O adaptador de e-mail vem em `mock`: **nada sai para fora**. A tela diz isso no alto, e o
-histórico mostra o que teria sido enviado.
+Instalação nova vem **simulada**: o cartão do alto diz **"Não sai ainda"** e, abaixo, *"os
+e-mails ficam registrados, sem chegar a ninguém"*. O histórico mostra o que teria saído.
 
-Para ligar de verdade, três coisas precisam existir:
+Para ligar, a tela pergunta **por onde o e-mail sai**:
 
-1. Conta em um provedor de e-mail transacional
-2. O **domínio da empresa verificado**, com SPF e DKIM publicados no DNS
-3. `EMAIL_ADAPTER=resend` e as credenciais no `.env`
+| Caminho | Para quem |
+|---|---|
+| **Gmail ou Google Workspace** | A empresa usa Gmail. Servidor e porta o sistema já sabe. |
+| **Microsoft 365 ou Outlook** | A empresa usa Outlook. Idem. |
+| **Outro servidor de e-mail** | Qualquer outro: aí você informa **servidor de saída** e **porta**. |
+| **Resend (serviço de envio)** | Serviço de envio em massa, com domínio próprio verificado. |
 
-> O passo 2 não é burocracia: sem ele o e-mail sai, mas cai na caixa de spam do
-> fornecedor — que é pior do que não enviar, porque você acha que enviou.
+Nos três primeiros, são dois campos: **E-mail da empresa** e **Senha de aplicativo**.
+
+> **Senha de aplicativo não é a senha do e-mail.** É uma senha extra que o Google e a
+> Microsoft geram só para programas, e que pode ser revogada sem trocar a senha de
+> ninguém. Pedir a senha normal seria pedir a chave da casa para entregar uma carta.
+
+Termine em **`Ligar o e-mail`**.
+
+## O botão não diz "Salvar" de propósito
+
+Ao ligar, o sistema **manda um e-mail de prova** para o próprio endereço informado. O canal
+só fica verde se ela sair.
+
+> Chave errada salva em silêncio quebra o envio em silêncio, e a empresa descobre quando um
+> fornecedor reclama que nunca recebeu. "Salvar" seria mentira gentil.
+
+Depois de ligado, o botão vira **`Desligar o e-mail`** — e a chave fica **guardada
+cifrada**, nunca aparece de volta na tela.
+
+> **Se a empresa usa Gmail ou 365, não há nada a verificar no DNS:** o e-mail sai pela
+> conta dela, que já é confiável para os provedores. Só o caminho **Resend** exige o
+> **domínio verificado**, com SPF e DKIM publicados — sem isso o e-mail sai mas cai no spam
+> do fornecedor, que é pior do que não enviar, porque você acha que enviou.
+
+---
+
+# 38.2. O assistente de IA no WhatsApp
+
+> Esta tela só aparece para o **Administrador**. Acesse por **Área IA** no menu de
+> Administração.
+
+## O que ele é
+
+É um assistente que **responde perguntas sobre o sistema, pelo WhatsApp**. Alguém
+pergunta "quais fornecedores já responderam a cotação?" no grupo da empresa, e ele
+responde ali mesmo, em texto corrido, como uma pessoa responderia.
+
+O nome dele, de fábrica, é **Porto** — e dá para trocar. O nome importa mais do que
+parece: é a palavra que as pessoas vão dizer em voz alta para chamá-lo no grupo.
+
+**Ele lê o sistema. Nunca escreve nada nele.** Não aprova, não cria solicitação, não
+muda preço, não cancela nada. Se alguém pedir, ele explica que não faz e diz em que
+tela a pessoa resolve. Isso não é uma instrução que ele recebeu e pode esquecer: as
+ferramentas que ele tem **só sabem consultar**. Não existe no código dele nenhuma forma
+de alterar um dado.
+
+## Para que serve, na prática
+
+A pergunta que a reunião levantou foi essa: *"o pessoal vai ter que abrir o sistema
+para saber de tudo?"*. Muita coisa do dia a dia é uma pergunta de dez segundos —
+quanto temos de cimento, quem ainda não respondeu, qual o prazo daquele pedido — e
+abrir o sistema, achar a tela e filtrar custa mais do que a resposta vale.
+
+O assistente encurta isso. Quem está na obra, com uma mão no celular, pergunta e
+recebe.
+
+## Ligando: são três coisas
+
+A Área IA tem, no alto, um cartão grande com o nome dele e **um botão só**. Abaixo do
+botão, uma linha diz **qual é o próximo passo** — uma linha, não uma lista de
+pendências.
+
+As três coisas que precisam estar de pé:
+
+| # | O que | Onde |
+|---|---|---|
+| 1 | **A chave do provedor de IA** | no campo da própria Área IA, ou no `.env` |
+| 2 | **O WhatsApp conectado** | Comunicação → WhatsApp, lendo o QR Code |
+| 3 | **Ao menos um grupo liberado** | Área IA → "Onde ele atende" |
+
+Faltando qualquer uma, ele fica calado — e a linha de próximo passo diz exatamente qual
+está faltando. O sistema confere cinco itens:
+
+1. WhatsApp conectado
+2. Chave da IA cadastrada
+3. Assistente ligado
+4. Pelo menos um grupo escolhido
+5. Alguém com telefone cadastrado
+
+Os dois últimos não impedem o funcionamento: sem grupo ele atende no privado, e sem
+telefone cadastrado ele atende, mas não reconhece quem é da equipe.
+
+> **Ao clicar em "Ligar", ele faz uma pergunta de prova ao modelo.** O cartão só fica
+> verde se a resposta chegar. Não existe "ligado no papel": se a chave estiver errada ou
+> a cota do provedor tiver estourado, você descobre no clique, não no dia seguinte pelo
+> silêncio dele no grupo.
+
+## Quem atende é o número do QR Code
+
+Vale repetir, porque é a confusão mais comum: **o assistente fala pelo número que leu o
+QR Code**. Não existe um número da IA. Se o QR foi lido com o celular do comprador, é
+pelo WhatsApp do comprador que as respostas saem.
+
+É o mesmo número que manda convite de cotação e pedido de compra. Um número, dois
+trabalhos.
+
+## Onde ele atende
+
+A seção **"Onde ele atende"** tem três chaves e uma lista de grupos.
+
+| Chave | O que muda |
+|---|---|
+| **Conversa privada de quem é da empresa** | ele responde no um-a-um de quem está cadastrado |
+| **Em grupo, só quando chamarem pelo nome** | em grupo ele fica quieto até ouvir o nome dele |
+| **Entender áudio** | ele transcreve o áudio e responde o que foi dito |
+
+Os grupos entram por um **dropdown**: o sistema busca os grupos do WhatsApp conectado,
+você escolhe qual liberar, e só os liberados aparecem na lista. **Grupo que não está na
+lista é como se não existisse para ele** — ele não lê, não guarda e não responde.
+
+> **Por que a chave do nome existe.** Num grupo de trabalho com dez pessoas
+> conversando, um assistente que responde tudo vira barulho. Com a chave ligada, ele só
+> entra quando alguém diz o nome dele. O reconhecimento não se importa com maiúscula nem
+> com acento, e procura a palavra inteira — "Porto" chama, "Portofino" não.
+
+## O que ele sabe de quem pergunta
+
+O número de quem manda é cruzado com o cadastro do sistema, e isso decide **o que a
+pessoa pode ver**:
+
+| Quem é | O que recebe |
+|---|---|
+| **Da equipe** (usuário com telefone cadastrado) | números, valores, nomes de fornecedor — tudo o que a tela mostraria |
+| **Fornecedor** (telefone no cadastro de fornecedores) | só o que é dele: a cotação dele, o pedido dele. Nunca o preço do concorrente |
+| **Desconhecido** | o essencial, sem número e sem valor |
+
+**Esse controle está no código das ferramentas, não no pedido que o modelo recebe.** A
+diferença é grande: um pedido bem escrito *convence* o modelo a se comportar, e modelo
+convencido pode mudar de ideia. Já uma ferramenta que não tem como devolver o preço do
+concorrente não devolve o preço do concorrente, com modelo nenhum. As provas desse
+controle passam com qualquer modelo, ou com nenhum.
+
+## As doze consultas que ele tem
+
+Ele não recebe um despejo do banco. Ele recebe **doze ferramentas** e decide quais usar
+para a pergunta que chegou:
+
+| Ferramenta | Responde |
+|---|---|
+| Catálogo | materiais e serviços cadastrados |
+| Fornecedores | quem são, de que família, com que contato |
+| Solicitações | o que foi pedido, por quem, em que situação |
+| Aprovações | o que está esperando assinatura, e de quem |
+| Cotações | pacotes, convidados, quem respondeu |
+| Pedidos | pedidos emitidos, prazos, situação |
+| Estoque | saldo, custo médio, ponto de pedido |
+| Financeiro | contas a pagar, parcelas, vencimentos |
+| Obras | obras, orçamento, em que fase estão |
+| Pessoas | quem trabalha no sistema e o que cada um faz |
+| Resumo do sistema | o panorama, quando a pergunta é ampla |
+| Chamar uma pessoa | avisa alguém da equipe, quando pedem para chamar |
+
+Uma pergunta pode usar várias. "O cimento está acabando e quem compra?" usa estoque e
+pessoas.
+
+## Pergunte a ele, pela tela
+
+Antes de soltar no grupo, dá para experimentar. A seção **"Pergunte a ele"** é um campo
+de pergunta na própria Área IA: você digita, ele responde ali, e **nada sai no
+WhatsApp**. Serve para ver se ele entendeu o jeito da empresa antes de a equipe ver.
+
+## Ajustes técnicos
+
+No fim da tela há um bloco recolhido, **"Ajustes técnicos"**. Ele fica fechado de
+propósito: é onde se troca o nome, se escolhe o modelo e se mexe no que raramente
+precisa ser mexido. Quem só quer ligar não precisa abrir.
+
+> **Sobre o modelo: deixe em branco.** O sistema pergunta ao provedor o que a conta tem
+> e escolhe. Se a cota de um modelo estourar, ele **troca de modelo e continua a
+> conversa**, sem perder o fio. Chumbar um nome ali só adianta o dia em que o assistente
+> emudece porque o provedor aposentou aquele modelo.
+
+## O que ele faz quando demora
+
+Pergunta grande leva tempo — às vezes vinte, trinta segundos. Duas coisas acontecem:
+
+- Se a resposta vai demorar, ele **avisa que está buscando**, em vez de deixar a pessoa
+  no vácuo.
+- Se ele cair no meio, ou travar, ele **repesca**: ao voltar, se a última mensagem do
+  grupo ainda era para ele e isso faz menos de 15 minutos, ele responde. Passou de 15
+  minutos, a conversa já andou e ele não ressuscita assunto velho.
+
+## As três travas que impedem laço
+
+Um assistente que lê o grupo em que ele mesmo fala pode se responder sozinho, para
+sempre. Isso aconteceu uma vez, em 14/10/2026, e foi preciso desligá-lo no meio da
+noite. Hoje há três travas, e elas não dependem uma da outra:
+
+1. **Foi o sistema que mandou?** Toda mensagem que sai fica registrada com o
+   identificador que o WhatsApp devolveu. Se a mensagem que chega tem esse
+   identificador, ela é nossa, e ele ignora.
+2. **É eco do que eu disse?** Se o texto que chega é o mesmo que ele acabou de
+   responder, ele ignora.
+3. **O disjuntor.** Se o número de respostas por minuto passa do teto, ele para de
+   responder sozinho — e volta quando acalmar.
+
+> **Por que três e não uma.** A primeira trava existia e não funcionava: o identificador
+> não estava sendo guardado, então a comparação nunca batia. Uma trava que depende de um
+> dado que ninguém conferiu é uma trava de enfeite. As outras duas seguram o caso mesmo
+> que a primeira falhe de novo.
+
+## O que ele guarda, e o que não guarda
+
+**Ele decide antes de guardar, não depois.** Mensagem de grupo que não está liberado, ou
+mensagem que não era para ele, **não entra no banco**.
+
+Isso parece detalhe e não é. Na primeira versão, toda mensagem de todo grupo era
+guardada antes de o sistema decidir se era relevante — e o banco da empresa começou a
+acumular conversa de grupo pessoal de quem tinha lido o QR. Seis mensagens foram
+apagadas, e a ordem foi invertida: **decidir primeiro, guardar depois.**
+
+## Desligar
+
+O botão **Desligar** está no mesmo cartão do Ligar, em vermelho. Ele para de responder
+na hora. O número continua conectado e o sistema continua mandando convite de cotação e
+pedido normalmente — desligar o assistente **não** desliga o WhatsApp.
+
+> **Não existe mais "modo rascunho".** Houve um estado em que ele pensava a resposta e a
+> guardava para alguém aprovar, sem mandar. Saiu em 15/10/2026: havia duas chaves para
+> ele falar, e com o QR lido e o grupo liberado ele continuava mudo sem nada em tela
+> explicando o silêncio. **Hoje ligar é ligar.**
 
 ---
 
@@ -2806,6 +3042,27 @@ Ela é o **painel do carro**: não leva a lugar nenhum, mas diz se o carro está
 
 > O número de usuários é o detalhe mais importante da tela: ele foi **buscado dentro do banco**. Se ele aparece, a corrente inteira está funcionando — tela, API e banco.
 
+## E, embaixo, as integrações externas
+
+Abaixo dos cartões vem a tabela **Integrações externas**: uma linha para cada canal
+que o sistema tem com o mundo de fora, com o que ele serve, em que adaptador está
+ligado, e um selo de situação.
+
+| Selo | O que quer dizer |
+|---|---|
+| **Ativo** | Está ligado de verdade. O que sair daqui chega a alguém. |
+| **Desligado** | Não está ligado, e **não finge que está**. Recusa o envio e diz onde ligar. |
+| **Simulado** | Finge que deu certo. Registra o que *teria* saído, sem nada sair. |
+
+**Os três não eram três, eram dois** — até 15/10/2026 só existiam *Simulado* e *Ativo*,
+e tudo que não fosse simulado aparecia como **Ativo**. O e-mail sem conta cadastrada
+caía nessa conta: ele não era simulado, logo era pintado de verde, e não enviava nada.
+A distinção entre "ligado" e "só não é de mentira" passou a aparecer na tela.
+
+> Se nenhuma integração estiver ligada, a tela diz isso em uma frase, logo acima da
+> tabela: *"Nenhuma integração real está ligada no momento."* Numa instalação nova é
+> essa a frase correta.
+
 ## O botão "Atualizar agora"
 
 Busca os dados de novo sem recarregar a página. Enquanto trabalha, ele fica escrito *"Atualizando..."* e desabilitado — você sempre sabe que o sistema está ocupado e não clica duas vezes sem querer.
@@ -2816,13 +3073,19 @@ Busca os dados de novo sem recarregar a página. Enquanto trabalha, ele fica esc
 
 ## O que são integrações
 
-Integração é quando nosso sistema conversa com um **serviço de fora**. São três:
+Integração é quando nosso sistema conversa com um **serviço de fora**. São cinco:
 
-| Integração | Para que serve |
-|---|---|
-| **WhatsApp** | Avisar sobre cotações, aprovações e pedidos |
-| **Fiscal (NF-e)** | Conferir a nota fiscal que o fornecedor emitiu |
-| **Pagamento** | Mandar a conta para o financeiro |
+| Integração | Para que serve | Hoje |
+|---|---|---|
+| **E-mail** | Mandar convite de cotação, pedido e link de senha | **ligado**, pela conta da empresa |
+| **WhatsApp** | Avisar sobre cotações, aprovações e pedidos | ligado por QR Code |
+| **Assistente de IA** | Responder perguntas sobre o sistema, no WhatsApp | ligado pela Área IA |
+| **Fiscal (NF-e)** | Conferir a nota fiscal que o fornecedor emitiu | **simulado** |
+| **Pagamento** | Mandar a conta para o financeiro | **simulado** |
+
+Os dois últimos são os que continuam simulados, e **nenhum dos dois depende de
+código**: a nota fiscal espera o certificado digital A1 do CNPJ, e o pagamento espera
+contrato com o banco. Os três primeiros já atravessam a porta.
 
 > **Eram quatro.** A quarta era a **GS1**, que responderia "que produto é este?" ao bipar
 > um código de barras desconhecido. Saiu na reunião de 08/10/2026: é serviço pago por
@@ -2835,9 +3098,12 @@ Integração é quando nosso sistema conversa com um **serviço de fora**. São 
 
 ## Por que elas começam simuladas
 
-Todas dependem de coisas que ainda não temos: contrato com a Meta, certificado digital da empresa e contrato com o banco.
+Numa instalação nova, nenhuma está ligada — e é de propósito. Ligar cada uma depende
+de algo que vem de fora: a conta de e-mail da empresa, um número de WhatsApp, uma
+chave da IA, um certificado digital, um contrato de banco.
 
-Em vez de esperar, o sistema já foi construído com as três **prontas para receber a integração**.
+Em vez de esperar, o sistema foi construído com as cinco **prontas para receber a
+integração**.
 
 > **Como entender na prática:** imagine uma tomada na parede. A tomada já está instalada. Hoje temos um aparelho de teste ligado nela. Amanhã você tira o de teste e liga o de verdade. A parede não muda.
 
@@ -2850,6 +3116,29 @@ Enquanto o selo estiver **Simulado**:
 - Nenhum fornecedor recebe nada
 
 O sistema registra o que **teria** enviado, para você conferir. Risco zero.
+
+## "Simulado" e "desligado" não são a mesma coisa
+
+Essa diferença custou uma descoberta desagradável, e vale entender.
+
+- **Simulado** responde *"enviei"*. Não enviou — mas o histórico diz "enviado" e a
+  tela fica verde.
+- **Desligado** responde *"ainda não fui ligado, cadastre a conta em tal tela"*.
+
+Para quem está **montando** o sistema, o simulado serve: ele deixa a tela funcionar
+inteira sem precisar de conta de e-mail nenhuma. Para quem está **usando**, o simulado
+é armadilha.
+
+O e-mail era simulado por padrão. Em 15/10/2026 virou **desligado**, porque o risco
+estava escrito na parede: alguém reinstala o sistema sem configurar o e-mail, a tela
+mostra verde, o histórico enche de "enviado", e **nenhum convite de cotação chega a
+fornecedor nenhum** — sem erro em log, sem aviso em tela, sem nada para procurar.
+
+É exatamente o que o simulado do WhatsApp fez por uma noite inteira, quando escondeu
+que as respostas do assistente de IA não estavam saindo.
+
+> **O simulado não foi apagado.** Ele continua existindo para os testes automatizados,
+> que precisam de um envio que sempre funciona. Só não é mais o padrão de quem instala.
 
 ---
 
@@ -4602,8 +4891,8 @@ Puxando esse fio, dois documentos estavam errados:
 
 | onde | dizia | é |
 |---|---|---|
-| Guia de teste manual | "todas usam a senha `Porto@2026`" | a conta `admin@` usa **`admin123`** |
-| Guia de navegação | as seis contas de papel "foram criadas por você, só quem criou sabe a senha" | elas **nascem com a instalação**, com `Porto@2026` |
+| Guia de teste manual | "todas usam a senha `admin123`" | a conta `admin@` usa **`admin123`** |
+| Guia de navegação | as seis contas de papel "foram criadas por você, só quem criou sabe a senha" | elas **nascem com a instalação**, com `admin123` |
 
 A segunda é a pior: quem lesse o guia concluía que **não dava para entrar como o Andre** —
 e dava, desde sempre. As duas tabelas agora trazem conta, senha e papel, lado a lado, e a

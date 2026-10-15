@@ -38,10 +38,13 @@ const CONTA = QUARTO && !QUARTO.startsWith('--') ? QUARTO : 'porto@dev.com';
 //  o administrador no lugar dela, essa tela vinha em branco.
 //
 //  E o padrao antigo (admin@portoinc.com.br + Porto@2026) nao
-//  entrava: a conta do administrador e a UNICA cuja senha e
-//  `admin123` — as seis de papel usam Porto@2026. A regua morria
-//  com "nao apareceu .menu__lista em 40s", mensagem que manda
-//  procurar defeito na barra lateral.
+//  entrava. A regua morria com "nao apareceu .menu__lista em
+//  40s", mensagem que manda procurar defeito na barra lateral
+//  quando o defeito era a senha.
+//
+//  DESDE 15/10/2026 AS OITO CONTAS USAM `admin123`. Havia duas
+//  senhas, e a diferenca entre elas nao servia a nada alem de
+//  derrubar quem seguia o manual.
 const SENHA = process.env.SENHA_AUDITORIA ?? 'admin123';
 // Medir sem fotografar: o print e a parte cara, e so serve quando
 // eu vou OLHAR o resultado.
@@ -205,6 +208,7 @@ const TELAS = [
   ['/admin/avisos?ver=email', 'admin-avisos-email', [PG + 'admin/Avisos.tsx', PG + 'admin/Email.tsx']],
   ['/admin/avisos?ver=historico', 'admin-avisos-historico',
     [PG + 'admin/Avisos.tsx', PG + 'admin/HistoricoComunicacao.tsx']],
+  ['/admin/ia', 'admin-area-ia', [PG + 'admin/AreaIA.tsx']],
   ['/admin/status', 'admin-status', [PG + 'admin/StatusSistema.tsx']],
   ['/minha-senha', 'minha-senha', [PG + 'MinhaSenha.tsx']],
   //  O convite de senha quando o link nao serve. E a tela que quem

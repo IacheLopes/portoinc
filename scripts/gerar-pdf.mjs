@@ -52,6 +52,22 @@ const DOCUMENTOS = {
       'Guia curto, para aprender a mexer e para apresentar. O detalhe de cada campo está no <strong>Manual do Sistema</strong>.',
   },
 
+  //  O guia PRATICO: a ordem das coisas, uma folha.
+  //
+  //  Nao substitui o Guia de Navegacao, que explica tela por tela.
+  //  Este serve para APRESENTAR: segue o caminho de uma compra, do
+  //  cadastro ate o pagamento, dizendo onde clicar e o que preencher.
+  pratico: {
+    entrada: join(RAIZ, 'docs', 'navegacao', 'GUIA-PRATICO.md'),
+    saida: join(RAIZ, 'docs', 'navegacao', 'Guia-Pratico-PortoInc.pdf'),
+    compacto: true,
+    titulo: 'Guia prático',
+    subtitulo: 'Porto Inc. — a ordem das coisas, do cadastro ao pagamento',
+    aviso:
+      'Siga os passos na ordem: cada um depende do anterior. No fim há um roteiro de '
+      + '10 minutos para apresentar o sistema inteiro.',
+  },
+
   alimentar: {
     entrada: join(RAIZ, 'docs', 'navegacao', 'GUIA-ALIMENTAR.md'),
     saida: join(RAIZ, 'docs', 'navegacao', 'Guia-Alimentar-PortoInc.pdf'),

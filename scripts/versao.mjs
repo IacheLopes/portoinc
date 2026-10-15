@@ -87,6 +87,13 @@ const trabalho = [
   // todo bump de versao desde que existe. Visto em 24/09/2026.
   ['docs/navegacao/GUIA-NAVEGACAO.md', subirDoc],
   ['docs/navegacao/GUIA-ALIMENTAR.md', subirDoc],
+  //  O Guia Pratico faltava nesta lista, e por isso ficou marcado
+  //  0.59.0 enquanto o resto subia. Documento fora da lista
+  //  envelhece calado: ninguem percebe pelo conteudo, so pela
+  //  data no rodape, e ai ja saiu impresso errado.
+  ['docs/navegacao/GUIA-PRATICO.md', subirDoc],
+  ['docs/sefaz/LEVANTAMENTO-SEFAZ.md', subirDoc],
+  ['docs/sefaz/PEDIDO-A-PORTO-SEFAZ.md', subirDoc],
 ];
 
 console.log('');

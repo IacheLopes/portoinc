@@ -1,4 +1,4 @@
-<!-- versao: 0.59.0 -->
+<!-- versao: 0.60.0 -->
 
 # O que precisamos da Porto Inc.
 
