@@ -37,6 +37,7 @@ model Usuario {
 
   solicitacoes      Solicitacao[]
   solicitacoesValidadas Solicitacao[]   @relation("SolicitacaoValidada")
+  mensagensAprovadas    MensagemEnviada[] @relation("MensagemAprovada")
   eventosGerados    SolicitacaoEvento[]
   aprovacoes        Aprovacao[]
   bids              Bid[]
@@ -47,7 +48,6 @@ model Usuario {
   contaPagars       ContaPagar[]
   numeroAutorizados NumeroAutorizado[]
   mensagemEnviadas  MensagemEnviada[]
-  emailAutorizados  EmailAutorizado[]
   emailEnviados     EmailEnviado[]
   arquivos          Arquivo[]
   locacoesContratadas ContratoLocacao[] @relation("LocacaoContratada")
@@ -229,6 +229,73 @@ enum SituacaoObra {
 }
 
 /// Cada empreendimento da construtora.
+/// O CEREBRO DA IA, configurado pela tela.
+///
+/// Linha unica, como a do e-mail. Tudo que molda o assistente mora
+/// aqui e nao no codigo: o NOME por que ele atende, as instrucoes
+/// que ajudam ele a pensar, o modelo, e as chaves de ligar.
+///
+/// Nasceu em 14/10/2026, do pedido de uma "Area IA" em
+/// Administracao — "configuracoes que ajudam a moldar ela".
+model ConfiguracaoIA {
+  id String @id @default("unico")
+
+  /// POR QUE NOME: num grupo passam dezenas de mensagens que nao
+  /// sao para ela. Chamar pelo nome e como as pessoas ja fazem,
+  /// sem precisar marcar ninguem.
+  nome String @default("Porto")
+
+  /// O que o dono escreve para moldar o jeito dela. Entra no fim
+  /// das instrucoes fixas, nunca por cima delas: texto de tela
+  /// nao pode desligar a regra de acesso.
+  instrucoes String?
+
+  provedor      String  @default("GROQ")
+  modelo        String?
+  chaveCifrada  String? @map("chave_cifrada")
+
+  ativo Boolean @default(false)
+
+  /// No privado responde direto; em grupo, so chamando pelo nome.
+  responderNoPrivado  Boolean @default(true)  @map("responder_no_privado")
+  exigirNomeEmGrupo   Boolean @default(true)  @map("exigir_nome_em_grupo")
+
+  /// Audio vira texto pelo Whisper antes de virar pergunta.
+  transcreverAudio Boolean @default(true) @map("transcrever_audio")
+
+  /// Teto por numero, por hora. Robo e gente nervosa batem nele.
+  limitePorHora Int @default(30) @map("limite_por_hora")
+
+  confirmadoEm   DateTime? @map("confirmado_em")
+  atualizadoEm   DateTime  @updatedAt @map("atualizado_em")
+  atualizadoPor  String?   @map("atualizado_por")
+
+  @@map("configuracao_ia")
+}
+
+/// Os grupos de WhatsApp que o sistema ja viu.
+///
+/// O JID de um grupo e um numero enorme que ninguem digita. Entao
+/// o sistema ANOTA todo grupo de onde chega mensagem — mesmo sem
+/// responder — e a tela lista para alguem liberar com um clique.
+///
+/// `liberado` comeca FALSO: a resposta em grupo vai para todo
+/// mundo do grupo, inclusive quem nao e da empresa. Liberar e ato
+/// consciente, um grupo por vez.
+model GrupoWhatsApp {
+  id  String @id @default(uuid())
+  jid String @unique
+
+  nome     String?
+  liberado Boolean @default(false)
+
+  vistoEm      DateTime @default(now()) @map("visto_em")
+  liberadoEm   DateTime? @map("liberado_em")
+  liberadoPor  String?   @map("liberado_por")
+
+  @@map("grupos_whatsapp")
+}
+
 model Obra {
   id              String       @id @default(uuid())
   codigo          String       @unique
@@ -1139,6 +1206,25 @@ enum SituacaoMensagem {
   FALHOU
   /// Barrada pela lista de autorizados, antes de sair.
   BLOQUEADA
+  /// O QUE O ASSISTENTE RESPONDERIA, esperando alguem aprovar.
+  ///
+  /// O MODO RASCUNHO FOI REMOVIDO EM 15/10/2026. Ele existia para
+  /// conferir o que o assistente diria antes de deixa-lo falar
+  /// pela empresa, e virou armadilha: com o QR lido e o grupo
+  /// liberado, as respostas eram pensadas, guardadas e NAO saiam,
+  /// sem nada em tela explicando o silencio. Hoje ligar e ligar.
+  ///
+  /// O valor fica no enum por causa das linhas que ja nasceram
+  /// assim. Nenhuma nova e criada.
+  RASCUNHO
+  /// Chegou de fora. Nao foi enviada por ninguem daqui.
+  RECEBIDA
+}
+
+/// De quem partiu a mensagem.
+enum DirecaoMensagem {
+  ENTRADA
+  SAIDA
 }
 
 /// Tudo que o sistema tentou enviar pelo WhatsApp.
@@ -1158,18 +1244,42 @@ model MensagemEnviada {
   erro       String?
   adaptador  String
 
-  /// De onde partiu: "cotacao", "pedido", "teste".
+  /// De onde partiu: "cotacao", "pedido", "teste", "assistente".
   contexto   String?
   /// O documento de origem: "BID-00002", "PC-00001".
   referencia String?
 
+  /// ENTRADA e o que chegou de fora; SAIDA, o que o sistema mandou.
+  /// Tudo que existia antes de 14/10/2026 e SAIDA — o sistema so
+  /// falava, nunca ouvia.
+  direcao DirecaoMensagem @default(SAIDA)
+
+  /// Qual mensagem recebida esta resposta responde.
+  respondeAId String? @map("responde_a_id")
+
+  /// A TRILHA DO ASSISTENTE.
+  ///
+  /// Sem isto nao ha como responder "por que ele disse isso?".
+  /// Guardamos QUAIS CONSULTAS ele fez — e e por ai que se
+  /// descobre se a resposta veio do banco ou saiu da cabeca dele.
+  modeloIa   String?  @map("modelo_ia")
+  consultasIa String[] @default([]) @map("consultas_ia")
+  tokensIa   Int?     @map("tokens_ia")
+
   enviadoPorId String?  @map("enviado_por_id")
+  /// Quem aprovou o rascunho, quando houve aprovacao.
+  aprovadoPorId String? @map("aprovado_por_id")
   criadoEm     DateTime @default(now()) @map("criado_em")
 
   enviadoPor Usuario? @relation(fields: [enviadoPorId], references: [id])
+  aprovadoPor Usuario? @relation("MensagemAprovada", fields: [aprovadoPorId], references: [id])
+
+  respondeA  MensagemEnviada?  @relation("Resposta", fields: [respondeAId], references: [id])
+  respostas  MensagemEnviada[] @relation("Resposta")
 
   @@index([criadoEm])
   @@index([situacao])
+  @@index([numero, criadoEm])
   @@map("mensagens_whatsapp")
 }
 
@@ -1269,22 +1379,6 @@ model ContratoLocacao {
 //  TUDO — inclusive do que foi barrado.
 // ============================================================
 
-/// Quem pode receber e-mail enquanto o modo de teste está ligado.
-model EmailAutorizado {
-  id String @id @default(uuid())
-
-  /// Guardado sempre em minúsculas: e-mail não diferencia caixa.
-  email      String  @unique
-  nome       String
-  observacao String?
-
-  criadoPorId String   @map("criado_por_id")
-  criadoEm    DateTime @default(now()) @map("criado_em")
-
-  criadoPor Usuario @relation(fields: [criadoPorId], references: [id])
-
-  @@map("emails_autorizados")
-}
 
 /// Tudo que o sistema tentou enviar por e-mail.
 ///

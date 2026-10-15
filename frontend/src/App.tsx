@@ -15,6 +15,7 @@ import { MinhaSenha } from './paginas/MinhaSenha';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { StatusSistema } from './paginas/admin/StatusSistema';
 import { Avisos } from './paginas/admin/Avisos';
+import AreaIA from './paginas/admin/AreaIA';
 import { Familias } from './paginas/cadastros/Familias';
 import { Materiais } from './paginas/cadastros/Materiais';
 import { Fornecedores } from './paginas/cadastros/Fornecedores';
@@ -478,6 +479,15 @@ function Rotas() {
           element={
             <Protegida permissoes={['sistema.integracoes']}>
               <Avisos />
+            </Protegida>
+          }
+        />
+
+        <Route
+          path="admin/ia"
+          element={
+            <Protegida permissoes={['sistema.integracoes']}>
+              <AreaIA />
             </Protegida>
           }
         />

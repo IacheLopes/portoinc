@@ -152,6 +152,17 @@ function PainelDePessoas({ pedidoDeNovo }: { pedidoDeNovo: number }) {
   }, [pedidoDeNovo]);
   /** De quem estamos redefinindo a senha. `null` = de ninguém. */
   const [redefinindo, setRedefinindo] = useState<UsuarioAdmin | null>(null);
+  /**
+   * Quem estamos editando.
+   *
+   * A tela deixava DESATIVAR e REDEFINIR SENHA, mas não corrigir
+   * um nome, um telefone ou uma função — para trocar qualquer um
+   * deles era preciso criar outra conta. O buraco apareceu em
+   * 14/10/2026, quando o assistente do WhatsApp passou a
+   * reconhecer as pessoas PELO TELEFONE e não havia por onde
+   * cadastrá-lo em quem já existia.
+   */
+  const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   /** O link de senha recém-gerado, e para quem ele é. */
   const [convite, setConvite] = useState<(Convite & { chamada: string }) | null>(null);
@@ -249,6 +260,18 @@ function PainelDePessoas({ pedidoDeNovo }: { pedidoDeNovo: number }) {
           }}
         />
 
+        <ModalEditarUsuario
+          key={'editar-' + (editando?.id ?? 'nenhum')}
+          usuario={editando}
+          funcoes={funcoes}
+          aoFechar={() => setEditando(null)}
+          aoSalvar={async (nome) => {
+            setEditando(null);
+            setAviso(nome + ' foi atualizado.');
+            await carregar(busca);
+          }}
+        />
+
         <ModalRedefinirSenha
           key={redefinindo?.id ?? 'nenhum'}
           usuario={redefinindo}
@@ -312,6 +335,13 @@ function PainelDePessoas({ pedidoDeNovo }: { pedidoDeNovo: number }) {
                         )}
                       </td>
                       <td className="celula-acoes">
+                        <button
+                          type="button"
+                          className="botao botao--discreto"
+                          onClick={() => setEditando(u)}
+                        >
+                          Editar
+                        </button>
                         <button
                           type="button"
                           className="botao botao--discreto"
@@ -590,6 +620,171 @@ function ModalRedefinirSenha({
       </p>
 
       {erro && <ErroFormulario mensagem={erro} />}
+    </Modal>
+  );
+}
+
+// ------------------------------------------------------------
+//  Editar usuário
+//
+//  Existe porque a tela deixava desativar e redefinir senha, mas
+//  não CORRIGIR: um nome errado, um telefone novo ou uma função a
+//  mais exigiam criar outra conta — e duas contas para a mesma
+//  pessoa estragam a trilha de quem pediu, quem aprovou e quem
+//  recebeu.
+//
+//  O e-mail NÃO entra aqui de propósito: ele é o login e aparece
+//  em tudo que a pessoa já assinou. Trocar e-mail é outro assunto,
+//  com outras consequências.
+// ------------------------------------------------------------
+function ModalEditarUsuario({
+  usuario,
+  funcoes,
+  aoFechar,
+  aoSalvar,
+}: {
+  usuario: UsuarioAdmin | null;
+  funcoes: FuncaoItem[];
+  aoFechar: () => void;
+  aoSalvar: (nome: string) => Promise<void>;
+}) {
+  const idForm = useId();
+  const [nome, setNome] = useState(usuario?.nome ?? '');
+  const [telefone, setTelefone] = useState(mascaraTelefone(usuario?.telefone ?? ''));
+  const [selecionadas, setSelecionadas] = useState<string[]>(
+    (usuario?.funcoes ?? []).map((f) => f.id),
+  );
+  const [erro, setErro] = useState<string | null>(null);
+  const [detalhes, setDetalhes] = useState<string[]>([]);
+  const [enviando, setEnviando] = useState(false);
+
+  function alternarFuncao(id: string) {
+    setSelecionadas((atual) =>
+      atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id],
+    );
+  }
+
+  async function enviar(evento: FormEvent) {
+    evento.preventDefault();
+    if (!usuario) return;
+
+    setErro(null);
+    setDetalhes([]);
+    setEnviando(true);
+
+    try {
+      await editarUsuario(usuario.id, {
+        nome,
+        //  Campo esvaziado vira NULO, não string vazia: "sem
+        //  telefone" e "telefone em branco" precisam ser a mesma
+        //  coisa para quem procura por número depois.
+        telefone: telefoneParaGuardar(telefone) || null,
+        funcoes: selecionadas,
+      });
+
+      await aoSalvar(nome);
+    } catch (e) {
+      if (e instanceof ErroApi) {
+        setErro(e.message);
+        setDetalhes((e.detalhes ?? []).map((d) => (typeof d === 'string' ? d : d.mensagem)));
+      } else {
+        setErro('Não foi possível salvar.');
+      }
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <Modal
+      aberto={usuario !== null}
+      aoFechar={aoFechar}
+      titulo={'Editar ' + (usuario?.nome ?? '')}
+      descricao="O e-mail não muda por aqui: ele é o login e já está em tudo que a pessoa assinou."
+      temAlteracao={
+        nome !== (usuario?.nome ?? '') ||
+        telefone !== mascaraTelefone(usuario?.telefone ?? '') ||
+        selecionadas.length !== (usuario?.funcoes ?? []).length
+      }
+      acoes={
+        <>
+          <button type="button" className="botao botao--discreto" onClick={aoFechar}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form={idForm}
+            className="botao botao--principal"
+            disabled={enviando || !nome.trim() || selecionadas.length === 0}
+          >
+            {enviando ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+        </>
+      }
+    >
+      <form id={idForm} onSubmit={enviar} noValidate>
+        <div className="formulario__linha">
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="editar-nome">
+              Nome completo
+            </label>
+            <input
+              id="editar-nome"
+              className="campo__entrada"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="campo">
+            <label className="campo__rotulo" htmlFor="editar-telefone">
+              Telefone <span className="campo__opcional">(opcional)</span>
+            </label>
+            <input
+              id="editar-telefone"
+              className="campo__entrada"
+              type="tel"
+              inputMode="decimal"
+              placeholder="(11) 99999-8888"
+              value={telefone}
+              onChange={(e) => setTelefone(mascaraTelefone(e.target.value))}
+            />
+            <p className="campo__ajuda">
+              É por ele que o assistente do WhatsApp reconhece a pessoa. Sem telefone, ela
+              não recebe resposta. O +55 entra sozinho ao salvar.
+            </p>
+          </div>
+        </div>
+
+        <fieldset className="campo">
+          <legend className="campo__rotulo">Funções (pode marcar mais de uma)</legend>
+          <div className="opcoes">
+            {funcoes.map((f) => (
+              <label key={f.id} className="opcao">
+                <input
+                  type="checkbox"
+                  checked={selecionadas.includes(f.id)}
+                  onChange={() => alternarFuncao(f.id)}
+                />
+                <span>{f.nome}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {erro && (
+          <div className="campo__erro" role="alert">
+            <Icone nome="alerta" /> {erro}
+            {detalhes.length > 0 && (
+              <ul className="campo__erro-lista">
+                {detalhes.map((d) => (
+                  <li key={d}>{d}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </form>
     </Modal>
   );
 }

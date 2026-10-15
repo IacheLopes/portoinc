@@ -167,7 +167,11 @@ describe('Os cartões de cada índice', () => {
     //
     // "Funções" saiu da lista em 10/10/2026: virou a segunda aba de
     // Usuários, porque eram duas telas para uma pergunta só.
-    expect(soltos).toEqual(['Usuários', 'Comunicação', 'Status do sistema']);
+    //
+    // "Área IA" entrou em 14/10/2026. Ela fica SOLTA, e não
+    // numerada, pelo mesmo motivo dos outros: não faz parte da
+    // ordem de alimentar o sistema — é ajuste de quem administra.
+    expect(soltos).toEqual(['Usuários', 'Comunicação', 'Área IA', 'Status do sistema']);
   });
 
   it('o índice mostra só o que a pessoa pode abrir', () => {

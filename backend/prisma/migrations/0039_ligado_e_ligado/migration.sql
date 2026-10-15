@@ -1,0 +1,21 @@
+-- ============================================================
+--  O MODO RASCUNHO SAI
+--
+--  Ele existiu enquanto a regra da casa era "nada sai do sistema
+--  sem alguem mandar", e cumpriu o papel: deixou o assistente ser
+--  testado sem alcancar ninguem.
+--
+--  Virou armadilha quando o assistente passou a ser para uso
+--  interno. Em 14/10/2026 o dono clicou em "Ligar o assistente",
+--  mandou mensagem no grupo e nada saiu — a chave "responder
+--  sozinho" tinha ficado desligada de um conserto anterior, e a
+--  resposta certa foi parar em rascunho.
+--
+--  Duas chaves para a mesma pergunta e uma chave para esquecer.
+--  Agora LIGADO E LIGADO: leu o QR, liberou o grupo, funciona.
+--
+--  O estado RASCUNHO continua existindo em `mensagens_whatsapp`,
+--  com outro sentido: o que o disjuntor cortou antes de sair.
+-- ============================================================
+
+ALTER TABLE "configuracao_ia" DROP COLUMN "responde_sozinho";

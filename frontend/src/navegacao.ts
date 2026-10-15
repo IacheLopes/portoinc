@@ -334,6 +334,15 @@ export const MODULOS: Modulo[] = [
     permissoes: ['sistema.integracoes'],
   },
   {
+    rotulo: 'Área IA',
+    grupo: 'Administração',
+    titulo: 'Área IA',
+    descricao: 'O assistente que responde no WhatsApp para a equipe',
+    para: '/admin/ia',
+    icone: 'conversa',
+    permissoes: ['sistema.integracoes'],
+  },
+  {
     rotulo: 'Status do sistema',
     grupo: 'Administração',
     titulo: 'Status do sistema',
@@ -535,6 +544,7 @@ export const PAGINAS: Pagina[] = [
   { rota: '/cadastros/alcadas', titulo: 'Limites de alçada', mae: '/administracao' },
   { rota: '/admin/usuarios', titulo: 'Usuários e funções', mae: '/administracao' },
   { rota: '/admin/avisos', titulo: 'Comunicação', mae: '/administracao' },
+  { rota: '/admin/ia', titulo: 'Área IA', mae: '/administracao' },
   { rota: '/admin/whatsapp', titulo: 'Comunicação', mae: '/administracao' },
   { rota: '/admin/status', titulo: 'Status do sistema', mae: '/administracao' },
 ];

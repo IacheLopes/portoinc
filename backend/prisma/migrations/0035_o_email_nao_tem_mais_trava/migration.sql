@@ -1,0 +1,28 @@
+-- ============================================================
+--  O E-MAIL NAO TEM MAIS TRAVA DE TESTE
+--
+--  Havia uma lista de enderecos autorizados: com o modo de teste
+--  ligado, so saia e-mail para quem estivesse nela.
+--
+--  O WhatsApp MANTEM a dele, e a diferenca e real: la, depois de
+--  ler o QR, o sistema esta pronto para disparar para qualquer
+--  numero do cadastro — a lista e a forma rapida de testar sem
+--  alcancar fornecedor de verdade.
+--
+--  No e-mail o freio e outro e ja existe: nada sai enquanto
+--  ninguem cadastrar um remetente pela tela, o que e ato
+--  deliberado. E para conferir basta o envio de teste, que aceita
+--  qualquer destinatario.
+--
+--  Desligada em 11/10/2026 para o lancamento, a trava virou um
+--  formulario na tela que nao fazia nada — e cujo texto falava de
+--  uma restricao inexistente. Ele perguntou se a tela ainda era
+--  necessaria, e nao era.
+--
+--  A SITUACAO 'BLOQUEADA' DO HISTORICO FICA. Ela e um valor de
+--  `SituacaoEnvio`, compartilhado com o WhatsApp, que continua
+--  bloqueando. E linhas antigas de e-mail podem te-la: apagar o
+--  valor quebraria a leitura delas.
+-- ============================================================
+
+DROP TABLE IF EXISTS "emails_autorizados";
